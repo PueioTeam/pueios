@@ -247,7 +247,7 @@ export function PueiOS() {
     return (
       <div className="fixed inset-0 flex flex-col items-center justify-center"
         style={{ background: "radial-gradient(circle at 50% 40%, #0a1a2a, #000)" }}>
-        <div className="boot-logo text-8xl" style={{ color: "#7dd3fc" }}>✦</div>
+        <div className="boot-logo"><PueiLogoSvg size={120} glow /></div>
         <div className="text-3xl font-light text-white mt-4 tracking-widest">PueiOS 2</div>
         <div className="text-xs text-cyan-300/60 mt-1">Ultimate Edition · Build 2009.1138</div>
         <div className="mt-10 w-80 h-1.5 rounded-full bg-cyan-900/50 overflow-hidden">
@@ -264,7 +264,7 @@ export function PueiOS() {
     return (
       <div className="fixed inset-0 flex items-center justify-center" style={{ background: "#000" }}>
         <div className="text-center text-cyan-200">
-          <div className="boot-logo text-6xl">✦</div>
+          <div className="boot-logo inline-block"><PueiLogoSvg size={80} glow /></div>
           <div className="mt-4 text-xl">Shutting down…</div>
           <button className="mt-8 aero-button rounded px-4 py-2" onClick={() => { setPhase("boot"); setBootProgress(0); }}>
             Restart
@@ -291,69 +291,125 @@ export function PueiOS() {
 
   // Login
   if (phase === "login" || locked) {
+    const trySignIn = () => {
+      const u = users.find((x) => x.name === loginUser);
+      if (!u) { blip("error"); setPwError("Unknown user"); return; }
+      if (u.password === pwInput) {
+        blip("start");
+        setCurrentUser(loginUser); setPwInput(""); setPwError("");
+        setLocked(false); setPhase("desktop");
+      } else { blip("error"); setPwError("Wrong password"); }
+    };
+    const createAccount = () => {
+      const name = newAcc.name.trim();
+      if (!name) { setPwError("Pick a name"); return; }
+      if (users.some((u) => u.name === name)) { setPwError("Name already exists"); return; }
+      const nu: User = { name, password: newAcc.password, avatar: newAcc.avatar || "🧑", color: newAcc.color || "200" };
+      const next = [...users, nu];
+      setUsers(next);
+      setLoginUser(name);
+      setCreating(false);
+      setNewAcc({ name: "", password: "", avatar: "🧑", color: "200" });
+      setPwError("");
+      blip("notify");
+    };
+    const activeUser = users.find((u) => u.name === loginUser);
     return (
       <div className="fixed inset-0 flex flex-col items-center justify-center"
         style={{ background: "linear-gradient(135deg, oklch(0.3 0.1 220), oklch(0.15 0.08 250))" }}>
-        <div className="absolute top-6 left-6 text-white/70 text-sm">
-          {locked ? "Locked" : "Welcome to PueiOS 2"}
+        <div className="absolute top-6 left-6 text-white/70 text-sm flex items-center gap-2">
+          <PueiLogoSvg size={28} /> {locked ? "Locked" : "Welcome to PueiOS 2"}
         </div>
-        <div className="absolute top-6 right-6 text-white/70 text-sm">
-          {now.toLocaleString()}
-        </div>
-        <div className="grid grid-cols-3 gap-6 mb-8">
-          {DEFAULT_USERS.map((u) => (
-            <button key={u.name} onClick={() => { setLoginUser(u.name); setPwError(""); }}
-              className="flex flex-col items-center gap-2 p-4 rounded-xl"
-              style={{
-                background: loginUser === u.name ? "rgba(255,255,255,0.15)" : "transparent",
-                outline: loginUser === u.name ? "2px solid white" : "none",
-              }}>
-              <div className="w-20 h-20 rounded-xl flex items-center justify-center text-5xl"
-                style={{ background: `linear-gradient(135deg, oklch(0.7 0.18 ${u.color}), oklch(0.45 0.2 ${u.color}))`, boxShadow: "0 6px 20px rgba(0,0,0,0.4)" }}>
-                {u.avatar}
+        <div className="absolute top-6 right-6 text-white/70 text-sm">{now.toLocaleString()}</div>
+
+        {!creating ? (
+          <>
+            <div className="grid gap-6 mb-8" style={{ gridTemplateColumns: `repeat(${Math.min(users.length, 4)}, minmax(0, 1fr))` }}>
+              {users.map((u) => (
+                <button key={u.name} onClick={() => { setLoginUser(u.name); setPwError(""); setPwInput(""); }}
+                  className="flex flex-col items-center gap-2 p-4 rounded-xl"
+                  style={{
+                    background: loginUser === u.name ? "rgba(255,255,255,0.15)" : "transparent",
+                    outline: loginUser === u.name ? "2px solid white" : "none",
+                  }}>
+                  <div className="w-20 h-20 rounded-xl flex items-center justify-center text-5xl"
+                    style={{ background: `linear-gradient(135deg, oklch(0.7 0.18 ${u.color}), oklch(0.45 0.2 ${u.color}))`, boxShadow: "0 6px 20px rgba(0,0,0,0.4)" }}>
+                    {u.avatar}
+                  </div>
+                  <div className="text-white text-sm font-medium">{u.name}</div>
+                </button>
+              ))}
+              {!locked && (
+                <button onClick={() => { setCreating(true); setPwError(""); }}
+                  className="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-dashed border-white/30 hover:border-white/60">
+                  <div className="w-20 h-20 rounded-xl flex items-center justify-center text-4xl text-white/70">＋</div>
+                  <div className="text-white/80 text-sm font-medium">New account</div>
+                </button>
+              )}
+            </div>
+            <div className="aero-glass rounded-lg p-4 w-80">
+              <div className="text-sm font-medium mb-2">{loginUser}</div>
+              <input type="password" value={pwInput} onChange={(e) => setPwInput(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") trySignIn(); }}
+                placeholder={activeUser?.password ? "Password" : "Press Enter (no password)"}
+                className="w-full px-3 py-2 rounded text-sm outline-none"
+                style={{ background: "white", color: "#111" }} />
+              {pwError && <div className="text-red-400 text-xs mt-1">{pwError}</div>}
+              <label className="flex items-center gap-2 text-xs mt-2">
+                <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} />
+                Remember me
+              </label>
+              <div className="flex gap-2 mt-3">
+                <button className="aero-button rounded px-3 py-1 text-sm flex-1" onClick={trySignIn}>Sign in →</button>
+                <button className="aero-button rounded px-3 py-1 text-sm" onClick={() => setPhase("recovery")}>Recovery</button>
               </div>
-              <div className="text-white text-sm font-medium">{u.name}</div>
-            </button>
-          ))}
-        </div>
-        <div className="aero-glass rounded-lg p-4 w-80">
-          <div className="text-sm font-medium mb-2">{loginUser}</div>
-          <input type="password" value={pwInput} onChange={(e) => setPwInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                const u = DEFAULT_USERS.find((x) => x.name === loginUser)!;
-                if (u.password === pwInput) {
-                  blip("start");
-                  setCurrentUser(loginUser); setPwInput(""); setPwError("");
-                  setLocked(false); setPhase("desktop");
-                } else {
-                  blip("error"); setPwError("Wrong password");
-                }
-              }
-            }}
-            placeholder={DEFAULT_USERS.find(u => u.name === loginUser)?.password ? "Password" : "Press Enter (no password)"}
-            className="w-full px-3 py-2 rounded text-sm outline-none"
-            style={{ background: "white", color: "#111" }} />
-          {pwError && <div className="text-red-400 text-xs mt-1">{pwError}</div>}
-          <label className="flex items-center gap-2 text-xs mt-2">
-            <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} />
-            Remember me
-          </label>
-          <div className="flex gap-2 mt-3">
-            <button className="aero-button rounded px-3 py-1 text-sm flex-1"
-              onClick={() => {
-                const u = DEFAULT_USERS.find((x) => x.name === loginUser)!;
-                if (u.password === pwInput) {
-                  blip("start");
-                  setCurrentUser(loginUser); setPwInput(""); setPwError("");
-                  setLocked(false); setPhase("desktop");
-                } else { blip("error"); setPwError("Wrong password"); }
-              }}>
-              Sign in →
-            </button>
-            <button className="aero-button rounded px-3 py-1 text-sm" onClick={() => setPhase("recovery")}>Recovery</button>
+            </div>
+          </>
+        ) : (
+          <div className="aero-glass rounded-lg p-5 w-96 space-y-3">
+            <div className="text-base font-semibold flex items-center gap-2"><PueiLogoSvg size={28} /> Create a new account</div>
+            <div>
+              <label className="text-xs opacity-70">Account name</label>
+              <input value={newAcc.name} onChange={(e) => setNewAcc({ ...newAcc, name: e.target.value })}
+                className="w-full px-3 py-2 rounded text-sm outline-none" style={{ background: "white", color: "#111" }} />
+            </div>
+            <div>
+              <label className="text-xs opacity-70">Password (optional)</label>
+              <input type="password" value={newAcc.password} onChange={(e) => setNewAcc({ ...newAcc, password: e.target.value })}
+                className="w-full px-3 py-2 rounded text-sm outline-none" style={{ background: "white", color: "#111" }} />
+            </div>
+            <div>
+              <label className="text-xs opacity-70">Avatar</label>
+              <div className="flex flex-wrap gap-2 mt-1">
+                {["🧑","👩","🧔","👵","🧑‍💻","🦸","🧙","🐱","🤖","👽","🎩","🌟"].map((a) => (
+                  <button key={a} onClick={() => setNewAcc({ ...newAcc, avatar: a })}
+                    className="w-9 h-9 rounded text-xl flex items-center justify-center"
+                    style={{ background: newAcc.avatar === a ? "var(--gradient-aero)" : "rgba(255,255,255,0.5)" }}>
+                    {a}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <label className="text-xs opacity-70">Tile colour</label>
+              <div className="flex gap-2 mt-1 flex-wrap">
+                {["200","260","320","30","60","130","160","0"].map((c) => (
+                  <button key={c} onClick={() => setNewAcc({ ...newAcc, color: c })}
+                    className="w-8 h-8 rounded-full border-2"
+                    style={{
+                      background: `linear-gradient(135deg, oklch(0.7 0.18 ${c}), oklch(0.45 0.2 ${c}))`,
+                      borderColor: newAcc.color === c ? "white" : "transparent",
+                    }} />
+                ))}
+              </div>
+            </div>
+            {pwError && <div className="text-red-400 text-xs">{pwError}</div>}
+            <div className="flex gap-2 pt-2">
+              <button className="aero-button rounded px-3 py-1 text-sm flex-1" onClick={createAccount}>Create account</button>
+              <button className="aero-button rounded px-3 py-1 text-sm" onClick={() => { setCreating(false); setPwError(""); }}>Cancel</button>
+            </div>
           </div>
-        </div>
+        )}
         <div className="fixed bottom-4 right-4 text-[10px] text-white/40">PueiOS 2 Ultimate · Pre-release watermark</div>
       </div>
     );
