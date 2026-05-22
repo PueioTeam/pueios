@@ -1,12 +1,12 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  blip, defaultIcons, defaultTheme, DEFAULT_USERS,
-  loadState, saveState, type AppId, type DesktopIcon,
+  blip, defaultIcons, defaultTheme, DEFAULT_USERS, iconGridPos, ICONS_PER_COL,
+  loadState, saveState, type AppId, type DesktopIcon, type User,
   type Theme, type WallpaperId, type WindowState,
 } from "./state";
 import { AppWindow, ContextMenu, appIcon } from "./Window";
 import { AppRenderer } from "./apps";
-import { PueiMascot } from "./Mascot";
+import { PueiMascot, PueiLogoSvg } from "./Mascot";
 
 type Phase = "boot" | "login" | "desktop" | "shutdown" | "recovery";
 
@@ -39,6 +39,7 @@ export function PueiOS() {
   const [bootProgress, setBootProgress] = useState(0);
   const [theme, setThemeState] = useState<Theme>(defaultTheme);
   const [icons, setIcons] = useState<DesktopIcon[]>(defaultIcons);
+  const [users, setUsers] = useState<User[]>(DEFAULT_USERS);
   const [currentUser, setCurrentUser] = useState<string>("Pueian Rosos");
   const [pwInput, setPwInput] = useState("");
   const [pwError, setPwError] = useState("");
@@ -52,19 +53,24 @@ export function PueiOS() {
   const [showCalendar, setShowCalendar] = useState(false);
   const [notifs, setNotifs] = useState<{ id: number; title: string; body: string }[]>([]);
   const [mascotSpeak, setMascotSpeak] = useState<string | null>(null);
-  const [showMascot, setShowMascot] = useState(true);
+  const [showMascot] = useState(true);
   const [cursorPos, setCursorPos] = useState({ x: 0, y: 0 });
   const [locked, setLocked] = useState(false);
   const [loginUser, setLoginUser] = useState("Pueian Rosos");
+  const [creating, setCreating] = useState(false);
+  const [newAcc, setNewAcc] = useState({ name: "", password: "", avatar: "🧑", color: "200" });
 
   // Load persisted state
   useEffect(() => {
     const s = loadState();
     setThemeState(s.theme);
     setIcons(s.icons);
+    setUsers(s.users);
     if (s.lastUser && s.remember) {
       setLoginUser(s.lastUser);
       setRemember(true);
+    } else if (s.users[0]) {
+      setLoginUser(s.users[0].name);
     }
   }, []);
 
@@ -96,8 +102,8 @@ export function PueiOS() {
       root.style.removeProperty("--glass");
       root.style.removeProperty("--glass-strong");
     }
-    saveState({ theme, icons, lastUser: loginUser, remember });
-  }, [theme, icons, loginUser, remember]);
+    saveState({ theme, icons, users, lastUser: loginUser, remember });
+  }, [theme, icons, users, loginUser, remember]);
 
   // Clock
   useEffect(() => {
