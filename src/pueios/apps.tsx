@@ -254,7 +254,7 @@ function PueiNetApp() {
   const [url, setUrl] = useState("puei://home");
   const [tabs, setTabs] = useState([{ id: 1, title: "Home", url: "puei://home" }]);
   const [active, setActive] = useState(1);
-  const fakeSites: Record<string, JSX.Element> = {
+  const fakeSites: Record<string, React.ReactNode> = {
     "puei://home": (
       <div className="p-8 text-center">
         <h1 className="text-5xl font-bold" style={{ color: "var(--accent)" }}>PueiNet</h1>
