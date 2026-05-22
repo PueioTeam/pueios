@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  blip, defaultIcons, defaultTheme, DEFAULT_USERS, iconGridPos, ICONS_PER_COL,
+  blip, defaultIcons, defaultTheme, DEFAULT_USERS, iconGridPos,
   loadState, saveState, type AppId, type DesktopIcon, type User,
   type Theme, type WallpaperId, type WindowState,
 } from "./state";
