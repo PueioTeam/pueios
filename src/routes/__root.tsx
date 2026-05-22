@@ -72,14 +72,16 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
+      { title: "pueios softweare" },
+      { name: "description", content: "PueiOS 2 simulates a nostalgic, interactive operating system with a glossy, retro-futuristic UI." },
       { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { property: "og:title", content: "pueios softweare" },
+      { property: "og:description", content: "PueiOS 2 simulates a nostalgic, interactive operating system with a glossy, retro-futuristic UI." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },
+      { name: "twitter:title", content: "pueios softweare" },
+      { name: "twitter:description", content: "PueiOS 2 simulates a nostalgic, interactive operating system with a glossy, retro-futuristic UI." },
     ],
     links: [
       {
