@@ -1,12 +1,12 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  blip, defaultIcons, defaultTheme, DEFAULT_USERS,
-  loadState, saveState, type AppId, type DesktopIcon,
+  blip, defaultIcons, defaultTheme, DEFAULT_USERS, iconGridPos,
+  loadState, saveState, type AppId, type DesktopIcon, type User,
   type Theme, type WallpaperId, type WindowState,
 } from "./state";
 import { AppWindow, ContextMenu, appIcon } from "./Window";
 import { AppRenderer } from "./apps";
-import { PueiMascot } from "./Mascot";
+import { PueiMascot, PueiLogoSvg } from "./Mascot";
 
 type Phase = "boot" | "login" | "desktop" | "shutdown" | "recovery";
 
@@ -39,6 +39,7 @@ export function PueiOS() {
   const [bootProgress, setBootProgress] = useState(0);
   const [theme, setThemeState] = useState<Theme>(defaultTheme);
   const [icons, setIcons] = useState<DesktopIcon[]>(defaultIcons);
+  const [users, setUsers] = useState<User[]>(DEFAULT_USERS);
   const [currentUser, setCurrentUser] = useState<string>("Pueian Rosos");
   const [pwInput, setPwInput] = useState("");
   const [pwError, setPwError] = useState("");
@@ -52,19 +53,24 @@ export function PueiOS() {
   const [showCalendar, setShowCalendar] = useState(false);
   const [notifs, setNotifs] = useState<{ id: number; title: string; body: string }[]>([]);
   const [mascotSpeak, setMascotSpeak] = useState<string | null>(null);
-  const [showMascot, setShowMascot] = useState(true);
+  const [showMascot] = useState(true);
   const [cursorPos, setCursorPos] = useState({ x: 0, y: 0 });
   const [locked, setLocked] = useState(false);
   const [loginUser, setLoginUser] = useState("Pueian Rosos");
+  const [creating, setCreating] = useState(false);
+  const [newAcc, setNewAcc] = useState({ name: "", password: "", avatar: "🧑", color: "200" });
 
   // Load persisted state
   useEffect(() => {
     const s = loadState();
     setThemeState(s.theme);
     setIcons(s.icons);
+    setUsers(s.users);
     if (s.lastUser && s.remember) {
       setLoginUser(s.lastUser);
       setRemember(true);
+    } else if (s.users[0]) {
+      setLoginUser(s.users[0].name);
     }
   }, []);
 
@@ -96,8 +102,8 @@ export function PueiOS() {
       root.style.removeProperty("--glass");
       root.style.removeProperty("--glass-strong");
     }
-    saveState({ theme, icons, lastUser: loginUser, remember });
-  }, [theme, icons, loginUser, remember]);
+    saveState({ theme, icons, users, lastUser: loginUser, remember });
+  }, [theme, icons, users, loginUser, remember]);
 
   // Clock
   useEffect(() => {
@@ -140,9 +146,9 @@ export function PueiOS() {
     setWindows((ws) => ws.map((w) => w.id === id ? { ...w, z: zCounter + 1, minimized: false } : w));
   }, [zCounter]);
 
-  const openApp = useCallback((appId: AppId) => {
+  const openApp = useCallback((appId: AppId, fileId?: string) => {
     blip("click");
-    const existing = windows.find((w) => w.appId === appId);
+    const existing = windows.find((w) => w.appId === appId && w.fileId === fileId);
     if (existing) { focusWin(existing.id); return; }
     const size = APP_SIZES[appId] || { w: 560, h: 420 };
     const id = `w-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
@@ -151,7 +157,7 @@ export function PueiOS() {
     setZCounter((z) => z + 1);
     setWindows((ws) => [...ws, {
       id, appId, title: APP_TITLES[appId], x, y, w: size.w, h: size.h,
-      z: zCounter + 1, minimized: false, maximized: false,
+      z: zCounter + 1, minimized: false, maximized: false, fileId,
     }]);
   }, [windows, zCounter, focusWin]);
 
@@ -177,17 +183,8 @@ export function PueiOS() {
   const resizeWin = (id: string, w: number, h: number) =>
     setWindows((ws) => ws.map((x) => x.id === id ? { ...x, w, h } : x));
 
-  // Icon grid snap helpers
-  const snapIcon = (i: DesktopIcon, idx: number): DesktopIcon => {
-    const col = Math.max(0, Math.min(20, i.x));
-    const maxRow = Math.floor((window.innerHeight - 100) / GRID_H);
-    let row = Math.max(0, Math.min(maxRow, i.y));
-    return { ...i, x: col, y: row };
-  };
-
   const autoArrange = () => {
-    const arr = icons.map((ic, idx) => ({ ...ic, x: 0, y: idx }));
-    setIcons(arr);
+    setIcons([...icons]);
   };
 
   // Touchscreen long-press for right click
@@ -209,7 +206,7 @@ export function PueiOS() {
 
   const desktopCtx = (): any[] => [
     { label: "View ▸ Large icons" },
-    { label: "Sort by ▸ Name", action: () => setIcons([...icons].sort((a, b) => a.label.localeCompare(b.label)).map((i, idx) => ({ ...i, y: idx, x: 0 }))) },
+    { label: "Sort by ▸ Name", action: () => setIcons([...icons].sort((a, b) => a.label.localeCompare(b.label))) },
     { label: "Refresh", action: () => pushNotif("Desktop", "Refreshed.") },
     { sep: true },
     { label: "Paste", disabled: true },
@@ -222,7 +219,7 @@ export function PueiOS() {
   ];
 
   const iconCtx = (icon: DesktopIcon): any[] => [
-    { label: "Open", action: () => openApp(icon.appId) },
+    { label: "Open", action: () => openApp(icon.appId, icon.fileId) },
     { label: "Open With ▸ PueiNet", disabled: true },
     { sep: true },
     { label: "Cut", disabled: true },
@@ -250,7 +247,7 @@ export function PueiOS() {
     return (
       <div className="fixed inset-0 flex flex-col items-center justify-center"
         style={{ background: "radial-gradient(circle at 50% 40%, #0a1a2a, #000)" }}>
-        <div className="boot-logo text-8xl" style={{ color: "#7dd3fc" }}>✦</div>
+        <div className="boot-logo"><PueiLogoSvg size={120} glow /></div>
         <div className="text-3xl font-light text-white mt-4 tracking-widest">PueiOS 2</div>
         <div className="text-xs text-cyan-300/60 mt-1">Ultimate Edition · Build 2009.1138</div>
         <div className="mt-10 w-80 h-1.5 rounded-full bg-cyan-900/50 overflow-hidden">
@@ -267,7 +264,7 @@ export function PueiOS() {
     return (
       <div className="fixed inset-0 flex items-center justify-center" style={{ background: "#000" }}>
         <div className="text-center text-cyan-200">
-          <div className="boot-logo text-6xl">✦</div>
+          <div className="boot-logo inline-block"><PueiLogoSvg size={80} glow /></div>
           <div className="mt-4 text-xl">Shutting down…</div>
           <button className="mt-8 aero-button rounded px-4 py-2" onClick={() => { setPhase("boot"); setBootProgress(0); }}>
             Restart
@@ -294,69 +291,125 @@ export function PueiOS() {
 
   // Login
   if (phase === "login" || locked) {
+    const trySignIn = () => {
+      const u = users.find((x) => x.name === loginUser);
+      if (!u) { blip("error"); setPwError("Unknown user"); return; }
+      if (u.password === pwInput) {
+        blip("start");
+        setCurrentUser(loginUser); setPwInput(""); setPwError("");
+        setLocked(false); setPhase("desktop");
+      } else { blip("error"); setPwError("Wrong password"); }
+    };
+    const createAccount = () => {
+      const name = newAcc.name.trim();
+      if (!name) { setPwError("Pick a name"); return; }
+      if (users.some((u) => u.name === name)) { setPwError("Name already exists"); return; }
+      const nu: User = { name, password: newAcc.password, avatar: newAcc.avatar || "🧑", color: newAcc.color || "200" };
+      const next = [...users, nu];
+      setUsers(next);
+      setLoginUser(name);
+      setCreating(false);
+      setNewAcc({ name: "", password: "", avatar: "🧑", color: "200" });
+      setPwError("");
+      blip("notify");
+    };
+    const activeUser = users.find((u) => u.name === loginUser);
     return (
       <div className="fixed inset-0 flex flex-col items-center justify-center"
         style={{ background: "linear-gradient(135deg, oklch(0.3 0.1 220), oklch(0.15 0.08 250))" }}>
-        <div className="absolute top-6 left-6 text-white/70 text-sm">
-          {locked ? "Locked" : "Welcome to PueiOS 2"}
+        <div className="absolute top-6 left-6 text-white/70 text-sm flex items-center gap-2">
+          <PueiLogoSvg size={28} /> {locked ? "Locked" : "Welcome to PueiOS 2"}
         </div>
-        <div className="absolute top-6 right-6 text-white/70 text-sm">
-          {now.toLocaleString()}
-        </div>
-        <div className="grid grid-cols-3 gap-6 mb-8">
-          {DEFAULT_USERS.map((u) => (
-            <button key={u.name} onClick={() => { setLoginUser(u.name); setPwError(""); }}
-              className="flex flex-col items-center gap-2 p-4 rounded-xl"
-              style={{
-                background: loginUser === u.name ? "rgba(255,255,255,0.15)" : "transparent",
-                outline: loginUser === u.name ? "2px solid white" : "none",
-              }}>
-              <div className="w-20 h-20 rounded-xl flex items-center justify-center text-5xl"
-                style={{ background: `linear-gradient(135deg, oklch(0.7 0.18 ${u.color}), oklch(0.45 0.2 ${u.color}))`, boxShadow: "0 6px 20px rgba(0,0,0,0.4)" }}>
-                {u.avatar}
+        <div className="absolute top-6 right-6 text-white/70 text-sm">{now.toLocaleString()}</div>
+
+        {!creating ? (
+          <>
+            <div className="grid gap-6 mb-8" style={{ gridTemplateColumns: `repeat(${Math.min(users.length, 4)}, minmax(0, 1fr))` }}>
+              {users.map((u) => (
+                <button key={u.name} onClick={() => { setLoginUser(u.name); setPwError(""); setPwInput(""); }}
+                  className="flex flex-col items-center gap-2 p-4 rounded-xl"
+                  style={{
+                    background: loginUser === u.name ? "rgba(255,255,255,0.15)" : "transparent",
+                    outline: loginUser === u.name ? "2px solid white" : "none",
+                  }}>
+                  <div className="w-20 h-20 rounded-xl flex items-center justify-center text-5xl"
+                    style={{ background: `linear-gradient(135deg, oklch(0.7 0.18 ${u.color}), oklch(0.45 0.2 ${u.color}))`, boxShadow: "0 6px 20px rgba(0,0,0,0.4)" }}>
+                    {u.avatar}
+                  </div>
+                  <div className="text-white text-sm font-medium">{u.name}</div>
+                </button>
+              ))}
+              {!locked && (
+                <button onClick={() => { setCreating(true); setPwError(""); }}
+                  className="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-dashed border-white/30 hover:border-white/60">
+                  <div className="w-20 h-20 rounded-xl flex items-center justify-center text-4xl text-white/70">＋</div>
+                  <div className="text-white/80 text-sm font-medium">New account</div>
+                </button>
+              )}
+            </div>
+            <div className="aero-glass rounded-lg p-4 w-80">
+              <div className="text-sm font-medium mb-2">{loginUser}</div>
+              <input type="password" value={pwInput} onChange={(e) => setPwInput(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") trySignIn(); }}
+                placeholder={activeUser?.password ? "Password" : "Press Enter (no password)"}
+                className="w-full px-3 py-2 rounded text-sm outline-none"
+                style={{ background: "white", color: "#111" }} />
+              {pwError && <div className="text-red-400 text-xs mt-1">{pwError}</div>}
+              <label className="flex items-center gap-2 text-xs mt-2">
+                <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} />
+                Remember me
+              </label>
+              <div className="flex gap-2 mt-3">
+                <button className="aero-button rounded px-3 py-1 text-sm flex-1" onClick={trySignIn}>Sign in →</button>
+                <button className="aero-button rounded px-3 py-1 text-sm" onClick={() => setPhase("recovery")}>Recovery</button>
               </div>
-              <div className="text-white text-sm font-medium">{u.name}</div>
-            </button>
-          ))}
-        </div>
-        <div className="aero-glass rounded-lg p-4 w-80">
-          <div className="text-sm font-medium mb-2">{loginUser}</div>
-          <input type="password" value={pwInput} onChange={(e) => setPwInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                const u = DEFAULT_USERS.find((x) => x.name === loginUser)!;
-                if (u.password === pwInput) {
-                  blip("start");
-                  setCurrentUser(loginUser); setPwInput(""); setPwError("");
-                  setLocked(false); setPhase("desktop");
-                } else {
-                  blip("error"); setPwError("Wrong password");
-                }
-              }
-            }}
-            placeholder={DEFAULT_USERS.find(u => u.name === loginUser)?.password ? "Password" : "Press Enter (no password)"}
-            className="w-full px-3 py-2 rounded text-sm outline-none"
-            style={{ background: "white", color: "#111" }} />
-          {pwError && <div className="text-red-400 text-xs mt-1">{pwError}</div>}
-          <label className="flex items-center gap-2 text-xs mt-2">
-            <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} />
-            Remember me
-          </label>
-          <div className="flex gap-2 mt-3">
-            <button className="aero-button rounded px-3 py-1 text-sm flex-1"
-              onClick={() => {
-                const u = DEFAULT_USERS.find((x) => x.name === loginUser)!;
-                if (u.password === pwInput) {
-                  blip("start");
-                  setCurrentUser(loginUser); setPwInput(""); setPwError("");
-                  setLocked(false); setPhase("desktop");
-                } else { blip("error"); setPwError("Wrong password"); }
-              }}>
-              Sign in →
-            </button>
-            <button className="aero-button rounded px-3 py-1 text-sm" onClick={() => setPhase("recovery")}>Recovery</button>
+            </div>
+          </>
+        ) : (
+          <div className="aero-glass rounded-lg p-5 w-96 space-y-3">
+            <div className="text-base font-semibold flex items-center gap-2"><PueiLogoSvg size={28} /> Create a new account</div>
+            <div>
+              <label className="text-xs opacity-70">Account name</label>
+              <input value={newAcc.name} onChange={(e) => setNewAcc({ ...newAcc, name: e.target.value })}
+                className="w-full px-3 py-2 rounded text-sm outline-none" style={{ background: "white", color: "#111" }} />
+            </div>
+            <div>
+              <label className="text-xs opacity-70">Password (optional)</label>
+              <input type="password" value={newAcc.password} onChange={(e) => setNewAcc({ ...newAcc, password: e.target.value })}
+                className="w-full px-3 py-2 rounded text-sm outline-none" style={{ background: "white", color: "#111" }} />
+            </div>
+            <div>
+              <label className="text-xs opacity-70">Avatar</label>
+              <div className="flex flex-wrap gap-2 mt-1">
+                {["🧑","👩","🧔","👵","🧑‍💻","🦸","🧙","🐱","🤖","👽","🎩","🌟"].map((a) => (
+                  <button key={a} onClick={() => setNewAcc({ ...newAcc, avatar: a })}
+                    className="w-9 h-9 rounded text-xl flex items-center justify-center"
+                    style={{ background: newAcc.avatar === a ? "var(--gradient-aero)" : "rgba(255,255,255,0.5)" }}>
+                    {a}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <label className="text-xs opacity-70">Tile colour</label>
+              <div className="flex gap-2 mt-1 flex-wrap">
+                {["200","260","320","30","60","130","160","0"].map((c) => (
+                  <button key={c} onClick={() => setNewAcc({ ...newAcc, color: c })}
+                    className="w-8 h-8 rounded-full border-2"
+                    style={{
+                      background: `linear-gradient(135deg, oklch(0.7 0.18 ${c}), oklch(0.45 0.2 ${c}))`,
+                      borderColor: newAcc.color === c ? "white" : "transparent",
+                    }} />
+                ))}
+              </div>
+            </div>
+            {pwError && <div className="text-red-400 text-xs">{pwError}</div>}
+            <div className="flex gap-2 pt-2">
+              <button className="aero-button rounded px-3 py-1 text-sm flex-1" onClick={createAccount}>Create account</button>
+              <button className="aero-button rounded px-3 py-1 text-sm" onClick={() => { setCreating(false); setPwError(""); }}>Cancel</button>
+            </div>
           </div>
-        </div>
+        )}
         <div className="fixed bottom-4 right-4 text-[10px] text-white/40">PueiOS 2 Ultimate · Pre-release watermark</div>
       </div>
     );
@@ -376,26 +429,29 @@ export function PueiOS() {
       onTouchEnd={onTouchEnd}
     >
       {/* Desktop icons */}
-      <div className="absolute top-3 left-3 grid" style={{ gridTemplateColumns: `repeat(8, ${GRID_W}px)`, gap: 2 }}>
-        {icons.map((ic) => (
-          <div
-            key={ic.id}
-            className={`desktop-icon ${selectedIcon === ic.id ? "selected" : ""}`}
-            style={{ gridColumn: ic.x + 1, gridRow: ic.y + 1, height: GRID_H }}
-            onClick={(e) => { e.stopPropagation(); setSelectedIcon(ic.id); }}
-            onDoubleClick={(e) => { e.stopPropagation(); openApp(ic.appId); }}
-            onContextMenu={(e) => {
-              e.preventDefault(); e.stopPropagation();
-              setSelectedIcon(ic.id);
-              setCtxMenu({ x: e.clientX, y: e.clientY, items: iconCtx(ic) });
-            }}
-            onTouchStart={(e) => { e.stopPropagation(); setSelectedIcon(ic.id); onTouchStart(e, iconCtx(ic)); }}
-            onTouchEnd={onTouchEnd}
-          >
-            <div className="flex justify-center mb-1">{appIcon(ic.appId, 44)}</div>
-            <div>{ic.label}</div>
-          </div>
-        ))}
+      <div className="absolute top-3 left-3 grid" style={{ gridTemplateColumns: `repeat(12, ${GRID_W}px)`, gridAutoRows: `${GRID_H}px`, gap: 2 }}>
+        {icons.map((ic, idx) => {
+          const { col, row } = iconGridPos(idx);
+          return (
+            <div
+              key={ic.id}
+              className={`desktop-icon ${selectedIcon === ic.id ? "selected" : ""}`}
+              style={{ gridColumn: col + 1, gridRow: row + 1, height: GRID_H }}
+              onClick={(e) => { e.stopPropagation(); setSelectedIcon(ic.id); }}
+              onDoubleClick={(e) => { e.stopPropagation(); openApp(ic.appId, ic.fileId); }}
+              onContextMenu={(e) => {
+                e.preventDefault(); e.stopPropagation();
+                setSelectedIcon(ic.id);
+                setCtxMenu({ x: e.clientX, y: e.clientY, items: iconCtx(ic) });
+              }}
+              onTouchStart={(e) => { e.stopPropagation(); setSelectedIcon(ic.id); onTouchStart(e, iconCtx(ic)); }}
+              onTouchEnd={onTouchEnd}
+            >
+              <div className="flex justify-center mb-1">{appIcon(ic.appId, 44)}</div>
+              <div>{ic.label}</div>
+            </div>
+          );
+        })}
       </div>
 
       {/* Widgets */}
@@ -423,7 +479,9 @@ export function PueiOS() {
             onResize={(ww, hh) => resizeWin(w.id, ww, hh)}>
             <AppRenderer appId={w.appId} theme={theme} setTheme={setTheme}
               openApp={openApp} wallpaper={theme.wallpaper} setWallpaper={setWallpaper}
-              currentUser={currentUser} />
+              currentUser={currentUser} fileId={w.fileId} users={users}
+              onCreateShortcut={(label, fileId) => setIcons((cur) => [...cur, { id: `f-${fileId}`, label, appId: w.appId, fileId }])} />
+
           </AppWindow>
         );
       })}
@@ -463,7 +521,7 @@ export function PueiOS() {
           <div className="aero-titlebar px-4 py-2 flex items-center gap-2">
             <div className="w-9 h-9 rounded-full flex items-center justify-center text-xl"
               style={{ background: "var(--gradient-aero)" }}>
-              {DEFAULT_USERS.find(u => u.name === currentUser)?.avatar || "👤"}
+              {users.find(u => u.name === currentUser)?.avatar || "👤"}
             </div>
             <div className="font-semibold">{currentUser}</div>
           </div>
@@ -512,9 +570,9 @@ export function PueiOS() {
         onMouseDown={(e) => e.stopPropagation()}
         onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); setCtxMenu({ x: e.clientX, y: e.clientY, items: taskbarCtx() }); }}>
         {/* Start orb */}
-        <button className="aero-start-orb w-10 h-10 rounded-full flex items-center justify-center text-white font-bold mx-1"
+        <button className="aero-start-orb w-10 h-10 rounded-full flex items-center justify-center mx-1 overflow-hidden"
           onClick={(e) => { e.stopPropagation(); blip("click"); setStartOpen(!startOpen); setShowCalendar(false); }}>
-          ✦
+          <PueiLogoSvg size={26} />
         </button>
         {/* Quick launch */}
         {(["file-explorer", "pueinet", "puei-messenger"] as AppId[]).map((id) => (
