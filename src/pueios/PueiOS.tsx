@@ -146,9 +146,9 @@ export function PueiOS() {
     setWindows((ws) => ws.map((w) => w.id === id ? { ...w, z: zCounter + 1, minimized: false } : w));
   }, [zCounter]);
 
-  const openApp = useCallback((appId: AppId) => {
+  const openApp = useCallback((appId: AppId, fileId?: string) => {
     blip("click");
-    const existing = windows.find((w) => w.appId === appId);
+    const existing = windows.find((w) => w.appId === appId && w.fileId === fileId);
     if (existing) { focusWin(existing.id); return; }
     const size = APP_SIZES[appId] || { w: 560, h: 420 };
     const id = `w-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
@@ -157,7 +157,7 @@ export function PueiOS() {
     setZCounter((z) => z + 1);
     setWindows((ws) => [...ws, {
       id, appId, title: APP_TITLES[appId], x, y, w: size.w, h: size.h,
-      z: zCounter + 1, minimized: false, maximized: false,
+      z: zCounter + 1, minimized: false, maximized: false, fileId,
     }]);
   }, [windows, zCounter, focusWin]);
 
@@ -183,17 +183,8 @@ export function PueiOS() {
   const resizeWin = (id: string, w: number, h: number) =>
     setWindows((ws) => ws.map((x) => x.id === id ? { ...x, w, h } : x));
 
-  // Icon grid snap helpers
-  const snapIcon = (i: DesktopIcon, idx: number): DesktopIcon => {
-    const col = Math.max(0, Math.min(20, i.x));
-    const maxRow = Math.floor((window.innerHeight - 100) / GRID_H);
-    let row = Math.max(0, Math.min(maxRow, i.y));
-    return { ...i, x: col, y: row };
-  };
-
   const autoArrange = () => {
-    const arr = icons.map((ic, idx) => ({ ...ic, x: 0, y: idx }));
-    setIcons(arr);
+    setIcons([...icons]);
   };
 
   // Touchscreen long-press for right click
