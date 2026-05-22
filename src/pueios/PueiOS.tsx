@@ -206,7 +206,7 @@ export function PueiOS() {
 
   const desktopCtx = (): any[] => [
     { label: "View ▸ Large icons" },
-    { label: "Sort by ▸ Name", action: () => setIcons([...icons].sort((a, b) => a.label.localeCompare(b.label)).map((i, idx) => ({ ...i, y: idx, x: 0 }))) },
+    { label: "Sort by ▸ Name", action: () => setIcons([...icons].sort((a, b) => a.label.localeCompare(b.label))) },
     { label: "Refresh", action: () => pushNotif("Desktop", "Refreshed.") },
     { sep: true },
     { label: "Paste", disabled: true },
@@ -219,7 +219,7 @@ export function PueiOS() {
   ];
 
   const iconCtx = (icon: DesktopIcon): any[] => [
-    { label: "Open", action: () => openApp(icon.appId) },
+    { label: "Open", action: () => openApp(icon.appId, icon.fileId) },
     { label: "Open With ▸ PueiNet", disabled: true },
     { sep: true },
     { label: "Cut", disabled: true },
@@ -373,26 +373,29 @@ export function PueiOS() {
       onTouchEnd={onTouchEnd}
     >
       {/* Desktop icons */}
-      <div className="absolute top-3 left-3 grid" style={{ gridTemplateColumns: `repeat(8, ${GRID_W}px)`, gap: 2 }}>
-        {icons.map((ic) => (
-          <div
-            key={ic.id}
-            className={`desktop-icon ${selectedIcon === ic.id ? "selected" : ""}`}
-            style={{ gridColumn: ic.x + 1, gridRow: ic.y + 1, height: GRID_H }}
-            onClick={(e) => { e.stopPropagation(); setSelectedIcon(ic.id); }}
-            onDoubleClick={(e) => { e.stopPropagation(); openApp(ic.appId); }}
-            onContextMenu={(e) => {
-              e.preventDefault(); e.stopPropagation();
-              setSelectedIcon(ic.id);
-              setCtxMenu({ x: e.clientX, y: e.clientY, items: iconCtx(ic) });
-            }}
-            onTouchStart={(e) => { e.stopPropagation(); setSelectedIcon(ic.id); onTouchStart(e, iconCtx(ic)); }}
-            onTouchEnd={onTouchEnd}
-          >
-            <div className="flex justify-center mb-1">{appIcon(ic.appId, 44)}</div>
-            <div>{ic.label}</div>
-          </div>
-        ))}
+      <div className="absolute top-3 left-3 grid" style={{ gridTemplateColumns: `repeat(12, ${GRID_W}px)`, gridAutoRows: `${GRID_H}px`, gap: 2 }}>
+        {icons.map((ic, idx) => {
+          const { col, row } = iconGridPos(idx);
+          return (
+            <div
+              key={ic.id}
+              className={`desktop-icon ${selectedIcon === ic.id ? "selected" : ""}`}
+              style={{ gridColumn: col + 1, gridRow: row + 1, height: GRID_H }}
+              onClick={(e) => { e.stopPropagation(); setSelectedIcon(ic.id); }}
+              onDoubleClick={(e) => { e.stopPropagation(); openApp(ic.appId, ic.fileId); }}
+              onContextMenu={(e) => {
+                e.preventDefault(); e.stopPropagation();
+                setSelectedIcon(ic.id);
+                setCtxMenu({ x: e.clientX, y: e.clientY, items: iconCtx(ic) });
+              }}
+              onTouchStart={(e) => { e.stopPropagation(); setSelectedIcon(ic.id); onTouchStart(e, iconCtx(ic)); }}
+              onTouchEnd={onTouchEnd}
+            >
+              <div className="flex justify-center mb-1">{appIcon(ic.appId, 44)}</div>
+              <div>{ic.label}</div>
+            </div>
+          );
+        })}
       </div>
 
       {/* Widgets */}
