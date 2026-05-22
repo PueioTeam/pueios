@@ -1,27 +1,32 @@
 import { useEffect, useRef, useState } from "react";
-import type { AppId, Theme, WallpaperId } from "./state";
-import { blip } from "./state";
+import type { AppId, Theme, User, WallpaperId, SavedFile, ChatMessage } from "./state";
+import {
+  blip, loadFiles, upsertFile, deleteFile, getFile, appendChat, loadChat,
+} from "./state";
 
-export function AppRenderer({
-  appId, theme, setTheme, openApp, wallpaper, setWallpaper, currentUser,
-}: {
+export type AppRendererProps = {
   appId: AppId;
   theme: Theme;
   setTheme: (t: Theme) => void;
-  openApp: (id: AppId) => void;
+  openApp: (id: AppId, fileId?: string) => void;
   wallpaper: WallpaperId;
   setWallpaper: (w: WallpaperId) => void;
   currentUser: string;
-}) {
-  switch (appId) {
-    case "settings": return <SettingsApp theme={theme} setTheme={setTheme} wallpaper={wallpaper} setWallpaper={setWallpaper} openApp={openApp} />;
+  users: User[];
+  fileId?: string;
+  onCreateShortcut: (label: string, fileId: string) => void;
+};
+
+export function AppRenderer(p: AppRendererProps) {
+  switch (p.appId) {
+    case "settings": return <SettingsApp theme={p.theme} setTheme={p.setTheme} wallpaper={p.wallpaper} setWallpaper={p.setWallpaper} openApp={p.openApp} />;
     case "about": return <AboutApp />;
-    case "notepad": return <NotepadApp />;
+    case "notepad": return <NotepadApp fileId={p.fileId} onCreateShortcut={p.onCreateShortcut} />;
     case "calculator": return <CalculatorApp />;
-    case "puei-paint": return <PaintApp />;
+    case "puei-paint": return <PaintApp fileId={p.fileId} onCreateShortcut={p.onCreateShortcut} />;
     case "pueinet": return <PueiNetApp />;
-    case "puei-messenger": return <MessengerApp user={currentUser} />;
-    case "file-explorer": return <FileExplorerApp openApp={openApp} />;
+    case "puei-messenger": return <MessengerApp user={p.currentUser} users={p.users} />;
+    case "file-explorer": return <FileExplorerApp openApp={p.openApp} />;
   }
 }
 
@@ -40,16 +45,13 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp }: any)
     <div className="flex h-full">
       <div className="w-48 p-2 border-r" style={{ background: "var(--glass)" }}>
         {tabs.map(([k, l]) => (
-          <div key={k}
-            onClick={() => { setTab(k); blip("click"); }}
+          <div key={k} onClick={() => { setTab(k); blip("click"); }}
             className="px-3 py-2 rounded-md cursor-pointer text-sm mb-1"
             style={{
               background: tab === k ? "var(--gradient-aero)" : "transparent",
               color: tab === k ? "white" : "inherit",
               boxShadow: tab === k ? "inset 0 1px 0 rgba(255,255,255,0.4)" : undefined,
-            }}>
-            {l}
-          </div>
+            }}>{l}</div>
         ))}
       </div>
       <div className="flex-1 p-6 overflow-auto">
@@ -109,16 +111,12 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp }: any)
           </div>
         )}
         {tab === "touch" && (
-          <div>
-            <h2 className="text-xl font-semibold mb-4">Touchscreen</h2>
-            <p className="text-sm opacity-80">Hold for <b>0.6s</b> to trigger right-click. Drag windows by their title bar. Multi-touch supported.</p>
-          </div>
+          <div><h2 className="text-xl font-semibold mb-4">Touchscreen</h2>
+            <p className="text-sm opacity-80">Hold for <b>0.6s</b> to trigger right-click. Drag windows by their title bar. Multi-touch supported.</p></div>
         )}
         {tab === "accessibility" && (
-          <div>
-            <h2 className="text-xl font-semibold mb-4">Accessibility</h2>
-            <p className="text-sm opacity-80">High-contrast modes coming soon. Reduce motion via the Animations toggle on Personalize.</p>
-          </div>
+          <div><h2 className="text-xl font-semibold mb-4">Accessibility</h2>
+            <p className="text-sm opacity-80">High-contrast modes coming soon. Reduce motion via the Animations toggle on Personalize.</p></div>
         )}
         {tab === "performance" && (
           <div>
@@ -129,9 +127,7 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp }: any)
           </div>
         )}
         {tab === "about" && (
-          <div>
-            <button className="aero-button rounded-md px-4 py-2" onClick={() => openApp("about")}>Open About PueiOS →</button>
-          </div>
+          <div><button className="aero-button rounded-md px-4 py-2" onClick={() => openApp("about")}>Open About PueiOS →</button></div>
         )}
       </div>
     </div>
@@ -141,7 +137,6 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp }: any)
 function AboutApp() {
   return (
     <div className="p-8 text-center">
-      <div className="boot-logo inline-block text-7xl mb-4">✦</div>
       <h1 className="text-3xl font-bold" style={{ color: "var(--accent)" }}>PueiOS 2</h1>
       <div className="text-sm opacity-80">Ultimate Edition · Build 2009.1138 (beta)</div>
       <div className="mt-6 mx-auto max-w-md text-left aero-glass-light p-4 rounded-lg">
@@ -157,11 +152,26 @@ function AboutApp() {
   );
 }
 
-function NotepadApp() {
-  const [text, setText] = useState("Welcome to Puei Notepad.\n\nType anything...");
+function NotepadApp({ fileId, onCreateShortcut }: { fileId?: string; onCreateShortcut: (l: string, id: string) => void }) {
+  const initial = fileId ? getFile(fileId) : undefined;
+  const [text, setText] = useState(initial?.content ?? "Welcome to Puei Notepad.\n\nType anything...");
+  const [name, setName] = useState(initial?.name ?? "Untitled.txt");
+  const [savedId, setSavedId] = useState<string | undefined>(initial?.id);
+  const [status, setStatus] = useState("");
+  const save = () => {
+    const id = savedId || `f-${Date.now().toString(36)}`;
+    upsertFile({ id, name, type: "text", content: text, updatedAt: Date.now() });
+    setSavedId(id); setStatus("Saved ✓"); blip("notify");
+    setTimeout(() => setStatus(""), 1500);
+  };
   return (
     <div className="flex flex-col h-full">
-      <div className="aero-titlebar text-xs px-2 py-1">File · Edit · Format · View · Help</div>
+      <div className="aero-titlebar text-xs px-2 py-1 flex items-center gap-2">
+        <input value={name} onChange={(e) => setName(e.target.value)} className="px-2 py-0.5 rounded text-xs" style={{ background: "white", color: "#111", width: 180 }} />
+        <button className="aero-button rounded px-2 py-0.5" onClick={save}>💾 Save</button>
+        <button className="aero-button rounded px-2 py-0.5" onClick={() => { save(); savedId && onCreateShortcut(name, savedId); }}>📌 Save & shortcut</button>
+        <span className="opacity-70">{status}</span>
+      </div>
       <textarea value={text} onChange={(e) => setText(e.target.value)}
         className="flex-1 p-3 font-mono text-sm outline-none resize-none"
         style={{ background: "white", color: "#111" }} />
@@ -206,32 +216,51 @@ function CalculatorApp() {
   );
 }
 
-function PaintApp() {
+function PaintApp({ fileId, onCreateShortcut }: { fileId?: string; onCreateShortcut: (l: string, id: string) => void }) {
+  const initial = fileId ? getFile(fileId) : undefined;
   const cv = useRef<HTMLCanvasElement>(null);
   const draw = useRef(false);
   const [color, setColor] = useState("#1ea8ff");
   const [size, setSize] = useState(4);
+  const [name, setName] = useState(initial?.name ?? "Untitled.png");
+  const [savedId, setSavedId] = useState<string | undefined>(initial?.id);
+  const [status, setStatus] = useState("");
   useEffect(() => {
     const c = cv.current!; const ctx = c.getContext("2d")!;
     ctx.fillStyle = "white"; ctx.fillRect(0, 0, c.width, c.height);
+    if (initial?.type === "image" && initial.content) {
+      const img = new Image();
+      img.onload = () => ctx.drawImage(img, 0, 0);
+      img.src = initial.content;
+    }
   }, []);
   const start = (e: React.PointerEvent) => {
     draw.current = true;
     const c = cv.current!; const r = c.getBoundingClientRect();
     const ctx = c.getContext("2d")!; ctx.beginPath();
-    ctx.moveTo(e.clientX - r.left, e.clientY - r.top);
+    ctx.moveTo((e.clientX - r.left) * (c.width / r.width), (e.clientY - r.top) * (c.height / r.height));
   };
   const move = (e: React.PointerEvent) => {
     if (!draw.current) return;
     const c = cv.current!; const r = c.getBoundingClientRect();
     const ctx = c.getContext("2d")!;
     ctx.strokeStyle = color; ctx.lineWidth = size; ctx.lineCap = "round";
-    ctx.lineTo(e.clientX - r.left, e.clientY - r.top); ctx.stroke();
+    ctx.lineTo((e.clientX - r.left) * (c.width / r.width), (e.clientY - r.top) * (c.height / r.height)); ctx.stroke();
   };
   const end = () => { draw.current = false; };
+  const save = () => {
+    const data = cv.current!.toDataURL("image/png");
+    const id = savedId || `f-${Date.now().toString(36)}`;
+    upsertFile({ id, name, type: "image", content: data, updatedAt: Date.now() });
+    setSavedId(id); setStatus("Saved ✓"); blip("notify");
+    setTimeout(() => setStatus(""), 1500);
+  };
   return (
     <div className="flex flex-col h-full">
-      <div className="aero-titlebar flex gap-2 px-2 py-1 items-center text-xs">
+      <div className="aero-titlebar flex flex-wrap gap-2 px-2 py-1 items-center text-xs">
+        <input value={name} onChange={(e) => setName(e.target.value)} className="px-2 py-0.5 rounded" style={{ background: "white", color: "#111", width: 140 }} />
+        <button className="aero-button px-2 py-0.5 rounded" onClick={save}>💾 Save</button>
+        <button className="aero-button px-2 py-0.5 rounded" onClick={() => { save(); savedId && onCreateShortcut(name, savedId); }}>📌 Shortcut</button>
         <button className="aero-button px-2 py-0.5 rounded" onClick={() => {
           const c = cv.current!; const ctx = c.getContext("2d")!;
           ctx.fillStyle = "white"; ctx.fillRect(0, 0, c.width, c.height);
@@ -242,6 +271,7 @@ function PaintApp() {
         {["#000000", "#ff0000", "#ffaa00", "#00cc44", "#1ea8ff", "#aa00ff", "#ffffff"].map((c) => (
           <button key={c} onClick={() => setColor(c)} style={{ background: c, width: 18, height: 18, border: "1px solid #666" }} />
         ))}
+        <span className="opacity-70 ml-auto">{status}</span>
       </div>
       <canvas ref={cv} width={800} height={500}
         onPointerDown={start} onPointerMove={move} onPointerUp={end} onPointerLeave={end}
@@ -308,43 +338,77 @@ function PueiNetApp() {
   );
 }
 
-function MessengerApp({ user }: { user: string }) {
-  const contacts = [
-    { name: "Pueian Rosos", status: "Online", emoji: "🟢" },
-    { name: "Pueian Pueiescu", status: "Away", emoji: "🟡" },
-    { name: "Pueian Lemne", status: "Busy", emoji: "🔴" },
-    { name: "Puei Bot", status: "Online", emoji: "🟢" },
-  ];
+function MessengerApp({ user, users }: { user: string; users: User[] }) {
+  // Contacts = every other account on this machine
+  const contacts = users.filter((u) => u.name !== user);
   const [active, setActive] = useState(0);
-  const [msgs, setMsgs] = useState<{ from: string; text: string }[]>([
-    { from: "Pueian Rosos", text: "hi! welcome to puei messenger ✨" },
-  ]);
+  const [allMsgs, setAllMsgs] = useState<ChatMessage[]>(() => loadChat());
   const [text, setText] = useState("");
+
+  // Cross-tab updates
+  useEffect(() => {
+    const fn = () => setAllMsgs(loadChat());
+    window.addEventListener("pueios-chat", fn);
+    window.addEventListener("storage", fn);
+    return () => {
+      window.removeEventListener("pueios-chat", fn);
+      window.removeEventListener("storage", fn);
+    };
+  }, []);
+
+  if (contacts.length === 0) {
+    return (
+      <div className="p-6 text-sm text-center opacity-80">
+        <div className="text-4xl mb-2">💬</div>
+        <div className="font-semibold mb-1">No-one to chat with yet</div>
+        <div>Create another account from the login screen, then sign in on another tab/window to chat in real time.</div>
+      </div>
+    );
+  }
+
+  const partner = contacts[active];
+  const conversation = allMsgs.filter(
+    (m) =>
+      (m.from === user && m.to === partner.name) ||
+      (m.from === partner.name && m.to === user)
+  );
+
   const send = () => {
     if (!text.trim()) return;
     blip("click");
-    setMsgs([...msgs, { from: user, text }]);
-    const reply = ["lol", "ok :)", "brb", "have you tried turning Aero off and on?", "puei sends his regards"][Math.floor(Math.random() * 5)];
-    setTimeout(() => setMsgs((m) => [...m, { from: contacts[active].name, text: reply }]), 700 + Math.random() * 800);
+    const msg: ChatMessage = {
+      id: `m-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      from: user, to: partner.name, text, at: Date.now(),
+    };
+    appendChat(msg);
+    setAllMsgs(loadChat());
     setText("");
   };
+
   return (
     <div className="flex h-full">
       <div className="w-48 border-r overflow-auto" style={{ background: "var(--glass)" }}>
-        {contacts.map((c, i) => (
-          <div key={c.name} onClick={() => setActive(i)}
-            className="px-3 py-2 cursor-pointer text-sm"
-            style={{ background: active === i ? "var(--gradient-aero)" : "transparent", color: active === i ? "white" : undefined }}>
-            <div>{c.emoji} {c.name}</div>
-            <div className="text-xs opacity-70">{c.status}</div>
-          </div>
-        ))}
+        <div className="px-3 py-2 text-xs opacity-70 font-semibold">Signed in as {user}</div>
+        {contacts.map((c, i) => {
+          const last = [...allMsgs].reverse().find(
+            (m) => (m.from === user && m.to === c.name) || (m.from === c.name && m.to === user)
+          );
+          return (
+            <div key={c.name} onClick={() => setActive(i)}
+              className="px-3 py-2 cursor-pointer text-sm"
+              style={{ background: active === i ? "var(--gradient-aero)" : "transparent", color: active === i ? "white" : undefined }}>
+              <div>{c.avatar} {c.name}</div>
+              <div className="text-xs opacity-70 truncate">{last ? last.text : "Say hi 👋"}</div>
+            </div>
+          );
+        })}
       </div>
       <div className="flex-1 flex flex-col">
-        <div className="aero-titlebar px-3 py-1.5 text-sm font-semibold">{contacts[active].name}</div>
+        <div className="aero-titlebar px-3 py-1.5 text-sm font-semibold">{partner.avatar} {partner.name}</div>
         <div className="flex-1 p-3 overflow-auto space-y-2 text-sm">
-          {msgs.map((m, i) => (
-            <div key={i} className={m.from === user ? "text-right" : "text-left"}>
+          {conversation.length === 0 && <div className="text-xs opacity-60 text-center">No messages yet. Sign in as {partner.name} in another tab to chat back!</div>}
+          {conversation.map((m) => (
+            <div key={m.id} className={m.from === user ? "text-right" : "text-left"}>
               <div className="inline-block px-3 py-1.5 rounded-2xl max-w-xs"
                 style={{
                   background: m.from === user ? "var(--gradient-aero)" : "var(--glass)",
@@ -361,7 +425,7 @@ function MessengerApp({ user }: { user: string }) {
             onKeyDown={(e) => e.key === "Enter" && send()}
             className="flex-1 px-3 py-1.5 rounded-md outline-none text-sm"
             style={{ background: "white", border: "1px solid var(--border)" }}
-            placeholder="Type a message..." />
+            placeholder={`Message ${partner.name}…`} />
           <button className="aero-button rounded-md px-3" onClick={send}>Send</button>
         </div>
       </div>
@@ -369,50 +433,104 @@ function MessengerApp({ user }: { user: string }) {
   );
 }
 
-function FileExplorerApp({ openApp }: { openApp: (id: AppId) => void }) {
+function FileExplorerApp({ openApp }: { openApp: (id: AppId, fileId?: string) => void }) {
+  const [files, setFiles] = useState<SavedFile[]>(() => loadFiles());
+  const [folder, setFolder] = useState<"home" | "documents" | "pictures" | "apps">("home");
+  useEffect(() => {
+    const fn = () => setFiles(loadFiles());
+    window.addEventListener("pueios-files-changed", fn);
+    window.addEventListener("storage", fn);
+    return () => {
+      window.removeEventListener("pueios-files-changed", fn);
+      window.removeEventListener("storage", fn);
+    };
+  }, []);
+
   const folders = [
-    { name: "Documents", icon: "📁" },
-    { name: "Pictures", icon: "🖼️" },
-    { name: "Music", icon: "🎵" },
-    { name: "Downloads", icon: "⬇️" },
-    { name: "PueiNet Bookmarks", icon: "🌐" },
+    { id: "documents" as const, name: "Documents", icon: "📁" },
+    { id: "pictures" as const, name: "Pictures", icon: "🖼️" },
+    { id: "apps" as const, name: "Apps", icon: "🧩" },
   ];
   const apps: { name: string; appId: AppId; icon: string }[] = [
     { name: "Puei Paint 2", appId: "puei-paint", icon: "🎨" },
     { name: "Notepad", appId: "notepad", icon: "📝" },
     { name: "Calculator", appId: "calculator", icon: "🧮" },
     { name: "Settings", appId: "settings", icon: "⚙️" },
+    { name: "PueiNet", appId: "pueinet", icon: "🌐" },
+    { name: "Puei Messenger", appId: "puei-messenger", icon: "💬" },
   ];
+
+  const textFiles = files.filter((f) => f.type === "text");
+  const imgFiles = files.filter((f) => f.type === "image");
+
+  const openFile = (f: SavedFile) => openApp(f.type === "text" ? "notepad" : "puei-paint", f.id);
+
   return (
     <div className="flex h-full">
       <div className="w-48 p-2 border-r text-sm" style={{ background: "var(--glass)" }}>
         <div className="font-semibold mb-2 opacity-70 text-xs">FAVORITES</div>
-        {["Desktop", "Documents", "Recent"].map((s) => (
-          <div key={s} className="px-2 py-1 rounded hover:bg-white/30 cursor-pointer">📌 {s}</div>
-        ))}
+        <div onClick={() => setFolder("home")} className="px-2 py-1 rounded hover:bg-white/30 cursor-pointer" style={{ background: folder === "home" ? "rgba(255,255,255,0.4)" : undefined }}>🏠 Home</div>
+        <div onClick={() => setFolder("documents")} className="px-2 py-1 rounded hover:bg-white/30 cursor-pointer" style={{ background: folder === "documents" ? "rgba(255,255,255,0.4)" : undefined }}>📁 Documents</div>
+        <div onClick={() => setFolder("pictures")} className="px-2 py-1 rounded hover:bg-white/30 cursor-pointer" style={{ background: folder === "pictures" ? "rgba(255,255,255,0.4)" : undefined }}>🖼️ Pictures</div>
+        <div onClick={() => setFolder("apps")} className="px-2 py-1 rounded hover:bg-white/30 cursor-pointer" style={{ background: folder === "apps" ? "rgba(255,255,255,0.4)" : undefined }}>🧩 Apps</div>
         <div className="font-semibold mt-3 mb-2 opacity-70 text-xs">COMPUTER</div>
-        {["C:\\ PueiDrive", "D:\\ Data"].map((s) => (
-          <div key={s} className="px-2 py-1 rounded hover:bg-white/30 cursor-pointer">💽 {s}</div>
-        ))}
+        <div className="px-2 py-1 rounded opacity-70">💽 C:\ PueiDrive</div>
       </div>
       <div className="flex-1 p-4 overflow-auto">
-        <div className="text-xs opacity-70 mb-3">Computer › PueiDrive › Users › {/* shown */}You</div>
-        <div className="grid grid-cols-5 gap-3">
-          {folders.map((f) => (
-            <div key={f.name} className="text-center p-2 rounded hover:bg-white/30 cursor-pointer">
-              <div className="text-4xl">{f.icon}</div>
-              <div className="text-xs mt-1">{f.name}</div>
-            </div>
-          ))}
-          {apps.map((a) => (
-            <div key={a.appId} onDoubleClick={() => openApp(a.appId)} onClick={() => blip("hover")}
-              className="text-center p-2 rounded hover:bg-white/30 cursor-pointer">
-              <div className="text-4xl">{a.icon}</div>
-              <div className="text-xs mt-1">{a.name}</div>
-            </div>
-          ))}
-        </div>
+        <div className="text-xs opacity-70 mb-3">Computer › PueiDrive › Users › You › {folder}</div>
+        {folder === "home" && (
+          <div className="grid grid-cols-5 gap-3">
+            {folders.map((f) => (
+              <div key={f.id} onDoubleClick={() => setFolder(f.id)}
+                className="text-center p-2 rounded hover:bg-white/30 cursor-pointer">
+                <div className="text-4xl">{f.icon}</div>
+                <div className="text-xs mt-1">{f.name}</div>
+              </div>
+            ))}
+          </div>
+        )}
+        {folder === "documents" && (
+          <FileGrid files={textFiles} emptyHint="No saved documents. Open Notepad and click Save to create one." openFile={openFile} onDelete={(id) => { deleteFile(id); setFiles(loadFiles()); }} />
+        )}
+        {folder === "pictures" && (
+          <FileGrid files={imgFiles} emptyHint="No saved pictures. Open Puei Paint 2 and click Save to create one." openFile={openFile} onDelete={(id) => { deleteFile(id); setFiles(loadFiles()); }} />
+        )}
+        {folder === "apps" && (
+          <div className="grid grid-cols-5 gap-3">
+            {apps.map((a) => (
+              <div key={a.appId} onDoubleClick={() => openApp(a.appId)} onClick={() => blip("hover")}
+                className="text-center p-2 rounded hover:bg-white/30 cursor-pointer">
+                <div className="text-4xl">{a.icon}</div>
+                <div className="text-xs mt-1">{a.name}</div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
+    </div>
+  );
+}
+
+function FileGrid({ files, emptyHint, openFile, onDelete }: {
+  files: SavedFile[]; emptyHint: string;
+  openFile: (f: SavedFile) => void; onDelete: (id: string) => void;
+}) {
+  if (files.length === 0) return <div className="text-sm opacity-70 p-6 text-center">{emptyHint}</div>;
+  return (
+    <div className="grid grid-cols-5 gap-3">
+      {files.map((f) => (
+        <div key={f.id} onDoubleClick={() => openFile(f)}
+          className="text-center p-2 rounded hover:bg-white/30 cursor-pointer group relative">
+          {f.type === "image" ? (
+            <img src={f.content} alt={f.name} className="w-12 h-12 mx-auto object-cover rounded shadow" />
+          ) : (
+            <div className="text-4xl">📄</div>
+          )}
+          <div className="text-xs mt-1 truncate">{f.name}</div>
+          <button onClick={(e) => { e.stopPropagation(); onDelete(f.id); }}
+            className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 text-xs text-red-500 px-1">✕</button>
+        </div>
+      ))}
     </div>
   );
 }
