@@ -479,7 +479,9 @@ export function PueiOS() {
             onResize={(ww, hh) => resizeWin(w.id, ww, hh)}>
             <AppRenderer appId={w.appId} theme={theme} setTheme={setTheme}
               openApp={openApp} wallpaper={theme.wallpaper} setWallpaper={setWallpaper}
-              currentUser={currentUser} />
+              currentUser={currentUser} fileId={w.fileId} users={users}
+              onCreateShortcut={(label, fileId) => setIcons((cur) => [...cur, { id: `f-${fileId}`, label, appId: w.appId, fileId }])} />
+
           </AppWindow>
         );
       })}
@@ -519,7 +521,7 @@ export function PueiOS() {
           <div className="aero-titlebar px-4 py-2 flex items-center gap-2">
             <div className="w-9 h-9 rounded-full flex items-center justify-center text-xl"
               style={{ background: "var(--gradient-aero)" }}>
-              {DEFAULT_USERS.find(u => u.name === currentUser)?.avatar || "👤"}
+              {users.find(u => u.name === currentUser)?.avatar || "👤"}
             </div>
             <div className="font-semibold">{currentUser}</div>
           </div>
@@ -568,9 +570,9 @@ export function PueiOS() {
         onMouseDown={(e) => e.stopPropagation()}
         onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); setCtxMenu({ x: e.clientX, y: e.clientY, items: taskbarCtx() }); }}>
         {/* Start orb */}
-        <button className="aero-start-orb w-10 h-10 rounded-full flex items-center justify-center text-white font-bold mx-1"
+        <button className="aero-start-orb w-10 h-10 rounded-full flex items-center justify-center mx-1 overflow-hidden"
           onClick={(e) => { e.stopPropagation(); blip("click"); setStartOpen(!startOpen); setShowCalendar(false); }}>
-          ✦
+          <PueiLogoSvg size={26} />
         </button>
         {/* Quick launch */}
         {(["file-explorer", "pueinet", "puei-messenger"] as AppId[]).map((id) => (
