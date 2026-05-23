@@ -428,19 +428,23 @@ export function PueiOS() {
       </div>,
     ];
 
-    // Drive the installer progress bar — slow, Windows-like, ~25 seconds
+    // Drive the installer progress bar — slow, Windows-like, ~70 seconds with
+    // mandatory "thinking" pauses at the 8 stage boundaries (8, 20, 35, 55, 70, 82, 92).
     if (phase === "install" && installStep === 3 && installProgress < 100) {
       setTimeout(() => {
         setInstallProgress((p) => {
-          // Slower around "phase boundaries" (15, 30, 50, 70, 85) to feel realistic
-          const boundaries = [15, 30, 50, 70, 85];
-          const nearBoundary = boundaries.some((b) => Math.abs(p - b) < 1.5);
-          const inc = nearBoundary ? 0.05 + Math.random() * 0.15 : 0.4 + Math.random() * 1.0;
+          const boundaries = [8, 20, 35, 55, 70, 82, 92];
+          const nearBoundary = boundaries.some((b) => Math.abs(p - b) < 1.2);
+          // Smaller increments overall; tiny near boundaries to simulate
+          // "configuring", "thinking", "optimizing" pauses.
+          const inc = nearBoundary
+            ? 0.02 + Math.random() * 0.08
+            : 0.15 + Math.random() * 0.45;
           const next = Math.min(100, p + inc);
-          if (next >= 100) setTimeout(() => setInstallStep(4), 800);
+          if (next >= 100) setTimeout(() => setInstallStep(4), 1200);
           return next;
         });
-      }, 180);
+      }, 220);
     }
 
     return (
