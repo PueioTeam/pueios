@@ -21,7 +21,7 @@ export type AppRendererProps = {
   folderIconId?: string;
   icons: DesktopIcon[];
   onCreateShortcut: (label: string, fileId: string) => void;
-  installWebApp: (label: string, url: string) => void;
+  installWebApp: (label: string, url: string, iconUrl?: string) => void;
   openWebApp: (url: string, title: string) => void;
   openFolder: (folderIconId: string, title: string) => void;
 };
