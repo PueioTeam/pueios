@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import type { AppId, Theme, User, WallpaperId, SavedFile, ChatMessage } from "./state";
+import type { AppId, Theme, User, WallpaperId, SavedFile, ChatMessage, DesktopIcon, SocialPost } from "./state";
 import {
   blip, loadFiles, upsertFile, deleteFile, getFile, appendChat, loadChat,
+  loadSocial, saveSocial,
 } from "./state";
 
 export type AppRendererProps = {
@@ -13,28 +14,58 @@ export type AppRendererProps = {
   setWallpaper: (w: WallpaperId) => void;
   currentUser: string;
   users: User[];
+  setUsers: (u: User[]) => void;
   fileId?: string;
+  webUrl?: string;
+  folderIconId?: string;
+  icons: DesktopIcon[];
   onCreateShortcut: (label: string, fileId: string) => void;
+  installWebApp: (label: string, url: string) => void;
+  openWebApp: (url: string, title: string) => void;
+  openFolder: (folderIconId: string, title: string) => void;
 };
 
 export function AppRenderer(p: AppRendererProps) {
   switch (p.appId) {
-    case "settings": return <SettingsApp theme={p.theme} setTheme={p.setTheme} wallpaper={p.wallpaper} setWallpaper={p.setWallpaper} openApp={p.openApp} />;
+    case "settings": return <SettingsApp theme={p.theme} setTheme={p.setTheme} wallpaper={p.wallpaper} setWallpaper={p.setWallpaper} openApp={p.openApp} currentUser={p.currentUser} users={p.users} setUsers={p.setUsers} />;
     case "about": return <AboutApp />;
     case "notepad": return <NotepadApp fileId={p.fileId} onCreateShortcut={p.onCreateShortcut} />;
     case "calculator": return <CalculatorApp />;
     case "puei-paint": return <PaintApp fileId={p.fileId} onCreateShortcut={p.onCreateShortcut} />;
     case "pueinet": return <PueiNetApp />;
     case "puei-messenger": return <MessengerApp user={p.currentUser} users={p.users} />;
-    case "file-explorer": return <FileExplorerApp openApp={p.openApp} />;
+    case "file-explorer": return <FileExplorerApp openApp={p.openApp} icons={p.icons} openFolder={p.openFolder} />;
+    case "app-store": return <AppStoreApp installWebApp={p.installWebApp} openApp={p.openApp} />;
+    case "puei-social": return <PueiSocialApp user={p.currentUser} users={p.users} />;
+    case "folder": return <FolderApp folderIconId={p.folderIconId!} icons={p.icons} openApp={p.openApp} openWebApp={p.openWebApp} />;
+    case "web-app": return <WebAppFrame url={p.webUrl!} />;
   }
 }
 
-function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp }: any) {
+function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, currentUser, users, setUsers }: any) {
   const [tab, setTab] = useState("personalize");
+  const [paintImages, setPaintImages] = useState<SavedFile[]>(() => loadFiles().filter((f) => f.type === "image"));
+  useEffect(() => {
+    const fn = () => setPaintImages(loadFiles().filter((f) => f.type === "image"));
+    window.addEventListener("pueios-files-changed", fn);
+    return () => window.removeEventListener("pueios-files-changed", fn);
+  }, []);
+
+  const me: User | undefined = users.find((u: User) => u.name === currentUser);
+  const updateMe = (patch: Partial<User>) => {
+    setUsers(users.map((u: User) => u.name === currentUser ? { ...u, ...patch } : u));
+  };
+  const onAvatarFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0]; if (!f) return;
+    const r = new FileReader();
+    r.onload = () => updateMe({ avatar: String(r.result) });
+    r.readAsDataURL(f);
+  };
+
   const tabs = [
     ["personalize", "🎨 Personalize"],
     ["wallpaper", "🖼️ Wallpaper"],
+    ["account", "👤 Account"],
     ["sound", "🔊 Sound"],
     ["touch", "👆 Touchscreen"],
     ["accessibility", "♿ Accessibility"],
@@ -57,11 +88,10 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp }: any)
       <div className="flex-1 p-6 overflow-auto">
         {tab === "personalize" && (
           <div>
-            <h2 className="text-xl font-semibold mb-4">Personalize PueiOS</h2>
+            <h2 className="text-xl font-semibold mb-4">Personalize PueiOS 2</h2>
             <label className="block mb-3 text-sm">Accent hue ({theme.accentH}°)</label>
             <input type="range" min={0} max={360} value={theme.accentH}
-              onChange={(e) => setTheme({ ...theme, accentH: Number(e.target.value) })}
-              className="w-full" />
+              onChange={(e) => setTheme({ ...theme, accentH: Number(e.target.value) })} className="w-full" />
             <div className="flex gap-2 mt-4 flex-wrap">
               {[200, 220, 260, 290, 320, 0, 30, 60, 130, 160].map((h) => (
                 <button key={h} onClick={() => setTheme({ ...theme, accentH: h })}
@@ -71,16 +101,13 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp }: any)
             </div>
             <div className="mt-6 space-y-3">
               <label className="flex items-center gap-2 text-sm">
-                <input type="checkbox" checked={theme.dark} onChange={(e) => setTheme({ ...theme, dark: e.target.checked })} />
-                Dark mode
+                <input type="checkbox" checked={theme.dark} onChange={(e) => setTheme({ ...theme, dark: e.target.checked })} /> Dark mode
               </label>
               <label className="flex items-center gap-2 text-sm">
-                <input type="checkbox" checked={theme.transparency} onChange={(e) => setTheme({ ...theme, transparency: e.target.checked })} />
-                Aero transparency
+                <input type="checkbox" checked={theme.transparency} onChange={(e) => setTheme({ ...theme, transparency: e.target.checked })} /> Aero transparency
               </label>
               <label className="flex items-center gap-2 text-sm">
-                <input type="checkbox" checked={theme.animations} onChange={(e) => setTheme({ ...theme, animations: e.target.checked })} />
-                Animations & motion
+                <input type="checkbox" checked={theme.animations} onChange={(e) => setTheme({ ...theme, animations: e.target.checked })} /> Animations & motion
               </label>
             </div>
           </div>
@@ -88,6 +115,7 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp }: any)
         {tab === "wallpaper" && (
           <div>
             <h2 className="text-xl font-semibold mb-4">Wallpaper</h2>
+            <div className="text-xs opacity-70 mb-2">Built-in</div>
             <div className="grid grid-cols-2 gap-3">
               {(["default", "bliss", "aurora", "sunset"] as WallpaperId[]).map((w) => (
                 <button key={w} onClick={() => setWallpaper(w)}
@@ -97,6 +125,68 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp }: any)
                 </button>
               ))}
             </div>
+            <div className="text-xs opacity-70 mt-5 mb-2">From Puei Paint 2</div>
+            {paintImages.length === 0 ? (
+              <div className="text-sm opacity-60">No Paint files yet. Save an image in Puei Paint 2 and it will appear here.</div>
+            ) : (
+              <div className="grid grid-cols-3 gap-3">
+                {paintImages.map((f) => {
+                  const id = `custom:${f.id}`;
+                  return (
+                    <button key={f.id} onClick={() => setWallpaper(id)}
+                      className="h-24 rounded-lg border-2 overflow-hidden relative"
+                      style={{ borderColor: wallpaper === id ? "white" : "transparent", boxShadow: wallpaper === id ? "0 0 0 3px var(--accent)" : undefined }}>
+                      <img src={f.content} alt={f.name} className="w-full h-full object-cover" />
+                      <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-[10px] px-1 truncate">{f.name}</div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+        {tab === "account" && (
+          <div>
+            <h2 className="text-xl font-semibold mb-4">Account</h2>
+            {me ? (
+              <div className="space-y-3 max-w-md">
+                <div className="flex items-center gap-3">
+                  <div className="w-20 h-20 rounded-xl overflow-hidden flex items-center justify-center text-4xl"
+                    style={{ background: `linear-gradient(135deg, oklch(0.7 0.18 ${me.color}), oklch(0.45 0.2 ${me.color}))` }}>
+                    {me.avatar.startsWith("data:")
+                      ? <img src={me.avatar} alt="" className="w-full h-full object-cover" />
+                      : me.avatar}
+                  </div>
+                  <div>
+                    <div className="font-semibold">{me.name}</div>
+                    <label className="aero-button inline-block rounded px-3 py-1 text-xs cursor-pointer mt-1">
+                      Upload picture
+                      <input type="file" accept="image/*" className="hidden" onChange={onAvatarFile} />
+                    </label>
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {["🧑","👩","🧔","👵","🧑‍💻","🦸","🧙","🐱","🤖","👽","🎩","🌟"].map((a) => (
+                    <button key={a} onClick={() => updateMe({ avatar: a })}
+                      className="w-9 h-9 rounded text-xl flex items-center justify-center"
+                      style={{ background: me.avatar === a ? "var(--gradient-aero)" : "rgba(255,255,255,0.5)" }}>{a}</button>
+                  ))}
+                </div>
+                <div>
+                  <label className="text-xs opacity-70">Tile colour</label>
+                  <div className="flex gap-2 mt-1 flex-wrap">
+                    {["200","260","320","30","60","130","160","0"].map((c) => (
+                      <button key={c} onClick={() => updateMe({ color: c })}
+                        className="w-8 h-8 rounded-full border-2"
+                        style={{
+                          background: `linear-gradient(135deg, oklch(0.7 0.18 ${c}), oklch(0.45 0.2 ${c}))`,
+                          borderColor: me.color === c ? "white" : "transparent",
+                        }} />
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ) : <div className="text-sm opacity-70">Not signed in.</div>}
           </div>
         )}
         {tab === "sound" && (
@@ -127,7 +217,7 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp }: any)
           </div>
         )}
         {tab === "about" && (
-          <div><button className="aero-button rounded-md px-4 py-2" onClick={() => openApp("about")}>Open About PueiOS →</button></div>
+          <div><button className="aero-button rounded-md px-4 py-2" onClick={() => openApp("about")}>Open About PueiOS 2 →</button></div>
         )}
       </div>
     </div>
@@ -138,15 +228,16 @@ function AboutApp() {
   return (
     <div className="p-8 text-center">
       <h1 className="text-3xl font-bold" style={{ color: "var(--accent)" }}>PueiOS 2</h1>
-      <div className="text-sm opacity-80">Ultimate Edition · Build 2009.1138 (beta)</div>
+      <div className="text-sm opacity-80">Ultimate Edition · Build 2020.1138 (beta)</div>
       <div className="mt-6 mx-auto max-w-md text-left aero-glass-light p-4 rounded-lg">
         <div className="font-semibold mb-2">PueiOS Team</div>
         <div className="text-sm space-y-1">
-          <div>Pueian Rosos — System Architect</div>
+          <div>Pueian Architect — System Architecture</div>
           <div>Pueian Pueiescu — Aero & Visual Design</div>
           <div>Pueian Lemne — Mascot & Sound Engineering</div>
         </div>
-        <div className="text-xs opacity-60 mt-4">© 2009–2012 Pueian Software Initiative. All rights remembered.</div>
+        <div className="text-xs opacity-60 mt-4">© 2020 Pueian Software Initiative. All rights remembered.</div>
+        <div className="text-xs opacity-60 mt-2">Security key for this build: <b>puei</b></div>
       </div>
     </div>
   );
@@ -163,13 +254,24 @@ function NotepadApp({ fileId, onCreateShortcut }: { fileId?: string; onCreateSho
     upsertFile({ id, name, type: "text", content: text, updatedAt: Date.now() });
     setSavedId(id); setStatus("Saved ✓"); blip("notify");
     setTimeout(() => setStatus(""), 1500);
+    return id;
+  };
+  const open = () => {
+    const all = loadFiles().filter((f) => f.type === "text");
+    if (all.length === 0) { alert("No saved documents yet."); return; }
+    const pick = prompt("Open file — type a name from:\n" + all.map((f) => f.name).join("\n"), all[0].name);
+    if (!pick) return;
+    const f = all.find((x) => x.name === pick);
+    if (!f) { alert("Not found"); return; }
+    setText(f.content); setName(f.name); setSavedId(f.id);
   };
   return (
     <div className="flex flex-col h-full">
       <div className="aero-titlebar text-xs px-2 py-1 flex items-center gap-2">
         <input value={name} onChange={(e) => setName(e.target.value)} className="px-2 py-0.5 rounded text-xs" style={{ background: "white", color: "#111", width: 180 }} />
         <button className="aero-button rounded px-2 py-0.5" onClick={save}>💾 Save</button>
-        <button className="aero-button rounded px-2 py-0.5" onClick={() => { save(); savedId && onCreateShortcut(name, savedId); }}>📌 Save & shortcut</button>
+        <button className="aero-button rounded px-2 py-0.5" onClick={open}>📂 Open</button>
+        <button className="aero-button rounded px-2 py-0.5" onClick={() => { const id = save(); onCreateShortcut(name, id); }}>📌 Save & shortcut</button>
         <span className="opacity-70">{status}</span>
       </div>
       <textarea value={text} onChange={(e) => setText(e.target.value)}
@@ -254,13 +356,27 @@ function PaintApp({ fileId, onCreateShortcut }: { fileId?: string; onCreateShort
     upsertFile({ id, name, type: "image", content: data, updatedAt: Date.now() });
     setSavedId(id); setStatus("Saved ✓"); blip("notify");
     setTimeout(() => setStatus(""), 1500);
+    return id;
+  };
+  const open = () => {
+    const all = loadFiles().filter((f) => f.type === "image");
+    if (all.length === 0) { alert("No saved images yet."); return; }
+    const pick = prompt("Open file — type a name from:\n" + all.map((f) => f.name).join("\n"), all[0].name);
+    if (!pick) return;
+    const f = all.find((x) => x.name === pick);
+    if (!f) return;
+    setName(f.name); setSavedId(f.id);
+    const c = cv.current!; const ctx = c.getContext("2d")!;
+    ctx.fillStyle = "white"; ctx.fillRect(0, 0, c.width, c.height);
+    const img = new Image(); img.onload = () => ctx.drawImage(img, 0, 0); img.src = f.content;
   };
   return (
     <div className="flex flex-col h-full">
       <div className="aero-titlebar flex flex-wrap gap-2 px-2 py-1 items-center text-xs">
         <input value={name} onChange={(e) => setName(e.target.value)} className="px-2 py-0.5 rounded" style={{ background: "white", color: "#111", width: 140 }} />
         <button className="aero-button px-2 py-0.5 rounded" onClick={save}>💾 Save</button>
-        <button className="aero-button px-2 py-0.5 rounded" onClick={() => { save(); savedId && onCreateShortcut(name, savedId); }}>📌 Shortcut</button>
+        <button className="aero-button px-2 py-0.5 rounded" onClick={open}>📂 Open</button>
+        <button className="aero-button px-2 py-0.5 rounded" onClick={() => { const id = save(); onCreateShortcut(name, id); }}>📌 Shortcut</button>
         <button className="aero-button px-2 py-0.5 rounded" onClick={() => {
           const c = cv.current!; const ctx = c.getContext("2d")!;
           ctx.fillStyle = "white"; ctx.fillRect(0, 0, c.width, c.height);
@@ -271,7 +387,7 @@ function PaintApp({ fileId, onCreateShortcut }: { fileId?: string; onCreateShort
         {["#000000", "#ff0000", "#ffaa00", "#00cc44", "#1ea8ff", "#aa00ff", "#ffffff"].map((c) => (
           <button key={c} onClick={() => setColor(c)} style={{ background: c, width: 18, height: 18, border: "1px solid #666" }} />
         ))}
-        <span className="opacity-70 ml-auto">{status}</span>
+        <span className="opacity-70 ml-auto">{status} · Saved images can be set as wallpaper in Settings.</span>
       </div>
       <canvas ref={cv} width={800} height={500}
         onPointerDown={start} onPointerMove={move} onPointerUp={end} onPointerLeave={end}
@@ -288,7 +404,7 @@ function PueiNetApp() {
     "puei://home": (
       <div className="p-8 text-center">
         <h1 className="text-5xl font-bold" style={{ color: "var(--accent)" }}>PueiNet</h1>
-        <p className="opacity-70 mt-2">The retro-futuristic web, circa 2009.</p>
+        <p className="opacity-70 mt-2">The retro-futuristic web, circa 2020.</p>
         <div className="mt-6 grid grid-cols-3 gap-3 max-w-2xl mx-auto">
           {[
             ["puei://news", "📰 PueiNews"],
@@ -303,12 +419,12 @@ function PueiNetApp() {
         </div>
       </div>
     ),
-    "puei://news": <div className="p-6"><h2 className="text-2xl font-bold mb-3">PueiNews</h2><ul className="text-sm space-y-2"><li>• PueiOS 2 ships with new Aero engine</li><li>• Mascot Puei voted "Most Confusing Helper of 2009"</li><li>• Glass blur now uses 40% less RAM</li></ul></div>,
+    "puei://news": <div className="p-6"><h2 className="text-2xl font-bold mb-3">PueiNews</h2><ul className="text-sm space-y-2"><li>• PueiOS 2 Ultimate Edition lands on glassy desktops everywhere</li><li>• Mascot Puei voted "Most Confusing Helper of 2020"</li><li>• Glass blur now uses 40% less RAM</li></ul></div>,
     "puei://search": <div className="p-6"><h2 className="text-2xl font-bold">PueiSearch</h2><input className="mt-3 px-3 py-2 rounded border w-full" placeholder="Search the Puei-net..." /></div>,
     "puei://forum": <div className="p-6"><h2 className="text-2xl font-bold mb-3">PueiForum</h2><p className="text-sm opacity-70">[user1138]: did anyone else's mascot start blinking morse code??</p></div>,
     "puei://games": <div className="p-6"><h2 className="text-2xl font-bold">PueiGames</h2><p className="opacity-70 mt-2">Free Pueilike clones for your enjoyment.</p></div>,
     "puei://mail": <div className="p-6"><h2 className="text-2xl font-bold">PueiMail</h2><p className="text-sm opacity-70 mt-2">📧 You have 1 new message from Pueian Lemne.</p></div>,
-    "puei://about": <div className="p-6"><h2 className="text-2xl font-bold">About PueiNet</h2><p className="text-sm opacity-70 mt-2">A browser for an alternate 2009.</p></div>,
+    "puei://about": <div className="p-6"><h2 className="text-2xl font-bold">About PueiNet</h2><p className="text-sm opacity-70 mt-2">A browser for an alternate 2020.</p></div>,
   };
   const content = fakeSites[url] || <div className="p-6">404 — page not found in this universe.</div>;
   return (
@@ -339,13 +455,10 @@ function PueiNetApp() {
 }
 
 function MessengerApp({ user, users }: { user: string; users: User[] }) {
-  // Contacts = every other account on this machine
   const contacts = users.filter((u) => u.name !== user);
   const [active, setActive] = useState(0);
   const [allMsgs, setAllMsgs] = useState<ChatMessage[]>(() => loadChat());
   const [text, setText] = useState("");
-
-  // Cross-tab updates
   useEffect(() => {
     const fn = () => setAllMsgs(loadChat());
     window.addEventListener("pueios-chat", fn);
@@ -367,22 +480,14 @@ function MessengerApp({ user, users }: { user: string; users: User[] }) {
   }
 
   const partner = contacts[active];
-  const conversation = allMsgs.filter(
-    (m) =>
-      (m.from === user && m.to === partner.name) ||
-      (m.from === partner.name && m.to === user)
-  );
+  const conversation = allMsgs.filter((m) =>
+    (m.from === user && m.to === partner.name) || (m.from === partner.name && m.to === user));
 
   const send = () => {
     if (!text.trim()) return;
     blip("click");
-    const msg: ChatMessage = {
-      id: `m-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-      from: user, to: partner.name, text, at: Date.now(),
-    };
-    appendChat(msg);
-    setAllMsgs(loadChat());
-    setText("");
+    appendChat({ id: `m-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, from: user, to: partner.name, text, at: Date.now() });
+    setAllMsgs(loadChat()); setText("");
   };
 
   return (
@@ -390,21 +495,25 @@ function MessengerApp({ user, users }: { user: string; users: User[] }) {
       <div className="w-48 border-r overflow-auto" style={{ background: "var(--glass)" }}>
         <div className="px-3 py-2 text-xs opacity-70 font-semibold">Signed in as {user}</div>
         {contacts.map((c, i) => {
-          const last = [...allMsgs].reverse().find(
-            (m) => (m.from === user && m.to === c.name) || (m.from === c.name && m.to === user)
-          );
+          const last = [...allMsgs].reverse().find((m) => (m.from === user && m.to === c.name) || (m.from === c.name && m.to === user));
           return (
             <div key={c.name} onClick={() => setActive(i)}
-              className="px-3 py-2 cursor-pointer text-sm"
+              className="px-3 py-2 cursor-pointer text-sm flex items-center gap-2"
               style={{ background: active === i ? "var(--gradient-aero)" : "transparent", color: active === i ? "white" : undefined }}>
-              <div>{c.avatar} {c.name}</div>
-              <div className="text-xs opacity-70 truncate">{last ? last.text : "Say hi 👋"}</div>
+              <div className="w-7 h-7 rounded overflow-hidden flex items-center justify-center text-base"
+                style={{ background: `linear-gradient(135deg, oklch(0.7 0.18 ${c.color}), oklch(0.45 0.2 ${c.color}))` }}>
+                {c.avatar.startsWith("data:") ? <img src={c.avatar} alt="" className="w-full h-full object-cover" /> : c.avatar}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="truncate">{c.name}</div>
+                <div className="text-xs opacity-70 truncate">{last ? last.text : "Say hi 👋"}</div>
+              </div>
             </div>
           );
         })}
       </div>
       <div className="flex-1 flex flex-col">
-        <div className="aero-titlebar px-3 py-1.5 text-sm font-semibold">{partner.avatar} {partner.name}</div>
+        <div className="aero-titlebar px-3 py-1.5 text-sm font-semibold">{partner.avatar.startsWith("data:") ? "🙂" : partner.avatar} {partner.name}</div>
         <div className="flex-1 p-3 overflow-auto space-y-2 text-sm">
           {conversation.length === 0 && <div className="text-xs opacity-60 text-center">No messages yet. Sign in as {partner.name} in another tab to chat back!</div>}
           {conversation.map((m) => (
@@ -414,9 +523,7 @@ function MessengerApp({ user, users }: { user: string; users: User[] }) {
                   background: m.from === user ? "var(--gradient-aero)" : "var(--glass)",
                   color: m.from === user ? "white" : undefined,
                   border: "1px solid var(--border)",
-                }}>
-                {m.text}
-              </div>
+                }}>{m.text}</div>
             </div>
           ))}
         </div>
@@ -433,9 +540,9 @@ function MessengerApp({ user, users }: { user: string; users: User[] }) {
   );
 }
 
-function FileExplorerApp({ openApp }: { openApp: (id: AppId, fileId?: string) => void }) {
+function FileExplorerApp({ openApp, icons, openFolder }: { openApp: (id: AppId, fileId?: string) => void; icons: DesktopIcon[]; openFolder: (id: string, title: string) => void }) {
   const [files, setFiles] = useState<SavedFile[]>(() => loadFiles());
-  const [folder, setFolder] = useState<"home" | "documents" | "pictures" | "apps">("home");
+  const [folder, setFolder] = useState<"home" | "documents" | "pictures" | "apps" | "folders">("home");
   useEffect(() => {
     const fn = () => setFiles(loadFiles());
     window.addEventListener("pueios-files-changed", fn);
@@ -450,6 +557,7 @@ function FileExplorerApp({ openApp }: { openApp: (id: AppId, fileId?: string) =>
     { id: "documents" as const, name: "Documents", icon: "📁" },
     { id: "pictures" as const, name: "Pictures", icon: "🖼️" },
     { id: "apps" as const, name: "Apps", icon: "🧩" },
+    { id: "folders" as const, name: "My Folders", icon: "🗃️" },
   ];
   const apps: { name: string; appId: AppId; icon: string }[] = [
     { name: "Puei Paint 2", appId: "puei-paint", icon: "🎨" },
@@ -458,10 +566,13 @@ function FileExplorerApp({ openApp }: { openApp: (id: AppId, fileId?: string) =>
     { name: "Settings", appId: "settings", icon: "⚙️" },
     { name: "PueiNet", appId: "pueinet", icon: "🌐" },
     { name: "Puei Messenger", appId: "puei-messenger", icon: "💬" },
+    { name: "App Store", appId: "app-store", icon: "🛍️" },
+    { name: "PueiSocial", appId: "puei-social", icon: "📣" },
   ];
 
   const textFiles = files.filter((f) => f.type === "text");
   const imgFiles = files.filter((f) => f.type === "image");
+  const myFolders = icons.filter((i) => i.appId === "folder");
 
   const openFile = (f: SavedFile) => openApp(f.type === "text" ? "notepad" : "puei-paint", f.id);
 
@@ -469,10 +580,14 @@ function FileExplorerApp({ openApp }: { openApp: (id: AppId, fileId?: string) =>
     <div className="flex h-full">
       <div className="w-48 p-2 border-r text-sm" style={{ background: "var(--glass)" }}>
         <div className="font-semibold mb-2 opacity-70 text-xs">FAVORITES</div>
-        <div onClick={() => setFolder("home")} className="px-2 py-1 rounded hover:bg-white/30 cursor-pointer" style={{ background: folder === "home" ? "rgba(255,255,255,0.4)" : undefined }}>🏠 Home</div>
-        <div onClick={() => setFolder("documents")} className="px-2 py-1 rounded hover:bg-white/30 cursor-pointer" style={{ background: folder === "documents" ? "rgba(255,255,255,0.4)" : undefined }}>📁 Documents</div>
-        <div onClick={() => setFolder("pictures")} className="px-2 py-1 rounded hover:bg-white/30 cursor-pointer" style={{ background: folder === "pictures" ? "rgba(255,255,255,0.4)" : undefined }}>🖼️ Pictures</div>
-        <div onClick={() => setFolder("apps")} className="px-2 py-1 rounded hover:bg-white/30 cursor-pointer" style={{ background: folder === "apps" ? "rgba(255,255,255,0.4)" : undefined }}>🧩 Apps</div>
+        {[
+          ["home","🏠 Home"],["documents","📁 Documents"],["pictures","🖼️ Pictures"],
+          ["folders","🗃️ My Folders"],["apps","🧩 Apps"],
+        ].map(([k, l]) => (
+          <div key={k} onClick={() => setFolder(k as any)}
+            className="px-2 py-1 rounded hover:bg-white/30 cursor-pointer"
+            style={{ background: folder === k ? "rgba(255,255,255,0.4)" : undefined }}>{l}</div>
+        ))}
         <div className="font-semibold mt-3 mb-2 opacity-70 text-xs">COMPUTER</div>
         <div className="px-2 py-1 rounded opacity-70">💽 C:\ PueiDrive</div>
       </div>
@@ -506,6 +621,19 @@ function FileExplorerApp({ openApp }: { openApp: (id: AppId, fileId?: string) =>
             ))}
           </div>
         )}
+        {folder === "folders" && (
+          myFolders.length === 0
+            ? <div className="text-sm opacity-70 p-6 text-center">No folders yet. Right-click the desktop → New Folder.</div>
+            : <div className="grid grid-cols-5 gap-3">
+                {myFolders.map((f) => (
+                  <div key={f.id} onDoubleClick={() => openFolder(f.id, f.label)}
+                    className="text-center p-2 rounded hover:bg-white/30 cursor-pointer">
+                    <div className="text-4xl">📁</div>
+                    <div className="text-xs mt-1 truncate">{f.label}</div>
+                  </div>
+                ))}
+              </div>
+        )}
       </div>
     </div>
   );
@@ -521,16 +649,264 @@ function FileGrid({ files, emptyHint, openFile, onDelete }: {
       {files.map((f) => (
         <div key={f.id} onDoubleClick={() => openFile(f)}
           className="text-center p-2 rounded hover:bg-white/30 cursor-pointer group relative">
-          {f.type === "image" ? (
-            <img src={f.content} alt={f.name} className="w-12 h-12 mx-auto object-cover rounded shadow" />
-          ) : (
-            <div className="text-4xl">📄</div>
-          )}
+          {f.type === "image"
+            ? <img src={f.content} alt={f.name} className="w-12 h-12 mx-auto object-cover rounded shadow" />
+            : <div className="text-4xl">📄</div>}
           <div className="text-xs mt-1 truncate">{f.name}</div>
           <button onClick={(e) => { e.stopPropagation(); onDelete(f.id); }}
             className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 text-xs text-red-500 px-1">✕</button>
         </div>
       ))}
+    </div>
+  );
+}
+
+// ---------- App Store ----------
+function AppStoreApp({ installWebApp, openApp }: { installWebApp: (label: string, url: string) => void; openApp: (id: AppId) => void }) {
+  const [tab, setTab] = useState<"featured" | "installer">("featured");
+  return (
+    <div className="flex h-full">
+      <div className="w-44 p-2 border-r text-sm" style={{ background: "var(--glass)" }}>
+        <div className="font-semibold opacity-70 text-xs mb-2 px-2">STORE</div>
+        {[["featured", "🌟 Featured"], ["installer", "📥 Installer"]].map(([k, l]) => (
+          <div key={k} onClick={() => setTab(k as any)}
+            className="px-3 py-2 rounded cursor-pointer"
+            style={{ background: tab === k ? "var(--gradient-aero)" : "transparent", color: tab === k ? "white" : undefined }}>{l}</div>
+        ))}
+      </div>
+      <div className="flex-1 p-5 overflow-auto">
+        {tab === "featured" && (
+          <div>
+            <h2 className="text-2xl font-bold mb-1">PueiOS 2 App Store</h2>
+            <p className="text-sm opacity-70 mb-4">Bundled apps shipped with PueiOS 2.</p>
+            <div className="grid grid-cols-3 gap-3">
+              {[
+                ["puei-paint", "Puei Paint 2", "🎨", "Paint, save, and use as wallpaper."],
+                ["notepad", "Notepad", "📝", "Write and save text files."],
+                ["calculator", "Calculator", "🧮", "Basic arithmetic, glossy buttons."],
+                ["pueinet", "PueiNet", "🌐", "The retro-futuristic web browser."],
+                ["puei-messenger", "Puei Messenger", "💬", "Chat with other local accounts."],
+                ["puei-social", "PueiSocial", "📣", "Post text, images, videos."],
+                ["file-explorer", "Computer", "🗂️", "Browse files and folders."],
+                ["settings", "Settings", "⚙️", "Themes, wallpaper, account."],
+              ].map(([id, name, icon, desc]) => (
+                <div key={id} className="aero-glass-light rounded-lg p-3">
+                  <div className="text-3xl">{icon}</div>
+                  <div className="font-semibold mt-1">{name}</div>
+                  <div className="text-xs opacity-70 mt-0.5 h-8">{desc}</div>
+                  <button className="aero-button rounded px-3 py-1 text-xs mt-2 w-full"
+                    onClick={() => openApp(id as AppId)}>Open</button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        {tab === "installer" && <InstallerPane installWebApp={installWebApp} />}
+      </div>
+    </div>
+  );
+}
+
+function InstallerPane({ installWebApp }: { installWebApp: (label: string, url: string) => void }) {
+  const [url, setUrl] = useState("https://example.com");
+  const [name, setName] = useState("");
+  const [msg, setMsg] = useState("");
+  const install = () => {
+    let u = url.trim();
+    if (!u) { setMsg("Enter a URL"); return; }
+    if (!/^https?:\/\//i.test(u)) u = "https://" + u;
+    let label = name.trim();
+    if (!label) {
+      try { label = new URL(u).hostname.replace(/^www\./, ""); } catch { label = "Web App"; }
+    }
+    installWebApp(label, u);
+    setMsg(`Installed "${label}" on your desktop ✓ (icons wrap every 6)`);
+    blip("notify");
+    setUrl(""); setName("");
+  };
+  return (
+    <div>
+      <h2 className="text-2xl font-bold mb-1">📥 Installer</h2>
+      <p className="text-sm opacity-70 mb-4">Type any website URL to install it as a desktop app. Shortcuts respect the 6-per-column desktop rule.</p>
+      <div className="aero-glass-light rounded-lg p-4 max-w-lg space-y-3">
+        <div>
+          <label className="text-xs opacity-70">Website URL</label>
+          <input value={url} onChange={(e) => setUrl(e.target.value)}
+            placeholder="https://example.com"
+            className="w-full px-3 py-2 rounded text-sm outline-none" style={{ background: "white", color: "#111" }} />
+        </div>
+        <div>
+          <label className="text-xs opacity-70">App name (optional)</label>
+          <input value={name} onChange={(e) => setName(e.target.value)}
+            placeholder="Auto from domain"
+            className="w-full px-3 py-2 rounded text-sm outline-none" style={{ background: "white", color: "#111" }} />
+        </div>
+        <button className="aero-button rounded px-4 py-2 w-full" onClick={install}>Install on desktop</button>
+        {msg && <div className="text-xs opacity-80">{msg}</div>}
+      </div>
+      <div className="mt-5 text-xs opacity-70 max-w-lg">
+        Tip: some sites refuse to load inside frames (set <code>X-Frame-Options</code>). In that case, the app will offer an "Open in new tab" button.
+      </div>
+    </div>
+  );
+}
+
+// ---------- Folder ----------
+function FolderApp({ folderIconId, icons, openApp, openWebApp }: {
+  folderIconId: string; icons: DesktopIcon[];
+  openApp: (id: AppId, fileId?: string) => void;
+  openWebApp: (url: string, title: string) => void;
+}) {
+  const children = icons.filter((i) => i.folderId === folderIconId);
+  return (
+    <div className="p-4 h-full overflow-auto">
+      {children.length === 0
+        ? <div className="text-sm opacity-70 text-center p-8">
+            This folder is empty.<br/>Right-click it on the desktop → <b>New shortcut here</b> to add a web app.
+          </div>
+        : <div className="grid grid-cols-5 gap-3">
+            {children.map((c) => (
+              <div key={c.id}
+                onDoubleClick={() => c.appId === "web-app" ? openWebApp(c.webUrl!, c.label) : openApp(c.appId, c.fileId)}
+                className="text-center p-2 rounded hover:bg-white/30 cursor-pointer">
+                <div className="text-4xl">{c.appId === "web-app" ? "🔗" : "📄"}</div>
+                <div className="text-xs mt-1 truncate">{c.label}</div>
+              </div>
+            ))}
+          </div>}
+    </div>
+  );
+}
+
+// ---------- Web App frame ----------
+function WebAppFrame({ url }: { url: string }) {
+  const [failed, setFailed] = useState(false);
+  return (
+    <div className="flex flex-col h-full">
+      <div className="aero-titlebar text-xs px-3 py-1 flex items-center gap-2">
+        <span className="opacity-60">🔗</span>
+        <span className="truncate flex-1">{url}</span>
+        <a href={url} target="_blank" rel="noreferrer" className="aero-button rounded px-2 py-0.5">Open in new tab ↗</a>
+      </div>
+      <div className="flex-1 relative" style={{ background: "white" }}>
+        <iframe src={url} title={url} className="w-full h-full border-0"
+          onError={() => setFailed(true)} />
+        {failed && (
+          <div className="absolute inset-0 flex items-center justify-center text-sm opacity-70 bg-white">
+            This site refused to load in a frame. Use "Open in new tab" above.
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ---------- PueiSocial ----------
+function PueiSocialApp({ user, users }: { user: string; users: User[] }) {
+  const [posts, setPosts] = useState<SocialPost[]>(() => loadSocial());
+  const [text, setText] = useState("");
+  const [media, setMedia] = useState<{ kind: "image" | "video"; src: string } | undefined>();
+  useEffect(() => {
+    const fn = () => setPosts(loadSocial());
+    window.addEventListener("pueios-social", fn);
+    window.addEventListener("storage", fn);
+    return () => {
+      window.removeEventListener("pueios-social", fn);
+      window.removeEventListener("storage", fn);
+    };
+  }, []);
+  const me = users.find((u) => u.name === user);
+  const post = () => {
+    if (!text.trim() && !media) return;
+    blip("click");
+    const p: SocialPost = {
+      id: `p-${Date.now().toString(36)}`,
+      author: user, authorAvatar: me?.avatar || "🧑",
+      text, media, at: Date.now(), likes: 0,
+    };
+    const next = [p, ...posts];
+    setPosts(next); saveSocial(next);
+    setText(""); setMedia(undefined);
+  };
+  const like = (id: string) => {
+    const next = posts.map((p) => p.id === id ? { ...p, likes: p.likes + 1 } : p);
+    setPosts(next); saveSocial(next);
+  };
+  const onFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0]; if (!f) return;
+    const kind: "image" | "video" = f.type.startsWith("video") ? "video" : "image";
+    const r = new FileReader();
+    r.onload = () => setMedia({ kind, src: String(r.result) });
+    r.readAsDataURL(f);
+  };
+  return (
+    <div className="flex flex-col h-full">
+      <div className="aero-titlebar px-4 py-2 flex items-center justify-between">
+        <div className="font-bold text-lg flex items-center gap-2">📣 PueiSocial</div>
+        <div className="text-xs opacity-70 flex items-center gap-2">
+          Available on:
+          <span title="iOS">📱 iOS</span>
+          <span title="Android">🤖 Android</span>
+          <span title="Windows">🪟 Windows</span>
+          <span title="macOS"></span>
+          <span title="Linux">🐧 Linux</span>
+          <span title="AmongOS Linux">🟦 AmongOS Linux</span>
+        </div>
+      </div>
+      <div className="p-4 overflow-auto flex-1 space-y-3" style={{ background: "var(--glass)" }}>
+        {/* Composer */}
+        <div className="aero-glass-light rounded-xl p-3">
+          <div className="flex items-start gap-2">
+            <div className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center text-xl"
+              style={{ background: `linear-gradient(135deg, oklch(0.7 0.18 ${me?.color || 200}), oklch(0.45 0.2 ${me?.color || 200}))` }}>
+              {me?.avatar?.startsWith("data:") ? <img src={me.avatar} alt="" className="w-full h-full object-cover" /> : (me?.avatar || "🧑")}
+            </div>
+            <textarea value={text} onChange={(e) => setText(e.target.value)}
+              placeholder={`What's on your mind, ${user}?`}
+              className="flex-1 p-2 rounded outline-none text-sm resize-none"
+              style={{ background: "white", color: "#111", minHeight: 60 }} />
+          </div>
+          {media && (
+            <div className="mt-2 relative">
+              {media.kind === "image"
+                ? <img src={media.src} className="max-h-60 rounded" alt="" />
+                : <video src={media.src} controls className="max-h-60 rounded" />}
+              <button onClick={() => setMedia(undefined)}
+                className="absolute top-1 right-1 aero-button rounded-full w-6 h-6 text-xs">✕</button>
+            </div>
+          )}
+          <div className="flex items-center gap-2 mt-2">
+            <label className="aero-button rounded px-3 py-1 text-xs cursor-pointer">
+              🖼️ Image / 🎬 Video
+              <input type="file" accept="image/*,video/*" className="hidden" onChange={onFile} />
+            </label>
+            <button className="aero-button rounded px-4 py-1 text-xs ml-auto" onClick={post}>Post</button>
+          </div>
+        </div>
+        {/* Feed */}
+        {posts.length === 0 && <div className="text-center text-sm opacity-60 p-6">No posts yet. Be the first!</div>}
+        {posts.map((p) => (
+          <div key={p.id} className="aero-glass-light rounded-xl p-3">
+            <div className="flex items-center gap-2 mb-1">
+              <div className="w-9 h-9 rounded-full overflow-hidden flex items-center justify-center text-lg"
+                style={{ background: "var(--gradient-aero)" }}>
+                {p.authorAvatar.startsWith("data:") ? <img src={p.authorAvatar} alt="" className="w-full h-full object-cover" /> : p.authorAvatar}
+              </div>
+              <div>
+                <div className="text-sm font-semibold">{p.author}</div>
+                <div className="text-[10px] opacity-60">{new Date(p.at).toLocaleString()}</div>
+              </div>
+            </div>
+            {p.text && <div className="text-sm whitespace-pre-wrap mb-2">{p.text}</div>}
+            {p.media?.kind === "image" && <img src={p.media.src} className="max-h-80 rounded w-auto" alt="" />}
+            {p.media?.kind === "video" && <video src={p.media.src} controls className="max-h-80 rounded w-full" />}
+            <div className="flex gap-3 mt-2 text-xs opacity-80">
+              <button onClick={() => like(p.id)} className="aero-button rounded px-2 py-0.5">👍 {p.likes}</button>
+              <span className="opacity-60 self-center">PueiSocial · cross-platform</span>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
