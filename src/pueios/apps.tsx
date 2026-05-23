@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import type { AppId, Theme, User, WallpaperId, SavedFile, ChatMessage, DesktopIcon, SocialPost } from "./state";
 import {
   blip, loadFiles, upsertFile, deleteFile, getFile, appendChat, loadChat,
-  loadSocial, saveSocial,
+  loadSocial, saveSocial, pueiNumberFor, googleFaviconFor,
 } from "./state";
 
 export type AppRendererProps = {
@@ -33,7 +33,7 @@ export function AppRenderer(p: AppRendererProps) {
     case "calculator": return <CalculatorApp />;
     case "puei-paint": return <PaintApp fileId={p.fileId} onCreateShortcut={p.onCreateShortcut} />;
     case "pueinet": return <PueiNetApp />;
-    case "puei-messenger": return <MessengerApp user={p.currentUser} users={p.users} />;
+    case "puei-messenger": return <MessengerApp user={p.currentUser} users={p.users} setUsers={p.setUsers} />;
     case "file-explorer": return <FileExplorerApp openApp={p.openApp} icons={p.icons} openFolder={p.openFolder} />;
     case "app-store": return <AppStoreApp installWebApp={p.installWebApp} openApp={p.openApp} />;
     case "puei-social": return <PueiSocialApp user={p.currentUser} users={p.users} />;
@@ -454,11 +454,12 @@ function PueiNetApp() {
   );
 }
 
-function MessengerApp({ user, users }: { user: string; users: User[] }) {
+function MessengerApp({ user, users, setUsers }: { user: string; users: User[]; setUsers: (u: User[]) => void }) {
   const contacts = users.filter((u) => u.name !== user);
   const [active, setActive] = useState(0);
   const [allMsgs, setAllMsgs] = useState<ChatMessage[]>(() => loadChat());
   const [text, setText] = useState("");
+  const [view, setView] = useState<"chat" | "settings">("chat");
   useEffect(() => {
     const fn = () => setAllMsgs(loadChat());
     window.addEventListener("pueios-chat", fn);
@@ -469,22 +470,80 @@ function MessengerApp({ user, users }: { user: string; users: User[] }) {
     };
   }, []);
 
-  if (contacts.length === 0) {
+  // Backfill PueiNumber for the current user if missing
+  const me = users.find((u) => u.name === user);
+  useEffect(() => {
+    if (me && !me.pueiNumber) {
+      setUsers(users.map((u) => u.name === user ? { ...u, pueiNumber: pueiNumberFor(user + ":" + Date.now()) } : u));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const SettingsView = () => {
+    const myNum = me?.pueiNumber || (me ? pueiNumberFor(user + ":seed") : "—");
+    const [copied, setCopied] = useState(false);
     return (
-      <div className="p-6 text-sm text-center opacity-80">
-        <div className="text-4xl mb-2">💬</div>
-        <div className="font-semibold mb-1">No-one to chat with yet</div>
-        <div>Create another account from the login screen, then sign in on another tab/window to chat in real time.</div>
+      <div className="flex-1 p-6 overflow-auto">
+        <h2 className="text-xl font-semibold mb-2">Messenger Settings</h2>
+        <p className="text-sm opacity-70 mb-5">Your PueiNumber is a unique ID assigned when you created your PueiOS account. Share it so others can find you on Puei Messenger.</p>
+        <div className="aero-glass-light rounded-xl p-4 max-w-md">
+          <div className="text-xs opacity-60">Signed in as</div>
+          <div className="text-base font-semibold mb-3">{user}</div>
+          <div className="text-xs opacity-60">Your PueiNumber</div>
+          <div className="flex items-center gap-2 mt-1">
+            <div className="font-mono text-2xl tracking-wider px-3 py-2 rounded"
+              style={{ background: "white", color: "#111", border: "1px solid var(--border)" }}>
+              {myNum}
+            </div>
+            <button className="aero-button rounded px-3 py-2 text-xs"
+              onClick={() => { navigator.clipboard?.writeText(myNum); setCopied(true); setTimeout(() => setCopied(false), 1200); blip("click"); }}>
+              {copied ? "Copied ✓" : "Copy"}
+            </button>
+          </div>
+          <div className="text-[10px] opacity-50 mt-2">Format: XXX-XXX-XXX · assigned at account creation</div>
+        </div>
+        <div className="mt-5 max-w-md">
+          <div className="text-xs opacity-60 mb-2">Other PueiOS accounts on this device</div>
+          {contacts.length === 0 && <div className="text-xs opacity-60">No other accounts yet.</div>}
+          {contacts.map((c) => (
+            <div key={c.name} className="flex items-center justify-between aero-glass-light rounded p-2 mb-1 text-sm">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded overflow-hidden flex items-center justify-center text-base"
+                  style={{ background: `linear-gradient(135deg, oklch(0.7 0.18 ${c.color}), oklch(0.45 0.2 ${c.color}))` }}>
+                  {c.avatar.startsWith("data:") ? <img src={c.avatar} alt="" className="w-full h-full object-cover" /> : c.avatar}
+                </div>
+                <span>{c.name}</span>
+              </div>
+              <span className="font-mono text-xs opacity-70">{c.pueiNumber || pueiNumberFor(c.name + ":seed")}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  if (contacts.length === 0 && view === "chat") {
+    return (
+      <div className="flex h-full">
+        <div className="w-44 border-r p-2" style={{ background: "var(--glass)" }}>
+          <button className="aero-button rounded w-full text-xs py-1.5 mb-1" onClick={() => setView("chat")}>💬 Chats</button>
+          <button className="aero-button rounded w-full text-xs py-1.5" onClick={() => setView("settings")}>⚙️ Settings</button>
+        </div>
+        <div className="flex-1 p-6 text-sm text-center opacity-80 flex flex-col items-center justify-center">
+          <div className="text-4xl mb-2">💬</div>
+          <div className="font-semibold mb-1">No-one to chat with yet</div>
+          <div className="max-w-xs">Create another account from the login screen, then sign in on another tab/window to chat in real time. View your PueiNumber under Settings.</div>
+        </div>
       </div>
     );
   }
 
   const partner = contacts[active];
-  const conversation = allMsgs.filter((m) =>
-    (m.from === user && m.to === partner.name) || (m.from === partner.name && m.to === user));
+  const conversation = partner ? allMsgs.filter((m) =>
+    (m.from === user && m.to === partner.name) || (m.from === partner.name && m.to === user)) : [];
 
   const send = () => {
-    if (!text.trim()) return;
+    if (!text.trim() || !partner) return;
     blip("click");
     appendChat({ id: `m-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, from: user, to: partner.name, text, at: Date.now() });
     setAllMsgs(loadChat()); setText("");
@@ -492,9 +551,18 @@ function MessengerApp({ user, users }: { user: string; users: User[] }) {
 
   return (
     <div className="flex h-full">
-      <div className="w-48 border-r overflow-auto" style={{ background: "var(--glass)" }}>
-        <div className="px-3 py-2 text-xs opacity-70 font-semibold">Signed in as {user}</div>
-        {contacts.map((c, i) => {
+      <div className="w-48 border-r overflow-auto flex flex-col" style={{ background: "var(--glass)" }}>
+        <div className="px-2 py-2 flex gap-1">
+          <button className="aero-button rounded text-xs py-1 px-2 flex-1"
+            style={{ background: view === "chat" ? "var(--gradient-aero)" : undefined, color: view === "chat" ? "white" : undefined }}
+            onClick={() => setView("chat")}>💬 Chats</button>
+          <button className="aero-button rounded text-xs py-1 px-2 flex-1"
+            style={{ background: view === "settings" ? "var(--gradient-aero)" : undefined, color: view === "settings" ? "white" : undefined }}
+            onClick={() => setView("settings")}>⚙️</button>
+        </div>
+        <div className="px-3 py-1 text-xs opacity-70 font-semibold">Signed in as {user}</div>
+        <div className="px-3 pb-2 text-[10px] opacity-60 font-mono">#{me?.pueiNumber || "—"}</div>
+        {view === "chat" && contacts.map((c, i) => {
           const last = [...allMsgs].reverse().find((m) => (m.from === user && m.to === c.name) || (m.from === c.name && m.to === user));
           return (
             <div key={c.name} onClick={() => setActive(i)}
@@ -512,30 +580,35 @@ function MessengerApp({ user, users }: { user: string; users: User[] }) {
           );
         })}
       </div>
-      <div className="flex-1 flex flex-col">
-        <div className="aero-titlebar px-3 py-1.5 text-sm font-semibold">{partner.avatar.startsWith("data:") ? "🙂" : partner.avatar} {partner.name}</div>
-        <div className="flex-1 p-3 overflow-auto space-y-2 text-sm">
-          {conversation.length === 0 && <div className="text-xs opacity-60 text-center">No messages yet. Sign in as {partner.name} in another tab to chat back!</div>}
-          {conversation.map((m) => (
-            <div key={m.id} className={m.from === user ? "text-right" : "text-left"}>
-              <div className="inline-block px-3 py-1.5 rounded-2xl max-w-xs"
-                style={{
-                  background: m.from === user ? "var(--gradient-aero)" : "var(--glass)",
-                  color: m.from === user ? "white" : undefined,
-                  border: "1px solid var(--border)",
-                }}>{m.text}</div>
-            </div>
-          ))}
+      {view === "settings" ? <SettingsView /> : (
+        <div className="flex-1 flex flex-col">
+          <div className="aero-titlebar px-3 py-1.5 text-sm font-semibold flex items-center justify-between">
+            <span>{partner?.avatar.startsWith("data:") ? "🙂" : partner?.avatar} {partner?.name}</span>
+            <span className="text-[10px] opacity-60 font-mono">#{partner?.pueiNumber || (partner ? pueiNumberFor(partner.name + ":seed") : "")}</span>
+          </div>
+          <div className="flex-1 p-3 overflow-auto space-y-2 text-sm">
+            {conversation.length === 0 && <div className="text-xs opacity-60 text-center">No messages yet. Sign in as {partner?.name} in another tab to chat back!</div>}
+            {conversation.map((m) => (
+              <div key={m.id} className={m.from === user ? "text-right" : "text-left"}>
+                <div className="inline-block px-3 py-1.5 rounded-2xl max-w-xs"
+                  style={{
+                    background: m.from === user ? "var(--gradient-aero)" : "var(--glass)",
+                    color: m.from === user ? "white" : undefined,
+                    border: "1px solid var(--border)",
+                  }}>{m.text}</div>
+              </div>
+            ))}
+          </div>
+          <div className="p-2 flex gap-2 border-t">
+            <input value={text} onChange={(e) => setText(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && send()}
+              className="flex-1 px-3 py-1.5 rounded-md outline-none text-sm"
+              style={{ background: "white", border: "1px solid var(--border)" }}
+              placeholder={`Message ${partner?.name}…`} />
+            <button className="aero-button rounded-md px-3" onClick={send}>Send</button>
+          </div>
         </div>
-        <div className="p-2 flex gap-2 border-t">
-          <input value={text} onChange={(e) => setText(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && send()}
-            className="flex-1 px-3 py-1.5 rounded-md outline-none text-sm"
-            style={{ background: "white", border: "1px solid var(--border)" }}
-            placeholder={`Message ${partner.name}…`} />
-          <button className="aero-button rounded-md px-3" onClick={send}>Send</button>
-        </div>
-      </div>
+      )}
     </div>
   );
 }
@@ -663,49 +736,124 @@ function FileGrid({ files, emptyHint, openFile, onDelete }: {
 
 // ---------- App Store ----------
 function AppStoreApp({ installWebApp, openApp }: { installWebApp: (label: string, url: string) => void; openApp: (id: AppId) => void }) {
-  const [tab, setTab] = useState<"featured" | "installer">("featured");
+  const [tab, setTab] = useState<"featured" | "productivity" | "social" | "media" | "games" | "dev" | "web" | "installer">("featured");
+  const cats: [typeof tab, string][] = [
+    ["featured", "🌟 Featured"],
+    ["productivity", "💼 Productivity"],
+    ["social", "💬 Social"],
+    ["media", "🎬 Media"],
+    ["games", "🎮 Games"],
+    ["dev", "🧑‍💻 Developer"],
+    ["web", "🌐 Web Apps"],
+    ["installer", "📥 Installer"],
+  ];
+  type StoreApp = { name: string; icon: string; desc: string; appId?: AppId; url?: string };
+  const lists: Record<string, StoreApp[]> = {
+    featured: [
+      { name: "Puei Paint 2", icon: "🎨", desc: "Paint, save, and use as wallpaper.", appId: "puei-paint" },
+      { name: "PueiNet", icon: "🌐", desc: "The retro-futuristic web browser.", appId: "pueinet" },
+      { name: "Puei Messenger", icon: "💬", desc: "Chat & get a PueiNumber.", appId: "puei-messenger" },
+      { name: "PueiSocial", icon: "📣", desc: "Post text, images, videos.", appId: "puei-social" },
+      { name: "Notepad", icon: "📝", desc: "Write and save text files.", appId: "notepad" },
+      { name: "Calculator", icon: "🧮", desc: "Basic arithmetic, glossy buttons.", appId: "calculator" },
+      { name: "Computer", icon: "🗂️", desc: "Browse files and folders.", appId: "file-explorer" },
+      { name: "Settings", icon: "⚙️", desc: "Themes, wallpaper, account.", appId: "settings" },
+    ],
+    productivity: [
+      { name: "Notepad", icon: "📝", desc: "Plain text editor.", appId: "notepad" },
+      { name: "Calculator", icon: "🧮", desc: "Arithmetic & history.", appId: "calculator" },
+      { name: "PueiDocs", icon: "📄", desc: "Documents in the cloud.", url: "https://docs.google.com" },
+      { name: "PueiSheets", icon: "📊", desc: "Spreadsheets that just work.", url: "https://sheets.google.com" },
+      { name: "PueiCal", icon: "📆", desc: "Calendar & scheduling.", url: "https://calendar.google.com" },
+      { name: "PueiMail", icon: "✉️", desc: "Webmail client.", url: "https://mail.google.com" },
+      { name: "Pueidian Drive", icon: "💽", desc: "Cloud storage.", url: "https://drive.google.com" },
+      { name: "PueiTrello", icon: "📋", desc: "Boards, lists, cards.", url: "https://trello.com" },
+    ],
+    social: [
+      { name: "Puei Messenger", icon: "💬", desc: "Chat with other accounts.", appId: "puei-messenger" },
+      { name: "PueiSocial", icon: "📣", desc: "Built-in social network.", appId: "puei-social" },
+      { name: "PueiTube Chat", icon: "🎥", desc: "Video calls.", url: "https://meet.google.com" },
+      { name: "PueiGram", icon: "📷", desc: "Photo sharing on the open web.", url: "https://www.instagram.com" },
+      { name: "Pueitter", icon: "🐦", desc: "Microblogging.", url: "https://twitter.com" },
+      { name: "PueiBook", icon: "📘", desc: "Stay in touch with friends.", url: "https://www.facebook.com" },
+      { name: "PueiDiscord", icon: "🎧", desc: "Chat for communities.", url: "https://discord.com" },
+      { name: "PueiReddit", icon: "👽", desc: "The Puei-net's front page.", url: "https://www.reddit.com" },
+    ],
+    media: [
+      { name: "PueiTube", icon: "▶️", desc: "Video for everyone.", url: "https://www.youtube.com" },
+      { name: "PueiFlix", icon: "🎬", desc: "Movies & shows.", url: "https://www.netflix.com" },
+      { name: "PueiSpot", icon: "🎵", desc: "Music streaming.", url: "https://open.spotify.com" },
+      { name: "PueiTunes", icon: "🎧", desc: "Podcasts & audio.", url: "https://soundcloud.com" },
+      { name: "PueiPics", icon: "🖼️", desc: "Stock photos & art.", url: "https://unsplash.com" },
+      { name: "PueiTwitch", icon: "📡", desc: "Live streams.", url: "https://www.twitch.tv" },
+    ],
+    games: [
+      { name: "Pueiblox", icon: "🟦", desc: "Build & play together.", url: "https://www.roblox.com" },
+      { name: "PueiCraft", icon: "⛏️", desc: "Mine, craft, repeat.", url: "https://www.minecraft.net" },
+      { name: "PueiSteam", icon: "💨", desc: "PC games marketplace.", url: "https://store.steampowered.com" },
+      { name: "PueiArcade", icon: "🕹️", desc: "Free browser arcade.", url: "https://poki.com" },
+      { name: "PueiChess", icon: "♟️", desc: "Online chess.", url: "https://www.chess.com" },
+      { name: "PueiAmongOS", icon: "🟥", desc: "Find the imposter.", url: "https://innersloth.com" },
+    ],
+    dev: [
+      { name: "PueiHub", icon: "🐙", desc: "Code hosting.", url: "https://github.com" },
+      { name: "PueiCodeSandbox", icon: "📦", desc: "Web IDE.", url: "https://codesandbox.io" },
+      { name: "Pueitlify", icon: "🚀", desc: "Deploy static sites.", url: "https://app.netlify.com" },
+      { name: "PueiCel", icon: "▲", desc: "Frontend cloud.", url: "https://vercel.com" },
+      { name: "PueiOverflow", icon: "📚", desc: "Q&A for programmers.", url: "https://stackoverflow.com" },
+      { name: "PueiNotion", icon: "🗒️", desc: "Notes & wikis.", url: "https://www.notion.so" },
+    ],
+    web: [
+      { name: "PueiSearch", icon: "🔍", desc: "Search the web.", url: "https://www.google.com" },
+      { name: "PueiPedia", icon: "📖", desc: "Free encyclopedia.", url: "https://www.wikipedia.org" },
+      { name: "PueiMaps", icon: "🗺️", desc: "Get directions.", url: "https://maps.google.com" },
+      { name: "Pueizon", icon: "📦", desc: "Shop everything.", url: "https://www.amazon.com" },
+      { name: "PueiBay", icon: "🛒", desc: "Auctions & deals.", url: "https://www.ebay.com" },
+      { name: "PueiWeather", icon: "⛅", desc: "Forecasts.", url: "https://weather.com" },
+    ],
+  };
   return (
     <div className="flex h-full">
-      <div className="w-44 p-2 border-r text-sm" style={{ background: "var(--glass)" }}>
+      <div className="w-44 p-2 border-r text-sm overflow-auto" style={{ background: "var(--glass)" }}>
         <div className="font-semibold opacity-70 text-xs mb-2 px-2">STORE</div>
-        {[["featured", "🌟 Featured"], ["installer", "📥 Installer"]].map(([k, l]) => (
-          <div key={k} onClick={() => setTab(k as any)}
-            className="px-3 py-2 rounded cursor-pointer"
+        {cats.map(([k, l]) => (
+          <div key={k} onClick={() => { setTab(k); blip("click"); }}
+            className="px-3 py-2 rounded cursor-pointer text-sm mb-0.5"
             style={{ background: tab === k ? "var(--gradient-aero)" : "transparent", color: tab === k ? "white" : undefined }}>{l}</div>
         ))}
       </div>
       <div className="flex-1 p-5 overflow-auto">
-        {tab === "featured" && (
+        {tab === "installer" ? <InstallerPane installWebApp={installWebApp} /> : (
           <div>
             <h2 className="text-2xl font-bold mb-1">PueiOS 2 App Store</h2>
-            <p className="text-sm opacity-70 mb-4">Bundled apps shipped with PueiOS 2.</p>
+            <p className="text-sm opacity-70 mb-4 capitalize">{tab === "featured" ? "Bundled apps shipped with PueiOS 2." : `${tab} apps for your desktop.`}</p>
             <div className="grid grid-cols-3 gap-3">
-              {[
-                ["puei-paint", "Puei Paint 2", "🎨", "Paint, save, and use as wallpaper."],
-                ["notepad", "Notepad", "📝", "Write and save text files."],
-                ["calculator", "Calculator", "🧮", "Basic arithmetic, glossy buttons."],
-                ["pueinet", "PueiNet", "🌐", "The retro-futuristic web browser."],
-                ["puei-messenger", "Puei Messenger", "💬", "Chat with other local accounts."],
-                ["puei-social", "PueiSocial", "📣", "Post text, images, videos."],
-                ["file-explorer", "Computer", "🗂️", "Browse files and folders."],
-                ["settings", "Settings", "⚙️", "Themes, wallpaper, account."],
-              ].map(([id, name, icon, desc]) => (
-                <div key={id} className="aero-glass-light rounded-lg p-3">
-                  <div className="text-3xl">{icon}</div>
-                  <div className="font-semibold mt-1">{name}</div>
-                  <div className="text-xs opacity-70 mt-0.5 h-8">{desc}</div>
-                  <button className="aero-button rounded px-3 py-1 text-xs mt-2 w-full"
-                    onClick={() => openApp(id as AppId)}>Open</button>
+              {lists[tab].map((a) => (
+                <div key={a.name} className="aero-glass-light rounded-lg p-3 flex flex-col">
+                  <div className="flex items-center gap-2">
+                    {a.url
+                      ? <img src={googleFaviconFor(a.url, 64)} alt="" className="w-8 h-8 rounded" onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
+                      : <div className="text-3xl">{a.icon}</div>}
+                    <div className="font-semibold">{a.name}</div>
+                  </div>
+                  <div className="text-xs opacity-70 mt-1 h-8">{a.desc}</div>
+                  {a.appId ? (
+                    <button className="aero-button rounded px-3 py-1 text-xs mt-auto w-full"
+                      onClick={() => openApp(a.appId!)}>Open</button>
+                  ) : (
+                    <button className="aero-button rounded px-3 py-1 text-xs mt-auto w-full"
+                      onClick={() => { installWebApp(a.name, a.url!); blip("notify"); }}>Install</button>
+                  )}
                 </div>
               ))}
             </div>
           </div>
         )}
-        {tab === "installer" && <InstallerPane installWebApp={installWebApp} />}
       </div>
     </div>
   );
 }
+
 
 function InstallerPane({ installWebApp }: { installWebApp: (label: string, url: string) => void }) {
   const [url, setUrl] = useState("https://example.com");
