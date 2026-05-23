@@ -3,6 +3,7 @@ import type { AppId, Theme, User, WallpaperId, SavedFile, ChatMessage, DesktopIc
 import {
   blip, loadFiles, upsertFile, deleteFile, getFile, appendChat, loadChat,
   loadSocial, saveSocial, pueiNumberFor, googleFaviconFor,
+  classifyTrustedUrl, trustedIconFor, lookupPueiNumber, registerInDirectory, loadDirectory,
 } from "./state";
 
 export type AppRendererProps = {
@@ -20,7 +21,7 @@ export type AppRendererProps = {
   folderIconId?: string;
   icons: DesktopIcon[];
   onCreateShortcut: (label: string, fileId: string) => void;
-  installWebApp: (label: string, url: string) => void;
+  installWebApp: (label: string, url: string, iconUrl?: string) => void;
   openWebApp: (url: string, title: string) => void;
   openFolder: (folderIconId: string, title: string) => void;
 };
@@ -69,7 +70,7 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, curren
     ["sound", "🔊 Sound"],
     ["touch", "👆 Touchscreen"],
     ["accessibility", "♿ Accessibility"],
-    ["performance", "⚡ Performance"],
+    ["highcontrast", "⚡ High Contrast"],
     ["about", "ℹ️ About"],
   ];
   return (
@@ -101,7 +102,7 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, curren
             </div>
             <div className="mt-6 space-y-3">
               <label className="flex items-center gap-2 text-sm">
-                <input type="checkbox" checked={theme.dark} onChange={(e) => setTheme({ ...theme, dark: e.target.checked })} /> Dark mode
+                <input type="checkbox" checked={theme.dark} onChange={(e) => setTheme({ ...theme, dark: e.target.checked })} /> Dark mode <span className="text-xs opacity-60">(global — applies to every system surface)</span>
               </label>
               <label className="flex items-center gap-2 text-sm">
                 <input type="checkbox" checked={theme.transparency} onChange={(e) => setTheme({ ...theme, transparency: e.target.checked })} /> Aero transparency
@@ -206,14 +207,26 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, curren
         )}
         {tab === "accessibility" && (
           <div><h2 className="text-xl font-semibold mb-4">Accessibility</h2>
-            <p className="text-sm opacity-80">High-contrast modes coming soon. Reduce motion via the Animations toggle on Personalize.</p></div>
+            <p className="text-sm opacity-80">Reduce motion via the Animations toggle on Personalize. For maximum readability, enable <b>High Contrast Mode</b> in the next tab.</p></div>
         )}
-        {tab === "performance" && (
+        {tab === "highcontrast" && (
           <div>
-            <h2 className="text-xl font-semibold mb-4">Performance</h2>
-            <p className="text-sm opacity-80">Disable transparency for fastest rendering on low-end hardware.</p>
-            <button className="aero-button mt-3 rounded-md px-4 py-2"
-              onClick={() => setTheme({ ...theme, transparency: false, animations: false })}>Enable Performance Mode</button>
+            <h2 className="text-xl font-semibold mb-2">⚡ High Contrast Mode</h2>
+            <p className="text-sm opacity-80 mb-3">An accessibility mode designed for clarity and readability. When enabled:</p>
+            <ul className="text-sm opacity-80 list-disc pl-5 space-y-1 mb-4">
+              <li>UI colours become highly contrasted (black + amber)</li>
+              <li>Text becomes sharper and more readable</li>
+              <li>Important UI elements are visually emphasized</li>
+              <li>Reduced visual noise — no blur, no transparency, no decorations</li>
+            </ul>
+            <label className="flex items-center gap-3 aero-glass-light rounded p-3 max-w-md">
+              <input type="checkbox" checked={!!theme.highContrast}
+                onChange={(e) => setTheme({ ...theme, highContrast: e.target.checked, transparency: e.target.checked ? false : theme.transparency, animations: e.target.checked ? false : theme.animations })} />
+              <div>
+                <div className="font-semibold">Enable High Contrast Mode</div>
+                <div className="text-xs opacity-70">Replaces Performance Mode. Applies globally to the whole system.</div>
+              </div>
+            </label>
           </div>
         )}
         {tab === "about" && (
@@ -735,115 +748,52 @@ function FileGrid({ files, emptyHint, openFile, onDelete }: {
 }
 
 // ---------- App Store ----------
-function AppStoreApp({ installWebApp, openApp }: { installWebApp: (label: string, url: string) => void; openApp: (id: AppId) => void }) {
-  const [tab, setTab] = useState<"featured" | "productivity" | "social" | "media" | "games" | "dev" | "web" | "installer">("featured");
-  const cats: [typeof tab, string][] = [
-    ["featured", "🌟 Featured"],
-    ["productivity", "💼 Productivity"],
-    ["social", "💬 Social"],
-    ["media", "🎬 Media"],
-    ["games", "🎮 Games"],
-    ["dev", "🧑‍💻 Developer"],
-    ["web", "🌐 Web Apps"],
-    ["installer", "📥 Installer"],
+function AppStoreApp({ installWebApp, openApp }: { installWebApp: (label: string, url: string, iconUrl?: string) => void; openApp: (id: AppId) => void }) {
+  const [tab, setTab] = useState<"official" | "installer">("official");
+  type StoreApp = { name: string; icon: string; desc: string; appId: AppId };
+  // Only Puei Team–built apps. AppStore is a closed ecosystem.
+  const official: StoreApp[] = [
+    { name: "PueiSocial",      icon: "📣", desc: "The official PueiOS social network.",     appId: "puei-social" },
+    { name: "Puei Messenger",  icon: "💬", desc: "Chat by PueiNumber.",                     appId: "puei-messenger" },
+    { name: "PueiWeb",         icon: "🌐", desc: "System browser + AI search engine.",      appId: "pueinet" },
+    { name: "Puei Paint 2",    icon: "🎨", desc: "Paint and save images as wallpapers.",    appId: "puei-paint" },
+    { name: "Installer",       icon: "📥", desc: "Install trusted web apps as shortcuts.",  appId: "app-store" },
+    { name: "Settings",        icon: "⚙️", desc: "Personalize, dark mode, accessibility.",  appId: "settings" },
+    { name: "Computer",        icon: "🗂️", desc: "File system explorer.",                   appId: "file-explorer" },
+    { name: "Notepad",         icon: "📝", desc: "Write and save text files.",              appId: "notepad" },
+    { name: "Calculator",      icon: "🧮", desc: "Glossy arithmetic.",                       appId: "calculator" },
   ];
-  type StoreApp = { name: string; icon: string; desc: string; appId?: AppId; url?: string };
-  const lists: Record<string, StoreApp[]> = {
-    featured: [
-      { name: "Puei Paint 2", icon: "🎨", desc: "Paint, save, and use as wallpaper.", appId: "puei-paint" },
-      { name: "PueiNet", icon: "🌐", desc: "The retro-futuristic web browser.", appId: "pueinet" },
-      { name: "Puei Messenger", icon: "💬", desc: "Chat & get a PueiNumber.", appId: "puei-messenger" },
-      { name: "PueiSocial", icon: "📣", desc: "Post text, images, videos.", appId: "puei-social" },
-      { name: "Notepad", icon: "📝", desc: "Write and save text files.", appId: "notepad" },
-      { name: "Calculator", icon: "🧮", desc: "Basic arithmetic, glossy buttons.", appId: "calculator" },
-      { name: "Computer", icon: "🗂️", desc: "Browse files and folders.", appId: "file-explorer" },
-      { name: "Settings", icon: "⚙️", desc: "Themes, wallpaper, account.", appId: "settings" },
-    ],
-    productivity: [
-      { name: "Notepad", icon: "📝", desc: "Plain text editor.", appId: "notepad" },
-      { name: "Calculator", icon: "🧮", desc: "Arithmetic & history.", appId: "calculator" },
-      { name: "PueiDocs", icon: "📄", desc: "Documents in the cloud.", url: "https://docs.google.com" },
-      { name: "PueiSheets", icon: "📊", desc: "Spreadsheets that just work.", url: "https://sheets.google.com" },
-      { name: "PueiCal", icon: "📆", desc: "Calendar & scheduling.", url: "https://calendar.google.com" },
-      { name: "PueiMail", icon: "✉️", desc: "Webmail client.", url: "https://mail.google.com" },
-      { name: "Pueidian Drive", icon: "💽", desc: "Cloud storage.", url: "https://drive.google.com" },
-      { name: "PueiTrello", icon: "📋", desc: "Boards, lists, cards.", url: "https://trello.com" },
-    ],
-    social: [
-      { name: "Puei Messenger", icon: "💬", desc: "Chat with other accounts.", appId: "puei-messenger" },
-      { name: "PueiSocial", icon: "📣", desc: "Built-in social network.", appId: "puei-social" },
-      { name: "PueiTube Chat", icon: "🎥", desc: "Video calls.", url: "https://meet.google.com" },
-      { name: "PueiGram", icon: "📷", desc: "Photo sharing on the open web.", url: "https://www.instagram.com" },
-      { name: "Pueitter", icon: "🐦", desc: "Microblogging.", url: "https://twitter.com" },
-      { name: "PueiBook", icon: "📘", desc: "Stay in touch with friends.", url: "https://www.facebook.com" },
-      { name: "PueiDiscord", icon: "🎧", desc: "Chat for communities.", url: "https://discord.com" },
-      { name: "PueiReddit", icon: "👽", desc: "The Puei-net's front page.", url: "https://www.reddit.com" },
-    ],
-    media: [
-      { name: "PueiTube", icon: "▶️", desc: "Video for everyone.", url: "https://www.youtube.com" },
-      { name: "PueiFlix", icon: "🎬", desc: "Movies & shows.", url: "https://www.netflix.com" },
-      { name: "PueiSpot", icon: "🎵", desc: "Music streaming.", url: "https://open.spotify.com" },
-      { name: "PueiTunes", icon: "🎧", desc: "Podcasts & audio.", url: "https://soundcloud.com" },
-      { name: "PueiPics", icon: "🖼️", desc: "Stock photos & art.", url: "https://unsplash.com" },
-      { name: "PueiTwitch", icon: "📡", desc: "Live streams.", url: "https://www.twitch.tv" },
-    ],
-    games: [
-      { name: "Pueiblox", icon: "🟦", desc: "Build & play together.", url: "https://www.roblox.com" },
-      { name: "PueiCraft", icon: "⛏️", desc: "Mine, craft, repeat.", url: "https://www.minecraft.net" },
-      { name: "PueiSteam", icon: "💨", desc: "PC games marketplace.", url: "https://store.steampowered.com" },
-      { name: "PueiArcade", icon: "🕹️", desc: "Free browser arcade.", url: "https://poki.com" },
-      { name: "PueiChess", icon: "♟️", desc: "Online chess.", url: "https://www.chess.com" },
-      { name: "PueiAmongOS", icon: "🟥", desc: "Find the imposter.", url: "https://innersloth.com" },
-    ],
-    dev: [
-      { name: "PueiHub", icon: "🐙", desc: "Code hosting.", url: "https://github.com" },
-      { name: "PueiCodeSandbox", icon: "📦", desc: "Web IDE.", url: "https://codesandbox.io" },
-      { name: "Pueitlify", icon: "🚀", desc: "Deploy static sites.", url: "https://app.netlify.com" },
-      { name: "PueiCel", icon: "▲", desc: "Frontend cloud.", url: "https://vercel.com" },
-      { name: "PueiOverflow", icon: "📚", desc: "Q&A for programmers.", url: "https://stackoverflow.com" },
-      { name: "PueiNotion", icon: "🗒️", desc: "Notes & wikis.", url: "https://www.notion.so" },
-    ],
-    web: [
-      { name: "PueiSearch", icon: "🔍", desc: "Search the web.", url: "https://www.google.com" },
-      { name: "PueiPedia", icon: "📖", desc: "Free encyclopedia.", url: "https://www.wikipedia.org" },
-      { name: "PueiMaps", icon: "🗺️", desc: "Get directions.", url: "https://maps.google.com" },
-      { name: "Pueizon", icon: "📦", desc: "Shop everything.", url: "https://www.amazon.com" },
-      { name: "PueiBay", icon: "🛒", desc: "Auctions & deals.", url: "https://www.ebay.com" },
-      { name: "PueiWeather", icon: "⛅", desc: "Forecasts.", url: "https://weather.com" },
-    ],
-  };
   return (
     <div className="flex h-full">
       <div className="w-44 p-2 border-r text-sm overflow-auto" style={{ background: "var(--glass)" }}>
-        <div className="font-semibold opacity-70 text-xs mb-2 px-2">STORE</div>
-        {cats.map(([k, l]) => (
+        <div className="font-semibold opacity-70 text-xs mb-2 px-2">PUEI APP STORE</div>
+        {([["official","✨ Official apps"],["installer","📥 Installer"]] as const).map(([k, l]) => (
           <div key={k} onClick={() => { setTab(k); blip("click"); }}
             className="px-3 py-2 rounded cursor-pointer text-sm mb-0.5"
             style={{ background: tab === k ? "var(--gradient-aero)" : "transparent", color: tab === k ? "white" : undefined }}>{l}</div>
         ))}
+        <div className="text-[10px] opacity-60 px-2 mt-4 leading-snug">
+          PueiOS 2 is a closed ecosystem. Only Puei Team–built apps are allowed here. Unofficial apps (e.g. "PueiReddit") are not permitted.
+        </div>
       </div>
       <div className="flex-1 p-5 overflow-auto">
         {tab === "installer" ? <InstallerPane installWebApp={installWebApp} /> : (
           <div>
             <h2 className="text-2xl font-bold mb-1">PueiOS 2 App Store</h2>
-            <p className="text-sm opacity-70 mb-4 capitalize">{tab === "featured" ? "Bundled apps shipped with PueiOS 2." : `${tab} apps for your desktop.`}</p>
+            <p className="text-sm opacity-70 mb-4">Verified, first-party apps built by the Puei Team. Closed ecosystem — security and trust over openness.</p>
             <div className="grid grid-cols-3 gap-3">
-              {lists[tab].map((a) => (
+              {official.map((a) => (
                 <div key={a.name} className="aero-glass-light rounded-lg p-3 flex flex-col">
                   <div className="flex items-center gap-2">
-                    {a.url
-                      ? <img src={googleFaviconFor(a.url, 64)} alt="" className="w-8 h-8 rounded" onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
-                      : <div className="text-3xl">{a.icon}</div>}
-                    <div className="font-semibold">{a.name}</div>
+                    <div className="text-3xl">{a.icon}</div>
+                    <div>
+                      <div className="font-semibold">{a.name}</div>
+                      <div className="text-[10px] opacity-60">✓ Official · Puei Team</div>
+                    </div>
                   </div>
                   <div className="text-xs opacity-70 mt-1 h-8">{a.desc}</div>
-                  {a.appId ? (
-                    <button className="aero-button rounded px-3 py-1 text-xs mt-auto w-full"
-                      onClick={() => openApp(a.appId!)}>Open</button>
-                  ) : (
-                    <button className="aero-button rounded px-3 py-1 text-xs mt-auto w-full"
-                      onClick={() => { installWebApp(a.name, a.url!); blip("notify"); }}>Install</button>
-                  )}
+                  <button className="aero-button rounded px-3 py-1 text-xs mt-auto w-full"
+                    onClick={() => openApp(a.appId)}>Open</button>
                 </div>
               ))}
             </div>
@@ -855,32 +805,41 @@ function AppStoreApp({ installWebApp, openApp }: { installWebApp: (label: string
 }
 
 
-function InstallerPane({ installWebApp }: { installWebApp: (label: string, url: string) => void }) {
-  const [url, setUrl] = useState("https://example.com");
+function InstallerPane({ installWebApp }: { installWebApp: (label: string, url: string, iconUrl?: string) => void }) {
+  const [url, setUrl] = useState("https://yourapp.lovable.app");
   const [name, setName] = useState("");
-  const [msg, setMsg] = useState("");
+  const [msg, setMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
   const install = () => {
-    let u = url.trim();
-    if (!u) { setMsg("Enter a URL"); return; }
-    if (!/^https?:\/\//i.test(u)) u = "https://" + u;
+    const res = classifyTrustedUrl(url);
+    if (!res.ok || !res.url || !res.kind) {
+      blip("error");
+      setMsg({ kind: "err", text: res.reason || "Untrusted URL. Only *.lovable.app and *.base44.app are allowed." });
+      return;
+    }
     let label = name.trim();
     if (!label) {
-      try { label = new URL(u).hostname.replace(/^www\./, ""); } catch { label = "Web App"; }
+      try { label = new URL(res.url).hostname.split(".")[0]; } catch { label = "Web App"; }
     }
-    installWebApp(label, u);
-    setMsg(`Installed "${label}" on your desktop ✓ (icons wrap every 6)`);
+    const icon = trustedIconFor(res.kind);
+    installWebApp(label, res.url, icon);
+    setMsg({ kind: "ok", text: `Installed "${label}" (${res.kind === "lovable" ? "Lovable" : "Base44"} app) on your desktop ✓` });
     blip("notify");
     setUrl(""); setName("");
   };
   return (
     <div>
       <h2 className="text-2xl font-bold mb-1">📥 Installer</h2>
-      <p className="text-sm opacity-70 mb-4">Type any website URL to install it as a desktop app. Shortcuts respect the 6-per-column desktop rule.</p>
+      <p className="text-sm opacity-70 mb-4">Install trusted web apps as desktop shortcuts. Only verified domains are accepted.</p>
       <div className="aero-glass-light rounded-lg p-4 max-w-lg space-y-3">
+        <div className="text-xs opacity-80">
+          <div className="font-semibold mb-1">Trusted domains</div>
+          <code className="block px-2 py-1 rounded" style={{ background: "rgba(0,0,0,0.08)" }}>https://&lt;appname&gt;.lovable.app</code>
+          <code className="block px-2 py-1 rounded mt-1" style={{ background: "rgba(0,0,0,0.08)" }}>https://&lt;appname&gt;.base44.app</code>
+        </div>
         <div>
           <label className="text-xs opacity-70">Website URL</label>
           <input value={url} onChange={(e) => setUrl(e.target.value)}
-            placeholder="https://example.com"
+            placeholder="https://yourapp.lovable.app"
             className="w-full px-3 py-2 rounded text-sm outline-none" style={{ background: "white", color: "#111" }} />
         </div>
         <div>
@@ -890,10 +849,15 @@ function InstallerPane({ installWebApp }: { installWebApp: (label: string, url: 
             className="w-full px-3 py-2 rounded text-sm outline-none" style={{ background: "white", color: "#111" }} />
         </div>
         <button className="aero-button rounded px-4 py-2 w-full" onClick={install}>Install on desktop</button>
-        {msg && <div className="text-xs opacity-80">{msg}</div>}
-      </div>
-      <div className="mt-5 text-xs opacity-70 max-w-lg">
-        Tip: some sites refuse to load inside frames (set <code>X-Frame-Options</code>). In that case, the app will offer an "Open in new tab" button.
+        {msg && (
+          <div className="text-xs rounded px-2 py-1.5"
+            style={{ background: msg.kind === "ok" ? "rgba(80,200,160,0.2)" : "rgba(255,80,80,0.18)", color: msg.kind === "ok" ? undefined : "#a00" }}>
+            {msg.text}
+          </div>
+        )}
+        <div className="text-[10px] opacity-60 leading-snug">
+          Icons are assigned automatically based on the source domain (Lovable or Base44). Manual icon overrides are not allowed for trusted web-installed apps.
+        </div>
       </div>
     </div>
   );

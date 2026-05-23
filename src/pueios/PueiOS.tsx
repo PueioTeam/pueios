@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   blip, defaultIcons, defaultTheme, iconGridPos, googleFaviconFor, pueiNumberFor,
-  loadState, saveState, type AppId, type DesktopIcon, type User,
+  loadState, saveState, registerInDirectory, type AppId, type DesktopIcon, type User,
   type Theme, type WallpaperId, type WindowState,
 } from "./state";
 import { AppWindow, ContextMenu, appIcon } from "./Window";
@@ -12,7 +12,7 @@ type Phase = "install" | "boot" | "login" | "desktop" | "shutdown" | "recovery";
 
 const APP_TITLES: Record<AppId, string> = {
   "puei-paint": "Puei Paint 2",
-  "pueinet": "PueiNet",
+  "pueinet": "PueiWeb",
   "puei-messenger": "Puei Messenger",
   "file-explorer": "Computer",
   "settings": "Settings",
@@ -107,14 +107,17 @@ export function PueiOS() {
     const root = document.documentElement;
     root.style.setProperty("--accent-h", String(theme.accentH));
     root.classList.toggle("dark", theme.dark);
-    if (!theme.transparency) {
-      root.style.setProperty("--glass", "oklch(0.96 0.02 220 / 1)");
-      root.style.setProperty("--glass-strong", "oklch(0.98 0.01 220 / 1)");
+    root.classList.toggle("high-contrast", !!theme.highContrast);
+    if (!theme.transparency || theme.highContrast) {
+      root.style.setProperty("--glass", theme.highContrast ? "#000" : "oklch(0.96 0.02 220 / 1)");
+      root.style.setProperty("--glass-strong", theme.highContrast ? "#000" : "oklch(0.98 0.01 220 / 1)");
     } else {
       root.style.removeProperty("--glass");
       root.style.removeProperty("--glass-strong");
     }
     saveState({ installed, theme, icons, users, lastUser: loginUser, remember });
+    // Keep the global PueiNumber directory in sync so friends can be added by ID
+    users.forEach((u) => { if (u.pueiNumber) registerInDirectory(u); });
   }, [installed, theme, icons, users, loginUser, remember]);
 
   useEffect(() => {
@@ -309,34 +312,51 @@ export function PueiOS() {
           }}>Next →</button>
         </div>
       </div>,
-      // 3 progress (Windows-style multi-phase)
+      // 3 progress (Windows-style multi-phase — 8 mandatory stages, no skipping)
       (() => {
         const phases = [
-          { until: 15, label: "Copying PueiOS files…" },
-          { until: 30, label: "Getting files ready for installation…" },
-          { until: 50, label: "Installing features…" },
-          { until: 70, label: "Installing updates…" },
-          { until: 85, label: "Finishing up…" },
-          { until: 100, label: "Preparing PueiOS for first use…" },
+          { until: 8,   label: "Preparing files…" },
+          { until: 20,  label: "Copying system data…" },
+          { until: 35,  label: "Installing Kernel Layer…" },
+          { until: 55,  label: "Installing System Apps (Messenger, PueiWeb, PueiSocial, Paint 2)…" },
+          { until: 70,  label: "Configuring AI Layer…" },
+          { until: 82,  label: "Setting up File System…" },
+          { until: 92,  label: "Applying security policies…" },
+          { until: 100, label: "Final optimization and system checks…" },
         ];
-        const phase = phases.find((p) => installProgress < p.until) ?? phases[phases.length - 1];
+        const ph = phases.find((p) => installProgress < p.until) ?? phases[phases.length - 1];
+        const stageIndex = phases.indexOf(ph);
         const files = [
-          "aero.glass", "puei.mascot.swf", "wallpaper.bliss.bmp", "kernel32.pue", "explorer.exe",
-          "messenger.dll", "paint2.dll", "pueisocial.cab", "appstore.cab", "startorb.png",
-          "fonts/PueiSans.ttf", "drivers/glass.sys", "services/notify.exe", "registry/pueios.hive",
-          "themes/aero.theme", "sounds/start.wav", "drivers/audio.sys", "pueinet.dll",
+          "aero.glass", "puei.mascot.swf", "kernel32.pue", "explorer.exe",
+          "messenger.dll", "paint2.dll", "pueisocial.cab", "appstore.cab",
+          "pueiweb.dll", "ai/layer.bin", "ai/policy.dat", "fs/journal.bin",
+          "fonts/PueiSans.ttf", "drivers/glass.sys", "services/notify.exe",
+          "registry/pueios.hive", "themes/aero.theme", "sounds/start.wav",
+          "security/policies.xml", "security/trusted-domains.lst",
+          "drivers/audio.sys", "pueinet.dll",
         ];
-        const fileShown = files[Math.floor(installProgress * 0.6) % files.length];
+        const fileShown = files[Math.floor(installProgress * 0.9) % files.length];
         return (
-          <div key="3" className="text-center w-96">
+          <div key="3" className="text-center w-[28rem]">
             <div className="boot-logo inline-block mb-4"><PueiLogoSvg size={70} glow /></div>
             <h2 className="text-lg font-semibold mb-1">Installing PueiOS 2…</h2>
-            <p className="text-xs opacity-80 mb-1">{phase.label}</p>
+            <p className="text-xs opacity-80 mb-1">Stage {stageIndex + 1} of {phases.length} · {ph.label}</p>
             <p className="text-[10px] opacity-50 mb-4 font-mono truncate">{fileShown}</p>
             <div className="w-full h-2 rounded-full bg-cyan-900/50 overflow-hidden">
               <div className="loading-bar-inner h-full" style={{ width: `${installProgress}%`, transition: "width 0.2s" }} />
             </div>
             <div className="text-[10px] opacity-60 mt-2">{Math.floor(installProgress)}% complete</div>
+            <div className="grid grid-cols-4 gap-1 mt-4 text-[9px]">
+              {phases.map((p, i) => (
+                <div key={i} className="rounded px-1 py-0.5"
+                  style={{
+                    background: stageIndex > i ? "rgba(80,200,160,0.25)" : stageIndex === i ? "rgba(120,180,255,0.3)" : "rgba(255,255,255,0.05)",
+                    opacity: stageIndex >= i ? 1 : 0.4,
+                  }}>
+                  {stageIndex > i ? "✓" : stageIndex === i ? "…" : "·"} {["Prep","Copy","Kernel","Apps","AI","FS","Security","Optimize"][i]}
+                </div>
+              ))}
+            </div>
             <div className="text-[10px] opacity-40 mt-4">Your PC will restart several times. This might take a while.</div>
           </div>
         );
@@ -392,7 +412,7 @@ export function PueiOS() {
         <button className="aero-button rounded px-3 py-2 text-sm w-full" onClick={() => {
           const name = newAcc.name.trim();
           if (!name) { setInstallErr("Pick a name"); return; }
-          const nu: User = { name, password: newAcc.password, avatar: newAcc.avatar || "🧑", color: newAcc.color, pueiNumber: pueiNumberFor(name + ":" + Date.now()) };
+          const nu: User = { name, password: newAcc.password, avatar: newAcc.avatar || "🧑", color: newAcc.color, pueiNumber: pueiNumberFor(name + ":" + Date.now()), friends: [] };
           setUsers([nu]); setLoginUser(name); setInstalled(true); setInstallErr("");
           setNewAcc({ name: "", password: "", avatar: "🧑", color: "200" });
           blip("notify");
@@ -408,19 +428,23 @@ export function PueiOS() {
       </div>,
     ];
 
-    // Drive the installer progress bar — slow, Windows-like, ~25 seconds
+    // Drive the installer progress bar — slow, Windows-like, ~70 seconds with
+    // mandatory "thinking" pauses at the 8 stage boundaries (8, 20, 35, 55, 70, 82, 92).
     if (phase === "install" && installStep === 3 && installProgress < 100) {
       setTimeout(() => {
         setInstallProgress((p) => {
-          // Slower around "phase boundaries" (15, 30, 50, 70, 85) to feel realistic
-          const boundaries = [15, 30, 50, 70, 85];
-          const nearBoundary = boundaries.some((b) => Math.abs(p - b) < 1.5);
-          const inc = nearBoundary ? 0.05 + Math.random() * 0.15 : 0.4 + Math.random() * 1.0;
+          const boundaries = [8, 20, 35, 55, 70, 82, 92];
+          const nearBoundary = boundaries.some((b) => Math.abs(p - b) < 1.2);
+          // Smaller increments overall; tiny near boundaries to simulate
+          // "configuring", "thinking", "optimizing" pauses.
+          const inc = nearBoundary
+            ? 0.02 + Math.random() * 0.08
+            : 0.15 + Math.random() * 0.45;
           const next = Math.min(100, p + inc);
-          if (next >= 100) setTimeout(() => setInstallStep(4), 800);
+          if (next >= 100) setTimeout(() => setInstallStep(4), 1200);
           return next;
         });
-      }, 180);
+      }, 220);
     }
 
     return (
@@ -497,7 +521,7 @@ export function PueiOS() {
       const name = newAcc.name.trim();
       if (!name) { setPwError("Pick a name"); return; }
       if (users.some((u) => u.name === name)) { setPwError("Name already exists"); return; }
-      const nu: User = { name, password: newAcc.password, avatar: newAcc.avatar || "🧑", color: newAcc.color || "200", pueiNumber: pueiNumberFor(name + ":" + Date.now()) };
+      const nu: User = { name, password: newAcc.password, avatar: newAcc.avatar || "🧑", color: newAcc.color || "200", pueiNumber: pueiNumberFor(name + ":" + Date.now()), friends: [] };
       const next = [...users, nu];
       setUsers(next); setLoginUser(name); setCreating(false);
       setNewAcc({ name: "", password: "", avatar: "🧑", color: "200" }); setPwError(""); blip("notify");
@@ -698,7 +722,7 @@ export function PueiOS() {
               openApp={openAppSimple} wallpaper={theme.wallpaper} setWallpaper={setWallpaper}
               currentUser={currentUser} fileId={w.fileId} users={users}
               webUrl={w.webUrl} folderIconId={w.folderIconId} icons={icons}
-              installWebApp={(label, url) => addIcon({ id: `web-${Date.now().toString(36)}`, label, appId: "web-app", webUrl: url, iconUrl: googleFaviconFor(url, 64) })}
+              installWebApp={(label, url, iconUrl) => addIcon({ id: `web-${Date.now().toString(36)}`, label, appId: "web-app", webUrl: url, iconUrl: iconUrl || googleFaviconFor(url, 64) })}
               openWebApp={(url, title) => openApp("web-app", { webUrl: url, title })}
               openFolder={(folderIconId, title) => openApp("folder", { folderIconId, title })}
               setUsers={setUsers}
