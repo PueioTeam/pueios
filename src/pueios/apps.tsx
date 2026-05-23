@@ -70,7 +70,7 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, curren
     ["sound", "🔊 Sound"],
     ["touch", "👆 Touchscreen"],
     ["accessibility", "♿ Accessibility"],
-    ["performance", "⚡ Performance"],
+    ["highcontrast", "⚡ High Contrast"],
     ["about", "ℹ️ About"],
   ];
   return (
