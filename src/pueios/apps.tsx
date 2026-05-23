@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import type { AppId, Theme, User, WallpaperId, SavedFile, ChatMessage, DesktopIcon, SocialPost } from "./state";
 import {
   blip, loadFiles, upsertFile, deleteFile, getFile, appendChat, loadChat,
-  loadSocial, saveSocial,
+  loadSocial, saveSocial, pueiNumberFor, googleFaviconFor,
 } from "./state";
 
 export type AppRendererProps = {
