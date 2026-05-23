@@ -5,7 +5,52 @@ export type Theme = {
   transparency: boolean;
   animations: boolean;
   wallpaper: WallpaperId;
+  highContrast: boolean;
 };
+
+// Trusted domains for the Installer (closed-ecosystem rule)
+export const TRUSTED_DOMAINS = [".lovable.app", ".base44.app"] as const;
+export type TrustedKind = "lovable" | "base44" | null;
+export function classifyTrustedUrl(raw: string): { ok: boolean; kind: TrustedKind; url?: string; host?: string; reason?: string } {
+  let u = raw.trim();
+  if (!u) return { ok: false, kind: null, reason: "Empty URL" };
+  if (!/^https?:\/\//i.test(u)) u = "https://" + u;
+  try {
+    const parsed = new URL(u);
+    if (parsed.protocol !== "https:") return { ok: false, kind: null, reason: "Only https:// URLs are trusted" };
+    const host = parsed.hostname.toLowerCase();
+    if (host.endsWith(".lovable.app")) return { ok: true, kind: "lovable", url: u, host };
+    if (host.endsWith(".base44.app")) return { ok: true, kind: "base44", url: u, host };
+    return { ok: false, kind: null, host, reason: "Untrusted domain. PueiOS 2 only installs apps from *.lovable.app or *.base44.app." };
+  } catch {
+    return { ok: false, kind: null, reason: "Invalid URL" };
+  }
+}
+
+// Brand icons for trusted-domain installs (data URIs, no network)
+const LOVABLE_ICON =
+  "data:image/svg+xml;utf8," + encodeURIComponent(`
+<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'>
+  <defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'>
+    <stop offset='0' stop-color='#ff6aa9'/><stop offset='1' stop-color='#7b3bff'/>
+  </linearGradient></defs>
+  <rect width='64' height='64' rx='14' fill='url(#g)'/>
+  <path fill='#fff' d='M32 50s-15-9-15-21a9 9 0 0 1 15-6 9 9 0 0 1 15 6c0 12-15 21-15 21z'/>
+</svg>`);
+const BASE44_ICON =
+  "data:image/svg+xml;utf8," + encodeURIComponent(`
+<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'>
+  <defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'>
+    <stop offset='0' stop-color='#22d3ee'/><stop offset='1' stop-color='#2563eb'/>
+  </linearGradient></defs>
+  <rect width='64' height='64' rx='14' fill='url(#g)'/>
+  <text x='32' y='40' font-family='Segoe UI,system-ui,sans-serif' font-size='22' font-weight='800' fill='#fff' text-anchor='middle'>44</text>
+</svg>`);
+export function trustedIconFor(kind: TrustedKind): string | undefined {
+  if (kind === "lovable") return LOVABLE_ICON;
+  if (kind === "base44") return BASE44_ICON;
+  return undefined;
+}
 
 // Wallpapers: built-ins or "custom:<fileId>" referencing a saved Paint image
 export type WallpaperId = "default" | "bliss" | "aurora" | "sunset" | string;
