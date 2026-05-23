@@ -102,7 +102,7 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, curren
             </div>
             <div className="mt-6 space-y-3">
               <label className="flex items-center gap-2 text-sm">
-                <input type="checkbox" checked={theme.dark} onChange={(e) => setTheme({ ...theme, dark: e.target.checked })} /> Dark mode
+                <input type="checkbox" checked={theme.dark} onChange={(e) => setTheme({ ...theme, dark: e.target.checked })} /> Dark mode <span className="text-xs opacity-60">(global — applies to every system surface)</span>
               </label>
               <label className="flex items-center gap-2 text-sm">
                 <input type="checkbox" checked={theme.transparency} onChange={(e) => setTheme({ ...theme, transparency: e.target.checked })} /> Aero transparency
