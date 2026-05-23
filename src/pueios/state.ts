@@ -122,7 +122,32 @@ export type User = {
   avatar: string; // emoji OR data URL
   color: string;
   pueiNumber?: string; // assigned at account creation; visible in Messenger settings
+  friends?: string[]; // list of accepted friend PueiNumbers
 };
+
+// Global directory of PueiNumbers across the device → so friend requests by ID can resolve
+const DIRECTORY_KEY = "pueios2-directory-v1";
+export type DirectoryEntry = { pueiNumber: string; name: string; avatar: string; color: string };
+export function loadDirectory(): DirectoryEntry[] {
+  if (typeof window === "undefined") return [];
+  try { return JSON.parse(localStorage.getItem(DIRECTORY_KEY) || "[]"); } catch { return []; }
+}
+export function saveDirectory(entries: DirectoryEntry[]) {
+  if (typeof window === "undefined") return;
+  try { localStorage.setItem(DIRECTORY_KEY, JSON.stringify(entries)); } catch {}
+}
+export function registerInDirectory(u: User) {
+  if (!u.pueiNumber) return;
+  const dir = loadDirectory();
+  const i = dir.findIndex((e) => e.pueiNumber === u.pueiNumber);
+  const entry: DirectoryEntry = { pueiNumber: u.pueiNumber, name: u.name, avatar: u.avatar, color: u.color };
+  if (i >= 0) dir[i] = entry; else dir.push(entry);
+  saveDirectory(dir);
+}
+export function lookupPueiNumber(num: string): DirectoryEntry | undefined {
+  const cleaned = num.replace(/\s/g, "");
+  return loadDirectory().find((e) => e.pueiNumber === cleaned);
+}
 
 export type SavedFile = {
   id: string;
