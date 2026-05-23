@@ -173,6 +173,7 @@ export const defaultTheme: Theme = {
   transparency: true,
   animations: true,
   wallpaper: "default",
+  highContrast: false,
 };
 
 export const defaultIcons: DesktopIcon[] = [
