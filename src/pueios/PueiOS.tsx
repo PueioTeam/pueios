@@ -255,7 +255,7 @@ export function PueiOS() {
         const u = prompt("Website URL to install into this folder:", "https://example.com");
         if (!u) return;
         const label = prompt("Name:", new URL(u.startsWith("http") ? u : "https://" + u).hostname) || "Web App";
-        addIcon({ id: `web-${Date.now().toString(36)}`, label, appId: "web-app", webUrl: u.startsWith("http") ? u : "https://" + u, folderId: icon.id });
+        addIcon({ id: `web-${Date.now().toString(36)}`, label, appId: "web-app", webUrl: u.startsWith("http") ? u : "https://" + u, iconUrl: googleFaviconFor(u, 64), folderId: icon.id });
       }}] : []),
       { sep: true },
       { label: "Properties", action: () => pushNotif(icon.label, icon.webUrl ? `Installed web app · ${icon.webUrl}` : `PueiOS Shortcut · ${APP_TITLES[icon.appId]}`) },
