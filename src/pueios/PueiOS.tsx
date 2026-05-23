@@ -370,7 +370,7 @@ export function PueiOS() {
         <button className="aero-button rounded px-3 py-2 text-sm w-full" onClick={() => {
           const name = newAcc.name.trim();
           if (!name) { setInstallErr("Pick a name"); return; }
-          const nu: User = { name, password: newAcc.password, avatar: newAcc.avatar || "🧑", color: newAcc.color };
+          const nu: User = { name, password: newAcc.password, avatar: newAcc.avatar || "🧑", color: newAcc.color, pueiNumber: pueiNumberFor(name + ":" + Date.now()) };
           setUsers([nu]); setLoginUser(name); setInstalled(true); setInstallErr("");
           setNewAcc({ name: "", password: "", avatar: "🧑", color: "200" });
           blip("notify");
