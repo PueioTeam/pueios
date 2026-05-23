@@ -736,49 +736,124 @@ function FileGrid({ files, emptyHint, openFile, onDelete }: {
 
 // ---------- App Store ----------
 function AppStoreApp({ installWebApp, openApp }: { installWebApp: (label: string, url: string) => void; openApp: (id: AppId) => void }) {
-  const [tab, setTab] = useState<"featured" | "installer">("featured");
+  const [tab, setTab] = useState<"featured" | "productivity" | "social" | "media" | "games" | "dev" | "web" | "installer">("featured");
+  const cats: [typeof tab, string][] = [
+    ["featured", "🌟 Featured"],
+    ["productivity", "💼 Productivity"],
+    ["social", "💬 Social"],
+    ["media", "🎬 Media"],
+    ["games", "🎮 Games"],
+    ["dev", "🧑‍💻 Developer"],
+    ["web", "🌐 Web Apps"],
+    ["installer", "📥 Installer"],
+  ];
+  type StoreApp = { name: string; icon: string; desc: string; appId?: AppId; url?: string };
+  const lists: Record<string, StoreApp[]> = {
+    featured: [
+      { name: "Puei Paint 2", icon: "🎨", desc: "Paint, save, and use as wallpaper.", appId: "puei-paint" },
+      { name: "PueiNet", icon: "🌐", desc: "The retro-futuristic web browser.", appId: "pueinet" },
+      { name: "Puei Messenger", icon: "💬", desc: "Chat & get a PueiNumber.", appId: "puei-messenger" },
+      { name: "PueiSocial", icon: "📣", desc: "Post text, images, videos.", appId: "puei-social" },
+      { name: "Notepad", icon: "📝", desc: "Write and save text files.", appId: "notepad" },
+      { name: "Calculator", icon: "🧮", desc: "Basic arithmetic, glossy buttons.", appId: "calculator" },
+      { name: "Computer", icon: "🗂️", desc: "Browse files and folders.", appId: "file-explorer" },
+      { name: "Settings", icon: "⚙️", desc: "Themes, wallpaper, account.", appId: "settings" },
+    ],
+    productivity: [
+      { name: "Notepad", icon: "📝", desc: "Plain text editor.", appId: "notepad" },
+      { name: "Calculator", icon: "🧮", desc: "Arithmetic & history.", appId: "calculator" },
+      { name: "PueiDocs", icon: "📄", desc: "Documents in the cloud.", url: "https://docs.google.com" },
+      { name: "PueiSheets", icon: "📊", desc: "Spreadsheets that just work.", url: "https://sheets.google.com" },
+      { name: "PueiCal", icon: "📆", desc: "Calendar & scheduling.", url: "https://calendar.google.com" },
+      { name: "PueiMail", icon: "✉️", desc: "Webmail client.", url: "https://mail.google.com" },
+      { name: "Pueidian Drive", icon: "💽", desc: "Cloud storage.", url: "https://drive.google.com" },
+      { name: "PueiTrello", icon: "📋", desc: "Boards, lists, cards.", url: "https://trello.com" },
+    ],
+    social: [
+      { name: "Puei Messenger", icon: "💬", desc: "Chat with other accounts.", appId: "puei-messenger" },
+      { name: "PueiSocial", icon: "📣", desc: "Built-in social network.", appId: "puei-social" },
+      { name: "PueiTube Chat", icon: "🎥", desc: "Video calls.", url: "https://meet.google.com" },
+      { name: "PueiGram", icon: "📷", desc: "Photo sharing on the open web.", url: "https://www.instagram.com" },
+      { name: "Pueitter", icon: "🐦", desc: "Microblogging.", url: "https://twitter.com" },
+      { name: "PueiBook", icon: "📘", desc: "Stay in touch with friends.", url: "https://www.facebook.com" },
+      { name: "PueiDiscord", icon: "🎧", desc: "Chat for communities.", url: "https://discord.com" },
+      { name: "PueiReddit", icon: "👽", desc: "The Puei-net's front page.", url: "https://www.reddit.com" },
+    ],
+    media: [
+      { name: "PueiTube", icon: "▶️", desc: "Video for everyone.", url: "https://www.youtube.com" },
+      { name: "PueiFlix", icon: "🎬", desc: "Movies & shows.", url: "https://www.netflix.com" },
+      { name: "PueiSpot", icon: "🎵", desc: "Music streaming.", url: "https://open.spotify.com" },
+      { name: "PueiTunes", icon: "🎧", desc: "Podcasts & audio.", url: "https://soundcloud.com" },
+      { name: "PueiPics", icon: "🖼️", desc: "Stock photos & art.", url: "https://unsplash.com" },
+      { name: "PueiTwitch", icon: "📡", desc: "Live streams.", url: "https://www.twitch.tv" },
+    ],
+    games: [
+      { name: "Pueiblox", icon: "🟦", desc: "Build & play together.", url: "https://www.roblox.com" },
+      { name: "PueiCraft", icon: "⛏️", desc: "Mine, craft, repeat.", url: "https://www.minecraft.net" },
+      { name: "PueiSteam", icon: "💨", desc: "PC games marketplace.", url: "https://store.steampowered.com" },
+      { name: "PueiArcade", icon: "🕹️", desc: "Free browser arcade.", url: "https://poki.com" },
+      { name: "PueiChess", icon: "♟️", desc: "Online chess.", url: "https://www.chess.com" },
+      { name: "PueiAmongOS", icon: "🟥", desc: "Find the imposter.", url: "https://innersloth.com" },
+    ],
+    dev: [
+      { name: "PueiHub", icon: "🐙", desc: "Code hosting.", url: "https://github.com" },
+      { name: "PueiCodeSandbox", icon: "📦", desc: "Web IDE.", url: "https://codesandbox.io" },
+      { name: "Pueitlify", icon: "🚀", desc: "Deploy static sites.", url: "https://app.netlify.com" },
+      { name: "PueiCel", icon: "▲", desc: "Frontend cloud.", url: "https://vercel.com" },
+      { name: "PueiOverflow", icon: "📚", desc: "Q&A for programmers.", url: "https://stackoverflow.com" },
+      { name: "PueiNotion", icon: "🗒️", desc: "Notes & wikis.", url: "https://www.notion.so" },
+    ],
+    web: [
+      { name: "PueiSearch", icon: "🔍", desc: "Search the web.", url: "https://www.google.com" },
+      { name: "PueiPedia", icon: "📖", desc: "Free encyclopedia.", url: "https://www.wikipedia.org" },
+      { name: "PueiMaps", icon: "🗺️", desc: "Get directions.", url: "https://maps.google.com" },
+      { name: "Pueizon", icon: "📦", desc: "Shop everything.", url: "https://www.amazon.com" },
+      { name: "PueiBay", icon: "🛒", desc: "Auctions & deals.", url: "https://www.ebay.com" },
+      { name: "PueiWeather", icon: "⛅", desc: "Forecasts.", url: "https://weather.com" },
+    ],
+  };
   return (
     <div className="flex h-full">
-      <div className="w-44 p-2 border-r text-sm" style={{ background: "var(--glass)" }}>
+      <div className="w-44 p-2 border-r text-sm overflow-auto" style={{ background: "var(--glass)" }}>
         <div className="font-semibold opacity-70 text-xs mb-2 px-2">STORE</div>
-        {[["featured", "🌟 Featured"], ["installer", "📥 Installer"]].map(([k, l]) => (
-          <div key={k} onClick={() => setTab(k as any)}
-            className="px-3 py-2 rounded cursor-pointer"
+        {cats.map(([k, l]) => (
+          <div key={k} onClick={() => { setTab(k); blip("click"); }}
+            className="px-3 py-2 rounded cursor-pointer text-sm mb-0.5"
             style={{ background: tab === k ? "var(--gradient-aero)" : "transparent", color: tab === k ? "white" : undefined }}>{l}</div>
         ))}
       </div>
       <div className="flex-1 p-5 overflow-auto">
-        {tab === "featured" && (
+        {tab === "installer" ? <InstallerPane installWebApp={installWebApp} /> : (
           <div>
             <h2 className="text-2xl font-bold mb-1">PueiOS 2 App Store</h2>
-            <p className="text-sm opacity-70 mb-4">Bundled apps shipped with PueiOS 2.</p>
+            <p className="text-sm opacity-70 mb-4 capitalize">{tab === "featured" ? "Bundled apps shipped with PueiOS 2." : `${tab} apps for your desktop.`}</p>
             <div className="grid grid-cols-3 gap-3">
-              {[
-                ["puei-paint", "Puei Paint 2", "🎨", "Paint, save, and use as wallpaper."],
-                ["notepad", "Notepad", "📝", "Write and save text files."],
-                ["calculator", "Calculator", "🧮", "Basic arithmetic, glossy buttons."],
-                ["pueinet", "PueiNet", "🌐", "The retro-futuristic web browser."],
-                ["puei-messenger", "Puei Messenger", "💬", "Chat with other local accounts."],
-                ["puei-social", "PueiSocial", "📣", "Post text, images, videos."],
-                ["file-explorer", "Computer", "🗂️", "Browse files and folders."],
-                ["settings", "Settings", "⚙️", "Themes, wallpaper, account."],
-              ].map(([id, name, icon, desc]) => (
-                <div key={id} className="aero-glass-light rounded-lg p-3">
-                  <div className="text-3xl">{icon}</div>
-                  <div className="font-semibold mt-1">{name}</div>
-                  <div className="text-xs opacity-70 mt-0.5 h-8">{desc}</div>
-                  <button className="aero-button rounded px-3 py-1 text-xs mt-2 w-full"
-                    onClick={() => openApp(id as AppId)}>Open</button>
+              {lists[tab].map((a) => (
+                <div key={a.name} className="aero-glass-light rounded-lg p-3 flex flex-col">
+                  <div className="flex items-center gap-2">
+                    {a.url
+                      ? <img src={googleFaviconFor(a.url, 64)} alt="" className="w-8 h-8 rounded" onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
+                      : <div className="text-3xl">{a.icon}</div>}
+                    <div className="font-semibold">{a.name}</div>
+                  </div>
+                  <div className="text-xs opacity-70 mt-1 h-8">{a.desc}</div>
+                  {a.appId ? (
+                    <button className="aero-button rounded px-3 py-1 text-xs mt-auto w-full"
+                      onClick={() => openApp(a.appId!)}>Open</button>
+                  ) : (
+                    <button className="aero-button rounded px-3 py-1 text-xs mt-auto w-full"
+                      onClick={() => { installWebApp(a.name, a.url!); blip("notify"); }}>Install</button>
+                  )}
                 </div>
               ))}
             </div>
           </div>
         )}
-        {tab === "installer" && <InstallerPane installWebApp={installWebApp} />}
       </div>
     </div>
   );
 }
+
 
 function InstallerPane({ installWebApp }: { installWebApp: (label: string, url: string) => void }) {
   const [url, setUrl] = useState("https://example.com");
