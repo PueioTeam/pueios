@@ -1,4 +1,4 @@
-// PueiOS state types and helpers
+// PueiOS 2 state types and helpers
 export type Theme = {
   accentH: number;
   dark: boolean;
@@ -7,13 +7,17 @@ export type Theme = {
   wallpaper: WallpaperId;
 };
 
-export type WallpaperId = "default" | "bliss" | "aurora" | "sunset";
+// Wallpapers: built-ins or "custom:<fileId>" referencing a saved Paint image
+export type WallpaperId = "default" | "bliss" | "aurora" | "sunset" | string;
 
 export type DesktopIcon = {
   id: string;
   label: string;
   appId: AppId;
   fileId?: string;
+  webUrl?: string;        // for installed web apps
+  iconEmoji?: string;     // optional override icon
+  folderId?: string;      // if set, lives inside this folder icon (folder appId)
 };
 
 export type AppId =
@@ -24,7 +28,11 @@ export type AppId =
   | "settings"
   | "about"
   | "notepad"
-  | "calculator";
+  | "calculator"
+  | "app-store"
+  | "puei-social"
+  | "folder"
+  | "web-app";
 
 export type WindowState = {
   id: string;
@@ -38,13 +46,15 @@ export type WindowState = {
   minimized: boolean;
   maximized: boolean;
   fileId?: string;
+  webUrl?: string;
+  folderIconId?: string;
   prev?: { x: number; y: number; w: number; h: number };
 };
 
 export type User = {
   name: string;
   password: string;
-  avatar: string;
+  avatar: string; // emoji OR data URL
   color: string;
 };
 
@@ -56,26 +66,34 @@ export type SavedFile = {
   updatedAt: number;
 };
 
-export const DEFAULT_USERS: User[] = [
-  { name: "Pueian Rosos", password: "", avatar: "🧑‍💻", color: "200" },
-];
+export type SocialPost = {
+  id: string;
+  author: string;
+  authorAvatar: string;
+  text: string;
+  media?: { kind: "image" | "video"; src: string };
+  at: number;
+  likes: number;
+};
 
 // Max 6 icons per vertical column on the desktop
 export const ICONS_PER_COL = 6;
 
-const KEY = "pueios2-state-v1";
+const KEY = "pueios2-state-v2";
 const FILES_KEY = "pueios2-files-v1";
 const CHAT_KEY = "pueios2-chat-v1";
+const SOCIAL_KEY = "pueios2-social-v1";
 
 export type ChatMessage = {
   id: string;
   from: string;
-  to: string; // user name or "all"
+  to: string;
   text: string;
   at: number;
 };
 
 export type Persisted = {
+  installed: boolean;
   theme: Theme;
   icons: DesktopIcon[];
   users: User[];
@@ -93,13 +111,15 @@ export const defaultTheme: Theme = {
 
 export const defaultIcons: DesktopIcon[] = [
   { id: "i-fe", label: "Computer", appId: "file-explorer" },
+  { id: "i-store", label: "App Store", appId: "app-store" },
+  { id: "i-social", label: "PueiSocial", appId: "puei-social" },
   { id: "i-paint", label: "Puei Paint 2", appId: "puei-paint" },
   { id: "i-net", label: "PueiNet", appId: "pueinet" },
   { id: "i-msg", label: "Puei Messenger", appId: "puei-messenger" },
   { id: "i-set", label: "Settings", appId: "settings" },
   { id: "i-note", label: "Notepad", appId: "notepad" },
   { id: "i-calc", label: "Calculator", appId: "calculator" },
-  { id: "i-about", label: "About PueiOS", appId: "about" },
+  { id: "i-about", label: "About PueiOS 2", appId: "about" },
 ];
 
 export function iconGridPos(index: number) {
@@ -107,39 +127,34 @@ export function iconGridPos(index: number) {
 }
 
 export function loadState(): Persisted {
-  if (typeof window === "undefined")
-    return { theme: defaultTheme, icons: defaultIcons, users: DEFAULT_USERS };
+  const base: Persisted = { installed: false, theme: defaultTheme, icons: defaultIcons, users: [] };
+  if (typeof window === "undefined") return base;
   try {
     const raw = localStorage.getItem(KEY);
-    if (!raw) return { theme: defaultTheme, icons: defaultIcons, users: DEFAULT_USERS };
+    if (!raw) return base;
     const p = JSON.parse(raw);
     return {
+      installed: !!p.installed,
       theme: { ...defaultTheme, ...(p.theme || {}) },
       icons: p.icons?.length ? p.icons : defaultIcons,
-      users: p.users?.length ? p.users : DEFAULT_USERS,
+      users: Array.isArray(p.users) ? p.users : [],
       lastUser: p.lastUser,
       remember: p.remember,
     };
   } catch {
-    return { theme: defaultTheme, icons: defaultIcons, users: DEFAULT_USERS };
+    return base;
   }
 }
 
 export function saveState(p: Persisted) {
   if (typeof window === "undefined") return;
-  try {
-    localStorage.setItem(KEY, JSON.stringify(p));
-  } catch {}
+  try { localStorage.setItem(KEY, JSON.stringify(p)); } catch {}
 }
 
 // ---- Files
 export function loadFiles(): SavedFile[] {
   if (typeof window === "undefined") return [];
-  try {
-    return JSON.parse(localStorage.getItem(FILES_KEY) || "[]");
-  } catch {
-    return [];
-  }
+  try { return JSON.parse(localStorage.getItem(FILES_KEY) || "[]"); } catch { return []; }
 }
 export function saveFiles(files: SavedFile[]) {
   if (typeof window === "undefined") return;
@@ -162,15 +177,13 @@ export function getFile(id: string) {
   return loadFiles().find((f) => f.id === id);
 }
 
-// ---- Chat (cross-tab + persisted log)
+// ---- Chat
 export function loadChat(): ChatMessage[] {
   if (typeof window === "undefined") return [];
   try { return JSON.parse(localStorage.getItem(CHAT_KEY) || "[]"); } catch { return []; }
 }
 export function appendChat(m: ChatMessage) {
-  const all = loadChat();
-  all.push(m);
-  // cap log
+  const all = loadChat(); all.push(m);
   const trimmed = all.slice(-500);
   try {
     localStorage.setItem(CHAT_KEY, JSON.stringify(trimmed));
@@ -178,7 +191,20 @@ export function appendChat(m: ChatMessage) {
   } catch {}
 }
 
-// Audio
+// ---- Social
+export function loadSocial(): SocialPost[] {
+  if (typeof window === "undefined") return [];
+  try { return JSON.parse(localStorage.getItem(SOCIAL_KEY) || "[]"); } catch { return []; }
+}
+export function saveSocial(posts: SocialPost[]) {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(SOCIAL_KEY, JSON.stringify(posts.slice(0, 200)));
+    window.dispatchEvent(new CustomEvent("pueios-social"));
+  } catch {}
+}
+
+// ---- Audio
 let audioCtx: AudioContext | null = null;
 export function blip(kind: "start" | "click" | "hover" | "notify" | "error" | "shutdown") {
   if (typeof window === "undefined") return;
