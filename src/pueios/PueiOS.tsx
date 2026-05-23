@@ -471,7 +471,7 @@ export function PueiOS() {
       const name = newAcc.name.trim();
       if (!name) { setPwError("Pick a name"); return; }
       if (users.some((u) => u.name === name)) { setPwError("Name already exists"); return; }
-      const nu: User = { name, password: newAcc.password, avatar: newAcc.avatar || "🧑", color: newAcc.color || "200" };
+      const nu: User = { name, password: newAcc.password, avatar: newAcc.avatar || "🧑", color: newAcc.color || "200", pueiNumber: pueiNumberFor(name + ":" + Date.now()) };
       const next = [...users, nu];
       setUsers(next); setLoginUser(name); setCreating(false);
       setNewAcc({ name: "", password: "", avatar: "🧑", color: "200" }); setPwError(""); blip("notify");
