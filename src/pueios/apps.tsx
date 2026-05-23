@@ -33,7 +33,7 @@ export function AppRenderer(p: AppRendererProps) {
     case "calculator": return <CalculatorApp />;
     case "puei-paint": return <PaintApp fileId={p.fileId} onCreateShortcut={p.onCreateShortcut} />;
     case "pueinet": return <PueiNetApp />;
-    case "puei-messenger": return <MessengerApp user={p.currentUser} users={p.users} />;
+    case "puei-messenger": return <MessengerApp user={p.currentUser} users={p.users} setUsers={p.setUsers} />;
     case "file-explorer": return <FileExplorerApp openApp={p.openApp} icons={p.icons} openFolder={p.openFolder} />;
     case "app-store": return <AppStoreApp installWebApp={p.installWebApp} openApp={p.openApp} />;
     case "puei-social": return <PueiSocialApp user={p.currentUser} users={p.users} />;
