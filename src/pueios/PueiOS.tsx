@@ -638,7 +638,7 @@ export function PueiOS() {
               onTouchStart={(e) => { e.stopPropagation(); setSelectedIcon(ic.id); onTouchStart(e, iconCtx(ic)); }}
               onTouchEnd={onTouchEnd}
             >
-              <div className="flex justify-center mb-1">{appIcon(ic.appId, 44, ic.iconEmoji)}</div>
+              <div className="flex justify-center mb-1">{appIcon(ic.appId, 44, ic.iconEmoji, ic.iconUrl)}</div>
               <div>{ic.label}</div>
             </div>
           );
