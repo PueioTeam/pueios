@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   blip, defaultIcons, defaultTheme, iconGridPos, googleFaviconFor, pueiNumberFor,
-  loadState, saveState, type AppId, type DesktopIcon, type User,
+  loadState, saveState, registerInDirectory, type AppId, type DesktopIcon, type User,
   type Theme, type WallpaperId, type WindowState,
 } from "./state";
 import { AppWindow, ContextMenu, appIcon } from "./Window";
