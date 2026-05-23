@@ -672,7 +672,7 @@ export function PueiOS() {
               openApp={openAppSimple} wallpaper={theme.wallpaper} setWallpaper={setWallpaper}
               currentUser={currentUser} fileId={w.fileId} users={users}
               webUrl={w.webUrl} folderIconId={w.folderIconId} icons={icons}
-              installWebApp={(label, url) => addIcon({ id: `web-${Date.now().toString(36)}`, label, appId: "web-app", webUrl: url })}
+              installWebApp={(label, url) => addIcon({ id: `web-${Date.now().toString(36)}`, label, appId: "web-app", webUrl: url, iconUrl: googleFaviconFor(url, 64) })}
               openWebApp={(url, title) => openApp("web-app", { webUrl: url, title })}
               openFolder={(folderIconId, title) => openApp("folder", { folderIconId, title })}
               setUsers={setUsers}
