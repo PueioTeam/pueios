@@ -76,6 +76,7 @@ export type User = {
   password: string;
   avatar: string; // emoji OR data URL
   color: string;
+  pueiNumber?: string; // assigned at account creation; visible in Messenger settings
 };
 
 export type SavedFile = {
