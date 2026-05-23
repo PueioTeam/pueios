@@ -207,14 +207,26 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, curren
         )}
         {tab === "accessibility" && (
           <div><h2 className="text-xl font-semibold mb-4">Accessibility</h2>
-            <p className="text-sm opacity-80">High-contrast modes coming soon. Reduce motion via the Animations toggle on Personalize.</p></div>
+            <p className="text-sm opacity-80">Reduce motion via the Animations toggle on Personalize. For maximum readability, enable <b>High Contrast Mode</b> in the next tab.</p></div>
         )}
-        {tab === "performance" && (
+        {tab === "highcontrast" && (
           <div>
-            <h2 className="text-xl font-semibold mb-4">Performance</h2>
-            <p className="text-sm opacity-80">Disable transparency for fastest rendering on low-end hardware.</p>
-            <button className="aero-button mt-3 rounded-md px-4 py-2"
-              onClick={() => setTheme({ ...theme, transparency: false, animations: false })}>Enable Performance Mode</button>
+            <h2 className="text-xl font-semibold mb-2">⚡ High Contrast Mode</h2>
+            <p className="text-sm opacity-80 mb-3">An accessibility mode designed for clarity and readability. When enabled:</p>
+            <ul className="text-sm opacity-80 list-disc pl-5 space-y-1 mb-4">
+              <li>UI colours become highly contrasted (black + amber)</li>
+              <li>Text becomes sharper and more readable</li>
+              <li>Important UI elements are visually emphasized</li>
+              <li>Reduced visual noise — no blur, no transparency, no decorations</li>
+            </ul>
+            <label className="flex items-center gap-3 aero-glass-light rounded p-3 max-w-md">
+              <input type="checkbox" checked={!!theme.highContrast}
+                onChange={(e) => setTheme({ ...theme, highContrast: e.target.checked, transparency: e.target.checked ? false : theme.transparency, animations: e.target.checked ? false : theme.animations })} />
+              <div>
+                <div className="font-semibold">Enable High Contrast Mode</div>
+                <div className="text-xs opacity-70">Replaces Performance Mode. Applies globally to the whole system.</div>
+              </div>
+            </label>
           </div>
         )}
         {tab === "about" && (
