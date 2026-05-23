@@ -166,7 +166,7 @@ export function AppWindow({
   );
 }
 
-export function appIcon(appId: AppId, size = 32, override?: string) {
+export function appIcon(appId: AppId, size = 32, override?: string, iconUrl?: string) {
   const s = size;
   const map: Record<AppId, string> = {
     "puei-paint": "🎨",
@@ -183,6 +183,7 @@ export function appIcon(appId: AppId, size = 32, override?: string) {
     "web-app": "🔗",
   };
   const isImg = typeof override === "string" && override.startsWith("data:");
+  const useUrl = !isImg && !override && !!iconUrl;
   return (
     <div
       className="flex items-center justify-center rounded-md overflow-hidden"
@@ -193,7 +194,11 @@ export function appIcon(appId: AppId, size = 32, override?: string) {
         boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8), 0 2px 4px rgba(0,0,0,0.2)",
       }}
     >
-      {isImg ? <img src={override} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : (override || map[appId])}
+      {isImg
+        ? <img src={override} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+        : useUrl
+          ? <img src={iconUrl} alt="" style={{ width: "78%", height: "78%", objectFit: "contain" }} onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
+          : (override || map[appId])}
     </div>
   );
 }
