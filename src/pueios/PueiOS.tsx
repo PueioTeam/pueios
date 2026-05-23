@@ -312,34 +312,51 @@ export function PueiOS() {
           }}>Next →</button>
         </div>
       </div>,
-      // 3 progress (Windows-style multi-phase)
+      // 3 progress (Windows-style multi-phase — 8 mandatory stages, no skipping)
       (() => {
         const phases = [
-          { until: 15, label: "Copying PueiOS files…" },
-          { until: 30, label: "Getting files ready for installation…" },
-          { until: 50, label: "Installing features…" },
-          { until: 70, label: "Installing updates…" },
-          { until: 85, label: "Finishing up…" },
-          { until: 100, label: "Preparing PueiOS for first use…" },
+          { until: 8,   label: "Preparing files…" },
+          { until: 20,  label: "Copying system data…" },
+          { until: 35,  label: "Installing Kernel Layer…" },
+          { until: 55,  label: "Installing System Apps (Messenger, PueiWeb, PueiSocial, Paint 2)…" },
+          { until: 70,  label: "Configuring AI Layer…" },
+          { until: 82,  label: "Setting up File System…" },
+          { until: 92,  label: "Applying security policies…" },
+          { until: 100, label: "Final optimization and system checks…" },
         ];
-        const phase = phases.find((p) => installProgress < p.until) ?? phases[phases.length - 1];
+        const ph = phases.find((p) => installProgress < p.until) ?? phases[phases.length - 1];
+        const stageIndex = phases.indexOf(ph);
         const files = [
-          "aero.glass", "puei.mascot.swf", "wallpaper.bliss.bmp", "kernel32.pue", "explorer.exe",
-          "messenger.dll", "paint2.dll", "pueisocial.cab", "appstore.cab", "startorb.png",
-          "fonts/PueiSans.ttf", "drivers/glass.sys", "services/notify.exe", "registry/pueios.hive",
-          "themes/aero.theme", "sounds/start.wav", "drivers/audio.sys", "pueinet.dll",
+          "aero.glass", "puei.mascot.swf", "kernel32.pue", "explorer.exe",
+          "messenger.dll", "paint2.dll", "pueisocial.cab", "appstore.cab",
+          "pueiweb.dll", "ai/layer.bin", "ai/policy.dat", "fs/journal.bin",
+          "fonts/PueiSans.ttf", "drivers/glass.sys", "services/notify.exe",
+          "registry/pueios.hive", "themes/aero.theme", "sounds/start.wav",
+          "security/policies.xml", "security/trusted-domains.lst",
+          "drivers/audio.sys", "pueinet.dll",
         ];
-        const fileShown = files[Math.floor(installProgress * 0.6) % files.length];
+        const fileShown = files[Math.floor(installProgress * 0.9) % files.length];
         return (
-          <div key="3" className="text-center w-96">
+          <div key="3" className="text-center w-[28rem]">
             <div className="boot-logo inline-block mb-4"><PueiLogoSvg size={70} glow /></div>
             <h2 className="text-lg font-semibold mb-1">Installing PueiOS 2…</h2>
-            <p className="text-xs opacity-80 mb-1">{phase.label}</p>
+            <p className="text-xs opacity-80 mb-1">Stage {stageIndex + 1} of {phases.length} · {ph.label}</p>
             <p className="text-[10px] opacity-50 mb-4 font-mono truncate">{fileShown}</p>
             <div className="w-full h-2 rounded-full bg-cyan-900/50 overflow-hidden">
               <div className="loading-bar-inner h-full" style={{ width: `${installProgress}%`, transition: "width 0.2s" }} />
             </div>
             <div className="text-[10px] opacity-60 mt-2">{Math.floor(installProgress)}% complete</div>
+            <div className="grid grid-cols-4 gap-1 mt-4 text-[9px]">
+              {phases.map((p, i) => (
+                <div key={i} className="rounded px-1 py-0.5"
+                  style={{
+                    background: stageIndex > i ? "rgba(80,200,160,0.25)" : stageIndex === i ? "rgba(120,180,255,0.3)" : "rgba(255,255,255,0.05)",
+                    opacity: stageIndex >= i ? 1 : 0.4,
+                  }}>
+                  {stageIndex > i ? "✓" : stageIndex === i ? "…" : "·"} {["Prep","Copy","Kernel","Apps","AI","FS","Security","Optimize"][i]}
+                </div>
+              ))}
+            </div>
             <div className="text-[10px] opacity-40 mt-4">Your PC will restart several times. This might take a while.</div>
           </div>
         );
