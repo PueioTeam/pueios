@@ -309,16 +309,38 @@ export function PueiOS() {
           }}>Next →</button>
         </div>
       </div>,
-      // 3 progress
-      <div key="3" className="text-center w-80">
-        <div className="boot-logo inline-block mb-4"><PueiLogoSvg size={70} glow /></div>
-        <h2 className="text-lg font-semibold mb-1">Installing PueiOS 2…</h2>
-        <p className="text-xs opacity-70 mb-4">Expanding Aero gloss · calibrating Puei · seeding wallpapers</p>
-        <div className="w-full h-2 rounded-full bg-cyan-900/50 overflow-hidden">
-          <div className="loading-bar-inner h-full" style={{ width: `${installProgress}%`, transition: "width 0.12s" }} />
-        </div>
-        <div className="text-[10px] opacity-60 mt-2">{Math.floor(installProgress)}%</div>
-      </div>,
+      // 3 progress (Windows-style multi-phase)
+      (() => {
+        const phases = [
+          { until: 15, label: "Copying PueiOS files…" },
+          { until: 30, label: "Getting files ready for installation…" },
+          { until: 50, label: "Installing features…" },
+          { until: 70, label: "Installing updates…" },
+          { until: 85, label: "Finishing up…" },
+          { until: 100, label: "Preparing PueiOS for first use…" },
+        ];
+        const phase = phases.find((p) => installProgress < p.until) ?? phases[phases.length - 1];
+        const files = [
+          "aero.glass", "puei.mascot.swf", "wallpaper.bliss.bmp", "kernel32.pue", "explorer.exe",
+          "messenger.dll", "paint2.dll", "pueisocial.cab", "appstore.cab", "startorb.png",
+          "fonts/PueiSans.ttf", "drivers/glass.sys", "services/notify.exe", "registry/pueios.hive",
+          "themes/aero.theme", "sounds/start.wav", "drivers/audio.sys", "pueinet.dll",
+        ];
+        const fileShown = files[Math.floor(installProgress * 0.6) % files.length];
+        return (
+          <div key="3" className="text-center w-96">
+            <div className="boot-logo inline-block mb-4"><PueiLogoSvg size={70} glow /></div>
+            <h2 className="text-lg font-semibold mb-1">Installing PueiOS 2…</h2>
+            <p className="text-xs opacity-80 mb-1">{phase.label}</p>
+            <p className="text-[10px] opacity-50 mb-4 font-mono truncate">{fileShown}</p>
+            <div className="w-full h-2 rounded-full bg-cyan-900/50 overflow-hidden">
+              <div className="loading-bar-inner h-full" style={{ width: `${installProgress}%`, transition: "width 0.2s" }} />
+            </div>
+            <div className="text-[10px] opacity-60 mt-2">{Math.floor(installProgress)}% complete</div>
+            <div className="text-[10px] opacity-40 mt-4">Your PC will restart several times. This might take a while.</div>
+          </div>
+        );
+      })(),
       // 4 create account
       <div key="4" className="aero-glass rounded-lg p-5 w-96 space-y-3">
         <div className="text-base font-semibold flex items-center gap-2"><PueiLogoSvg size={28} /> Create your account</div>
