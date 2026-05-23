@@ -16,9 +16,29 @@ export type DesktopIcon = {
   appId: AppId;
   fileId?: string;
   webUrl?: string;        // for installed web apps
-  iconEmoji?: string;     // optional override icon
+  iconEmoji?: string;     // optional override icon (emoji)
+  iconUrl?: string;       // optional override icon (image url, e.g. google favicon)
   folderId?: string;      // if set, lives inside this folder icon (folder appId)
 };
+
+export function pueiNumberFor(name: string): string {
+  // Deterministic 9-digit PueiNumber derived from the account name
+  let h = 5381;
+  for (let i = 0; i < name.length; i++) h = ((h << 5) + h + name.charCodeAt(i)) | 0;
+  const n = Math.abs(h) % 900000000 + 100000000;
+  const s = String(n);
+  return `${s.slice(0,3)}-${s.slice(3,6)}-${s.slice(6,9)}`;
+}
+
+export function googleFaviconFor(url: string, size = 64): string {
+  try {
+    const u = url.startsWith("http") ? url : "https://" + url;
+    const host = new URL(u).hostname;
+    return `https://www.google.com/s2/favicons?domain=${host}&sz=${size}`;
+  } catch {
+    return "";
+  }
+}
 
 export type AppId =
   | "puei-paint"
