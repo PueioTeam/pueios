@@ -3,6 +3,7 @@ import type { AppId, Theme, User, WallpaperId, SavedFile, ChatMessage, DesktopIc
 import {
   blip, loadFiles, upsertFile, deleteFile, getFile, appendChat, loadChat,
   loadSocial, saveSocial, pueiNumberFor, googleFaviconFor,
+  classifyTrustedUrl, trustedIconFor, lookupPueiNumber, registerInDirectory, loadDirectory,
 } from "./state";
 
 export type AppRendererProps = {
