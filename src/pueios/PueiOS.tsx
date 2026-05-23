@@ -107,14 +107,17 @@ export function PueiOS() {
     const root = document.documentElement;
     root.style.setProperty("--accent-h", String(theme.accentH));
     root.classList.toggle("dark", theme.dark);
-    if (!theme.transparency) {
-      root.style.setProperty("--glass", "oklch(0.96 0.02 220 / 1)");
-      root.style.setProperty("--glass-strong", "oklch(0.98 0.01 220 / 1)");
+    root.classList.toggle("high-contrast", !!theme.highContrast);
+    if (!theme.transparency || theme.highContrast) {
+      root.style.setProperty("--glass", theme.highContrast ? "#000" : "oklch(0.96 0.02 220 / 1)");
+      root.style.setProperty("--glass-strong", theme.highContrast ? "#000" : "oklch(0.98 0.01 220 / 1)");
     } else {
       root.style.removeProperty("--glass");
       root.style.removeProperty("--glass-strong");
     }
     saveState({ installed, theme, icons, users, lastUser: loginUser, remember });
+    // Keep the global PueiNumber directory in sync so friends can be added by ID
+    users.forEach((u) => { if (u.pueiNumber) registerInDirectory(u); });
   }, [installed, theme, icons, users, loginUser, remember]);
 
   useEffect(() => {
