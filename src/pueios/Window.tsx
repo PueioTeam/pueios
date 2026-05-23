@@ -166,7 +166,7 @@ export function AppWindow({
   );
 }
 
-export function appIcon(appId: AppId, size = 32) {
+export function appIcon(appId: AppId, size = 32, override?: string) {
   const s = size;
   const map: Record<AppId, string> = {
     "puei-paint": "🎨",
@@ -177,10 +177,15 @@ export function appIcon(appId: AppId, size = 32) {
     "about": "ℹ️",
     "notepad": "📝",
     "calculator": "🧮",
+    "app-store": "🛍️",
+    "puei-social": "📣",
+    "folder": "📁",
+    "web-app": "🔗",
   };
+  const isImg = typeof override === "string" && override.startsWith("data:");
   return (
     <div
-      className="flex items-center justify-center rounded-md"
+      className="flex items-center justify-center rounded-md overflow-hidden"
       style={{
         width: s, height: s, fontSize: s * 0.72,
         background: "linear-gradient(135deg, rgba(255,255,255,0.7), rgba(180,220,255,0.4))",
@@ -188,7 +193,7 @@ export function appIcon(appId: AppId, size = 32) {
         boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8), 0 2px 4px rgba(0,0,0,0.2)",
       }}
     >
-      {map[appId]}
+      {isImg ? <img src={override} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : (override || map[appId])}
     </div>
   );
 }
