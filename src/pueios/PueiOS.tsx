@@ -382,8 +382,73 @@ export function PueiOS() {
           </div>
         );
       })(),
-      // 4 create account
-      <div key="4" className="aero-glass rounded-lg p-5 w-96 space-y-3">
+      // 4 Account setup — choose Create New or Log in to existing
+      installMode === null ? (
+        <div key="4-choose" className="aero-glass rounded-lg p-6 w-96 space-y-4 text-center">
+          <div className="text-base font-semibold flex items-center gap-2 justify-center"><PueiLogoSvg size={28} /> Set up your PueiOS account</div>
+          <p className="text-xs opacity-70">Every PueiOS user has a unique <b>Pueio Number</b> identity.</p>
+          <button className="aero-button rounded w-full py-3" onClick={() => setInstallMode("new")}>＋ Create a new account</button>
+          <button className="aero-button rounded w-full py-3" onClick={() => setInstallMode("existing")}>↩ Log in to existing account</button>
+        </div>
+      ) : installMode === "existing" ? (
+        // Existing account login (during install)
+        <div key="4-existing" className="aero-glass rounded-lg p-5 w-96 space-y-3">
+          <div className="text-base font-semibold flex items-center gap-2"><PueiLogoSvg size={26} /> Log in to existing account</div>
+          <div>
+            <label className="text-xs opacity-70">Username</label>
+            <input value={newAcc.name} onChange={(e) => setNewAcc({ ...newAcc, name: e.target.value })}
+              className="w-full px-3 py-2 rounded text-sm outline-none" style={{ background: "white", color: "#111" }} />
+          </div>
+          {pwOption === "have" && (
+            <div>
+              <label className="text-xs opacity-70">Password</label>
+              <input type="password" value={newAcc.password} onChange={(e) => setNewAcc({ ...newAcc, password: e.target.value })}
+                className="w-full px-3 py-2 rounded text-sm outline-none" style={{ background: "white", color: "#111" }} />
+            </div>
+          )}
+          {pwOption === "none" && (
+            <div className="aero-glass-light rounded p-3 text-xs">
+              <div className="font-semibold mb-1">No password selected</div>
+              <div className="mb-2">Do you want to create a password for better privacy?</div>
+              <div className="flex gap-2">
+                <button className="aero-button rounded px-3 py-1 text-xs" onClick={() => setPwOption("create-now")}>Yes, create one</button>
+                <button className="aero-button rounded px-3 py-1 text-xs" onClick={() => {
+                  // Limited access mode — continue without password
+                  const name = newAcc.name.trim();
+                  if (!name) { setInstallErr("Pick a name"); return; }
+                  const nu: User = { name, password: "", avatar: "🧑", color: "200", pueiNumber: pueiNumberFor(name + ":" + Date.now()), friends: [], noPassword: true, limitedMode: true };
+                  setUsers([nu]); setLoginUser(name); setInstalled(true); setInstallStep(5);
+                  setTimeout(() => { setPhase("boot"); setBootProgress(0); setInstallStep(0); setInstallMode(null); setPwOption("have"); }, 1400);
+                }}>No — limited access</button>
+              </div>
+            </div>
+          )}
+          {pwOption === "create-now" && (
+            <div>
+              <label className="text-xs opacity-70">New password</label>
+              <input type="password" value={newAcc.password} onChange={(e) => setNewAcc({ ...newAcc, password: e.target.value })}
+                className="w-full px-3 py-2 rounded text-sm outline-none" style={{ background: "white", color: "#111" }} />
+            </div>
+          )}
+          {pwOption !== "none" && (
+            <button className="text-xs opacity-70 underline" onClick={() => setPwOption("none")}>I don't have a password</button>
+          )}
+          {installErr && <div className="text-red-300 text-xs">{installErr}</div>}
+          <div className="flex gap-2">
+            <button className="aero-button rounded px-3 py-2 text-sm" onClick={() => { setInstallMode(null); setPwOption("have"); setInstallErr(""); }}>← Back</button>
+            <button className="aero-button rounded px-3 py-2 text-sm flex-1" onClick={() => {
+              const name = newAcc.name.trim();
+              if (!name) { setInstallErr("Enter a username"); return; }
+              const nu: User = { name, password: newAcc.password, avatar: "🧑", color: "200", pueiNumber: pueiNumberFor(name + ":" + Date.now()), friends: [] };
+              setUsers([nu]); setLoginUser(name); setInstalled(true); setInstallErr("");
+              setInstallStep(5); blip("notify");
+              setTimeout(() => { setPhase("boot"); setBootProgress(0); setInstallStep(0); setInstallMode(null); setPwOption("have"); }, 1400);
+            }}>Continue →</button>
+          </div>
+        </div>
+      ) : (
+      // Create new account
+      <div key="4-new" className="aero-glass rounded-lg p-5 w-96 space-y-3">
         <div className="text-base font-semibold flex items-center gap-2"><PueiLogoSvg size={28} /> Create your account</div>
         <div>
           <label className="text-xs opacity-70">Account name</label>
@@ -394,6 +459,7 @@ export function PueiOS() {
           <label className="text-xs opacity-70">Password (optional)</label>
           <input type="password" value={newAcc.password} onChange={(e) => setNewAcc({ ...newAcc, password: e.target.value })}
             className="w-full px-3 py-2 rounded text-sm outline-none" style={{ background: "white", color: "#111" }} />
+          <div className="text-[10px] opacity-60 mt-1">Leave empty for limited access mode (you can enable a password later in Settings → Pueio Control).</div>
         </div>
         <div>
           <label className="text-xs opacity-70">Avatar</label>
@@ -430,18 +496,25 @@ export function PueiOS() {
           </div>
         </div>
         {installErr && <div className="text-red-300 text-xs">{installErr}</div>}
-        <button className="aero-button rounded px-3 py-2 text-sm w-full" onClick={() => {
-          const name = newAcc.name.trim();
-          if (!name) { setInstallErr("Pick a name"); return; }
-          const nu: User = { name, password: newAcc.password, avatar: newAcc.avatar || "🧑", color: newAcc.color, pueiNumber: pueiNumberFor(name + ":" + Date.now()), friends: [] };
-          setUsers([nu]); setLoginUser(name); setInstalled(true); setInstallErr("");
-          setNewAcc({ name: "", password: "", avatar: "🧑", color: "200" });
-          blip("notify");
-          // briefly show a "finalizing" then reboot to login
-          setInstallStep(5);
-          setTimeout(() => { setPhase("boot"); setBootProgress(0); setInstallStep(0); }, 1400);
-        }}>Finish installation</button>
-      </div>,
+        <div className="flex gap-2">
+          <button className="aero-button rounded px-3 py-2 text-sm" onClick={() => setInstallMode(null)}>← Back</button>
+          <button className="aero-button rounded px-3 py-2 text-sm flex-1" onClick={() => {
+            const name = newAcc.name.trim();
+            if (!name) { setInstallErr("Pick a name"); return; }
+            const noPw = !newAcc.password;
+            const nu: User = {
+              name, password: newAcc.password, avatar: newAcc.avatar || "🧑", color: newAcc.color,
+              pueiNumber: pueiNumberFor(name + ":" + Date.now()), friends: [],
+              noPassword: noPw, limitedMode: noPw,
+            };
+            setUsers([nu]); setLoginUser(name); setInstalled(true); setInstallErr("");
+            setNewAcc({ name: "", password: "", avatar: "🧑", color: "200" });
+            blip("notify");
+            setInstallStep(5);
+            setTimeout(() => { setPhase("boot"); setBootProgress(0); setInstallStep(0); setInstallMode(null); }, 1400);
+          }}>Finish installation</button>
+        </div>
+      </div>),
       // 5 done
       <div key="5" className="text-center">
         <div className="boot-logo inline-block mb-3"><PueiLogoSvg size={80} glow /></div>
