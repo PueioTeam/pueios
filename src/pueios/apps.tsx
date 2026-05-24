@@ -72,6 +72,12 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, curren
     r.readAsDataURL(f);
   };
 
+  // Pueio Control tab state
+  const [pcCurPw, setPcCurPw] = useState("");
+  const [pcNewPw, setPcNewPw] = useState("");
+  const [pcConfirm, setPcConfirm] = useState("");
+  const [pcMsg, setPcMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
+
   const tabs = [
     ["personalize", "🎨 Personalize"],
     ["wallpaper", "🖼️ Wallpaper"],
@@ -222,25 +228,144 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, curren
         {tab === "highcontrast" && (
           <div>
             <h2 className="text-xl font-semibold mb-2">⚡ High Contrast Mode</h2>
-            <p className="text-sm opacity-80 mb-3">An accessibility mode designed for clarity and readability. When enabled:</p>
-            <ul className="text-sm opacity-80 list-disc pl-5 space-y-1 mb-4">
-              <li>UI colours become highly contrasted (black + amber)</li>
-              <li>Text becomes sharper and more readable</li>
-              <li>Important UI elements are visually emphasized</li>
-              <li>Reduced visual noise — no blur, no transparency, no decorations</li>
-            </ul>
-            <label className="flex items-center gap-3 aero-glass-light rounded p-3 max-w-md">
+            <p className="text-sm opacity-80 mb-3">Customizable accessibility system. Select a base color — PueiOS 2 generates a full high-contrast theme around it and applies it globally to every system surface and app. No mixed states allowed.</p>
+            <label className="flex items-center gap-3 aero-glass-light rounded p-3 max-w-lg mb-5">
               <input type="checkbox" checked={!!theme.highContrast}
                 onChange={(e) => setTheme({ ...theme, highContrast: e.target.checked, transparency: e.target.checked ? false : theme.transparency, animations: e.target.checked ? false : theme.animations })} />
               <div>
                 <div className="font-semibold">Enable High Contrast Mode</div>
-                <div className="text-xs opacity-70">Replaces Performance Mode. Applies globally to the whole system.</div>
+                <div className="text-xs opacity-70">Applies globally to the whole system. Select a color below to customize the contrast theme.</div>
               </div>
             </label>
+            <div className="max-w-lg">
+              <div className="text-sm font-semibold mb-1">Choose contrast color</div>
+              <div className="text-xs opacity-60 mb-3">Click a color to select it. The system builds a full high-contrast UI theme around your choice.</div>
+              <div className="grid grid-cols-10 gap-1 mb-3">
+                {[
+                  "#ffb300","#ff6b00","#ff2200","#ff006e","#cc00ff","#6600ff","#0044ff","#0099ff","#00e5ff","#00e676",
+                  "#76ff03","#ffea00","#ffffff","#e0e0e0","#bdbdbd","#9e9e9e","#757575","#424242","#212121","#000000",
+                  "#ff8a80","#ff80ab","#ea80fc","#b388ff","#82b1ff","#80d8ff","#a7ffeb","#ccff90","#ffe57f","#ffd180",
+                  "#ff5252","#ff4081","#e040fb","#7c4dff","#448aff","#18ffff","#69ff47","#eeff41","#ffab40","#ff6d00",
+                ].map((c) => (
+                  <button key={c} title={c}
+                    onClick={() => setTheme({ ...theme, highContrastColor: c })}
+                    className="w-6 h-6 rounded border-2 transition-transform hover:scale-110"
+                    style={{
+                      background: c,
+                      borderColor: theme.highContrastColor === c ? "white" : "rgba(0,0,0,0.2)",
+                      boxShadow: theme.highContrastColor === c ? "0 0 0 3px black, 0 0 0 5px white" : undefined,
+                    }} />
+                ))}
+              </div>
+              <div className="flex items-center gap-3 aero-glass-light rounded p-3 mb-3">
+                <div className="w-10 h-10 rounded border-2 border-white/30 flex-shrink-0"
+                  style={{ background: theme.highContrastColor || "#ffb300" }} />
+                <div className="flex-1">
+                  <div className="text-sm font-semibold">Selected: <code className="font-mono">{theme.highContrastColor || "#ffb300"}</code></div>
+                  <div className="text-xs opacity-70">Used for all highlighted UI elements, text and borders.</div>
+                </div>
+                <input type="color" value={theme.highContrastColor || "#ffb300"} className="cursor-pointer w-9 h-9 rounded border-0"
+                  onChange={(e) => setTheme({ ...theme, highContrastColor: e.target.value })} title="Custom color picker" />
+              </div>
+              <div className="rounded p-3 text-sm font-semibold flex items-center gap-3"
+                style={{ background: "#000", color: theme.highContrastColor || "#ffb300", border: `2px solid ${theme.highContrastColor || "#ffb300"}` }}>
+                <span>✦</span>
+                <span>Preview: High Contrast UI with selected color · Applied globally across all apps</span>
+              </div>
+            </div>
           </div>
         )}
         {tab === "about" && (
           <div><button className="aero-button rounded-md px-4 py-2" onClick={() => openApp("about")}>Open About PueiOS 2 →</button></div>
+        )}
+        {tab === "pueio-control" && (
+          <div>
+            <h2 className="text-xl font-semibold mb-2">🔐 Pueio Control</h2>
+            <p className="text-sm opacity-70 mb-4">Manage your password and account security. Create, change, or enable a password at any time — even if you chose "No password" during installation.</p>
+            {!me ? (
+              <div className="text-sm opacity-70">Not signed in.</div>
+            ) : (!me.password || me.noPassword) ? (
+              <div className="max-w-md space-y-4">
+                <div className="aero-glass-light rounded-lg p-4 border border-yellow-400/30">
+                  <div className="font-semibold mb-1 flex items-center gap-2 text-sm">
+                    🔓 No password set
+                    {me.limitedMode && <span className="text-[10px] bg-yellow-500/20 rounded px-1.5 py-0.5">Limited Access Mode</span>}
+                  </div>
+                  <div className="text-xs opacity-70 mb-3">Create a password to upgrade to full access and enable better privacy features.</div>
+                  <div className="space-y-2">
+                    <div>
+                      <label className="text-xs opacity-70">New password</label>
+                      <input type="password" value={pcNewPw} onChange={(e) => setPcNewPw(e.target.value)}
+                        className="w-full px-3 py-2 rounded text-sm outline-none mt-1" style={{ background: "white", color: "#111" }} />
+                    </div>
+                    <div>
+                      <label className="text-xs opacity-70">Confirm password</label>
+                      <input type="password" value={pcConfirm} onChange={(e) => setPcConfirm(e.target.value)}
+                        className="w-full px-3 py-2 rounded text-sm outline-none mt-1" style={{ background: "white", color: "#111" }} />
+                    </div>
+                  </div>
+                  {pcMsg && (
+                    <div className={`text-xs mt-2 rounded px-2 py-1.5 ${pcMsg.kind === "ok" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>{pcMsg.text}</div>
+                  )}
+                  <button className="aero-button rounded px-4 py-2 text-sm mt-3 w-full" onClick={() => {
+                    if (!pcNewPw) { setPcMsg({ kind: "err", text: "Please enter a new password." }); return; }
+                    if (pcNewPw !== pcConfirm) { setPcMsg({ kind: "err", text: "Passwords do not match." }); return; }
+                    updateMe({ password: pcNewPw, noPassword: false, limitedMode: false });
+                    setPcNewPw(""); setPcConfirm("");
+                    setPcMsg({ kind: "ok", text: "✓ Password created! Full access mode enabled." });
+                    blip("notify");
+                  }}>Create password</button>
+                </div>
+              </div>
+            ) : (
+              <div className="max-w-md space-y-4">
+                <div className="aero-glass-light rounded-lg p-4">
+                  <div className="font-semibold mb-3 text-sm flex items-center gap-2">🔒 Change password</div>
+                  <div className="space-y-2">
+                    <div>
+                      <label className="text-xs opacity-70">Current password</label>
+                      <input type="password" value={pcCurPw} onChange={(e) => setPcCurPw(e.target.value)}
+                        className="w-full px-3 py-2 rounded text-sm outline-none mt-1" style={{ background: "white", color: "#111" }} />
+                    </div>
+                    <div>
+                      <label className="text-xs opacity-70">New password</label>
+                      <input type="password" value={pcNewPw} onChange={(e) => setPcNewPw(e.target.value)}
+                        className="w-full px-3 py-2 rounded text-sm outline-none mt-1" style={{ background: "white", color: "#111" }} />
+                    </div>
+                    <div>
+                      <label className="text-xs opacity-70">Confirm new password</label>
+                      <input type="password" value={pcConfirm} onChange={(e) => setPcConfirm(e.target.value)}
+                        className="w-full px-3 py-2 rounded text-sm outline-none mt-1" style={{ background: "white", color: "#111" }} />
+                    </div>
+                  </div>
+                  {pcMsg && (
+                    <div className={`text-xs mt-2 rounded px-2 py-1.5 ${pcMsg.kind === "ok" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>{pcMsg.text}</div>
+                  )}
+                  <button className="aero-button rounded px-4 py-2 text-sm mt-3 w-full" onClick={() => {
+                    if (pcCurPw !== me.password) { setPcMsg({ kind: "err", text: "Current password is incorrect." }); return; }
+                    if (!pcNewPw) { setPcMsg({ kind: "err", text: "Enter a new password." }); return; }
+                    if (pcNewPw !== pcConfirm) { setPcMsg({ kind: "err", text: "Passwords do not match." }); return; }
+                    updateMe({ password: pcNewPw });
+                    setPcCurPw(""); setPcNewPw(""); setPcConfirm("");
+                    setPcMsg({ kind: "ok", text: "✓ Password changed successfully." });
+                    blip("notify");
+                  }}>Change password</button>
+                </div>
+                <div className="aero-glass-light rounded-lg p-4 border border-red-400/20">
+                  <div className="font-semibold mb-1 text-sm">Remove password</div>
+                  <div className="text-xs opacity-70 mb-3">Removes your password and switches you to Limited Access mode with reduced security features.</div>
+                  <button className="aero-button rounded px-3 py-1.5 text-xs" onClick={() => {
+                    if (confirm("Remove your password? This switches you to Limited Access mode and reduces security.")) {
+                      updateMe({ password: "", noPassword: true, limitedMode: true });
+                      setPcCurPw(""); setPcNewPw(""); setPcConfirm("");
+                      setPcMsg({ kind: "ok", text: "Password removed. Now in Limited Access mode." });
+                      blip("notify");
+                    }
+                  }}>Remove password</button>
+                </div>
+              </div>
+            )}
+          </div>
         )}
       </div>
     </div>
@@ -417,10 +542,129 @@ function PaintApp({ fileId, onCreateShortcut }: { fileId?: string; onCreateShort
   );
 }
 
+// ---------- Puei Copilot (integrated into PueiSearch) ----------
+function PueiCopilotPage() {
+  const [query, setQuery] = useState("");
+  const [thinking, setThinking] = useState(false);
+  const [results, setResults] = useState<{ source: string; title: string; summary: string }[] | null>(null);
+  const [answer, setAnswer] = useState("");
+
+  const doSearch = (q: string) => {
+    if (!q.trim()) return;
+    setThinking(true); setResults(null); setAnswer("");
+    blip("click");
+    setTimeout(() => {
+      const sources = [
+        { source: "Google", title: `${q} — Overview`, summary: `Google: "${q}" is documented across multiple verified sources. Top results include reference articles, encyclopedias, and news from the past 30 days.` },
+        { source: "Edge", title: `${q} — Microsoft results`, summary: `Edge: Found ${Math.floor(Math.random() * 90000) + 10000} results for "${q}". Bing Search confirms multiple authoritative pages with consistent information.` },
+        { source: "Firefox", title: `${q} — Community sources`, summary: `Firefox: Community-curated results for "${q}" from open encyclopedias, forums, and educational sites. 3 blocked sources filtered automatically.` },
+        { source: "Opera", title: `${q} — Global search`, summary: `Opera: "${q}" surfaced in international news and reference databases. Cross-referenced with Google and Edge for consistency.` },
+      ];
+      setResults(sources);
+      setAnswer(
+        `Puei Copilot gathered results for "${q}" from Google, Edge, Firefox, and Opera.\n\n` +
+        `All four supported search sources agree this topic has reliable, consistent information available across verified domains. ` +
+        `Untrusted sources and blocked domains have been automatically filtered by Pueios2 security policies.\n\n` +
+        `• Google — ${Math.floor(Math.random() * 900000) + 100000} results · top sources verified\n` +
+        `• Edge — Bing index cross-referenced · authoritative pages found\n` +
+        `• Firefox — Community sources curated · ${Math.floor(Math.random() * 5) + 1} blocked sources filtered\n` +
+        `• Opera — International databases checked · consistent results confirmed\n\n` +
+        `Summary: "${q}" is a well-documented topic. See source details below for more information.`
+      );
+      setThinking(false);
+    }, 1400 + Math.random() * 800);
+  };
+
+  return (
+    <div className="p-6 max-w-3xl mx-auto h-full overflow-auto">
+      <div className="flex items-center gap-3 mb-5">
+        <div className="text-3xl">✦</div>
+        <div>
+          <h1 className="text-2xl font-bold" style={{ color: "var(--accent)" }}>Puei Copilot</h1>
+          <p className="text-[11px] opacity-60">AI assistant · gathers from Google · Edge · Firefox · Opera · filters untrusted sources automatically</p>
+        </div>
+      </div>
+      <div className="flex gap-2 mb-5">
+        <input value={query} onChange={(e) => setQuery(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && doSearch(query)}
+          className="flex-1 px-4 py-2.5 rounded-full text-sm outline-none"
+          style={{ background: "white", color: "#111", border: "2px solid oklch(0.65 0.18 var(--accent-h))" }}
+          placeholder="Ask Puei Copilot or search anything…" />
+        <button className="aero-button rounded-full px-5 py-2 text-sm font-semibold" onClick={() => doSearch(query)}>Search</button>
+      </div>
+      {thinking && (
+        <div className="aero-glass-light rounded-xl p-4 mb-4 text-sm flex items-center gap-3 animate-pulse">
+          <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin opacity-60 flex-shrink-0" />
+          Puei Copilot is gathering and summarizing information from Google, Edge, Firefox, and Opera…
+        </div>
+      )}
+      {answer && (
+        <div className="aero-glass-light rounded-xl p-4 mb-4 border" style={{ borderColor: "oklch(0.65 0.18 var(--accent-h) / 0.3)" }}>
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
+              style={{ background: "var(--gradient-aero)", color: "white" }}>✦</div>
+            <div className="font-semibold text-sm">Puei Copilot Summary</div>
+          </div>
+          <div className="text-sm whitespace-pre-wrap leading-relaxed opacity-90">{answer}</div>
+        </div>
+      )}
+      {results && (
+        <div className="space-y-2">
+          <div className="text-[10px] opacity-50 font-semibold tracking-wider mb-2">SOURCES</div>
+          {results.map((r) => (
+            <div key={r.source} className="aero-glass-light rounded-lg p-3 flex items-start gap-3">
+              <div className="w-6 h-6 rounded flex items-center justify-center text-[10px] font-bold flex-shrink-0"
+                style={{ background: "var(--gradient-aero)", color: "white" }}>
+                {r.source[0]}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-xs font-semibold">{r.source} — {r.title}</div>
+                <div className="text-xs opacity-70 mt-0.5 leading-relaxed">{r.summary}</div>
+              </div>
+            </div>
+          ))}
+          <div className="text-[10px] opacity-40 flex items-center gap-1 pt-2">
+            🛡️ Untrusted and blocked sources filtered automatically by Pueios2 security policies.
+          </div>
+        </div>
+      )}
+      {!thinking && !results && !answer && (
+        <div className="space-y-3">
+          <div className="text-[10px] opacity-50 font-semibold tracking-wider">SUGGESTIONS</div>
+          <div className="grid grid-cols-2 gap-2">
+            {[
+              "What is PueiOS 2?", "How do Pueio Numbers work?",
+              "Tell me about Puei Messenger", "What apps are in the App Store?",
+            ].map((q) => (
+              <button key={q} className="aero-glass-light rounded-lg p-3 text-xs text-left hover:bg-white/30"
+                onClick={() => { setQuery(q); doSearch(q); }}>
+                <span className="opacity-50">💡</span> {q}
+              </button>
+            ))}
+          </div>
+          <div className="text-[10px] opacity-40 mt-4 flex items-center gap-1">
+            ✦ Puei Copilot supports: Google · Edge · Firefox · Opera
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ---------- PueiWeb ----------
 function PueiWebApp() {
-  const [url, setUrl] = useState("puei://home");
+  const [urlBar, setUrlBar] = useState("puei://home");
+  const [navUrl, setNavUrl] = useState("puei://home");
   const [tabs, setTabs] = useState([{ id: 1, title: "Home", url: "puei://home" }]);
   const [active, setActive] = useState(1);
+
+  const navigate = (target: string) => {
+    let u = target.trim();
+    if (!u.startsWith("puei://") && !/^https?:\/\//i.test(u)) u = "https://" + u;
+    setNavUrl(u); setUrlBar(u);
+    setTabs((t) => t.map((tab) => tab.id === active ? { ...tab, url: u, title: u.replace("puei://", "").replace(/^\w/, (c) => c.toUpperCase()) || "Page" } : tab));
+  };
+
   const fakeSites: Record<string, React.ReactNode> = {
     "puei://home": (
       <div className="p-8 text-center">
@@ -429,30 +673,56 @@ function PueiWebApp() {
         <div className="mt-6 grid grid-cols-3 gap-3 max-w-2xl mx-auto">
           {[
             ["puei://news", "📰 PueiNews"],
-            ["puei://search", "🔍 PueiSearch"],
+            ["puei://search", "✦ Puei Copilot"],
             ["puei://forum", "💬 PueiForum"],
             ["puei://games", "🎮 PueiGames"],
             ["puei://mail", "✉️ PueiMail"],
             ["puei://about", "ℹ️ About"],
           ].map(([u, l]) => (
-            <button key={u} onClick={() => { setUrl(u); }} className="aero-button rounded-lg p-4">{l}</button>
+            <button key={u} onClick={() => navigate(u)} className="aero-button rounded-lg p-4">{l}</button>
           ))}
         </div>
       </div>
     ),
-    "puei://news": <div className="p-6"><h2 className="text-2xl font-bold mb-3">PueiNews</h2><ul className="text-sm space-y-2"><li>• PueiOS 2 Ultimate Edition lands on glassy desktops everywhere</li><li>• Mascot Puei voted "Most Confusing Helper of 2020"</li><li>• Glass blur now uses 40% less RAM</li></ul></div>,
-    "puei://search": <div className="p-6"><h2 className="text-2xl font-bold">PueiSearch</h2><input className="mt-3 px-3 py-2 rounded border w-full" placeholder="Search the Puei-net..." /></div>,
+    "puei://news": <div className="p-6"><h2 className="text-2xl font-bold mb-3">PueiNews</h2><ul className="text-sm space-y-2"><li>• PueiOS 2 Ultimate Edition lands on glassy desktops everywhere</li><li>• Mascot Puei voted "Most Confusing Helper of 2020"</li><li>• Glass blur now uses 40% less RAM</li><li>• Puei Copilot now integrates with Google, Edge, Firefox and Opera</li></ul></div>,
     "puei://forum": <div className="p-6"><h2 className="text-2xl font-bold mb-3">PueiForum</h2><p className="text-sm opacity-70">[user1138]: did anyone else's mascot start blinking morse code??</p></div>,
     "puei://games": <div className="p-6"><h2 className="text-2xl font-bold">PueiGames</h2><p className="opacity-70 mt-2">Free Pueilike clones for your enjoyment.</p></div>,
     "puei://mail": <div className="p-6"><h2 className="text-2xl font-bold">PueiMail</h2><p className="text-sm opacity-70 mt-2">📧 You have 1 new message from Pueian Lemne.</p></div>,
-    "puei://about": <div className="p-6"><h2 className="text-2xl font-bold">About PueiNet</h2><p className="text-sm opacity-70 mt-2">A browser for an alternate 2020.</p></div>,
+    "puei://about": <div className="p-6"><h2 className="text-2xl font-bold">About PueiNet</h2><p className="text-sm opacity-70 mt-2">A browser for an alternate 2020. Only https://&lt;app&gt;.base44.app external URLs are trusted.</p></div>,
   };
-  const content = fakeSites[url] || <div className="p-6">404 — page not found in this universe.</div>;
+
+  let content: React.ReactNode;
+  if (navUrl === "puei://search") {
+    content = <PueiCopilotPage />;
+  } else if (navUrl.startsWith("puei://")) {
+    content = fakeSites[navUrl] || <div className="p-6">404 — page not found in this universe.</div>;
+  } else {
+    const check = classifyWebUrl(navUrl);
+    if (check.ok) {
+      content = (
+        <div className="flex flex-col h-full relative" style={{ background: "white" }}>
+          <iframe src={navUrl} title={navUrl} className="w-full flex-1 border-0" />
+        </div>
+      );
+    } else {
+      content = (
+        <div className="flex flex-col items-center justify-center h-full p-8 text-center" style={{ background: "white" }}>
+          <div className="text-6xl mb-4">🛡️</div>
+          <h2 className="text-xl font-semibold mb-2 text-gray-800">This website is not trusted by Pueios2.</h2>
+          <p className="text-sm text-gray-600 mb-1">PueiWeb only allows websites using:</p>
+          <code className="bg-gray-100 rounded px-3 py-1 text-sm text-gray-700 mb-4">https://&lt;appname&gt;.base44.app</code>
+          <p className="text-xs text-gray-500">All other domains are blocked before loading and cannot connect to the system.</p>
+          <p className="text-xs text-gray-400 mt-2">{navUrl}</p>
+        </div>
+      );
+    }
+  }
+
   return (
     <div className="flex flex-col h-full">
       <div className="aero-titlebar flex items-center gap-1 px-2 pt-1">
         {tabs.map((t) => (
-          <div key={t.id} onClick={() => { setActive(t.id); setUrl(t.url); }}
+          <div key={t.id} onClick={() => { setActive(t.id); setNavUrl(t.url); setUrlBar(t.url); }}
             className="px-3 py-1 rounded-t-md text-xs cursor-pointer"
             style={{
               background: active === t.id ? "var(--glass-strong)" : "var(--glass)",
@@ -462,15 +732,18 @@ function PueiWebApp() {
           </div>
         ))}
         <button className="aero-button rounded px-2 py-0.5 text-xs ml-1"
-          onClick={() => { const id = Date.now(); setTabs([...tabs, { id, title: "New Tab", url: "puei://home" }]); setActive(id); setUrl("puei://home"); }}>+</button>
+          onClick={() => { const id = Date.now(); setTabs([...tabs, { id, title: "New Tab", url: "puei://home" }]); setActive(id); navigate("puei://home"); }}>+</button>
       </div>
       <div className="aero-titlebar flex items-center gap-2 px-2 py-1">
-        <button className="aero-button rounded px-2 py-0.5 text-xs" onClick={() => setUrl("puei://home")}>⌂</button>
-        <input value={url} onChange={(e) => setUrl(e.target.value)}
+        <button className="aero-button rounded px-2 py-0.5 text-xs" onClick={() => navigate("puei://home")}>⌂</button>
+        <button className="aero-button rounded px-2 py-0.5 text-xs" onClick={() => navigate("puei://search")}>✦</button>
+        <input value={urlBar} onChange={(e) => setUrlBar(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter") navigate(urlBar); }}
           className="flex-1 rounded-full px-3 py-1 text-xs outline-none"
           style={{ background: "white", border: "1px solid var(--accent)", boxShadow: "0 0 6px oklch(var(--accent) / 0.5)" }} />
+        <span className="text-[10px] opacity-50 flex-shrink-0">only base44.app</span>
       </div>
-      <div className="flex-1 overflow-auto" style={{ background: "white" }}>{content}</div>
+      <div className="flex-1 overflow-auto">{content}</div>
     </div>
   );
 }
@@ -637,6 +910,9 @@ function MessengerApp({ user, users, setUsers }: { user: string; users: User[]; 
 function FileExplorerApp({ openApp, icons, openFolder }: { openApp: (id: AppId, fileId?: string) => void; icons: DesktopIcon[]; openFolder: (id: string, title: string) => void }) {
   const [files, setFiles] = useState<SavedFile[]>(() => loadFiles());
   const [folder, setFolder] = useState<"home" | "documents" | "pictures" | "apps" | "folders">("home");
+  const [dragFileId, setDragFileId] = useState<string | null>(null);
+  const [dropTarget, setDropTarget] = useState<string | null>(null);
+
   useEffect(() => {
     const fn = () => setFiles(loadFiles());
     window.addEventListener("pueios-files-changed", fn);
@@ -664,11 +940,19 @@ function FileExplorerApp({ openApp, icons, openFolder }: { openApp: (id: AppId, 
     { name: "PueiSocial", appId: "puei-social", icon: "📣" },
   ];
 
-  const textFiles = files.filter((f) => f.type === "text");
-  const imgFiles = files.filter((f) => f.type === "image");
+  const textFiles = files.filter((f) => f.type === "text" && !f.folder);
+  const imgFiles = files.filter((f) => f.type === "image" && !f.folder);
   const myFolders = icons.filter((i) => i.appId === "folder");
 
   const openFile = (f: SavedFile) => openApp(f.type === "text" ? "notepad" : "puei-paint", f.id);
+
+  const handleDrop = (folderId: string) => {
+    if (!dragFileId) return;
+    moveFile(dragFileId, folderId);
+    setFiles(loadFiles());
+    setDragFileId(null); setDropTarget(null);
+    blip("notify");
+  };
 
   return (
     <div className="flex h-full">
@@ -684,6 +968,27 @@ function FileExplorerApp({ openApp, icons, openFolder }: { openApp: (id: AppId, 
         ))}
         <div className="font-semibold mt-3 mb-2 opacity-70 text-xs">COMPUTER</div>
         <div className="px-2 py-1 rounded opacity-70">💽 C:\ PueiDrive</div>
+        {dragFileId && (
+          <div className="mt-3 text-[10px] opacity-60 px-2">
+            📂 Drag to a folder below to move file
+          </div>
+        )}
+        {dragFileId && myFolders.map((f) => (
+          <div key={f.id}
+            onDragOver={(e) => { e.preventDefault(); setDropTarget(f.id); }}
+            onDragLeave={() => setDropTarget(null)}
+            onDrop={() => handleDrop(f.id)}
+            className="px-2 py-1.5 rounded cursor-pointer mt-0.5 text-xs flex items-center gap-1"
+            style={{
+              background: dropTarget === f.id ? "rgba(80,200,160,0.35)" : "rgba(255,255,255,0.15)",
+              border: dropTarget === f.id ? "1px dashed rgba(80,200,160,0.8)" : "1px dashed transparent",
+            }}>
+            📁 {f.label}
+          </div>
+        ))}
+        <div className="mt-4 text-[10px] opacity-40 px-2 leading-snug">
+          ☁️ Cloud Sync: Files saved while logged into your account sync automatically across supported browsers and apps using the same Pueio account.
+        </div>
       </div>
       <div className="flex-1 p-4 overflow-auto">
         <div className="text-xs opacity-70 mb-3">Computer › PueiDrive › Users › You › {folder}</div>
@@ -699,10 +1004,18 @@ function FileExplorerApp({ openApp, icons, openFolder }: { openApp: (id: AppId, 
           </div>
         )}
         {folder === "documents" && (
-          <FileGrid files={textFiles} emptyHint="No saved documents. Open Notepad and click Save to create one." openFile={openFile} onDelete={(id) => { deleteFile(id); setFiles(loadFiles()); }} />
+          <FileGrid files={textFiles} emptyHint="No saved documents. Open Notepad and click Save to create one."
+            openFile={openFile}
+            onDelete={(id) => { deleteFile(id); setFiles(loadFiles()); }}
+            onDragStart={(id) => setDragFileId(id)}
+            onDragEnd={() => { setDragFileId(null); setDropTarget(null); }} />
         )}
         {folder === "pictures" && (
-          <FileGrid files={imgFiles} emptyHint="No saved pictures. Open Puei Paint 2 and click Save to create one." openFile={openFile} onDelete={(id) => { deleteFile(id); setFiles(loadFiles()); }} />
+          <FileGrid files={imgFiles} emptyHint="No saved pictures. Open Puei Paint 2 and click Save to create one."
+            openFile={openFile}
+            onDelete={(id) => { deleteFile(id); setFiles(loadFiles()); }}
+            onDragStart={(id) => setDragFileId(id)}
+            onDragEnd={() => { setDragFileId(null); setDropTarget(null); }} />
         )}
         {folder === "apps" && (
           <div className="grid grid-cols-5 gap-3">
@@ -719,13 +1032,25 @@ function FileExplorerApp({ openApp, icons, openFolder }: { openApp: (id: AppId, 
           myFolders.length === 0
             ? <div className="text-sm opacity-70 p-6 text-center">No folders yet. Right-click the desktop → New Folder.</div>
             : <div className="grid grid-cols-5 gap-3">
-                {myFolders.map((f) => (
-                  <div key={f.id} onDoubleClick={() => openFolder(f.id, f.label)}
-                    className="text-center p-2 rounded hover:bg-white/30 cursor-pointer">
-                    <div className="text-4xl">📁</div>
-                    <div className="text-xs mt-1 truncate">{f.label}</div>
-                  </div>
-                ))}
+                {myFolders.map((f) => {
+                  const folderFiles = files.filter((fi) => fi.folder === f.id);
+                  return (
+                    <div key={f.id}
+                      onDoubleClick={() => openFolder(f.id, f.label)}
+                      onDragOver={(e) => { e.preventDefault(); setDropTarget(f.id); }}
+                      onDragLeave={() => setDropTarget(null)}
+                      onDrop={() => handleDrop(f.id)}
+                      className="text-center p-2 rounded hover:bg-white/30 cursor-pointer transition-all"
+                      style={{
+                        background: dropTarget === f.id ? "rgba(80,200,160,0.25)" : undefined,
+                        outline: dropTarget === f.id ? "2px dashed rgba(80,200,160,0.8)" : undefined,
+                      }}>
+                      <div className="text-4xl">📁</div>
+                      <div className="text-xs mt-1 truncate">{f.label}</div>
+                      {folderFiles.length > 0 && <div className="text-[10px] opacity-50">{folderFiles.length} file{folderFiles.length !== 1 ? "s" : ""}</div>}
+                    </div>
+                  );
+                })}
               </div>
         )}
       </div>
@@ -733,16 +1058,20 @@ function FileExplorerApp({ openApp, icons, openFolder }: { openApp: (id: AppId, 
   );
 }
 
-function FileGrid({ files, emptyHint, openFile, onDelete }: {
+function FileGrid({ files, emptyHint, openFile, onDelete, onDragStart, onDragEnd }: {
   files: SavedFile[]; emptyHint: string;
   openFile: (f: SavedFile) => void; onDelete: (id: string) => void;
+  onDragStart?: (id: string) => void; onDragEnd?: () => void;
 }) {
   if (files.length === 0) return <div className="text-sm opacity-70 p-6 text-center">{emptyHint}</div>;
   return (
     <div className="grid grid-cols-5 gap-3">
       {files.map((f) => (
         <div key={f.id} onDoubleClick={() => openFile(f)}
-          className="text-center p-2 rounded hover:bg-white/30 cursor-pointer group relative">
+          draggable
+          onDragStart={(e) => { e.dataTransfer.effectAllowed = "move"; onDragStart?.(f.id); }}
+          onDragEnd={() => onDragEnd?.()}
+          className="text-center p-2 rounded hover:bg-white/30 cursor-grab active:cursor-grabbing group relative select-none">
           {f.type === "image"
             ? <img src={f.content} alt={f.name} className="w-12 h-12 mx-auto object-cover rounded shadow" />
             : <div className="text-4xl">📄</div>}
@@ -770,6 +1099,8 @@ function AppStoreApp({ installWebApp, openApp, systemVersion }: { installWebApp:
     { name: "Computer",        icon: "🗂️", desc: "File system explorer.",                   appId: "file-explorer" },
     { name: "Notepad",         icon: "📝", desc: "Write and save text files.",              appId: "notepad" },
     { name: "Calculator",      icon: "🧮", desc: "Glossy arithmetic.",                       appId: "calculator" },
+    { name: "Solitaire",       icon: "🃏", desc: "Classic Klondike Solitaire vs Puei Bot AI.", appId: "solitaire" },
+    { name: "Chess",           icon: "♟️", desc: "Chess vs adaptive Puei Bot AI.",            appId: "chess" },
   ];
   return (
     <div className="flex h-full">
@@ -963,14 +1294,20 @@ function PueiSocialApp({ user, users }: { user: string; users: User[] }) {
     <div className="flex flex-col h-full">
       <div className="aero-titlebar px-4 py-2 flex items-center justify-between">
         <div className="font-bold text-lg flex items-center gap-2">📣 PueiSocial</div>
-        <div className="text-xs opacity-70 flex items-center gap-2">
-          Available on:
-          <span title="iOS">📱 iOS</span>
-          <span title="Android">🤖 Android</span>
-          <span title="Windows">🪟 Windows</span>
-          <span title="macOS"></span>
-          <span title="Linux">🐧 Linux</span>
-          <span title="AmongOS Linux">🟦 AmongOS Linux</span>
+        <div className="flex flex-col gap-0.5 items-end">
+          <div className="text-xs opacity-70 flex items-center gap-1.5">
+            Available on:
+            <span title="iOS">📱</span>
+            <span title="Android">🤖</span>
+            <span title="Windows">🪟</span>
+            <span title="macOS"></span>
+            <span title="Linux">🐧</span>
+          </div>
+          <div className="text-[10px] opacity-60 flex items-center gap-1">
+            🎬 <span className="font-semibold">Pueio Videos</span> · Supported Softwares:
+            <span className="bg-cyan-500/20 rounded px-1 font-semibold">Pueios2</span>
+            <span className="bg-purple-500/20 rounded px-1 font-semibold">Pueios2+</span>
+          </div>
         </div>
       </div>
       <div className="p-4 overflow-auto flex-1 space-y-3" style={{ background: "var(--glass)" }}>
