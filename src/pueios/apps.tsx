@@ -418,7 +418,7 @@ function PaintApp({ fileId, onCreateShortcut }: { fileId?: string; onCreateShort
   );
 }
 
-function PueiNetApp() {
+function PueiWebApp() {
   const [url, setUrl] = useState("puei://home");
   const [tabs, setTabs] = useState([{ id: 1, title: "Home", url: "puei://home" }]);
   const [active, setActive] = useState(1);
