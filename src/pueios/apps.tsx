@@ -76,6 +76,7 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, curren
     ["personalize", "🎨 Personalize"],
     ["wallpaper", "🖼️ Wallpaper"],
     ["account", "👤 Account"],
+    ["pueio-control", "🔐 Pueio Control"],
     ["sound", "🔊 Sound"],
     ["touch", "👆 Touchscreen"],
     ["accessibility", "♿ Accessibility"],
