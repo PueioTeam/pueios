@@ -57,6 +57,11 @@ export function PueiOS() {
   const [icons, setIcons] = useState<DesktopIcon[]>(defaultIcons);
   const [users, setUsers] = useState<User[]>([]);
   const [installed, setInstalled] = useState(false);
+  const [systemVersion, setSystemVersion] = useState<SystemVersion>("PueiOS 2");
+  const [installMode, setInstallMode] = useState<"new" | "existing" | null>(null);
+  const [pwOption, setPwOption] = useState<"have" | "none" | "create-now">("have");
+  const [upgradeTarget, setUpgradeTarget] = useState<SystemVersion>("PueiOS 2+");
+  const [upgradeProgress, setUpgradeProgress] = useState(0);
   const [currentUser, setCurrentUser] = useState<string>("");
   const [pwInput, setPwInput] = useState("");
   const [pwError, setPwError] = useState("");
