@@ -1,14 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   blip, defaultIcons, defaultTheme, iconGridPos, googleFaviconFor, pueiNumberFor,
-  loadState, saveState, registerInDirectory, type AppId, type DesktopIcon, type User,
+  loadState, saveState, registerInDirectory, SYSTEM_ORDER,
+  type AppId, type DesktopIcon, type User, type SystemVersion,
   type Theme, type WallpaperId, type WindowState,
 } from "./state";
 import { AppWindow, ContextMenu, appIcon } from "./Window";
 import { AppRenderer } from "./apps";
 import { PueiMascot, PueiLogoSvg } from "./Mascot";
 
-type Phase = "install" | "boot" | "login" | "desktop" | "shutdown" | "recovery";
+type Phase = "install" | "boot" | "login" | "desktop" | "shutdown" | "recovery" | "upgrade";
 
 const APP_TITLES: Record<AppId, string> = {
   "puei-paint": "Puei Paint 2",
@@ -23,20 +24,26 @@ const APP_TITLES: Record<AppId, string> = {
   "puei-social": "PueiSocial",
   "folder": "Folder",
   "web-app": "Web App",
+  "recycle-bin": "Recycle Bin",
+  "solitaire": "Solitaire",
+  "chess": "Chess",
 };
 const APP_SIZES: Partial<Record<AppId, { w: number; h: number }>> = {
   "calculator": { w: 280, h: 380 },
   "notepad": { w: 520, h: 420 },
   "about": { w: 480, h: 440 },
-  "settings": { w: 760, h: 540 },
-  "puei-messenger": { w: 640, h: 480 },
+  "settings": { w: 820, h: 560 },
+  "puei-messenger": { w: 720, h: 500 },
   "pueinet": { w: 820, h: 560 },
   "puei-paint": { w: 820, h: 560 },
   "file-explorer": { w: 760, h: 500 },
-  "app-store": { w: 720, h: 540 },
+  "app-store": { w: 760, h: 560 },
   "puei-social": { w: 720, h: 600 },
   "folder": { w: 520, h: 400 },
   "web-app": { w: 900, h: 600 },
+  "recycle-bin": { w: 640, h: 460 },
+  "solitaire": { w: 640, h: 480 },
+  "chess": { w: 560, h: 600 },
 };
 
 const GRID_W = 96;
