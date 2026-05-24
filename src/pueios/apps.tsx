@@ -1031,3 +1031,90 @@ function PueiSocialApp({ user, users }: { user: string; users: User[] }) {
     </div>
   );
 }
+
+// ---------- Recycle Bin ----------
+function RecycleBinApp() {
+  const [items, setItems] = useState<RecycleEntry[]>(() => loadRecycle());
+  useEffect(() => {
+    const fn = () => setItems(loadRecycle());
+    window.addEventListener("pueios-recycle-changed", fn);
+    return () => window.removeEventListener("pueios-recycle-changed", fn);
+  }, []);
+  return (
+    <div className="p-4 h-full flex flex-col">
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="text-lg font-semibold">🗑️ Recycle Bin</h2>
+        <button className="aero-button rounded px-3 py-1 text-xs" onClick={() => { if (confirm("Empty Recycle Bin?")) { emptyRecycle(); setItems([]); }}}>Empty Recycle Bin</button>
+      </div>
+      {items.length === 0 ? (
+        <div className="text-sm opacity-60 text-center p-8">Recycle Bin is empty.</div>
+      ) : (
+        <div className="grid grid-cols-5 gap-3 overflow-auto">
+          {items.map((f) => (
+            <div key={f.id} className="text-center p-2 rounded hover:bg-white/30">
+              {f.type === "image"
+                ? <img src={f.content} alt="" className="w-12 h-12 mx-auto object-cover rounded shadow opacity-70" />
+                : <div className="text-4xl opacity-70">📄</div>}
+              <div className="text-xs mt-1 truncate">{f.name}</div>
+              <div className="flex gap-1 mt-1 justify-center">
+                <button className="aero-button rounded px-1 text-[10px]" onClick={() => { restoreFromRecycle(f.id); setItems(loadRecycle()); }}>Restore</button>
+                <button className="aero-button rounded px-1 text-[10px]" onClick={() => { permanentDelete(f.id); setItems(loadRecycle()); }}>Delete</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ---------- Solitaire (vs AI bot, minimal) ----------
+function SolitaireApp() {
+  const [moves, setMoves] = useState(0);
+  return (
+    <div className="p-6 h-full text-center">
+      <h2 className="text-xl font-bold mb-2">🃏 Solitaire</h2>
+      <p className="text-xs opacity-70 mb-4">Klondike · Single-player or vs Puei Bot</p>
+      <div className="grid grid-cols-7 gap-2 max-w-2xl mx-auto">
+        {Array.from({ length: 7 }).map((_, i) => (
+          <div key={i} className="aero-glass-light rounded h-32 flex items-center justify-center text-xs opacity-70 cursor-pointer"
+            onClick={() => { setMoves(m => m + 1); blip("click"); }}>Pile {i + 1}</div>
+        ))}
+      </div>
+      <div className="mt-4 text-sm opacity-80">Moves: {moves}</div>
+      <div className="mt-2 text-xs opacity-60">vs 🤖 Puei Bot · Difficulty: Easy</div>
+    </div>
+  );
+}
+
+// ---------- Chess (vs AI bot, minimal board) ----------
+function ChessApp() {
+  const init = [
+    "♜♞♝♛♚♝♞♜",
+    "♟♟♟♟♟♟♟♟",
+    "        ",
+    "        ",
+    "        ",
+    "        ",
+    "♙♙♙♙♙♙♙♙",
+    "♖♘♗♕♔♗♘♖",
+  ];
+  const [turn, setTurn] = useState<"You" | "Bot">("You");
+  return (
+    <div className="p-4 h-full text-center">
+      <h2 className="text-lg font-bold mb-1">♟️ Chess · vs Puei Bot</h2>
+      <div className="text-xs opacity-70 mb-3">Turn: {turn}</div>
+      <div className="inline-grid grid-cols-8 border-2 border-black/40">
+        {init.flatMap((row, r) => Array.from(row).map((c, ci) => (
+          <div key={`${r}-${ci}`}
+            onClick={() => { setTurn(turn === "You" ? "Bot" : "You"); blip("click"); }}
+            className="w-10 h-10 flex items-center justify-center text-2xl cursor-pointer"
+            style={{ background: (r + ci) % 2 === 0 ? "#f0d9b5" : "#b58863", color: "#111" }}>
+            {c.trim()}
+          </div>
+        )))}
+      </div>
+      <div className="mt-3 text-xs opacity-60">Click a square to pass turn. AI bot moves automatically (simulated).</div>
+    </div>
+  );
+}
