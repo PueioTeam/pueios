@@ -92,7 +92,7 @@ export function PueiOS() {
   useEffect(() => {
     const s = loadState();
     setThemeState(s.theme); setIcons(s.icons); setUsers(s.users);
-    setInstalled(s.installed);
+    setInstalled(s.installed); setSystemVersion(s.systemVersion);
     if (!s.installed) { setPhase("install"); return; }
     if (s.lastUser && s.remember) { setLoginUser(s.lastUser); setRemember(true); }
     else if (s.users[0]) setLoginUser(s.users[0].name);
@@ -120,17 +120,26 @@ export function PueiOS() {
     root.style.setProperty("--accent-h", String(theme.accentH));
     root.classList.toggle("dark", theme.dark);
     root.classList.toggle("high-contrast", !!theme.highContrast);
-    if (!theme.transparency || theme.highContrast) {
-      root.style.setProperty("--glass", theme.highContrast ? "#000" : "oklch(0.96 0.02 220 / 1)");
-      root.style.setProperty("--glass-strong", theme.highContrast ? "#000" : "oklch(0.98 0.01 220 / 1)");
+    if (theme.highContrast) {
+      root.style.setProperty("--glass", "#000");
+      root.style.setProperty("--glass-strong", "#000");
+      root.style.setProperty("--accent", theme.highContrastColor);
+      root.style.setProperty("--foreground", theme.highContrastColor);
+    } else if (!theme.transparency) {
+      root.style.setProperty("--glass", "oklch(0.96 0.02 220 / 1)");
+      root.style.setProperty("--glass-strong", "oklch(0.98 0.01 220 / 1)");
+      root.style.removeProperty("--accent");
+      root.style.removeProperty("--foreground");
     } else {
       root.style.removeProperty("--glass");
       root.style.removeProperty("--glass-strong");
+      root.style.removeProperty("--accent");
+      root.style.removeProperty("--foreground");
     }
-    saveState({ installed, theme, icons, users, lastUser: loginUser, remember });
-    // Keep the global PueiNumber directory in sync so friends can be added by ID
+    saveState({ installed, systemVersion, theme, icons, users, lastUser: loginUser, remember });
     users.forEach((u) => { if (u.pueiNumber) registerInDirectory(u); });
-  }, [installed, theme, icons, users, loginUser, remember]);
+  }, [installed, systemVersion, theme, icons, users, loginUser, remember]);
+
 
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 1000 * 15);
