@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from "react";
-import type { AppId, Theme, User, WallpaperId, SavedFile, ChatMessage, DesktopIcon, SocialPost } from "./state";
+import type { AppId, Theme, User, WallpaperId, SavedFile, ChatMessage, DesktopIcon, SocialPost, SystemVersion, RecycleEntry } from "./state";
 import {
-  blip, loadFiles, upsertFile, deleteFile, getFile, appendChat, loadChat,
+  blip, loadFiles, upsertFile, deleteFile, getFile, appendChat, loadChat, deleteChatBetween,
   loadSocial, saveSocial, pueiNumberFor, googleFaviconFor,
   classifyTrustedUrl, trustedIconFor, lookupPueiNumber, registerInDirectory, loadDirectory,
+  classifyWebUrl, loadRecycle, restoreFromRecycle, permanentDelete, emptyRecycle, moveFile,
+  SYSTEM_ORDER, compareVersion,
 } from "./state";
 
 export type AppRendererProps = {
@@ -20,6 +22,9 @@ export type AppRendererProps = {
   webUrl?: string;
   folderIconId?: string;
   icons: DesktopIcon[];
+  systemVersion: SystemVersion;
+  startUpgrade: (target: SystemVersion) => void;
+  uninstallApp: (appId: AppId) => void;
   onCreateShortcut: (label: string, fileId: string) => void;
   installWebApp: (label: string, url: string, iconUrl?: string) => void;
   openWebApp: (url: string, title: string) => void;
@@ -28,20 +33,24 @@ export type AppRendererProps = {
 
 export function AppRenderer(p: AppRendererProps) {
   switch (p.appId) {
-    case "settings": return <SettingsApp theme={p.theme} setTheme={p.setTheme} wallpaper={p.wallpaper} setWallpaper={p.setWallpaper} openApp={p.openApp} currentUser={p.currentUser} users={p.users} setUsers={p.setUsers} />;
+    case "settings": return <SettingsApp theme={p.theme} setTheme={p.setTheme} wallpaper={p.wallpaper} setWallpaper={p.setWallpaper} openApp={p.openApp} currentUser={p.currentUser} users={p.users} setUsers={p.setUsers} systemVersion={p.systemVersion} startUpgrade={p.startUpgrade} uninstallApp={p.uninstallApp} icons={p.icons} />;
     case "about": return <AboutApp />;
     case "notepad": return <NotepadApp fileId={p.fileId} onCreateShortcut={p.onCreateShortcut} />;
     case "calculator": return <CalculatorApp />;
     case "puei-paint": return <PaintApp fileId={p.fileId} onCreateShortcut={p.onCreateShortcut} />;
-    case "pueinet": return <PueiNetApp />;
+    case "pueinet": return <PueiWebApp />;
     case "puei-messenger": return <MessengerApp user={p.currentUser} users={p.users} setUsers={p.setUsers} />;
     case "file-explorer": return <FileExplorerApp openApp={p.openApp} icons={p.icons} openFolder={p.openFolder} />;
-    case "app-store": return <AppStoreApp installWebApp={p.installWebApp} openApp={p.openApp} />;
+    case "app-store": return <AppStoreApp installWebApp={p.installWebApp} openApp={p.openApp} systemVersion={p.systemVersion} />;
     case "puei-social": return <PueiSocialApp user={p.currentUser} users={p.users} />;
     case "folder": return <FolderApp folderIconId={p.folderIconId!} icons={p.icons} openApp={p.openApp} openWebApp={p.openWebApp} />;
     case "web-app": return <WebAppFrame url={p.webUrl!} />;
+    case "recycle-bin": return <RecycleBinApp />;
+    case "solitaire": return <SolitaireApp />;
+    case "chess": return <ChessApp />;
   }
 }
+
 
 function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, currentUser, users, setUsers }: any) {
   const [tab, setTab] = useState("personalize");
