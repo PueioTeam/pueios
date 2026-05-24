@@ -250,20 +250,18 @@ function AboutApp() {
   return (
     <div className="p-8 text-center">
       <h1 className="text-3xl font-bold" style={{ color: "var(--accent)" }}>PueiOS 2</h1>
-      <div className="text-sm opacity-80">Ultimate Edition · Build 2020.1138 (beta)</div>
-      <div className="mt-6 mx-auto max-w-md text-left aero-glass-light p-4 rounded-lg">
-        <div className="font-semibold mb-2">PueiOS Team</div>
-        <div className="text-sm space-y-1">
-          <div>Pueian Architect — System Architecture</div>
-          <div>Pueian Pueiescu — Aero & Visual Design</div>
-          <div>Pueian Lemne — Mascot & Sound Engineering</div>
+      <div className="mt-8 mx-auto max-w-sm aero-glass-light p-5 rounded-lg">
+        <div className="font-semibold mb-3 text-lg">Credits</div>
+        <div className="text-base space-y-1">
+          <div>Pueian Lemne</div>
+          <div>Pueian Rosos</div>
+          <div>Pueian Pueiescu</div>
         </div>
-        <div className="text-xs opacity-60 mt-4">© 2020 Pueian Software Initiative. All rights remembered.</div>
-        <div className="text-xs opacity-60 mt-2">Security key for this build: <b>puei</b></div>
       </div>
     </div>
   );
 }
+
 
 function NotepadApp({ fileId, onCreateShortcut }: { fileId?: string; onCreateShortcut: (l: string, id: string) => void }) {
   const initial = fileId ? getFile(fileId) : undefined;
