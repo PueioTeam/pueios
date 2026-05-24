@@ -1,14 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   blip, defaultIcons, defaultTheme, iconGridPos, googleFaviconFor, pueiNumberFor,
-  loadState, saveState, registerInDirectory, type AppId, type DesktopIcon, type User,
+  loadState, saveState, registerInDirectory, SYSTEM_ORDER,
+  type AppId, type DesktopIcon, type User, type SystemVersion,
   type Theme, type WallpaperId, type WindowState,
 } from "./state";
 import { AppWindow, ContextMenu, appIcon } from "./Window";
 import { AppRenderer } from "./apps";
 import { PueiMascot, PueiLogoSvg } from "./Mascot";
 
-type Phase = "install" | "boot" | "login" | "desktop" | "shutdown" | "recovery";
+type Phase = "install" | "boot" | "login" | "desktop" | "shutdown" | "recovery" | "upgrade";
 
 const APP_TITLES: Record<AppId, string> = {
   "puei-paint": "Puei Paint 2",
@@ -23,20 +24,26 @@ const APP_TITLES: Record<AppId, string> = {
   "puei-social": "PueiSocial",
   "folder": "Folder",
   "web-app": "Web App",
+  "recycle-bin": "Recycle Bin",
+  "solitaire": "Solitaire",
+  "chess": "Chess",
 };
 const APP_SIZES: Partial<Record<AppId, { w: number; h: number }>> = {
   "calculator": { w: 280, h: 380 },
   "notepad": { w: 520, h: 420 },
   "about": { w: 480, h: 440 },
-  "settings": { w: 760, h: 540 },
-  "puei-messenger": { w: 640, h: 480 },
+  "settings": { w: 820, h: 560 },
+  "puei-messenger": { w: 720, h: 500 },
   "pueinet": { w: 820, h: 560 },
   "puei-paint": { w: 820, h: 560 },
   "file-explorer": { w: 760, h: 500 },
-  "app-store": { w: 720, h: 540 },
+  "app-store": { w: 760, h: 560 },
   "puei-social": { w: 720, h: 600 },
   "folder": { w: 520, h: 400 },
   "web-app": { w: 900, h: 600 },
+  "recycle-bin": { w: 640, h: 460 },
+  "solitaire": { w: 640, h: 480 },
+  "chess": { w: 560, h: 600 },
 };
 
 const GRID_W = 96;
@@ -50,6 +57,11 @@ export function PueiOS() {
   const [icons, setIcons] = useState<DesktopIcon[]>(defaultIcons);
   const [users, setUsers] = useState<User[]>([]);
   const [installed, setInstalled] = useState(false);
+  const [systemVersion, setSystemVersion] = useState<SystemVersion>("PueiOS 2");
+  const [installMode, setInstallMode] = useState<"new" | "existing" | null>(null);
+  const [pwOption, setPwOption] = useState<"have" | "none" | "create-now">("have");
+  const [upgradeTarget, setUpgradeTarget] = useState<SystemVersion>("PueiOS 2+");
+  const [upgradeProgress, setUpgradeProgress] = useState(0);
   const [currentUser, setCurrentUser] = useState<string>("");
   const [pwInput, setPwInput] = useState("");
   const [pwError, setPwError] = useState("");
@@ -80,7 +92,7 @@ export function PueiOS() {
   useEffect(() => {
     const s = loadState();
     setThemeState(s.theme); setIcons(s.icons); setUsers(s.users);
-    setInstalled(s.installed);
+    setInstalled(s.installed); setSystemVersion(s.systemVersion);
     if (!s.installed) { setPhase("install"); return; }
     if (s.lastUser && s.remember) { setLoginUser(s.lastUser); setRemember(true); }
     else if (s.users[0]) setLoginUser(s.users[0].name);
@@ -108,17 +120,26 @@ export function PueiOS() {
     root.style.setProperty("--accent-h", String(theme.accentH));
     root.classList.toggle("dark", theme.dark);
     root.classList.toggle("high-contrast", !!theme.highContrast);
-    if (!theme.transparency || theme.highContrast) {
-      root.style.setProperty("--glass", theme.highContrast ? "#000" : "oklch(0.96 0.02 220 / 1)");
-      root.style.setProperty("--glass-strong", theme.highContrast ? "#000" : "oklch(0.98 0.01 220 / 1)");
+    if (theme.highContrast) {
+      root.style.setProperty("--glass", "#000");
+      root.style.setProperty("--glass-strong", "#000");
+      root.style.setProperty("--accent", theme.highContrastColor);
+      root.style.setProperty("--foreground", theme.highContrastColor);
+    } else if (!theme.transparency) {
+      root.style.setProperty("--glass", "oklch(0.96 0.02 220 / 1)");
+      root.style.setProperty("--glass-strong", "oklch(0.98 0.01 220 / 1)");
+      root.style.removeProperty("--accent");
+      root.style.removeProperty("--foreground");
     } else {
       root.style.removeProperty("--glass");
       root.style.removeProperty("--glass-strong");
+      root.style.removeProperty("--accent");
+      root.style.removeProperty("--foreground");
     }
-    saveState({ installed, theme, icons, users, lastUser: loginUser, remember });
-    // Keep the global PueiNumber directory in sync so friends can be added by ID
+    saveState({ installed, systemVersion, theme, icons, users, lastUser: loginUser, remember });
     users.forEach((u) => { if (u.pueiNumber) registerInDirectory(u); });
-  }, [installed, theme, icons, users, loginUser, remember]);
+  }, [installed, systemVersion, theme, icons, users, loginUser, remember]);
+
 
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 1000 * 15);
@@ -361,8 +382,73 @@ export function PueiOS() {
           </div>
         );
       })(),
-      // 4 create account
-      <div key="4" className="aero-glass rounded-lg p-5 w-96 space-y-3">
+      // 4 Account setup — choose Create New or Log in to existing
+      installMode === null ? (
+        <div key="4-choose" className="aero-glass rounded-lg p-6 w-96 space-y-4 text-center">
+          <div className="text-base font-semibold flex items-center gap-2 justify-center"><PueiLogoSvg size={28} /> Set up your PueiOS account</div>
+          <p className="text-xs opacity-70">Every PueiOS user has a unique <b>Pueio Number</b> identity.</p>
+          <button className="aero-button rounded w-full py-3" onClick={() => setInstallMode("new")}>＋ Create a new account</button>
+          <button className="aero-button rounded w-full py-3" onClick={() => setInstallMode("existing")}>↩ Log in to existing account</button>
+        </div>
+      ) : installMode === "existing" ? (
+        // Existing account login (during install)
+        <div key="4-existing" className="aero-glass rounded-lg p-5 w-96 space-y-3">
+          <div className="text-base font-semibold flex items-center gap-2"><PueiLogoSvg size={26} /> Log in to existing account</div>
+          <div>
+            <label className="text-xs opacity-70">Username</label>
+            <input value={newAcc.name} onChange={(e) => setNewAcc({ ...newAcc, name: e.target.value })}
+              className="w-full px-3 py-2 rounded text-sm outline-none" style={{ background: "white", color: "#111" }} />
+          </div>
+          {pwOption === "have" && (
+            <div>
+              <label className="text-xs opacity-70">Password</label>
+              <input type="password" value={newAcc.password} onChange={(e) => setNewAcc({ ...newAcc, password: e.target.value })}
+                className="w-full px-3 py-2 rounded text-sm outline-none" style={{ background: "white", color: "#111" }} />
+            </div>
+          )}
+          {pwOption === "none" && (
+            <div className="aero-glass-light rounded p-3 text-xs">
+              <div className="font-semibold mb-1">No password selected</div>
+              <div className="mb-2">Do you want to create a password for better privacy?</div>
+              <div className="flex gap-2">
+                <button className="aero-button rounded px-3 py-1 text-xs" onClick={() => setPwOption("create-now")}>Yes, create one</button>
+                <button className="aero-button rounded px-3 py-1 text-xs" onClick={() => {
+                  // Limited access mode — continue without password
+                  const name = newAcc.name.trim();
+                  if (!name) { setInstallErr("Pick a name"); return; }
+                  const nu: User = { name, password: "", avatar: "🧑", color: "200", pueiNumber: pueiNumberFor(name + ":" + Date.now()), friends: [], noPassword: true, limitedMode: true };
+                  setUsers([nu]); setLoginUser(name); setInstalled(true); setInstallStep(5);
+                  setTimeout(() => { setPhase("boot"); setBootProgress(0); setInstallStep(0); setInstallMode(null); setPwOption("have"); }, 1400);
+                }}>No — limited access</button>
+              </div>
+            </div>
+          )}
+          {pwOption === "create-now" && (
+            <div>
+              <label className="text-xs opacity-70">New password</label>
+              <input type="password" value={newAcc.password} onChange={(e) => setNewAcc({ ...newAcc, password: e.target.value })}
+                className="w-full px-3 py-2 rounded text-sm outline-none" style={{ background: "white", color: "#111" }} />
+            </div>
+          )}
+          {pwOption !== "none" && (
+            <button className="text-xs opacity-70 underline" onClick={() => setPwOption("none")}>I don't have a password</button>
+          )}
+          {installErr && <div className="text-red-300 text-xs">{installErr}</div>}
+          <div className="flex gap-2">
+            <button className="aero-button rounded px-3 py-2 text-sm" onClick={() => { setInstallMode(null); setPwOption("have"); setInstallErr(""); }}>← Back</button>
+            <button className="aero-button rounded px-3 py-2 text-sm flex-1" onClick={() => {
+              const name = newAcc.name.trim();
+              if (!name) { setInstallErr("Enter a username"); return; }
+              const nu: User = { name, password: newAcc.password, avatar: "🧑", color: "200", pueiNumber: pueiNumberFor(name + ":" + Date.now()), friends: [] };
+              setUsers([nu]); setLoginUser(name); setInstalled(true); setInstallErr("");
+              setInstallStep(5); blip("notify");
+              setTimeout(() => { setPhase("boot"); setBootProgress(0); setInstallStep(0); setInstallMode(null); setPwOption("have"); }, 1400);
+            }}>Continue →</button>
+          </div>
+        </div>
+      ) : (
+      // Create new account
+      <div key="4-new" className="aero-glass rounded-lg p-5 w-96 space-y-3">
         <div className="text-base font-semibold flex items-center gap-2"><PueiLogoSvg size={28} /> Create your account</div>
         <div>
           <label className="text-xs opacity-70">Account name</label>
@@ -373,6 +459,7 @@ export function PueiOS() {
           <label className="text-xs opacity-70">Password (optional)</label>
           <input type="password" value={newAcc.password} onChange={(e) => setNewAcc({ ...newAcc, password: e.target.value })}
             className="w-full px-3 py-2 rounded text-sm outline-none" style={{ background: "white", color: "#111" }} />
+          <div className="text-[10px] opacity-60 mt-1">Leave empty for limited access mode (you can enable a password later in Settings → Pueio Control).</div>
         </div>
         <div>
           <label className="text-xs opacity-70">Avatar</label>
@@ -409,18 +496,25 @@ export function PueiOS() {
           </div>
         </div>
         {installErr && <div className="text-red-300 text-xs">{installErr}</div>}
-        <button className="aero-button rounded px-3 py-2 text-sm w-full" onClick={() => {
-          const name = newAcc.name.trim();
-          if (!name) { setInstallErr("Pick a name"); return; }
-          const nu: User = { name, password: newAcc.password, avatar: newAcc.avatar || "🧑", color: newAcc.color, pueiNumber: pueiNumberFor(name + ":" + Date.now()), friends: [] };
-          setUsers([nu]); setLoginUser(name); setInstalled(true); setInstallErr("");
-          setNewAcc({ name: "", password: "", avatar: "🧑", color: "200" });
-          blip("notify");
-          // briefly show a "finalizing" then reboot to login
-          setInstallStep(5);
-          setTimeout(() => { setPhase("boot"); setBootProgress(0); setInstallStep(0); }, 1400);
-        }}>Finish installation</button>
-      </div>,
+        <div className="flex gap-2">
+          <button className="aero-button rounded px-3 py-2 text-sm" onClick={() => setInstallMode(null)}>← Back</button>
+          <button className="aero-button rounded px-3 py-2 text-sm flex-1" onClick={() => {
+            const name = newAcc.name.trim();
+            if (!name) { setInstallErr("Pick a name"); return; }
+            const noPw = !newAcc.password;
+            const nu: User = {
+              name, password: newAcc.password, avatar: newAcc.avatar || "🧑", color: newAcc.color,
+              pueiNumber: pueiNumberFor(name + ":" + Date.now()), friends: [],
+              noPassword: noPw, limitedMode: noPw,
+            };
+            setUsers([nu]); setLoginUser(name); setInstalled(true); setInstallErr("");
+            setNewAcc({ name: "", password: "", avatar: "🧑", color: "200" });
+            blip("notify");
+            setInstallStep(5);
+            setTimeout(() => { setPhase("boot"); setBootProgress(0); setInstallStep(0); setInstallMode(null); }, 1400);
+          }}>Finish installation</button>
+        </div>
+      </div>),
       // 5 done
       <div key="5" className="text-center">
         <div className="boot-logo inline-block mb-3"><PueiLogoSvg size={80} glow /></div>
@@ -506,7 +600,37 @@ export function PueiOS() {
     );
   }
 
-  // ============ LOGIN
+  if (phase === "upgrade") {
+    if (upgradeProgress < 100) {
+      setTimeout(() => setUpgradeProgress((p) => Math.min(100, p + 0.6 + Math.random() * 1.2)), 220);
+    } else {
+      setTimeout(() => {
+        setSystemVersion(upgradeTarget);
+        setPhase("boot"); setBootProgress(0); setUpgradeProgress(0);
+        blip("notify");
+      }, 1500);
+    }
+    const stages = ["Preparing upgrade…", "Backing up files & settings…", "Migrating accounts & PueiNumbers…", "Installing new system files…", "Preserving conversations & media…", "Finalizing upgrade…"];
+    const stageIdx = Math.min(stages.length - 1, Math.floor(upgradeProgress / (100 / stages.length)));
+    return (
+      <div className="fixed inset-0 flex items-center justify-center text-white"
+        style={{ background: "linear-gradient(135deg, oklch(0.25 0.12 270), oklch(0.1 0.08 280))" }}>
+        <div className="text-center w-[28rem]">
+          <div className="boot-logo inline-block mb-3"><PueiLogoSvg size={80} glow /></div>
+          <h2 className="text-2xl font-light mb-1">Upgrading to {upgradeTarget}</h2>
+          <p className="text-xs opacity-70 mb-4">Your apps, files, settings, conversations and Pueio Number are preserved.</p>
+          <div className="text-sm opacity-80 mb-2">{stages[stageIdx]}</div>
+          <div className="w-full h-2 rounded-full bg-cyan-900/50 overflow-hidden">
+            <div className="loading-bar-inner h-full" style={{ width: `${upgradeProgress}%`, transition: "width 0.2s" }} />
+          </div>
+          <div className="text-[10px] opacity-60 mt-2">{Math.floor(upgradeProgress)}% · {systemVersion} → {upgradeTarget}</div>
+          <div className="text-[10px] opacity-40 mt-6">Do not turn off your device.</div>
+        </div>
+      </div>
+    );
+  }
+
+
   if (phase === "login" || locked) {
     const trySignIn = () => {
       const u = users.find((x) => x.name === loginUser);
@@ -722,6 +846,9 @@ export function PueiOS() {
               openApp={openAppSimple} wallpaper={theme.wallpaper} setWallpaper={setWallpaper}
               currentUser={currentUser} fileId={w.fileId} users={users}
               webUrl={w.webUrl} folderIconId={w.folderIconId} icons={icons}
+              systemVersion={systemVersion}
+              startUpgrade={(target) => { setUpgradeTarget(target); setUpgradeProgress(0); setPhase("upgrade"); }}
+              uninstallApp={(appId) => setIcons((cur) => cur.filter((i) => !(i.appId === appId && !i.fileId && !i.webUrl)))}
               installWebApp={(label, url, iconUrl) => addIcon({ id: `web-${Date.now().toString(36)}`, label, appId: "web-app", webUrl: url, iconUrl: iconUrl || googleFaviconFor(url, 64) })}
               openWebApp={(url, title) => openApp("web-app", { webUrl: url, title })}
               openFolder={(folderIconId, title) => openApp("folder", { folderIconId, title })}

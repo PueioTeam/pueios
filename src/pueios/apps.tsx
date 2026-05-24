@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from "react";
-import type { AppId, Theme, User, WallpaperId, SavedFile, ChatMessage, DesktopIcon, SocialPost } from "./state";
+import type { AppId, Theme, User, WallpaperId, SavedFile, ChatMessage, DesktopIcon, SocialPost, SystemVersion, RecycleEntry } from "./state";
 import {
-  blip, loadFiles, upsertFile, deleteFile, getFile, appendChat, loadChat,
+  blip, loadFiles, upsertFile, deleteFile, getFile, appendChat, loadChat, deleteChatBetween,
   loadSocial, saveSocial, pueiNumberFor, googleFaviconFor,
   classifyTrustedUrl, trustedIconFor, lookupPueiNumber, registerInDirectory, loadDirectory,
+  classifyWebUrl, loadRecycle, restoreFromRecycle, permanentDelete, emptyRecycle, moveFile,
+  SYSTEM_ORDER, compareVersion,
 } from "./state";
 
 export type AppRendererProps = {
@@ -20,6 +22,9 @@ export type AppRendererProps = {
   webUrl?: string;
   folderIconId?: string;
   icons: DesktopIcon[];
+  systemVersion: SystemVersion;
+  startUpgrade: (target: SystemVersion) => void;
+  uninstallApp: (appId: AppId) => void;
   onCreateShortcut: (label: string, fileId: string) => void;
   installWebApp: (label: string, url: string, iconUrl?: string) => void;
   openWebApp: (url: string, title: string) => void;
@@ -28,22 +33,26 @@ export type AppRendererProps = {
 
 export function AppRenderer(p: AppRendererProps) {
   switch (p.appId) {
-    case "settings": return <SettingsApp theme={p.theme} setTheme={p.setTheme} wallpaper={p.wallpaper} setWallpaper={p.setWallpaper} openApp={p.openApp} currentUser={p.currentUser} users={p.users} setUsers={p.setUsers} />;
+    case "settings": return <SettingsApp theme={p.theme} setTheme={p.setTheme} wallpaper={p.wallpaper} setWallpaper={p.setWallpaper} openApp={p.openApp} currentUser={p.currentUser} users={p.users} setUsers={p.setUsers} systemVersion={p.systemVersion} startUpgrade={p.startUpgrade} uninstallApp={p.uninstallApp} icons={p.icons} />;
     case "about": return <AboutApp />;
     case "notepad": return <NotepadApp fileId={p.fileId} onCreateShortcut={p.onCreateShortcut} />;
     case "calculator": return <CalculatorApp />;
     case "puei-paint": return <PaintApp fileId={p.fileId} onCreateShortcut={p.onCreateShortcut} />;
-    case "pueinet": return <PueiNetApp />;
+    case "pueinet": return <PueiWebApp />;
     case "puei-messenger": return <MessengerApp user={p.currentUser} users={p.users} setUsers={p.setUsers} />;
     case "file-explorer": return <FileExplorerApp openApp={p.openApp} icons={p.icons} openFolder={p.openFolder} />;
-    case "app-store": return <AppStoreApp installWebApp={p.installWebApp} openApp={p.openApp} />;
+    case "app-store": return <AppStoreApp installWebApp={p.installWebApp} openApp={p.openApp} systemVersion={p.systemVersion} />;
     case "puei-social": return <PueiSocialApp user={p.currentUser} users={p.users} />;
     case "folder": return <FolderApp folderIconId={p.folderIconId!} icons={p.icons} openApp={p.openApp} openWebApp={p.openWebApp} />;
     case "web-app": return <WebAppFrame url={p.webUrl!} />;
+    case "recycle-bin": return <RecycleBinApp />;
+    case "solitaire": return <SolitaireApp />;
+    case "chess": return <ChessApp />;
   }
 }
 
-function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, currentUser, users, setUsers }: any) {
+
+function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, currentUser, users, setUsers, systemVersion, startUpgrade, uninstallApp, icons }: any) {
   const [tab, setTab] = useState("personalize");
   const [paintImages, setPaintImages] = useState<SavedFile[]>(() => loadFiles().filter((f) => f.type === "image"));
   useEffect(() => {
@@ -67,6 +76,7 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, curren
     ["personalize", "🎨 Personalize"],
     ["wallpaper", "🖼️ Wallpaper"],
     ["account", "👤 Account"],
+    ["pueio-control", "🔐 Pueio Control"],
     ["sound", "🔊 Sound"],
     ["touch", "👆 Touchscreen"],
     ["accessibility", "♿ Accessibility"],
@@ -241,20 +251,18 @@ function AboutApp() {
   return (
     <div className="p-8 text-center">
       <h1 className="text-3xl font-bold" style={{ color: "var(--accent)" }}>PueiOS 2</h1>
-      <div className="text-sm opacity-80">Ultimate Edition · Build 2020.1138 (beta)</div>
-      <div className="mt-6 mx-auto max-w-md text-left aero-glass-light p-4 rounded-lg">
-        <div className="font-semibold mb-2">PueiOS Team</div>
-        <div className="text-sm space-y-1">
-          <div>Pueian Architect — System Architecture</div>
-          <div>Pueian Pueiescu — Aero & Visual Design</div>
-          <div>Pueian Lemne — Mascot & Sound Engineering</div>
+      <div className="mt-8 mx-auto max-w-sm aero-glass-light p-5 rounded-lg">
+        <div className="font-semibold mb-3 text-lg">Credits</div>
+        <div className="text-base space-y-1">
+          <div>Pueian Lemne</div>
+          <div>Pueian Rosos</div>
+          <div>Pueian Pueiescu</div>
         </div>
-        <div className="text-xs opacity-60 mt-4">© 2020 Pueian Software Initiative. All rights remembered.</div>
-        <div className="text-xs opacity-60 mt-2">Security key for this build: <b>puei</b></div>
       </div>
     </div>
   );
 }
+
 
 function NotepadApp({ fileId, onCreateShortcut }: { fileId?: string; onCreateShortcut: (l: string, id: string) => void }) {
   const initial = fileId ? getFile(fileId) : undefined;
@@ -409,7 +417,7 @@ function PaintApp({ fileId, onCreateShortcut }: { fileId?: string; onCreateShort
   );
 }
 
-function PueiNetApp() {
+function PueiWebApp() {
   const [url, setUrl] = useState("puei://home");
   const [tabs, setTabs] = useState([{ id: 1, title: "Home", url: "puei://home" }]);
   const [active, setActive] = useState(1);
@@ -748,7 +756,7 @@ function FileGrid({ files, emptyHint, openFile, onDelete }: {
 }
 
 // ---------- App Store ----------
-function AppStoreApp({ installWebApp, openApp }: { installWebApp: (label: string, url: string, iconUrl?: string) => void; openApp: (id: AppId) => void }) {
+function AppStoreApp({ installWebApp, openApp, systemVersion }: { installWebApp: (label: string, url: string, iconUrl?: string) => void; openApp: (id: AppId) => void; systemVersion: SystemVersion }) {
   const [tab, setTab] = useState<"official" | "installer">("official");
   type StoreApp = { name: string; icon: string; desc: string; appId: AppId };
   // Only Puei Team–built apps. AppStore is a closed ecosystem.
@@ -1019,6 +1027,93 @@ function PueiSocialApp({ user, users }: { user: string; users: User[] }) {
           </div>
         ))}
       </div>
+    </div>
+  );
+}
+
+// ---------- Recycle Bin ----------
+function RecycleBinApp() {
+  const [items, setItems] = useState<RecycleEntry[]>(() => loadRecycle());
+  useEffect(() => {
+    const fn = () => setItems(loadRecycle());
+    window.addEventListener("pueios-recycle-changed", fn);
+    return () => window.removeEventListener("pueios-recycle-changed", fn);
+  }, []);
+  return (
+    <div className="p-4 h-full flex flex-col">
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="text-lg font-semibold">🗑️ Recycle Bin</h2>
+        <button className="aero-button rounded px-3 py-1 text-xs" onClick={() => { if (confirm("Empty Recycle Bin?")) { emptyRecycle(); setItems([]); }}}>Empty Recycle Bin</button>
+      </div>
+      {items.length === 0 ? (
+        <div className="text-sm opacity-60 text-center p-8">Recycle Bin is empty.</div>
+      ) : (
+        <div className="grid grid-cols-5 gap-3 overflow-auto">
+          {items.map((f) => (
+            <div key={f.id} className="text-center p-2 rounded hover:bg-white/30">
+              {f.type === "image"
+                ? <img src={f.content} alt="" className="w-12 h-12 mx-auto object-cover rounded shadow opacity-70" />
+                : <div className="text-4xl opacity-70">📄</div>}
+              <div className="text-xs mt-1 truncate">{f.name}</div>
+              <div className="flex gap-1 mt-1 justify-center">
+                <button className="aero-button rounded px-1 text-[10px]" onClick={() => { restoreFromRecycle(f.id); setItems(loadRecycle()); }}>Restore</button>
+                <button className="aero-button rounded px-1 text-[10px]" onClick={() => { permanentDelete(f.id); setItems(loadRecycle()); }}>Delete</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ---------- Solitaire (vs AI bot, minimal) ----------
+function SolitaireApp() {
+  const [moves, setMoves] = useState(0);
+  return (
+    <div className="p-6 h-full text-center">
+      <h2 className="text-xl font-bold mb-2">🃏 Solitaire</h2>
+      <p className="text-xs opacity-70 mb-4">Klondike · Single-player or vs Puei Bot</p>
+      <div className="grid grid-cols-7 gap-2 max-w-2xl mx-auto">
+        {Array.from({ length: 7 }).map((_, i) => (
+          <div key={i} className="aero-glass-light rounded h-32 flex items-center justify-center text-xs opacity-70 cursor-pointer"
+            onClick={() => { setMoves(m => m + 1); blip("click"); }}>Pile {i + 1}</div>
+        ))}
+      </div>
+      <div className="mt-4 text-sm opacity-80">Moves: {moves}</div>
+      <div className="mt-2 text-xs opacity-60">vs 🤖 Puei Bot · Difficulty: Easy</div>
+    </div>
+  );
+}
+
+// ---------- Chess (vs AI bot, minimal board) ----------
+function ChessApp() {
+  const init = [
+    "♜♞♝♛♚♝♞♜",
+    "♟♟♟♟♟♟♟♟",
+    "        ",
+    "        ",
+    "        ",
+    "        ",
+    "♙♙♙♙♙♙♙♙",
+    "♖♘♗♕♔♗♘♖",
+  ];
+  const [turn, setTurn] = useState<"You" | "Bot">("You");
+  return (
+    <div className="p-4 h-full text-center">
+      <h2 className="text-lg font-bold mb-1">♟️ Chess · vs Puei Bot</h2>
+      <div className="text-xs opacity-70 mb-3">Turn: {turn}</div>
+      <div className="inline-grid grid-cols-8 border-2 border-black/40">
+        {init.flatMap((row, r) => Array.from(row).map((c, ci) => (
+          <div key={`${r}-${ci}`}
+            onClick={() => { setTurn(turn === "You" ? "Bot" : "You"); blip("click"); }}
+            className="w-10 h-10 flex items-center justify-center text-2xl cursor-pointer"
+            style={{ background: (r + ci) % 2 === 0 ? "#f0d9b5" : "#b58863", color: "#111" }}>
+            {c.trim()}
+          </div>
+        )))}
+      </div>
+      <div className="mt-3 text-xs opacity-60">Click a square to pass turn. AI bot moves automatically (simulated).</div>
     </div>
   );
 }
