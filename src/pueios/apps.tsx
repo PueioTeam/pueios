@@ -749,14 +749,36 @@ function PueiWebApp() {
 }
 
 function MessengerApp({ user, users, setUsers }: { user: string; users: User[]; setUsers: (u: User[]) => void }) {
-  const contacts = users.filter((u) => u.name !== user);
-  const [active, setActive] = useState(0);
+  const localContacts = users.filter((u) => u.name !== user);
+  const me = users.find((u) => u.name === user);
+  const myPueiNumber = me?.pueiNumber || pueiNumberFor(user + ":seed");
+
+  // External contacts stored in localStorage (cross-device, identified by Puei Number only)
+  const [externalContacts, setExternalContacts] = useState<{ pueiNumber: string }[]>(() => {
+    try { return JSON.parse(localStorage.getItem("pueios-xcontacts") || "[]"); } catch { return []; }
+  });
+
+  const saveExternalContacts = (list: { pueiNumber: string }[]) => {
+    setExternalContacts(list);
+    localStorage.setItem("pueios-xcontacts", JSON.stringify(list));
+  };
+
+  const [activeId, setActiveId] = useState<string | null>(
+    localContacts[0]?.name ?? externalContacts[0]?.pueiNumber ?? null
+  );
+  const [activeKind, setActiveKind] = useState<"local" | "external">(
+    localContacts.length > 0 ? "local" : "external"
+  );
+
   const [allMsgs, setAllMsgs] = useState<ChatMessage[]>(() => loadChat());
+  // API messages keyed by the OTHER party's Puei Number
+  const [apiMsgs, setApiMsgs] = useState<Record<string, Array<{ id: string; from: string; fromNumber: string; text: string; at: number }>>>({});
   const [text, setText] = useState("");
   const [view, setView] = useState<"chat" | "settings">("chat");
   const [addingContact, setAddingContact] = useState(false);
   const [contactInput, setContactInput] = useState("");
   const [contactMsg, setContactMsg] = useState<{ text: string; ok: boolean } | null>(null);
+
   useEffect(() => {
     const fn = () => setAllMsgs(loadChat());
     window.addEventListener("pueios-chat", fn);
@@ -768,7 +790,331 @@ function MessengerApp({ user, users, setUsers }: { user: string; users: User[]; 
   }, []);
 
   // Backfill PueiNumber for the current user if missing
-  const me = users.find((u) => u.name === user);
+  useEffect(() => {
+    if (me && !me.pueiNumber) {
+      setUsers(users.map((u) => u.name === user ? { ...u, pueiNumber: pueiNumberFor(user + ":" + Date.now()) } : u));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Poll /api/chat every 3 seconds for cross-device incoming messages
+  useEffect(() => {
+    if (!myPueiNumber || myPueiNumber === "—") return;
+    let cancelled = false;
+    const poll = async () => {
+      try {
+        const res = await fetch(`/api/chat?pueiNumber=${encodeURIComponent(myPueiNumber)}`);
+        if (!res.ok || cancelled) return;
+        const msgs = (await res.json()) as Array<{ id: string; from: string; fromNumber: string; text: string; at: number }>;
+        if (cancelled) return;
+        // Group by sender Puei Number
+        const grouped: Record<string, typeof msgs> = {};
+        for (const m of msgs) {
+          if (!grouped[m.fromNumber]) grouped[m.fromNumber] = [];
+          grouped[m.fromNumber].push(m);
+        }
+        setApiMsgs(grouped);
+      } catch {
+        // API not available — silent fail (local dev without backend)
+      }
+    };
+    poll();
+    const interval = setInterval(poll, 3000);
+    return () => { cancelled = true; clearInterval(interval); };
+  }, [myPueiNumber]);
+
+  const doAddContact = () => {
+    const num = contactInput.trim().toUpperCase();
+    if (!/^[A-Z0-9]{3}-[A-Z0-9]{3}-[A-Z0-9]{3}$/.test(num)) {
+      setContactMsg({ text: "Invalid format. Use XXX-XXX-XXX.", ok: false });
+      blip("error"); return;
+    }
+    if (num === myPueiNumber) {
+      setContactMsg({ text: "That's your own Puei Number.", ok: false });
+      blip("error"); return;
+    }
+    // Check if it's a local user
+    const localUser = users.find((u) => u.name !== user && (u.pueiNumber || pueiNumberFor(u.name + ":seed")) === num);
+    if (localUser) {
+      setActiveId(localUser.name); setActiveKind("local");
+      setContactMsg({ text: `Found on this device: ${localUser.name}`, ok: true });
+      setAddingContact(false); setContactInput(""); blip("click"); return;
+    }
+    // Check already in external contacts
+    if (externalContacts.find((c) => c.pueiNumber === num)) {
+      setActiveId(num); setActiveKind("external");
+      setContactMsg({ text: "Already in your contacts.", ok: true });
+      setAddingContact(false); setContactInput(""); blip("click"); return;
+    }
+    // Add as external contact
+    saveExternalContacts([...externalContacts, { pueiNumber: num }]);
+    setActiveId(num); setActiveKind("external");
+    setContactMsg({ text: `Added! Start chatting with ${num}.`, ok: true });
+    setAddingContact(false); setContactInput(""); blip("click");
+  };
+
+  const SettingsView = () => {
+    const [copied, setCopied] = useState(false);
+    return (
+      <div className="flex-1 p-6 overflow-auto">
+        <h2 className="text-xl font-semibold mb-2">Messenger Settings</h2>
+        <p className="text-sm opacity-70 mb-5">Share your Puei Number with friends — they can add you on any device running PueiOS.</p>
+        <div className="aero-glass-light rounded-xl p-4 max-w-md">
+          <div className="text-xs opacity-60">Signed in as</div>
+          <div className="text-base font-semibold mb-3">{user}</div>
+          <div className="text-xs opacity-60">Your PueiNumber</div>
+          <div className="flex items-center gap-2 mt-1">
+            <div className="font-mono text-2xl tracking-wider px-3 py-2 rounded"
+              style={{ background: "white", color: "#111", border: "1px solid var(--border)" }}>
+              {myPueiNumber}
+            </div>
+            <button className="aero-button rounded px-3 py-2 text-xs"
+              onClick={() => { navigator.clipboard?.writeText(myPueiNumber); setCopied(true); setTimeout(() => setCopied(false), 1200); blip("click"); }}>
+              {copied ? "Copied ✓" : "Copy"}
+            </button>
+          </div>
+          <div className="text-[10px] opacity-50 mt-2">Anyone with this number can message you from iPad, Android, Windows, Mac, or any PueiOS device.</div>
+        </div>
+        <div className="mt-5 max-w-md">
+          <div className="text-xs opacity-60 mb-2">Cross-device contacts</div>
+          {externalContacts.length === 0 && <div className="text-xs opacity-60">None yet. Use "+ Add Contact" and enter a Puei Number.</div>}
+          {externalContacts.map((c) => (
+            <div key={c.pueiNumber} className="flex items-center justify-between aero-glass-light rounded p-2 mb-1 text-sm">
+              <span className="font-mono">🌐 {c.pueiNumber}</span>
+              <button className="text-[10px] text-red-500 hover:opacity-80"
+                onClick={() => saveExternalContacts(externalContacts.filter((x) => x.pueiNumber !== c.pueiNumber))}>
+                Remove
+              </button>
+            </div>
+          ))}
+        </div>
+        <div className="mt-5 max-w-md">
+          <div className="text-xs opacity-60 mb-2">Accounts on this device</div>
+          {localContacts.length === 0 && <div className="text-xs opacity-60">No other accounts on this device.</div>}
+          {localContacts.map((c) => (
+            <div key={c.name} className="flex items-center justify-between aero-glass-light rounded p-2 mb-1 text-sm">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded overflow-hidden flex items-center justify-center text-base"
+                  style={{ background: `linear-gradient(135deg, oklch(0.7 0.18 ${c.color}), oklch(0.45 0.2 ${c.color}))` }}>
+                  {c.avatar.startsWith("data:") ? <img src={c.avatar} alt="" className="w-full h-full object-cover" /> : c.avatar}
+                </div>
+                <span>{c.name}</span>
+              </div>
+              <span className="font-mono text-xs opacity-70">{c.pueiNumber || pueiNumberFor(c.name + ":seed")}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  const hasAnyContacts = localContacts.length > 0 || externalContacts.length > 0;
+
+  if (!hasAnyContacts && view === "chat") {
+    return (
+      <div className="flex h-full">
+        <div className="w-44 border-r p-2" style={{ background: "var(--glass)" }}>
+          <button className="aero-button rounded w-full text-xs py-1.5 mb-1" onClick={() => setView("chat")}>💬 Chats</button>
+          <button className="aero-button rounded w-full text-xs py-1.5" onClick={() => setView("settings")}>⚙️ Settings</button>
+        </div>
+        <div className="flex-1 p-6 text-sm text-center opacity-80 flex flex-col items-center justify-center">
+          <div className="text-4xl mb-2">💬</div>
+          <div className="font-semibold mb-1">No contacts yet</div>
+          <div className="max-w-xs">Click <strong>+ Add Contact</strong> in the sidebar and enter a friend's Puei Number. Works across iPad, Android, Windows, Mac — any device running PueiOS.</div>
+        </div>
+      </div>
+    );
+  }
+
+  const localPartner = activeKind === "local" ? localContacts.find((c) => c.name === activeId) : undefined;
+  const externalPartner = activeKind === "external" ? externalContacts.find((c) => c.pueiNumber === activeId) : undefined;
+
+  const localConversation = localPartner
+    ? allMsgs.filter((m) => (m.from === user && m.to === localPartner.name) || (m.from === localPartner.name && m.to === user))
+    : [];
+
+  const externalConversation = externalPartner ? (apiMsgs[externalPartner.pueiNumber] ?? []) : [];
+
+  const sendLocal = () => {
+    if (!text.trim() || !localPartner) return;
+    blip("click");
+    appendChat({ id: `m-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, from: user, to: localPartner.name, text, at: Date.now() });
+    setAllMsgs(loadChat());
+    // Also relay via API for cross-device visibility
+    const partnerNumber = localPartner.pueiNumber || pueiNumberFor(localPartner.name + ":seed");
+    fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ from: user, fromNumber: myPueiNumber, toNumber: partnerNumber, text }),
+    }).catch(() => {});
+    setText("");
+  };
+
+  const sendExternal = async () => {
+    if (!text.trim() || !externalPartner) return;
+    blip("click");
+    const sentText = text;
+    setText("");
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ from: user, fromNumber: myPueiNumber, toNumber: externalPartner.pueiNumber, text: sentText }),
+      });
+      if (!res.ok) throw new Error("send failed");
+      setApiMsgs((prev) => {
+        const key = externalPartner.pueiNumber;
+        const outMsg = { id: `out-${Date.now()}`, from: user, fromNumber: myPueiNumber, text: sentText, at: Date.now() };
+        return { ...prev, [key]: [...(prev[key] ?? []), outMsg] };
+      });
+    } catch {
+      blip("error");
+    }
+  };
+
+  const send = () => { if (activeKind === "local") sendLocal(); else sendExternal(); };
+
+  return (
+    <div className="flex h-full">
+      <div className="w-48 border-r overflow-auto flex flex-col" style={{ background: "var(--glass)" }}>
+        <div className="px-2 py-2 flex gap-1">
+          <button className="aero-button rounded text-xs py-1 px-2 flex-1"
+            style={{ background: view === "chat" ? "var(--gradient-aero)" : undefined, color: view === "chat" ? "white" : undefined }}
+            onClick={() => setView("chat")}>💬 Chats</button>
+          <button className="aero-button rounded text-xs py-1 px-2 flex-1"
+            style={{ background: view === "settings" ? "var(--gradient-aero)" : undefined, color: view === "settings" ? "white" : undefined }}
+            onClick={() => setView("settings")}>⚙️</button>
+        </div>
+        <div className="px-3 py-1 text-xs opacity-70 font-semibold">Signed in as {user}</div>
+        <div className="px-3 pb-1 text-[10px] opacity-60 font-mono">#{myPueiNumber}</div>
+        <div className="px-2 pb-2">
+          <button className="aero-button rounded w-full text-xs py-1"
+            onClick={() => { setAddingContact(!addingContact); setContactInput(""); setContactMsg(null); blip("click"); }}>
+            {addingContact ? "✕ Cancel" : "+ Add Contact"}
+          </button>
+          {addingContact && (
+            <div className="mt-1 p-2 rounded aero-glass-light flex flex-col gap-1">
+              <div className="text-[10px] opacity-70 mb-0.5">Enter their Puei Number</div>
+              <input
+                autoFocus
+                value={contactInput}
+                onChange={(e) => setContactInput(e.target.value.toUpperCase())}
+                placeholder="XXX-XXX-XXX"
+                maxLength={11}
+                className="w-full px-2 py-1 rounded text-xs font-mono outline-none"
+                style={{ background: "white", border: "1px solid var(--border)", color: "#111" }}
+                onKeyDown={(e) => e.key === "Enter" && doAddContact()}
+              />
+              <button className="aero-button rounded text-xs py-0.5" onClick={doAddContact}>Add Contact</button>
+              {contactMsg && <div className={`text-[10px] mt-0.5 ${contactMsg.ok ? "text-green-600" : "text-red-500"}`}>{contactMsg.text}</div>}
+            </div>
+          )}
+        </div>
+        {view === "chat" && (
+          <>
+            {localContacts.length > 0 && <div className="px-3 pb-1 text-[10px] opacity-40 uppercase tracking-wide">This device</div>}
+            {localContacts.map((c) => {
+              const last = [...allMsgs].reverse().find((m) => (m.from === user && m.to === c.name) || (m.from === c.name && m.to === user));
+              const isActive = activeKind === "local" && activeId === c.name;
+              return (
+                <div key={c.name} onClick={() => { setActiveId(c.name); setActiveKind("local"); setView("chat"); }}
+                  className="px-3 py-2 cursor-pointer text-sm flex items-center gap-2"
+                  style={{ background: isActive ? "var(--gradient-aero)" : "transparent", color: isActive ? "white" : undefined }}>
+                  <div className="w-7 h-7 rounded overflow-hidden flex items-center justify-center text-base"
+                    style={{ background: `linear-gradient(135deg, oklch(0.7 0.18 ${c.color}), oklch(0.45 0.2 ${c.color}))` }}>
+                    {c.avatar.startsWith("data:") ? <img src={c.avatar} alt="" className="w-full h-full object-cover" /> : c.avatar}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="truncate">{c.name}</div>
+                    <div className="text-xs opacity-70 truncate">{last ? last.text : "Say hi 👋"}</div>
+                  </div>
+                </div>
+              );
+            })}
+            {externalContacts.length > 0 && <div className="px-3 pb-1 pt-1 text-[10px] opacity-40 uppercase tracking-wide">Cross-device</div>}
+            {externalContacts.map((c) => {
+              const msgs = apiMsgs[c.pueiNumber] ?? [];
+              const last = msgs[msgs.length - 1];
+              const isActive = activeKind === "external" && activeId === c.pueiNumber;
+              return (
+                <div key={c.pueiNumber} onClick={() => { setActiveId(c.pueiNumber); setActiveKind("external"); setView("chat"); }}
+                  className="px-3 py-2 cursor-pointer text-sm flex items-center gap-2"
+                  style={{ background: isActive ? "var(--gradient-aero)" : "transparent", color: isActive ? "white" : undefined }}>
+                  <div className="w-7 h-7 rounded-full flex items-center justify-center aero-glass-light text-base">🌐</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="truncate font-mono text-xs">{c.pueiNumber}</div>
+                    <div className="text-xs opacity-70 truncate">{last ? last.text : "Say hi 👋"}</div>
+                  </div>
+                </div>
+              );
+            })}
+          </>
+        )}
+      </div>
+      {view === "settings" ? <SettingsView /> : (
+        <div className="flex-1 flex flex-col">
+          <div className="aero-titlebar px-3 py-1.5 text-sm font-semibold flex items-center justify-between">
+            {localPartner && (
+              <>
+                <span>{localPartner.avatar.startsWith("data:") ? "🙂" : localPartner.avatar} {localPartner.name}</span>
+                <span className="text-[10px] opacity-60 font-mono">#{localPartner.pueiNumber || pueiNumberFor(localPartner.name + ":seed")}</span>
+              </>
+            )}
+            {externalPartner && (
+              <>
+                <span>🌐 {externalPartner.pueiNumber}</span>
+                <span className="text-[10px] opacity-60 bg-blue-100 text-blue-700 rounded px-1">cross-device</span>
+              </>
+            )}
+          </div>
+          <div className="flex-1 p-3 overflow-auto space-y-2 text-sm">
+            {activeKind === "local" && (
+              <>
+                {localConversation.length === 0 && <div className="text-xs opacity-60 text-center">No messages yet.</div>}
+                {localConversation.map((m) => (
+                  <div key={m.id} className={m.from === user ? "text-right" : "text-left"}>
+                    <div className="inline-block px-3 py-1.5 rounded-2xl max-w-xs"
+                      style={{ background: m.from === user ? "var(--gradient-aero)" : "var(--glass)", color: m.from === user ? "white" : undefined, border: "1px solid var(--border)" }}>
+                      {m.text}
+                    </div>
+                  </div>
+                ))}
+              </>
+            )}
+            {activeKind === "external" && (
+              <>
+                {externalConversation.length === 0 && (
+                  <div className="text-xs opacity-60 text-center">No messages yet. Messages are delivered in real time across devices.</div>
+                )}
+                {externalConversation.map((m) => {
+                  const isMine = m.fromNumber === myPueiNumber;
+                  return (
+                    <div key={m.id} className={isMine ? "text-right" : "text-left"}>
+                      <div className="inline-block px-3 py-1.5 rounded-2xl max-w-xs"
+                        style={{ background: isMine ? "var(--gradient-aero)" : "var(--glass)", color: isMine ? "white" : undefined, border: "1px solid var(--border)" }}>
+                        {m.text}
+                      </div>
+                    </div>
+                  );
+                })}
+              </>
+            )}
+          </div>
+          <div className="p-2 flex gap-2 border-t">
+            <input value={text} onChange={(e) => setText(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && send()}
+              className="flex-1 px-3 py-1.5 rounded-md outline-none text-sm"
+              style={{ background: "white", border: "1px solid var(--border)" }}
+              placeholder={localPartner ? `Message ${localPartner.name}…` : externalPartner ? `Message ${externalPartner.pueiNumber}…` : "Select a contact…"} />
+            <button className="aero-button rounded-md px-3" onClick={send} disabled={!localPartner && !externalPartner}>Send</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function FileExplorerApp({ openApp, icons, openFolder }: { openApp: (id: AppId, fileId?: string) => void; icons: DesktopIcon[]; openFolder: (id: string, title: string) => void }) {
   useEffect(() => {
     if (me && !me.pueiNumber) {
       setUsers(users.map((u) => u.name === user ? { ...u, pueiNumber: pueiNumberFor(user + ":" + Date.now()) } : u));
