@@ -52,7 +52,7 @@ export function AppRenderer(p: AppRendererProps) {
 }
 
 
-function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, currentUser, users, setUsers }: any) {
+function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, currentUser, users, setUsers, systemVersion, startUpgrade, uninstallApp, icons }: any) {
   const [tab, setTab] = useState("personalize");
   const [paintImages, setPaintImages] = useState<SavedFile[]>(() => loadFiles().filter((f) => f.type === "image"));
   useEffect(() => {
