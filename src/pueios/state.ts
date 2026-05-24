@@ -1,4 +1,10 @@
 // PueiOS 2 state types and helpers
+export type SystemVersion = "PueiOS 2" | "PueiOS 2+" | "PueiOS 3";
+export const SYSTEM_ORDER: SystemVersion[] = ["PueiOS 2", "PueiOS 2+", "PueiOS 3"];
+export function compareVersion(a: SystemVersion, b: SystemVersion): number {
+  return SYSTEM_ORDER.indexOf(a) - SYSTEM_ORDER.indexOf(b);
+}
+
 export type Theme = {
   accentH: number;
   dark: boolean;
@@ -6,6 +12,7 @@ export type Theme = {
   animations: boolean;
   wallpaper: WallpaperId;
   highContrast: boolean;
+  highContrastColor: string; // hex
 };
 
 // Trusted domains for the Installer (closed-ecosystem rule)
@@ -27,7 +34,22 @@ export function classifyTrustedUrl(raw: string): { ok: boolean; kind: TrustedKin
   }
 }
 
-// Brand icons for trusted-domain installs (data URIs, no network)
+// PueiWeb only allows base44.app (per spec). Returns ok or rejection.
+export function classifyWebUrl(raw: string): { ok: boolean; url?: string; reason?: string } {
+  let u = raw.trim();
+  if (!u) return { ok: false, reason: "Empty URL" };
+  if (u.startsWith("puei://")) return { ok: true, url: u };
+  if (!/^https?:\/\//i.test(u)) u = "https://" + u;
+  try {
+    const parsed = new URL(u);
+    const host = parsed.hostname.toLowerCase();
+    if (host.endsWith(".base44.app")) return { ok: true, url: u };
+    return { ok: false, reason: "This website is not trusted by Pueios2." };
+  } catch {
+    return { ok: false, reason: "This website is not trusted by Pueios2." };
+  }
+}
+
 const LOVABLE_ICON =
   "data:image/svg+xml;utf8," + encodeURIComponent(`
 <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'>
@@ -52,7 +74,6 @@ export function trustedIconFor(kind: TrustedKind): string | undefined {
   return undefined;
 }
 
-// Wallpapers: built-ins or "custom:<fileId>" referencing a saved Paint image
 export type WallpaperId = "default" | "bliss" | "aurora" | "sunset" | string;
 
 export type DesktopIcon = {
@@ -60,14 +81,13 @@ export type DesktopIcon = {
   label: string;
   appId: AppId;
   fileId?: string;
-  webUrl?: string;        // for installed web apps
-  iconEmoji?: string;     // optional override icon (emoji)
-  iconUrl?: string;       // optional override icon (image url, e.g. google favicon)
-  folderId?: string;      // if set, lives inside this folder icon (folder appId)
+  webUrl?: string;
+  iconEmoji?: string;
+  iconUrl?: string;
+  folderId?: string;
 };
 
 export function pueiNumberFor(name: string): string {
-  // Deterministic 9-digit PueiNumber derived from the account name
   let h = 5381;
   for (let i = 0; i < name.length; i++) h = ((h << 5) + h + name.charCodeAt(i)) | 0;
   const n = Math.abs(h) % 900000000 + 100000000;
@@ -97,7 +117,10 @@ export type AppId =
   | "app-store"
   | "puei-social"
   | "folder"
-  | "web-app";
+  | "web-app"
+  | "recycle-bin"
+  | "solitaire"
+  | "chess";
 
 export type WindowState = {
   id: string;
@@ -116,16 +139,24 @@ export type WindowState = {
   prev?: { x: number; y: number; w: number; h: number };
 };
 
+export type FriendRequest = {
+  fromPueiNumber: string;
+  fromName: string;
+  at: number;
+};
+
 export type User = {
   name: string;
   password: string;
-  avatar: string; // emoji OR data URL
+  avatar: string;
   color: string;
-  pueiNumber?: string; // assigned at account creation; visible in Messenger settings
-  friends?: string[]; // list of accepted friend PueiNumbers
+  pueiNumber?: string;
+  friends?: string[];
+  pendingRequests?: FriendRequest[];
+  noPassword?: boolean;        // chose "I don't have a password"
+  limitedMode?: boolean;       // reduced security features
 };
 
-// Global directory of PueiNumbers across the device → so friend requests by ID can resolve
 const DIRECTORY_KEY = "pueios2-directory-v1";
 export type DirectoryEntry = { pueiNumber: string; name: string; avatar: string; color: string };
 export function loadDirectory(): DirectoryEntry[] {
@@ -155,7 +186,10 @@ export type SavedFile = {
   type: "text" | "image";
   content: string;
   updatedAt: number;
+  folder?: string; // user folder id (DesktopIcon.id for type=folder)
 };
+
+export type RecycleEntry = SavedFile & { deletedAt: number; originalFolder?: string };
 
 export type SocialPost = {
   id: string;
@@ -167,13 +201,13 @@ export type SocialPost = {
   likes: number;
 };
 
-// Max 6 icons per vertical column on the desktop
 export const ICONS_PER_COL = 6;
 
-const KEY = "pueios2-state-v2";
+const KEY = "pueios2-state-v3";
 const FILES_KEY = "pueios2-files-v1";
 const CHAT_KEY = "pueios2-chat-v1";
 const SOCIAL_KEY = "pueios2-social-v1";
+const RECYCLE_KEY = "pueios2-recycle-v1";
 
 export type ChatMessage = {
   id: string;
@@ -185,6 +219,7 @@ export type ChatMessage = {
 
 export type Persisted = {
   installed: boolean;
+  systemVersion: SystemVersion;
   theme: Theme;
   icons: DesktopIcon[];
   users: User[];
@@ -199,6 +234,7 @@ export const defaultTheme: Theme = {
   animations: true,
   wallpaper: "default",
   highContrast: false,
+  highContrastColor: "#ffb300",
 };
 
 export const defaultIcons: DesktopIcon[] = [
@@ -206,9 +242,10 @@ export const defaultIcons: DesktopIcon[] = [
   { id: "i-store", label: "App Store", appId: "app-store" },
   { id: "i-social", label: "PueiSocial", appId: "puei-social" },
   { id: "i-paint", label: "Puei Paint 2", appId: "puei-paint" },
-  { id: "i-net", label: "PueiNet", appId: "pueinet" },
+  { id: "i-net", label: "PueiWeb", appId: "pueinet" },
   { id: "i-msg", label: "Puei Messenger", appId: "puei-messenger" },
   { id: "i-set", label: "Settings", appId: "settings" },
+  { id: "i-recycle", label: "Recycle Bin", appId: "recycle-bin" },
   { id: "i-note", label: "Notepad", appId: "notepad" },
   { id: "i-calc", label: "Calculator", appId: "calculator" },
   { id: "i-about", label: "About PueiOS 2", appId: "about" },
@@ -219,7 +256,7 @@ export function iconGridPos(index: number) {
 }
 
 export function loadState(): Persisted {
-  const base: Persisted = { installed: false, theme: defaultTheme, icons: defaultIcons, users: [] };
+  const base: Persisted = { installed: false, systemVersion: "PueiOS 2", theme: defaultTheme, icons: defaultIcons, users: [] };
   if (typeof window === "undefined") return base;
   try {
     const raw = localStorage.getItem(KEY);
@@ -227,6 +264,7 @@ export function loadState(): Persisted {
     const p = JSON.parse(raw);
     return {
       installed: !!p.installed,
+      systemVersion: p.systemVersion || "PueiOS 2",
       theme: { ...defaultTheme, ...(p.theme || {}) },
       icons: p.icons?.length ? p.icons : defaultIcons,
       users: Array.isArray(p.users) ? p.users : [],
@@ -263,11 +301,47 @@ export function upsertFile(f: SavedFile) {
   return f;
 }
 export function deleteFile(id: string) {
-  saveFiles(loadFiles().filter((f) => f.id !== id));
+  // soft delete → move to recycle bin
+  const all = loadFiles();
+  const f = all.find((x) => x.id === id);
+  if (!f) return;
+  saveFiles(all.filter((x) => x.id !== id));
+  const bin = loadRecycle();
+  bin.push({ ...f, deletedAt: Date.now(), originalFolder: f.folder });
+  saveRecycle(bin);
 }
 export function getFile(id: string) {
   return loadFiles().find((f) => f.id === id);
 }
+export function moveFile(id: string, folder?: string) {
+  const all = loadFiles();
+  saveFiles(all.map((f) => f.id === id ? { ...f, folder } : f));
+}
+
+// ---- Recycle bin
+export function loadRecycle(): RecycleEntry[] {
+  if (typeof window === "undefined") return [];
+  try { return JSON.parse(localStorage.getItem(RECYCLE_KEY) || "[]"); } catch { return []; }
+}
+export function saveRecycle(items: RecycleEntry[]) {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(RECYCLE_KEY, JSON.stringify(items));
+    window.dispatchEvent(new CustomEvent("pueios-recycle-changed"));
+  } catch {}
+}
+export function restoreFromRecycle(id: string) {
+  const bin = loadRecycle();
+  const item = bin.find((x) => x.id === id);
+  if (!item) return;
+  saveRecycle(bin.filter((x) => x.id !== id));
+  const { deletedAt, originalFolder, ...file } = item;
+  upsertFile({ ...file, folder: originalFolder });
+}
+export function permanentDelete(id: string) {
+  saveRecycle(loadRecycle().filter((x) => x.id !== id));
+}
+export function emptyRecycle() { saveRecycle([]); }
 
 // ---- Chat
 export function loadChat(): ChatMessage[] {
@@ -276,10 +350,17 @@ export function loadChat(): ChatMessage[] {
 }
 export function appendChat(m: ChatMessage) {
   const all = loadChat(); all.push(m);
-  const trimmed = all.slice(-500);
+  // Spec: conversations saved permanently unless manually deleted. No trimming.
   try {
-    localStorage.setItem(CHAT_KEY, JSON.stringify(trimmed));
+    localStorage.setItem(CHAT_KEY, JSON.stringify(all));
     window.dispatchEvent(new CustomEvent("pueios-chat", { detail: m }));
+  } catch {}
+}
+export function deleteChatBetween(a: string, b: string) {
+  const all = loadChat().filter((m) => !((m.from === a && m.to === b) || (m.from === b && m.to === a)));
+  try {
+    localStorage.setItem(CHAT_KEY, JSON.stringify(all));
+    window.dispatchEvent(new CustomEvent("pueios-chat"));
   } catch {}
 }
 
@@ -291,7 +372,8 @@ export function loadSocial(): SocialPost[] {
 export function saveSocial(posts: SocialPost[]) {
   if (typeof window === "undefined") return;
   try {
-    localStorage.setItem(SOCIAL_KEY, JSON.stringify(posts.slice(0, 200)));
+    // Spec: permanent storage unless manually removed.
+    localStorage.setItem(SOCIAL_KEY, JSON.stringify(posts));
     window.dispatchEvent(new CustomEvent("pueios-social"));
   } catch {}
 }
