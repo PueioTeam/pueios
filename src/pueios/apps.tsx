@@ -757,7 +757,7 @@ function FileGrid({ files, emptyHint, openFile, onDelete }: {
 }
 
 // ---------- App Store ----------
-function AppStoreApp({ installWebApp, openApp }: { installWebApp: (label: string, url: string, iconUrl?: string) => void; openApp: (id: AppId) => void }) {
+function AppStoreApp({ installWebApp, openApp, systemVersion }: { installWebApp: (label: string, url: string, iconUrl?: string) => void; openApp: (id: AppId) => void; systemVersion: SystemVersion }) {
   const [tab, setTab] = useState<"official" | "installer">("official");
   type StoreApp = { name: string; icon: string; desc: string; appId: AppId };
   // Only Puei Team–built apps. AppStore is a closed ecosystem.
