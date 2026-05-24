@@ -181,6 +181,9 @@ export function appIcon(appId: AppId, size = 32, override?: string, iconUrl?: st
     "puei-social": "📣",
     "folder": "📁",
     "web-app": "🔗",
+    "recycle-bin": "🗑️",
+    "solitaire": "🃏",
+    "chess": "♟️",
   };
   const isImg = typeof override === "string" && override.startsWith("data:");
   const useUrl = !isImg && !override && !!iconUrl;
