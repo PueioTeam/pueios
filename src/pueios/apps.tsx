@@ -754,6 +754,9 @@ function MessengerApp({ user, users, setUsers }: { user: string; users: User[]; 
   const [allMsgs, setAllMsgs] = useState<ChatMessage[]>(() => loadChat());
   const [text, setText] = useState("");
   const [view, setView] = useState<"chat" | "settings">("chat");
+  const [addingContact, setAddingContact] = useState(false);
+  const [contactInput, setContactInput] = useState("");
+  const [contactMsg, setContactMsg] = useState<{ text: string; ok: boolean } | null>(null);
   useEffect(() => {
     const fn = () => setAllMsgs(loadChat());
     window.addEventListener("pueios-chat", fn);
@@ -855,7 +858,58 @@ function MessengerApp({ user, users, setUsers }: { user: string; users: User[]; 
             onClick={() => setView("settings")}>⚙️</button>
         </div>
         <div className="px-3 py-1 text-xs opacity-70 font-semibold">Signed in as {user}</div>
-        <div className="px-3 pb-2 text-[10px] opacity-60 font-mono">#{me?.pueiNumber || "—"}</div>
+        <div className="px-3 pb-1 text-[10px] opacity-60 font-mono">#{me?.pueiNumber || "—"}</div>
+        <div className="px-2 pb-2">
+          <button className="aero-button rounded w-full text-xs py-1" onClick={() => { setAddingContact(!addingContact); setContactInput(""); setContactMsg(null); blip("click"); }}>
+            {addingContact ? "✕ Cancel" : "+ Add Contact"}
+          </button>
+          {addingContact && (
+            <div className="mt-1 p-2 rounded aero-glass-light flex flex-col gap-1">
+              <input
+                autoFocus
+                value={contactInput}
+                onChange={(e) => setContactInput(e.target.value)}
+                placeholder="XXX-XXX-XXX"
+                maxLength={11}
+                className="w-full px-2 py-1 rounded text-xs font-mono outline-none"
+                style={{ background: "white", border: "1px solid var(--border)", color: "#111" }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    const num = contactInput.trim().toUpperCase();
+                    const found = users.find((u) => u.name !== user && (u.pueiNumber || pueiNumberFor(u.name + ":seed")) === num);
+                    if (found) {
+                      const idx = contacts.findIndex((c) => c.name === found.name);
+                      if (idx !== -1) { setActive(idx); setView("chat"); }
+                      setContactMsg({ text: `Found: ${found.name}`, ok: true });
+                      setAddingContact(false);
+                      setContactInput("");
+                      blip("click");
+                    } else {
+                      setContactMsg({ text: "No user found with that Puei Number.", ok: false });
+                      blip("error");
+                    }
+                  }
+                }}
+              />
+              <button className="aero-button rounded text-xs py-0.5" onClick={() => {
+                const num = contactInput.trim().toUpperCase();
+                const found = users.find((u) => u.name !== user && (u.pueiNumber || pueiNumberFor(u.name + ":seed")) === num);
+                if (found) {
+                  const idx = contacts.findIndex((c) => c.name === found.name);
+                  if (idx !== -1) { setActive(idx); setView("chat"); }
+                  setContactMsg({ text: `Found: ${found.name}`, ok: true });
+                  setAddingContact(false);
+                  setContactInput("");
+                  blip("click");
+                } else {
+                  setContactMsg({ text: "No user found with that Puei Number.", ok: false });
+                  blip("error");
+                }
+              }}>Find</button>
+              {contactMsg && <div className={`text-[10px] mt-0.5 ${contactMsg.ok ? "text-green-600" : "text-red-500"}`}>{contactMsg.text}</div>}
+            </div>
+          )}
+        </div>
         {view === "chat" && contacts.map((c, i) => {
           const last = [...allMsgs].reverse().find((m) => (m.from === user && m.to === c.name) || (m.from === c.name && m.to === user));
           return (
