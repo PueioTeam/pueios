@@ -600,7 +600,37 @@ export function PueiOS() {
     );
   }
 
-  // ============ LOGIN
+  if (phase === "upgrade") {
+    if (upgradeProgress < 100) {
+      setTimeout(() => setUpgradeProgress((p) => Math.min(100, p + 0.6 + Math.random() * 1.2)), 220);
+    } else {
+      setTimeout(() => {
+        setSystemVersion(upgradeTarget);
+        setPhase("boot"); setBootProgress(0); setUpgradeProgress(0);
+        blip("notify");
+      }, 1500);
+    }
+    const stages = ["Preparing upgrade…", "Backing up files & settings…", "Migrating accounts & PueiNumbers…", "Installing new system files…", "Preserving conversations & media…", "Finalizing upgrade…"];
+    const stageIdx = Math.min(stages.length - 1, Math.floor(upgradeProgress / (100 / stages.length)));
+    return (
+      <div className="fixed inset-0 flex items-center justify-center text-white"
+        style={{ background: "linear-gradient(135deg, oklch(0.25 0.12 270), oklch(0.1 0.08 280))" }}>
+        <div className="text-center w-[28rem]">
+          <div className="boot-logo inline-block mb-3"><PueiLogoSvg size={80} glow /></div>
+          <h2 className="text-2xl font-light mb-1">Upgrading to {upgradeTarget}</h2>
+          <p className="text-xs opacity-70 mb-4">Your apps, files, settings, conversations and Pueio Number are preserved.</p>
+          <div className="text-sm opacity-80 mb-2">{stages[stageIdx]}</div>
+          <div className="w-full h-2 rounded-full bg-cyan-900/50 overflow-hidden">
+            <div className="loading-bar-inner h-full" style={{ width: `${upgradeProgress}%`, transition: "width 0.2s" }} />
+          </div>
+          <div className="text-[10px] opacity-60 mt-2">{Math.floor(upgradeProgress)}% · {systemVersion} → {upgradeTarget}</div>
+          <div className="text-[10px] opacity-40 mt-6">Do not turn off your device.</div>
+        </div>
+      </div>
+    );
+  }
+
+
   if (phase === "login" || locked) {
     const trySignIn = () => {
       const u = users.find((x) => x.name === loginUser);
