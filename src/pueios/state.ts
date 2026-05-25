@@ -378,19 +378,61 @@ export function deleteChatBetween(a: string, b: string) {
 }
 
 // ---- Mail
-const MAIL_KEY = "pueios2-mail-v1";
+const MAIL_KEY = "pueios2-mail-v2";
+
+export type MailAttachment = {
+  id: string;
+  name: string;
+  kind: "file" | "image" | "video";
+  mime: string;
+  size: number;
+  dataUrl: string;
+  savedAt: number;
+};
+
+export type MailFolderId = "inbox" | "sent" | "drafts" | "important" | "spam" | "trash" | string;
 
 export type MailMessage = {
   id: string;
-  from: string;       // username
-  to: string;         // username
+  from: string;
+  to: string;
   subject: string;
   body: string;
   at: number;
   read: boolean;
-  folder: "inbox" | "sent" | "trash";
-  owner: string;      // which user's mailbox this copy lives in
+  folder: MailFolderId;
+  owner: string;
+  attachments?: MailAttachment[];
+  important?: boolean;
+  spam?: boolean;
 };
+
+export function mailAddressFor(name: string): string {
+  return `${name.toLowerCase().replace(/[^a-z0-9._-]/g, "")}@pueimail.puei`;
+}
+
+export function resolveMailRecipient(raw: string, users: { name: string; pueiNumber?: string }[], dir = loadDirectory()): string | null {
+  const s = raw.trim();
+  if (!s) return null;
+  const m = s.match(/^([a-z0-9._-]+)@pueimail\.puei$/i);
+  if (m) {
+    const handle = m[1].toLowerCase();
+    const u = users.find((x) => x.name.toLowerCase().replace(/[^a-z0-9._-]/g, "") === handle);
+    if (u) return u.name;
+    const d = dir.find((e) => e.name.toLowerCase().replace(/[^a-z0-9._-]/g, "") === handle);
+    if (d) return d.name;
+    return handle;
+  }
+  if (/^\d{3}-?\d{3}-?\d{3}$/.test(s)) {
+    const cleaned = s.replace(/-/g, "").replace(/(\d{3})(\d{3})(\d{3})/, "$1-$2-$3");
+    const d = dir.find((e) => e.pueiNumber === cleaned);
+    if (d) return d.name;
+    const u = users.find((x) => x.pueiNumber === cleaned);
+    if (u) return u.name;
+    return null;
+  }
+  return s;
+}
 
 export function loadMail(owner: string): MailMessage[] {
   if (typeof window === "undefined") return [];
@@ -400,11 +442,15 @@ export function loadMail(owner: string): MailMessage[] {
   } catch { return []; }
 }
 
+export function loadAllMail(): MailMessage[] {
+  if (typeof window === "undefined") return [];
+  try { return JSON.parse(localStorage.getItem(MAIL_KEY) || "[]"); } catch { return []; }
+}
+
 export function saveMail(msgs: MailMessage[]) {
   if (typeof window === "undefined") return;
   try {
     const existing: MailMessage[] = JSON.parse(localStorage.getItem(MAIL_KEY) || "[]");
-    // keep entries for other owners, replace entries for owners touched in msgs
     const owners = new Set(msgs.map((m) => m.owner));
     const kept = existing.filter((m) => !owners.has(m.owner));
     localStorage.setItem(MAIL_KEY, JSON.stringify([...kept, ...msgs]));
@@ -412,22 +458,83 @@ export function saveMail(msgs: MailMessage[]) {
   } catch {}
 }
 
-export function sendMail(from: string, to: string, subject: string, body: string, _users: { name: string }[]) {
-  const existing: MailMessage[] = (() => {
-    try { return JSON.parse(localStorage.getItem(MAIL_KEY) || "[]"); } catch { return []; }
-  })();
+export function replaceMailFor(owner: string, msgs: MailMessage[]) {
+  if (typeof window === "undefined") return;
+  try {
+    const existing: MailMessage[] = JSON.parse(localStorage.getItem(MAIL_KEY) || "[]");
+    const kept = existing.filter((m) => m.owner !== owner);
+    localStorage.setItem(MAIL_KEY, JSON.stringify([...kept, ...msgs]));
+    window.dispatchEvent(new CustomEvent("pueios-mail"));
+  } catch {}
+}
+
+export function loadMailFolders(owner: string): string[] {
+  if (typeof window === "undefined") return [];
+  try { return JSON.parse(localStorage.getItem(`pueios2-mailfolders-${owner}`) || "[]"); } catch { return []; }
+}
+export function saveMailFolders(owner: string, folders: string[]) {
+  if (typeof window === "undefined") return;
+  try { localStorage.setItem(`pueios2-mailfolders-${owner}`, JSON.stringify(folders)); } catch {}
+}
+
+export type DownloadEntry = { id: string; name: string; kind: string; size: number; at: number; mailId?: string };
+export function loadDownloads(owner: string): DownloadEntry[] {
+  if (typeof window === "undefined") return [];
+  try { return JSON.parse(localStorage.getItem(`pueios2-downloads-${owner}`) || "[]"); } catch { return []; }
+}
+export function recordDownload(owner: string, e: DownloadEntry) {
+  if (typeof window === "undefined") return;
+  const all = loadDownloads(owner);
+  all.unshift(e);
+  try { localStorage.setItem(`pueios2-downloads-${owner}`, JSON.stringify(all.slice(0, 200))); } catch {}
+  window.dispatchEvent(new CustomEvent("pueios-downloads"));
+}
+
+export function sendMail(
+  from: string,
+  to: string,
+  subject: string,
+  body: string,
+  _users: { name: string }[],
+  attachments?: MailAttachment[],
+): MailMessage {
+  const existing = loadAllMail();
   const cleanTo = to.trim();
   const id = `mail-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
   const at = Date.now();
-  // Sender keeps a local "Sent" copy. Inbox delivery happens via the server (/api/mail)
-  // and the recipient's PueiMailApp polling — this guarantees cross-device delivery and
-  // avoids duplicating an inbox copy that the recipient would also fetch from the server.
-  const sentCopy: MailMessage = { id: id + "-s", from, to: cleanTo, subject, body, at, read: true, folder: "sent", owner: from };
+  const sentCopy: MailMessage = {
+    id: id + "-s", from, to: cleanTo, subject, body, at,
+    read: true, folder: "sent", owner: from, attachments,
+  };
   try {
     localStorage.setItem(MAIL_KEY, JSON.stringify([...existing, sentCopy]));
     window.dispatchEvent(new CustomEvent("pueios-mail"));
   } catch {}
+  return sentCopy;
 }
+
+const SPAM_KEYWORDS = ["lottery", "winner", "viagra", "crypto giveaway", "free money", "click here to claim", "you have won", "nigerian prince"];
+export function isLikelySpam(m: { subject: string; body: string }): boolean {
+  const t = `${m.subject} ${m.body}`.toLowerCase();
+  return SPAM_KEYWORDS.some((k) => t.includes(k));
+}
+
+export function aiMailSuggestions(context: { subject?: string; body?: string; from?: string }): string[] {
+  const subj = (context.subject || "").toLowerCase();
+  const base = [
+    `Thanks for the note${context.from ? `, ${context.from}` : ""} — I'll take a look and get back to you shortly.`,
+    "Got it, thanks for letting me know.",
+    "Sounds good to me. Let's go ahead with that.",
+  ];
+  if (subj.includes("meeting") || subj.includes("call")) {
+    return ["I'm available — please send a calendar invite.", "Can we move this to tomorrow afternoon?", ...base];
+  }
+  if (subj.startsWith("re:")) {
+    return ["Following up on this — any updates?", ...base];
+  }
+  return base;
+}
+
 
 
 export function loadSocial(): SocialPost[] {
