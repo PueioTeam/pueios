@@ -1,13 +1,16 @@
 import { useEffect, useRef, useState } from "react";
-import type { AppId, Theme, User, WallpaperId, SavedFile, ChatMessage, DesktopIcon, SocialPost, SocialComment, SystemVersion, RecycleEntry, MailMessage } from "./state";
+import type { AppId, Theme, User, WallpaperId, SavedFile, ChatMessage, DesktopIcon, SocialPost, SocialComment, SystemVersion, RecycleEntry, MailMessage, MailAttachment, MailFolderId, DownloadEntry } from "./state";
 import {
   blip, loadFiles, upsertFile, deleteFile, getFile, appendChat, loadChat, deleteChatBetween,
   loadSocial, saveSocial, pueiNumberFor, googleFaviconFor,
   classifyTrustedUrl, lookupPueiNumber, registerInDirectory, loadDirectory,
   loadRecycle, restoreFromRecycle, permanentDelete, emptyRecycle, moveFile,
-  SYSTEM_ORDER, compareVersion, loadMail, saveMail, sendMail,
+  SYSTEM_ORDER, compareVersion, loadMail, saveMail, sendMail, replaceMailFor,
+  mailAddressFor, resolveMailRecipient, loadMailFolders, saveMailFolders,
+  loadDownloads, recordDownload, isLikelySpam, aiMailSuggestions,
 } from "./state";
 import { pullAndMergeFiles, pushFile as pushFileToServer, removeFileFromServer } from "./fileSync";
+
 
 export type AppRendererProps = {
   appId: AppId;
