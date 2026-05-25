@@ -99,7 +99,9 @@ export function googleFaviconFor(url: string, size = 64): string {
   try {
     const u = url.startsWith("http") ? url : "https://" + url;
     const host = new URL(u).hostname;
-    return `https://www.google.com/s2/favicons?domain=${host}&sz=${size}`;
+    // DuckDuckGo's icon service resolves per-subdomain favicons correctly
+    // (Google's s2/favicons collapses subdomains to the root domain).
+    return `https://icons.duckduckgo.com/ip3/${host}.ico?sz=${size}`;
   } catch {
     return "";
   }
@@ -187,9 +189,18 @@ export type SavedFile = {
   content: string;
   updatedAt: number;
   folder?: string; // user folder id (DesktopIcon.id for type=folder)
+  owner?: string;  // username who created this file
 };
 
 export type RecycleEntry = SavedFile & { deletedAt: number; originalFolder?: string };
+
+export type SocialComment = {
+  id: string;
+  author: string;
+  authorAvatar: string;
+  text: string;
+  at: number;
+};
 
 export type SocialPost = {
   id: string;
@@ -199,6 +210,8 @@ export type SocialPost = {
   media?: { kind: "image" | "video"; src: string };
   at: number;
   likes: number;
+  likedBy?: string[];
+  comments?: SocialComment[];
 };
 
 export const ICONS_PER_COL = 6;
@@ -364,7 +377,59 @@ export function deleteChatBetween(a: string, b: string) {
   } catch {}
 }
 
-// ---- Social
+// ---- Mail
+const MAIL_KEY = "pueios2-mail-v1";
+
+export type MailMessage = {
+  id: string;
+  from: string;       // username
+  to: string;         // username
+  subject: string;
+  body: string;
+  at: number;
+  read: boolean;
+  folder: "inbox" | "sent" | "trash";
+  owner: string;      // which user's mailbox this copy lives in
+};
+
+export function loadMail(owner: string): MailMessage[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const all: MailMessage[] = JSON.parse(localStorage.getItem(MAIL_KEY) || "[]");
+    return all.filter((m) => m.owner === owner);
+  } catch { return []; }
+}
+
+export function saveMail(msgs: MailMessage[]) {
+  if (typeof window === "undefined") return;
+  try {
+    const existing: MailMessage[] = JSON.parse(localStorage.getItem(MAIL_KEY) || "[]");
+    // keep entries for other owners, replace entries for owners touched in msgs
+    const owners = new Set(msgs.map((m) => m.owner));
+    const kept = existing.filter((m) => !owners.has(m.owner));
+    localStorage.setItem(MAIL_KEY, JSON.stringify([...kept, ...msgs]));
+    window.dispatchEvent(new CustomEvent("pueios-mail"));
+  } catch {}
+}
+
+export function sendMail(from: string, to: string, subject: string, body: string, _users: { name: string }[]) {
+  const existing: MailMessage[] = (() => {
+    try { return JSON.parse(localStorage.getItem(MAIL_KEY) || "[]"); } catch { return []; }
+  })();
+  const cleanTo = to.trim();
+  const id = `mail-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
+  const at = Date.now();
+  // Sender keeps a local "Sent" copy. Inbox delivery happens via the server (/api/mail)
+  // and the recipient's PueiMailApp polling — this guarantees cross-device delivery and
+  // avoids duplicating an inbox copy that the recipient would also fetch from the server.
+  const sentCopy: MailMessage = { id: id + "-s", from, to: cleanTo, subject, body, at, read: true, folder: "sent", owner: from };
+  try {
+    localStorage.setItem(MAIL_KEY, JSON.stringify([...existing, sentCopy]));
+    window.dispatchEvent(new CustomEvent("pueios-mail"));
+  } catch {}
+}
+
+
 export function loadSocial(): SocialPost[] {
   if (typeof window === "undefined") return [];
   try { return JSON.parse(localStorage.getItem(SOCIAL_KEY) || "[]"); } catch { return []; }

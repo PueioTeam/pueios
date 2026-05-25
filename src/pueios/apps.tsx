@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from "react";
-import type { AppId, Theme, User, WallpaperId, SavedFile, ChatMessage, DesktopIcon, SocialPost, SystemVersion, RecycleEntry } from "./state";
+import type { AppId, Theme, User, WallpaperId, SavedFile, ChatMessage, DesktopIcon, SocialPost, SocialComment, SystemVersion, RecycleEntry, MailMessage } from "./state";
 import {
   blip, loadFiles, upsertFile, deleteFile, getFile, appendChat, loadChat, deleteChatBetween,
   loadSocial, saveSocial, pueiNumberFor, googleFaviconFor,
-  classifyTrustedUrl, trustedIconFor, lookupPueiNumber, registerInDirectory, loadDirectory,
-  classifyWebUrl, loadRecycle, restoreFromRecycle, permanentDelete, emptyRecycle, moveFile,
-  SYSTEM_ORDER, compareVersion,
+  classifyTrustedUrl, lookupPueiNumber, registerInDirectory, loadDirectory,
+  loadRecycle, restoreFromRecycle, permanentDelete, emptyRecycle, moveFile,
+  SYSTEM_ORDER, compareVersion, loadMail, saveMail, sendMail,
 } from "./state";
+import { pullAndMergeFiles, pushFile as pushFileToServer, removeFileFromServer } from "./fileSync";
 
 export type AppRendererProps = {
   appId: AppId;
@@ -29,18 +30,21 @@ export type AppRendererProps = {
   installWebApp: (label: string, url: string, iconUrl?: string) => void;
   openWebApp: (url: string, title: string) => void;
   openFolder: (folderIconId: string, title: string) => void;
+  signOut: () => void;
+  lockScreen: () => void;
+  deleteAccount: (name: string) => void;
 };
 
 export function AppRenderer(p: AppRendererProps) {
   switch (p.appId) {
-    case "settings": return <SettingsApp theme={p.theme} setTheme={p.setTheme} wallpaper={p.wallpaper} setWallpaper={p.setWallpaper} openApp={p.openApp} currentUser={p.currentUser} users={p.users} setUsers={p.setUsers} systemVersion={p.systemVersion} startUpgrade={p.startUpgrade} uninstallApp={p.uninstallApp} icons={p.icons} />;
+    case "settings": return <SettingsApp theme={p.theme} setTheme={p.setTheme} wallpaper={p.wallpaper} setWallpaper={p.setWallpaper} openApp={p.openApp} currentUser={p.currentUser} users={p.users} setUsers={p.setUsers} systemVersion={p.systemVersion} startUpgrade={p.startUpgrade} uninstallApp={p.uninstallApp} icons={p.icons} signOut={p.signOut} lockScreen={p.lockScreen} deleteAccount={p.deleteAccount} />;
     case "about": return <AboutApp />;
-    case "notepad": return <NotepadApp fileId={p.fileId} onCreateShortcut={p.onCreateShortcut} />;
+    case "notepad": return <NotepadApp fileId={p.fileId} onCreateShortcut={p.onCreateShortcut} currentUser={p.currentUser} />;
     case "calculator": return <CalculatorApp />;
-    case "puei-paint": return <PaintApp fileId={p.fileId} onCreateShortcut={p.onCreateShortcut} />;
-    case "pueinet": return <PueiWebApp />;
+    case "puei-paint": return <PaintApp fileId={p.fileId} onCreateShortcut={p.onCreateShortcut} currentUser={p.currentUser} />;
+    case "pueinet": return <PueiWebApp currentUser={p.currentUser} users={p.users} />;
     case "puei-messenger": return <MessengerApp user={p.currentUser} users={p.users} setUsers={p.setUsers} />;
-    case "file-explorer": return <FileExplorerApp openApp={p.openApp} icons={p.icons} openFolder={p.openFolder} />;
+    case "file-explorer": return <FileExplorerApp openApp={p.openApp} icons={p.icons} openFolder={p.openFolder} currentUser={p.currentUser} />;
     case "app-store": return <AppStoreApp installWebApp={p.installWebApp} openApp={p.openApp} systemVersion={p.systemVersion} />;
     case "puei-social": return <PueiSocialApp user={p.currentUser} users={p.users} />;
     case "folder": return <FolderApp folderIconId={p.folderIconId!} icons={p.icons} openApp={p.openApp} openWebApp={p.openWebApp} />;
@@ -52,14 +56,14 @@ export function AppRenderer(p: AppRendererProps) {
 }
 
 
-function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, currentUser, users, setUsers, systemVersion, startUpgrade, uninstallApp, icons }: any) {
+function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, currentUser, users, setUsers, systemVersion, startUpgrade, uninstallApp, icons, signOut, lockScreen, deleteAccount }: any) {
   const [tab, setTab] = useState("personalize");
-  const [paintImages, setPaintImages] = useState<SavedFile[]>(() => loadFiles().filter((f) => f.type === "image"));
+  const [paintImages, setPaintImages] = useState<SavedFile[]>(() => loadFiles().filter((f) => f.type === "image" && (!f.owner || f.owner === currentUser)));
   useEffect(() => {
-    const fn = () => setPaintImages(loadFiles().filter((f) => f.type === "image"));
+    const fn = () => setPaintImages(loadFiles().filter((f) => f.type === "image" && (!f.owner || f.owner === currentUser)));
     window.addEventListener("pueios-files-changed", fn);
     return () => window.removeEventListener("pueios-files-changed", fn);
-  }, []);
+  }, [currentUser]);
 
   const me: User | undefined = users.find((u: User) => u.name === currentUser);
   const updateMe = (patch: Partial<User>) => {
@@ -279,20 +283,49 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, curren
           <div><button className="aero-button rounded-md px-4 py-2" onClick={() => openApp("about")}>Open About PueiOS 2 →</button></div>
         )}
         {tab === "pueio-control" && (
-          <div>
-            <h2 className="text-xl font-semibold mb-2">🔐 Pueio Control</h2>
-            <p className="text-sm opacity-70 mb-4">Manage your password and account security. Create, change, or enable a password at any time — even if you chose "No password" during installation.</p>
+          <div className="space-y-6 max-w-lg">
+            <h2 className="text-xl font-semibold">🔐 Pueio Control</h2>
+
             {!me ? (
               <div className="text-sm opacity-70">Not signed in.</div>
-            ) : (!me.password || me.noPassword) ? (
-              <div className="max-w-md space-y-4">
-                <div className="aero-glass-light rounded-lg p-4 border border-yellow-400/30">
-                  <div className="font-semibold mb-1 flex items-center gap-2 text-sm">
-                    🔓 No password set
-                    {me.limitedMode && <span className="text-[10px] bg-yellow-500/20 rounded px-1.5 py-0.5">Limited Access Mode</span>}
+            ) : (<>
+
+              {/* Identity card */}
+              <div className="aero-glass-light rounded-xl p-4 flex items-center gap-4">
+                <div className="w-14 h-14 rounded-xl flex-shrink-0 flex items-center justify-center text-3xl overflow-hidden"
+                  style={{ background: `linear-gradient(135deg, oklch(0.7 0.18 ${me.color}), oklch(0.45 0.2 ${me.color}))` }}>
+                  {me.avatar.startsWith("data:")
+                    ? <img src={me.avatar} alt="" className="w-full h-full object-cover" />
+                    : me.avatar}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="font-semibold text-base">{me.name}</div>
+                  <div className="text-xs opacity-60 mt-0.5">
+                    {me.limitedMode ? "⚠️ Limited Access Mode" : "✅ Full Access"}
                   </div>
-                  <div className="text-xs opacity-70 mb-3">Create a password to upgrade to full access and enable better privacy features.</div>
-                  <div className="space-y-2">
+                  <div className="flex items-center gap-2 mt-1">
+                    <code className="text-xs font-mono opacity-80 bg-black/10 rounded px-1.5 py-0.5">
+                      {me.pueiNumber || "—"}
+                    </code>
+                    <button className="text-[10px] opacity-60 hover:opacity-100 underline" onClick={() => {
+                      if (me.pueiNumber) {
+                        navigator.clipboard.writeText(me.pueiNumber).catch(() => {});
+                        blip("notify");
+                      }
+                    }}>Copy</button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Password section */}
+              <div className="aero-glass-light rounded-xl p-4 space-y-3">
+                {(!me.password || me.noPassword) ? (
+                  <>
+                    <div className="font-semibold text-sm flex items-center gap-2">
+                      🔓 No password set
+                      {me.limitedMode && <span className="text-[10px] bg-yellow-500/20 rounded px-1.5 py-0.5 text-yellow-700 dark:text-yellow-300">Limited Access</span>}
+                    </div>
+                    <div className="text-xs opacity-70">Create a password to enable full access and protect your account.</div>
                     <div>
                       <label className="text-xs opacity-70">New password</label>
                       <input type="password" value={pcNewPw} onChange={(e) => setPcNewPw(e.target.value)}
@@ -301,27 +334,31 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, curren
                     <div>
                       <label className="text-xs opacity-70">Confirm password</label>
                       <input type="password" value={pcConfirm} onChange={(e) => setPcConfirm(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === "Enter") {
+                          if (!pcNewPw) { setPcMsg({ kind: "err", text: "Enter a password." }); return; }
+                          if (pcNewPw !== pcConfirm) { setPcMsg({ kind: "err", text: "Passwords do not match." }); return; }
+                          updateMe({ password: pcNewPw, noPassword: false, limitedMode: false });
+                          setPcNewPw(""); setPcConfirm("");
+                          setPcMsg({ kind: "ok", text: "✓ Password created! Full access enabled." });
+                          blip("notify");
+                        }}}
                         className="w-full px-3 py-2 rounded text-sm outline-none mt-1" style={{ background: "white", color: "#111" }} />
                     </div>
-                  </div>
-                  {pcMsg && (
-                    <div className={`text-xs mt-2 rounded px-2 py-1.5 ${pcMsg.kind === "ok" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>{pcMsg.text}</div>
-                  )}
-                  <button className="aero-button rounded px-4 py-2 text-sm mt-3 w-full" onClick={() => {
-                    if (!pcNewPw) { setPcMsg({ kind: "err", text: "Please enter a new password." }); return; }
-                    if (pcNewPw !== pcConfirm) { setPcMsg({ kind: "err", text: "Passwords do not match." }); return; }
-                    updateMe({ password: pcNewPw, noPassword: false, limitedMode: false });
-                    setPcNewPw(""); setPcConfirm("");
-                    setPcMsg({ kind: "ok", text: "✓ Password created! Full access mode enabled." });
-                    blip("notify");
-                  }}>Create password</button>
-                </div>
-              </div>
-            ) : (
-              <div className="max-w-md space-y-4">
-                <div className="aero-glass-light rounded-lg p-4">
-                  <div className="font-semibold mb-3 text-sm flex items-center gap-2">🔒 Change password</div>
-                  <div className="space-y-2">
+                    {pcMsg && (
+                      <div className={`text-xs rounded px-2 py-1.5 ${pcMsg.kind === "ok" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>{pcMsg.text}</div>
+                    )}
+                    <button className="aero-button rounded-lg px-4 py-2 text-sm w-full" onClick={() => {
+                      if (!pcNewPw) { setPcMsg({ kind: "err", text: "Enter a password." }); return; }
+                      if (pcNewPw !== pcConfirm) { setPcMsg({ kind: "err", text: "Passwords do not match." }); return; }
+                      updateMe({ password: pcNewPw, noPassword: false, limitedMode: false });
+                      setPcNewPw(""); setPcConfirm("");
+                      setPcMsg({ kind: "ok", text: "✓ Password created! Full access enabled." });
+                      blip("notify");
+                    }}>Create password</button>
+                  </>
+                ) : (
+                  <>
+                    <div className="font-semibold text-sm">🔒 Change password</div>
                     <div>
                       <label className="text-xs opacity-70">Current password</label>
                       <input type="password" value={pcCurPw} onChange={(e) => setPcCurPw(e.target.value)}
@@ -335,36 +372,69 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, curren
                     <div>
                       <label className="text-xs opacity-70">Confirm new password</label>
                       <input type="password" value={pcConfirm} onChange={(e) => setPcConfirm(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === "Enter") {
+                          if (pcCurPw !== me.password) { setPcMsg({ kind: "err", text: "Current password is incorrect." }); return; }
+                          if (!pcNewPw) { setPcMsg({ kind: "err", text: "Enter a new password." }); return; }
+                          if (pcNewPw !== pcConfirm) { setPcMsg({ kind: "err", text: "Passwords do not match." }); return; }
+                          updateMe({ password: pcNewPw });
+                          setPcCurPw(""); setPcNewPw(""); setPcConfirm("");
+                          setPcMsg({ kind: "ok", text: "✓ Password changed." });
+                          blip("notify");
+                        }}}
                         className="w-full px-3 py-2 rounded text-sm outline-none mt-1" style={{ background: "white", color: "#111" }} />
                     </div>
-                  </div>
-                  {pcMsg && (
-                    <div className={`text-xs mt-2 rounded px-2 py-1.5 ${pcMsg.kind === "ok" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>{pcMsg.text}</div>
-                  )}
-                  <button className="aero-button rounded px-4 py-2 text-sm mt-3 w-full" onClick={() => {
-                    if (pcCurPw !== me.password) { setPcMsg({ kind: "err", text: "Current password is incorrect." }); return; }
-                    if (!pcNewPw) { setPcMsg({ kind: "err", text: "Enter a new password." }); return; }
-                    if (pcNewPw !== pcConfirm) { setPcMsg({ kind: "err", text: "Passwords do not match." }); return; }
-                    updateMe({ password: pcNewPw });
-                    setPcCurPw(""); setPcNewPw(""); setPcConfirm("");
-                    setPcMsg({ kind: "ok", text: "✓ Password changed successfully." });
-                    blip("notify");
-                  }}>Change password</button>
-                </div>
-                <div className="aero-glass-light rounded-lg p-4 border border-red-400/20">
-                  <div className="font-semibold mb-1 text-sm">Remove password</div>
-                  <div className="text-xs opacity-70 mb-3">Removes your password and switches you to Limited Access mode with reduced security features.</div>
-                  <button className="aero-button rounded px-3 py-1.5 text-xs" onClick={() => {
-                    if (confirm("Remove your password? This switches you to Limited Access mode and reduces security.")) {
-                      updateMe({ password: "", noPassword: true, limitedMode: true });
+                    {pcMsg && (
+                      <div className={`text-xs rounded px-2 py-1.5 ${pcMsg.kind === "ok" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>{pcMsg.text}</div>
+                    )}
+                    <button className="aero-button rounded-lg px-4 py-2 text-sm w-full" onClick={() => {
+                      if (pcCurPw !== me.password) { setPcMsg({ kind: "err", text: "Current password is incorrect." }); return; }
+                      if (!pcNewPw) { setPcMsg({ kind: "err", text: "Enter a new password." }); return; }
+                      if (pcNewPw !== pcConfirm) { setPcMsg({ kind: "err", text: "Passwords do not match." }); return; }
+                      updateMe({ password: pcNewPw });
                       setPcCurPw(""); setPcNewPw(""); setPcConfirm("");
-                      setPcMsg({ kind: "ok", text: "Password removed. Now in Limited Access mode." });
+                      setPcMsg({ kind: "ok", text: "✓ Password changed." });
                       blip("notify");
-                    }
-                  }}>Remove password</button>
-                </div>
+                    }}>Change password</button>
+                    <button className="text-xs opacity-60 underline hover:opacity-100" onClick={() => {
+                      if (confirm("Remove your password? This switches you to Limited Access mode.")) {
+                        updateMe({ password: "", noPassword: true, limitedMode: true });
+                        setPcCurPw(""); setPcNewPw(""); setPcConfirm("");
+                        setPcMsg({ kind: "ok", text: "Password removed. Now in Limited Access mode." });
+                        blip("notify");
+                      }
+                    }}>Remove password</button>
+                  </>
+                )}
               </div>
-            )}
+
+              {/* Session actions */}
+              <div className="aero-glass-light rounded-xl p-4 space-y-2">
+                <div className="font-semibold text-sm mb-3">Session</div>
+                <button className="aero-button rounded-lg px-4 py-2 text-sm w-full text-left flex items-center gap-2"
+                  onClick={() => { blip("click"); lockScreen(); }}>
+                  🔒 Lock screen
+                </button>
+                <button className="aero-button rounded-lg px-4 py-2 text-sm w-full text-left flex items-center gap-2"
+                  onClick={() => { blip("shutdown"); signOut(); }}>
+                  🔄 Sign out
+                </button>
+              </div>
+
+              {/* Danger zone */}
+              <div className="rounded-xl p-4 space-y-2 border border-red-400/30" style={{ background: "rgba(220,50,50,0.08)" }}>
+                <div className="font-semibold text-sm text-red-500">Danger Zone</div>
+                <div className="text-xs opacity-70">Deleting your account removes it from this device permanently. Your files and messages are not recoverable.</div>
+                <button className="rounded-lg px-4 py-2 text-sm border border-red-400/50 text-red-500 hover:bg-red-500/20 transition-colors"
+                  onClick={() => {
+                    if (prompt(`Type your username "${me.name}" to confirm deletion:`) === me.name) {
+                      deleteAccount(me.name);
+                    }
+                  }}>
+                  🗑️ Delete this account
+                </button>
+              </div>
+
+            </>)}
           </div>
         )}
       </div>
@@ -389,7 +459,7 @@ function AboutApp() {
 }
 
 
-function NotepadApp({ fileId, onCreateShortcut }: { fileId?: string; onCreateShortcut: (l: string, id: string) => void }) {
+function NotepadApp({ fileId, onCreateShortcut, currentUser }: { fileId?: string; onCreateShortcut: (l: string, id: string) => void; currentUser: string }) {
   const initial = fileId ? getFile(fileId) : undefined;
   const [text, setText] = useState(initial?.content ?? "Welcome to Puei Notepad.\n\nType anything...");
   const [name, setName] = useState(initial?.name ?? "Untitled.txt");
@@ -397,13 +467,13 @@ function NotepadApp({ fileId, onCreateShortcut }: { fileId?: string; onCreateSho
   const [status, setStatus] = useState("");
   const save = () => {
     const id = savedId || `f-${Date.now().toString(36)}`;
-    upsertFile({ id, name, type: "text", content: text, updatedAt: Date.now() });
+    upsertFile({ id, name, type: "text", content: text, updatedAt: Date.now(), owner: currentUser });
     setSavedId(id); setStatus("Saved ✓"); blip("notify");
     setTimeout(() => setStatus(""), 1500);
     return id;
   };
   const open = () => {
-    const all = loadFiles().filter((f) => f.type === "text");
+    const all = loadFiles().filter((f) => f.type === "text" && (!f.owner || f.owner === currentUser));
     if (all.length === 0) { alert("No saved documents yet."); return; }
     const pick = prompt("Open file — type a name from:\n" + all.map((f) => f.name).join("\n"), all[0].name);
     if (!pick) return;
@@ -464,7 +534,7 @@ function CalculatorApp() {
   );
 }
 
-function PaintApp({ fileId, onCreateShortcut }: { fileId?: string; onCreateShortcut: (l: string, id: string) => void }) {
+function PaintApp({ fileId, onCreateShortcut, currentUser }: { fileId?: string; onCreateShortcut: (l: string, id: string) => void; currentUser: string }) {
   const initial = fileId ? getFile(fileId) : undefined;
   const cv = useRef<HTMLCanvasElement>(null);
   const draw = useRef(false);
@@ -499,13 +569,13 @@ function PaintApp({ fileId, onCreateShortcut }: { fileId?: string; onCreateShort
   const save = () => {
     const data = cv.current!.toDataURL("image/png");
     const id = savedId || `f-${Date.now().toString(36)}`;
-    upsertFile({ id, name, type: "image", content: data, updatedAt: Date.now() });
+    upsertFile({ id, name, type: "image", content: data, updatedAt: Date.now(), owner: currentUser });
     setSavedId(id); setStatus("Saved ✓"); blip("notify");
     setTimeout(() => setStatus(""), 1500);
     return id;
   };
   const open = () => {
-    const all = loadFiles().filter((f) => f.type === "image");
+    const all = loadFiles().filter((f) => f.type === "image" && (!f.owner || f.owner === currentUser));
     if (all.length === 0) { alert("No saved images yet."); return; }
     const pick = prompt("Open file — type a name from:\n" + all.map((f) => f.name).join("\n"), all[0].name);
     if (!pick) return;
@@ -652,7 +722,7 @@ function PueiCopilotPage() {
 }
 
 // ---------- PueiWeb ----------
-function PueiWebApp() {
+function PueiWebApp({ currentUser, users }: { currentUser: string; users: User[] }) {
   const [urlBar, setUrlBar] = useState("puei://home");
   const [navUrl, setNavUrl] = useState("puei://home");
   const [tabs, setTabs] = useState([{ id: 1, title: "Home", url: "puei://home" }]);
@@ -687,35 +757,26 @@ function PueiWebApp() {
     "puei://news": <div className="p-6"><h2 className="text-2xl font-bold mb-3">PueiNews</h2><ul className="text-sm space-y-2"><li>• PueiOS 2 Ultimate Edition lands on glassy desktops everywhere</li><li>• Mascot Puei voted "Most Confusing Helper of 2020"</li><li>• Glass blur now uses 40% less RAM</li><li>• Puei Copilot now integrates with Google, Edge, Firefox and Opera</li></ul></div>,
     "puei://forum": <div className="p-6"><h2 className="text-2xl font-bold mb-3">PueiForum</h2><p className="text-sm opacity-70">[user1138]: did anyone else's mascot start blinking morse code??</p></div>,
     "puei://games": <div className="p-6"><h2 className="text-2xl font-bold">PueiGames</h2><p className="opacity-70 mt-2">Free Pueilike clones for your enjoyment.</p></div>,
-    "puei://mail": <div className="p-6"><h2 className="text-2xl font-bold">PueiMail</h2><p className="text-sm opacity-70 mt-2">📧 You have 1 new message from Pueian Lemne.</p></div>,
+    "puei://mail": null, // handled below as PueiMailApp
     "puei://about": <div className="p-6"><h2 className="text-2xl font-bold">About PueiNet</h2><p className="text-sm opacity-70 mt-2">A browser for an alternate 2020. Only https://&lt;app&gt;.base44.app external URLs are trusted.</p></div>,
   };
 
   let content: React.ReactNode;
   if (navUrl === "puei://search") {
     content = <PueiCopilotPage />;
+  } else if (navUrl === "puei://mail") {
+    content = null; // rendered below as PueiMailApp
   } else if (navUrl.startsWith("puei://")) {
     content = fakeSites[navUrl] || <div className="p-6">404 — page not found in this universe.</div>;
   } else {
-    const check = classifyWebUrl(navUrl);
-    if (check.ok) {
-      content = (
-        <div className="flex flex-col h-full relative" style={{ background: "white" }}>
-          <iframe src={navUrl} title={navUrl} className="w-full flex-1 border-0" />
-        </div>
-      );
-    } else {
-      content = (
-        <div className="flex flex-col items-center justify-center h-full p-8 text-center" style={{ background: "white" }}>
-          <div className="text-6xl mb-4">🛡️</div>
-          <h2 className="text-xl font-semibold mb-2 text-gray-800">This website is not trusted by Pueios2.</h2>
-          <p className="text-sm text-gray-600 mb-1">PueiWeb only allows websites using:</p>
-          <code className="bg-gray-100 rounded px-3 py-1 text-sm text-gray-700 mb-4">https://&lt;appname&gt;.base44.app</code>
-          <p className="text-xs text-gray-500">All other domains are blocked before loading and cannot connect to the system.</p>
-          <p className="text-xs text-gray-400 mt-2">{navUrl}</p>
-        </div>
-      );
-    }
+    // Allow all https:// URLs
+    let loadUrl = navUrl.trim();
+    if (!/^https?:\/\//i.test(loadUrl)) loadUrl = "https://" + loadUrl;
+    content = (
+      <div className="flex flex-col h-full relative" style={{ background: "white" }}>
+        <iframe src={loadUrl} title={loadUrl} className="w-full flex-1 border-0" />
+      </div>
+    );
   }
 
   return (
@@ -741,9 +802,240 @@ function PueiWebApp() {
           onKeyDown={(e) => { if (e.key === "Enter") navigate(urlBar); }}
           className="flex-1 rounded-full px-3 py-1 text-xs outline-none"
           style={{ background: "white", border: "1px solid var(--accent)", boxShadow: "0 0 6px oklch(var(--accent) / 0.5)" }} />
-        <span className="text-[10px] opacity-50 flex-shrink-0">only base44.app</span>
+
       </div>
-      <div className="flex-1 overflow-auto">{content}</div>
+      <div className="flex-1 overflow-auto">
+        {navUrl === "puei://mail"
+          ? <PueiMailApp currentUser={currentUser} users={users} />
+          : content}
+      </div>
+    </div>
+  );
+}
+
+// ---------- PueiMail ----------
+function PueiMailApp({ currentUser, users }: { currentUser: string; users: User[] }) {
+  const [folder, setFolder] = useState<"inbox" | "sent" | "trash">("inbox");
+  const [msgs, setMsgs] = useState<MailMessage[]>(() => loadMail(currentUser));
+  const [selected, setSelected] = useState<MailMessage | null>(null);
+  const [composing, setComposing] = useState(false);
+  const [draft, setDraft] = useState({ to: "", subject: "", body: "" });
+  const [sendStatus, setSendStatus] = useState<string>("");
+
+  const reload = () => setMsgs(loadMail(currentUser));
+
+  useEffect(() => {
+    const fn = () => reload();
+    window.addEventListener("pueios-mail", fn);
+    window.addEventListener("storage", fn);
+    return () => {
+      window.removeEventListener("pueios-mail", fn);
+      window.removeEventListener("storage", fn);
+    };
+  }, [currentUser]);
+
+  // Poll server inbox for cross-device mail every 4 seconds
+  useEffect(() => {
+    let cancelled = false;
+    const seenIds = new Set<string>();
+    // Seed with current inbox ids so we don't re-import
+    try {
+      const all: MailMessage[] = JSON.parse(localStorage.getItem("pueios2-mail-v1") || "[]");
+      for (const m of all) if (m.owner === currentUser) seenIds.add(m.id);
+    } catch {}
+    const poll = async () => {
+      try {
+        const res = await fetch(`/api/mail?owner=${encodeURIComponent(currentUser)}`);
+        if (!res.ok || cancelled) return;
+        const remote = (await res.json()) as Array<{ id: string; from: string; to: string; subject: string; body: string; at: number }>;
+        const fresh = remote.filter((m) => !seenIds.has(m.id));
+        if (fresh.length === 0) return;
+        for (const m of fresh) seenIds.add(m.id);
+        const localAll: MailMessage[] = (() => {
+          try { return JSON.parse(localStorage.getItem("pueios2-mail-v1") || "[]"); } catch { return []; }
+        })();
+        const inbox: MailMessage[] = fresh.map((m) => ({
+          id: m.id, from: m.from, to: m.to, subject: m.subject, body: m.body,
+          at: m.at, read: false, folder: "inbox", owner: currentUser,
+        }));
+        localStorage.setItem("pueios2-mail-v1", JSON.stringify([...localAll, ...inbox]));
+        window.dispatchEvent(new CustomEvent("pueios-mail"));
+        reload();
+        blip("notify");
+      } catch { /* silent */ }
+    };
+    poll();
+    const interval = setInterval(poll, 4000);
+    return () => { cancelled = true; clearInterval(interval); };
+  }, [currentUser]);
+
+  const folderMsgs = msgs
+    .filter((m) => m.folder === folder)
+    .sort((a, b) => b.at - a.at);
+
+  const unread = msgs.filter((m) => m.folder === "inbox" && !m.read).length;
+
+  const markRead = (msg: MailMessage) => {
+    if (msg.read) return;
+    const updated = msgs.map((m) => m.id === msg.id ? { ...m, read: true } : m);
+    setMsgs(updated);
+    saveMail(updated);
+  };
+
+  const moveToTrash = (msg: MailMessage) => {
+    const updated = msgs.map((m) => m.id === msg.id ? { ...m, folder: "trash" as const } : m);
+    setMsgs(updated);
+    saveMail(updated);
+    if (selected?.id === msg.id) setSelected(null);
+  };
+
+  const permanentlyDelete = (msg: MailMessage) => {
+    const updated = msgs.filter((m) => m.id !== msg.id);
+    setMsgs(updated);
+    saveMail(updated);
+    if (selected?.id === msg.id) setSelected(null);
+  };
+
+  const doSend = () => {
+    const to = draft.to.trim();
+    if (!to) { setSendStatus("Enter a recipient."); return; }
+    if (!draft.subject.trim()) { setSendStatus("Enter a subject."); return; }
+    sendMail(currentUser, to, draft.subject.trim(), draft.body, users);
+    // Mirror to server so recipients on other devices/browsers receive it
+    fetch("/api/mail", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ from: currentUser, to, subject: draft.subject.trim(), body: draft.body }),
+    }).catch(() => {});
+    setDraft({ to: "", subject: "", body: "" });
+    setComposing(false);
+    setSendStatus("");
+    setFolder("sent");
+    reload();
+    blip("notify");
+  };
+
+  const formatDate = (ts: number) => {
+    const d = new Date(ts);
+    const now = new Date();
+    if (d.toDateString() === now.toDateString()) return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    return d.toLocaleDateString([], { month: "short", day: "numeric" });
+  };
+
+  return (
+    <div className="flex h-full" style={{ background: "var(--glass)" }}>
+      {/* Sidebar */}
+      <div className="w-44 flex-shrink-0 p-3 border-r flex flex-col gap-1" style={{ background: "var(--glass)" }}>
+        <button className="aero-button rounded-lg px-3 py-2 text-sm font-semibold mb-2 w-full"
+          onClick={() => { setComposing(true); setSelected(null); blip("click"); }}>
+          ✏️ Compose
+        </button>
+        {(["inbox", "sent", "trash"] as const).map((f) => (
+          <div key={f} onClick={() => { setFolder(f); setSelected(null); blip("click"); }}
+            className="px-3 py-2 rounded-md cursor-pointer text-sm capitalize flex justify-between items-center"
+            style={{ background: folder === f ? "var(--gradient-aero)" : "transparent", color: folder === f ? "white" : "inherit" }}>
+            <span>{f === "inbox" ? "📥" : f === "sent" ? "📤" : "🗑️"} {f.charAt(0).toUpperCase() + f.slice(1)}</span>
+            {f === "inbox" && unread > 0 && (
+              <span className="bg-blue-500 text-white text-[10px] rounded-full px-1.5 py-0.5">{unread}</span>
+            )}
+          </div>
+        ))}
+        <div className="mt-auto text-[10px] opacity-40 px-1 pt-4">
+          PueiMail · {currentUser}
+        </div>
+      </div>
+
+      {/* Message list */}
+      <div className="w-56 flex-shrink-0 border-r flex flex-col overflow-hidden">
+        <div className="px-3 py-2 text-xs font-semibold opacity-60 border-b capitalize">{folder} · {folderMsgs.length}</div>
+        <div className="flex-1 overflow-auto">
+          {folderMsgs.length === 0 ? (
+            <div className="p-4 text-xs opacity-50 text-center">No messages here.</div>
+          ) : folderMsgs.map((msg) => (
+            <div key={msg.id}
+              onClick={() => { setSelected(msg); setComposing(false); markRead(msg); }}
+              className="px-3 py-2 cursor-pointer border-b hover:bg-white/20 transition-colors"
+              style={{ background: selected?.id === msg.id ? "rgba(255,255,255,0.25)" : undefined }}>
+              <div className="flex justify-between items-center">
+                <span className="text-xs truncate max-w-[120px]" style={{ fontWeight: !msg.read && msg.folder === "inbox" ? 700 : 400 }}>
+                  {folder === "sent" ? `→ ${msg.to}` : msg.from}
+                </span>
+                <span className="text-[10px] opacity-50 flex-shrink-0">{formatDate(msg.at)}</span>
+              </div>
+              <div className="text-xs truncate opacity-80" style={{ fontWeight: !msg.read && msg.folder === "inbox" ? 600 : 400 }}>
+                {msg.subject || "(no subject)"}
+              </div>
+              <div className="text-[10px] truncate opacity-50">{msg.body.slice(0, 60)}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Reading / Compose pane */}
+      <div className="flex-1 overflow-auto p-5">
+        {composing ? (
+          <div className="h-full flex flex-col gap-3 max-w-2xl">
+            <div className="text-lg font-semibold mb-1">New Message</div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs w-16 opacity-60">To:</span>
+              <input value={draft.to} onChange={(e) => setDraft({ ...draft, to: e.target.value })}
+                placeholder="Recipient username"
+                className="flex-1 px-3 py-1.5 rounded text-sm outline-none"
+                style={{ background: "white", color: "#111", border: "1px solid var(--border)" }}
+                list="mail-contacts" />
+              <datalist id="mail-contacts">
+                {users.filter((u) => u.name !== currentUser).map((u) => (
+                  <option key={u.name} value={u.name} />
+                ))}
+              </datalist>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs w-16 opacity-60">Subject:</span>
+              <input value={draft.subject} onChange={(e) => setDraft({ ...draft, subject: e.target.value })}
+                placeholder="Subject"
+                className="flex-1 px-3 py-1.5 rounded text-sm outline-none"
+                style={{ background: "white", color: "#111", border: "1px solid var(--border)" }} />
+            </div>
+            <textarea value={draft.body} onChange={(e) => setDraft({ ...draft, body: e.target.value })}
+              placeholder="Write your message…"
+              className="flex-1 px-3 py-2 rounded text-sm outline-none resize-none min-h-[180px]"
+              style={{ background: "white", color: "#111", border: "1px solid var(--border)" }} />
+            {sendStatus && <div className="text-red-400 text-xs">{sendStatus}</div>}
+            <div className="flex gap-2">
+              <button className="aero-button rounded-lg px-5 py-2 text-sm font-semibold" onClick={doSend}>📨 Send</button>
+              <button className="aero-button rounded-lg px-4 py-2 text-sm" onClick={() => { setComposing(false); setSendStatus(""); }}>Discard</button>
+            </div>
+          </div>
+        ) : selected ? (
+          <div className="max-w-2xl">
+            <div className="flex justify-between items-start mb-4">
+              <h2 className="text-xl font-semibold">{selected.subject || "(no subject)"}</h2>
+              <div className="flex gap-2">
+                <button className="aero-button rounded px-3 py-1 text-xs"
+                  onClick={() => { setDraft({ to: selected.from === currentUser ? selected.to : selected.from, subject: `Re: ${selected.subject}`, body: `\n\n--- Original message from ${selected.from} ---\n${selected.body}` }); setComposing(true); blip("click"); }}>
+                  ↩ Reply
+                </button>
+                {selected.folder !== "trash" ? (
+                  <button className="aero-button rounded px-3 py-1 text-xs" onClick={() => moveToTrash(selected)}>🗑️ Delete</button>
+                ) : (
+                  <button className="aero-button rounded px-3 py-1 text-xs" onClick={() => permanentlyDelete(selected)}>🗑️ Delete permanently</button>
+                )}
+              </div>
+            </div>
+            <div className="text-xs opacity-60 mb-1">From: <span className="font-medium">{selected.from}</span></div>
+            <div className="text-xs opacity-60 mb-1">To: <span className="font-medium">{selected.to}</span></div>
+            <div className="text-xs opacity-60 mb-4">{new Date(selected.at).toLocaleString()}</div>
+            <div className="aero-glass-light rounded-lg p-4 text-sm whitespace-pre-wrap leading-relaxed">
+              {selected.body || "(empty)"}
+            </div>
+          </div>
+        ) : (
+          <div className="h-full flex flex-col items-center justify-center opacity-50 text-sm gap-2">
+            <div className="text-5xl">✉️</div>
+            <div>Select a message to read, or compose a new one.</div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -761,6 +1053,31 @@ function MessengerApp({ user, users, setUsers }: { user: string; users: User[]; 
   const saveExternalContacts = (list: { pueiNumber: string }[]) => {
     setExternalContacts(list);
     localStorage.setItem("pueios-xcontacts", JSON.stringify(list));
+  };
+
+  // Blocked contacts — per-user, identified by Puei Number (works for both local & external)
+  const BLOCK_KEY = `pueios-blocked-${user}`;
+  const [blockedNumbers, setBlockedNumbers] = useState<string[]>(() => {
+    try { return JSON.parse(localStorage.getItem(BLOCK_KEY) || "[]"); } catch { return []; }
+  });
+  const saveBlocked = (list: string[]) => {
+    setBlockedNumbers(list);
+    localStorage.setItem(BLOCK_KEY, JSON.stringify(list));
+  };
+  const numberOfLocal = (name: string) => {
+    const u = users.find((x) => x.name === name);
+    return u?.pueiNumber || pueiNumberFor(name + ":seed");
+  };
+  const isBlockedNumber = (num: string) => blockedNumbers.includes(num);
+  const isBlockedLocal = (name: string) => isBlockedNumber(numberOfLocal(name));
+  // Hidden contacts (deleted local conversations) — keep account intact but hide from sidebar until they message again
+  const HIDDEN_KEY = `pueios-hidden-${user}`;
+  const [hiddenLocals, setHiddenLocals] = useState<string[]>(() => {
+    try { return JSON.parse(localStorage.getItem(HIDDEN_KEY) || "[]"); } catch { return []; }
+  });
+  const saveHiddenLocals = (list: string[]) => {
+    setHiddenLocals(list);
+    localStorage.setItem(HIDDEN_KEY, JSON.stringify(list));
   };
 
   const [activeId, setActiveId] = useState<string | null>(
@@ -807,13 +1124,38 @@ function MessengerApp({ user, users, setUsers }: { user: string; users: User[]; 
         if (!res.ok || cancelled) return;
         const msgs = (await res.json()) as Array<{ id: string; from: string; fromNumber: string; text: string; at: number }>;
         if (cancelled) return;
-        // Group by sender Puei Number
+        // Group by sender Puei Number, dropping messages from blocked numbers
         const grouped: Record<string, typeof msgs> = {};
+        const senderNumbers = new Set<string>();
         for (const m of msgs) {
+          if (blockedNumbers.includes(m.fromNumber)) continue;
+          if (m.fromNumber === myPueiNumber) continue; // my own outgoing copies
           if (!grouped[m.fromNumber]) grouped[m.fromNumber] = [];
           grouped[m.fromNumber].push(m);
+          senderNumbers.add(m.fromNumber);
         }
         setApiMsgs(grouped);
+        // Auto-add any incoming sender as an external contact so they appear in the sidebar
+        if (senderNumbers.size > 0) {
+          const knownLocalNumbers = new Set(users.map((u) => u.pueiNumber || pueiNumberFor(u.name + ":seed")));
+          const currentExternal = (() => {
+            try { return JSON.parse(localStorage.getItem("pueios-xcontacts") || "[]") as { pueiNumber: string }[]; }
+            catch { return []; }
+          })();
+          const existing = new Set(currentExternal.map((c) => c.pueiNumber));
+          const toAdd: { pueiNumber: string }[] = [];
+          for (const num of senderNumbers) {
+            if (knownLocalNumbers.has(num)) continue; // already a local user
+            if (existing.has(num)) continue;
+            toAdd.push({ pueiNumber: num });
+          }
+          if (toAdd.length > 0) {
+            const next = [...currentExternal, ...toAdd];
+            localStorage.setItem("pueios-xcontacts", JSON.stringify(next));
+            setExternalContacts(next);
+            blip("notify");
+          }
+        }
       } catch {
         // API not available — silent fail (local dev without backend)
       }
@@ -821,7 +1163,7 @@ function MessengerApp({ user, users, setUsers }: { user: string; users: User[]; 
     poll();
     const interval = setInterval(poll, 3000);
     return () => { cancelled = true; clearInterval(interval); };
-  }, [myPueiNumber]);
+  }, [myPueiNumber, blockedNumbers, users]);
 
   const doAddContact = () => {
     const num = contactInput.trim().toUpperCase();
@@ -904,6 +1246,19 @@ function MessengerApp({ user, users, setUsers }: { user: string; users: User[]; 
             </div>
           ))}
         </div>
+        <div className="mt-5 max-w-md">
+          <div className="text-xs opacity-60 mb-2">Blocked numbers</div>
+          {blockedNumbers.length === 0 && <div className="text-xs opacity-60">No blocked contacts.</div>}
+          {blockedNumbers.map((n) => (
+            <div key={n} className="flex items-center justify-between aero-glass-light rounded p-2 mb-1 text-sm">
+              <span className="font-mono">🚫 {n}</span>
+              <button className="text-[10px] hover:opacity-80"
+                onClick={() => unblock(n)}>
+                Unblock
+              </button>
+            </div>
+          ))}
+        </div>
       </div>
     );
   };
@@ -974,6 +1329,45 @@ function MessengerApp({ user, users, setUsers }: { user: string; users: User[]; 
 
   const send = () => { if (activeKind === "local") sendLocal(); else sendExternal(); };
 
+  // Contact actions
+  const deleteLocalChat = (name: string) => {
+    if (!confirm(`Delete the entire conversation with ${name}? This only removes it from your side.`)) return;
+    blip("click");
+    deleteChatBetween(user, name);
+    setAllMsgs(loadChat());
+    saveHiddenLocals(Array.from(new Set([...hiddenLocals, name])));
+    if (activeKind === "local" && activeId === name) setActiveId(null);
+  };
+  const blockLocal = (name: string) => {
+    if (!confirm(`Block ${name}? You won't receive messages from them on any device.`)) return;
+    blip("click");
+    const num = numberOfLocal(name);
+    deleteChatBetween(user, name);
+    setAllMsgs(loadChat());
+    saveHiddenLocals(Array.from(new Set([...hiddenLocals, name])));
+    saveBlocked(Array.from(new Set([...blockedNumbers, num])));
+    if (activeKind === "local" && activeId === name) setActiveId(null);
+  };
+  const deleteExternalContact = (num: string) => {
+    if (!confirm(`Remove ${num} from your contacts and delete the conversation?`)) return;
+    blip("click");
+    saveExternalContacts(externalContacts.filter((c) => c.pueiNumber !== num));
+    setApiMsgs((prev) => { const n = { ...prev }; delete n[num]; return n; });
+    if (activeKind === "external" && activeId === num) setActiveId(null);
+  };
+  const blockExternal = (num: string) => {
+    if (!confirm(`Block ${num}? They won't be able to message you anymore.`)) return;
+    blip("click");
+    saveBlocked(Array.from(new Set([...blockedNumbers, num])));
+    saveExternalContacts(externalContacts.filter((c) => c.pueiNumber !== num));
+    setApiMsgs((prev) => { const n = { ...prev }; delete n[num]; return n; });
+    if (activeKind === "external" && activeId === num) setActiveId(null);
+  };
+  const unblock = (num: string) => {
+    blip("click");
+    saveBlocked(blockedNumbers.filter((n) => n !== num));
+  };
+
   return (
     <div className="flex h-full">
       <div className="w-48 border-r overflow-auto flex flex-col" style={{ background: "var(--glass)" }}>
@@ -1012,8 +1406,18 @@ function MessengerApp({ user, users, setUsers }: { user: string; users: User[]; 
         </div>
         {view === "chat" && (
           <>
-            {localContacts.length > 0 && <div className="px-3 pb-1 text-[10px] opacity-40 uppercase tracking-wide">This device</div>}
-            {localContacts.map((c) => {
+            {(() => {
+              const visibleLocals = localContacts.filter((c) => {
+                if (isBlockedLocal(c.name)) return false;
+                if (!hiddenLocals.includes(c.name)) return true;
+                // Show again if they messaged after being hidden (any message from them)
+                return allMsgs.some((m) => m.from === c.name && m.to === user);
+              });
+              const visibleExternals = externalContacts.filter((c) => !isBlockedNumber(c.pueiNumber));
+              return (
+                <>
+                  {visibleLocals.length > 0 && <div className="px-3 pb-1 text-[10px] opacity-40 uppercase tracking-wide">This device</div>}
+                  {visibleLocals.map((c) => {
               const last = [...allMsgs].reverse().find((m) => (m.from === user && m.to === c.name) || (m.from === c.name && m.to === user));
               const isActive = activeKind === "local" && activeId === c.name;
               return (
@@ -1031,8 +1435,8 @@ function MessengerApp({ user, users, setUsers }: { user: string; users: User[]; 
                 </div>
               );
             })}
-            {externalContacts.length > 0 && <div className="px-3 pb-1 pt-1 text-[10px] opacity-40 uppercase tracking-wide">Cross-device</div>}
-            {externalContacts.map((c) => {
+                  {visibleExternals.length > 0 && <div className="px-3 pb-1 pt-1 text-[10px] opacity-40 uppercase tracking-wide">Cross-device</div>}
+                  {visibleExternals.map((c) => {
               const msgs = apiMsgs[c.pueiNumber] ?? [];
               const last = msgs[msgs.length - 1];
               const isActive = activeKind === "external" && activeId === c.pueiNumber;
@@ -1048,22 +1452,33 @@ function MessengerApp({ user, users, setUsers }: { user: string; users: User[]; 
                 </div>
               );
             })}
+                </>
+              );
+            })()}
           </>
         )}
       </div>
       {view === "settings" ? <SettingsView /> : (
         <div className="flex-1 flex flex-col">
-          <div className="aero-titlebar px-3 py-1.5 text-sm font-semibold flex items-center justify-between">
+          <div className="aero-titlebar px-3 py-1.5 text-sm font-semibold flex items-center justify-between gap-2">
             {localPartner && (
               <>
-                <span>{localPartner.avatar.startsWith("data:") ? "🙂" : localPartner.avatar} {localPartner.name}</span>
-                <span className="text-[10px] opacity-60 font-mono">#{localPartner.pueiNumber || pueiNumberFor(localPartner.name + ":seed")}</span>
+                <span className="truncate">{localPartner.avatar.startsWith("data:") ? "🙂" : localPartner.avatar} {localPartner.name}</span>
+                <span className="text-[10px] opacity-60 font-mono ml-auto">#{localPartner.pueiNumber || pueiNumberFor(localPartner.name + ":seed")}</span>
+                <button className="aero-button rounded px-2 py-0.5 text-[10px]" title="Delete conversation"
+                  onClick={() => deleteLocalChat(localPartner.name)}>🗑️ Delete</button>
+                <button className="aero-button rounded px-2 py-0.5 text-[10px]" title="Block contact"
+                  onClick={() => blockLocal(localPartner.name)}>🚫 Block</button>
               </>
             )}
             {externalPartner && (
               <>
                 <span>🌐 {externalPartner.pueiNumber}</span>
-                <span className="text-[10px] opacity-60 bg-blue-100 text-blue-700 rounded px-1">cross-device</span>
+                <span className="text-[10px] opacity-60 bg-blue-100 text-blue-700 rounded px-1 ml-auto">cross-device</span>
+                <button className="aero-button rounded px-2 py-0.5 text-[10px]" title="Remove contact"
+                  onClick={() => deleteExternalContact(externalPartner.pueiNumber)}>🗑️ Delete</button>
+                <button className="aero-button rounded px-2 py-0.5 text-[10px]" title="Block contact"
+                  onClick={() => blockExternal(externalPartner.pueiNumber)}>🚫 Block</button>
               </>
             )}
           </div>
@@ -1114,214 +1529,22 @@ function MessengerApp({ user, users, setUsers }: { user: string; users: User[]; 
   );
 }
 
-function FileExplorerApp({ openApp, icons, openFolder }: { openApp: (id: AppId, fileId?: string) => void; icons: DesktopIcon[]; openFolder: (id: string, title: string) => void }) {
-  useEffect(() => {
-    if (me && !me.pueiNumber) {
-      setUsers(users.map((u) => u.name === user ? { ...u, pueiNumber: pueiNumberFor(user + ":" + Date.now()) } : u));
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const SettingsView = () => {
-    const myNum = me?.pueiNumber || (me ? pueiNumberFor(user + ":seed") : "—");
-    const [copied, setCopied] = useState(false);
-    return (
-      <div className="flex-1 p-6 overflow-auto">
-        <h2 className="text-xl font-semibold mb-2">Messenger Settings</h2>
-        <p className="text-sm opacity-70 mb-5">Your PueiNumber is a unique ID assigned when you created your PueiOS account. Share it so others can find you on Puei Messenger.</p>
-        <div className="aero-glass-light rounded-xl p-4 max-w-md">
-          <div className="text-xs opacity-60">Signed in as</div>
-          <div className="text-base font-semibold mb-3">{user}</div>
-          <div className="text-xs opacity-60">Your PueiNumber</div>
-          <div className="flex items-center gap-2 mt-1">
-            <div className="font-mono text-2xl tracking-wider px-3 py-2 rounded"
-              style={{ background: "white", color: "#111", border: "1px solid var(--border)" }}>
-              {myNum}
-            </div>
-            <button className="aero-button rounded px-3 py-2 text-xs"
-              onClick={() => { navigator.clipboard?.writeText(myNum); setCopied(true); setTimeout(() => setCopied(false), 1200); blip("click"); }}>
-              {copied ? "Copied ✓" : "Copy"}
-            </button>
-          </div>
-          <div className="text-[10px] opacity-50 mt-2">Format: XXX-XXX-XXX · assigned at account creation</div>
-        </div>
-        <div className="mt-5 max-w-md">
-          <div className="text-xs opacity-60 mb-2">Other PueiOS accounts on this device</div>
-          {contacts.length === 0 && <div className="text-xs opacity-60">No other accounts yet.</div>}
-          {contacts.map((c) => (
-            <div key={c.name} className="flex items-center justify-between aero-glass-light rounded p-2 mb-1 text-sm">
-              <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded overflow-hidden flex items-center justify-center text-base"
-                  style={{ background: `linear-gradient(135deg, oklch(0.7 0.18 ${c.color}), oklch(0.45 0.2 ${c.color}))` }}>
-                  {c.avatar.startsWith("data:") ? <img src={c.avatar} alt="" className="w-full h-full object-cover" /> : c.avatar}
-                </div>
-                <span>{c.name}</span>
-              </div>
-              <span className="font-mono text-xs opacity-70">{c.pueiNumber || pueiNumberFor(c.name + ":seed")}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  };
-
-  if (contacts.length === 0 && view === "chat") {
-    return (
-      <div className="flex h-full">
-        <div className="w-44 border-r p-2" style={{ background: "var(--glass)" }}>
-          <button className="aero-button rounded w-full text-xs py-1.5 mb-1" onClick={() => setView("chat")}>💬 Chats</button>
-          <button className="aero-button rounded w-full text-xs py-1.5" onClick={() => setView("settings")}>⚙️ Settings</button>
-        </div>
-        <div className="flex-1 p-6 text-sm text-center opacity-80 flex flex-col items-center justify-center">
-          <div className="text-4xl mb-2">💬</div>
-          <div className="font-semibold mb-1">No-one to chat with yet</div>
-          <div className="max-w-xs">Create another account from the login screen, then sign in on another tab/window to chat in real time. View your PueiNumber under Settings.</div>
-        </div>
-      </div>
-    );
-  }
-
-  const partner = contacts[active];
-  const conversation = partner ? allMsgs.filter((m) =>
-    (m.from === user && m.to === partner.name) || (m.from === partner.name && m.to === user)) : [];
-
-  const send = () => {
-    if (!text.trim() || !partner) return;
-    blip("click");
-    appendChat({ id: `m-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, from: user, to: partner.name, text, at: Date.now() });
-    setAllMsgs(loadChat()); setText("");
-  };
-
-  return (
-    <div className="flex h-full">
-      <div className="w-48 border-r overflow-auto flex flex-col" style={{ background: "var(--glass)" }}>
-        <div className="px-2 py-2 flex gap-1">
-          <button className="aero-button rounded text-xs py-1 px-2 flex-1"
-            style={{ background: view === "chat" ? "var(--gradient-aero)" : undefined, color: view === "chat" ? "white" : undefined }}
-            onClick={() => setView("chat")}>💬 Chats</button>
-          <button className="aero-button rounded text-xs py-1 px-2 flex-1"
-            style={{ background: view === "settings" ? "var(--gradient-aero)" : undefined, color: view === "settings" ? "white" : undefined }}
-            onClick={() => setView("settings")}>⚙️</button>
-        </div>
-        <div className="px-3 py-1 text-xs opacity-70 font-semibold">Signed in as {user}</div>
-        <div className="px-3 pb-1 text-[10px] opacity-60 font-mono">#{me?.pueiNumber || "—"}</div>
-        <div className="px-2 pb-2">
-          <button className="aero-button rounded w-full text-xs py-1" onClick={() => { setAddingContact(!addingContact); setContactInput(""); setContactMsg(null); blip("click"); }}>
-            {addingContact ? "✕ Cancel" : "+ Add Contact"}
-          </button>
-          {addingContact && (
-            <div className="mt-1 p-2 rounded aero-glass-light flex flex-col gap-1">
-              <input
-                autoFocus
-                value={contactInput}
-                onChange={(e) => setContactInput(e.target.value)}
-                placeholder="XXX-XXX-XXX"
-                maxLength={11}
-                className="w-full px-2 py-1 rounded text-xs font-mono outline-none"
-                style={{ background: "white", border: "1px solid var(--border)", color: "#111" }}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    const num = contactInput.trim().toUpperCase();
-                    const found = users.find((u) => u.name !== user && (u.pueiNumber || pueiNumberFor(u.name + ":seed")) === num);
-                    if (found) {
-                      const idx = contacts.findIndex((c) => c.name === found.name);
-                      if (idx !== -1) { setActive(idx); setView("chat"); }
-                      setContactMsg({ text: `Found: ${found.name}`, ok: true });
-                      setAddingContact(false);
-                      setContactInput("");
-                      blip("click");
-                    } else {
-                      setContactMsg({ text: "No user found with that Puei Number.", ok: false });
-                      blip("error");
-                    }
-                  }
-                }}
-              />
-              <button className="aero-button rounded text-xs py-0.5" onClick={() => {
-                const num = contactInput.trim().toUpperCase();
-                const found = users.find((u) => u.name !== user && (u.pueiNumber || pueiNumberFor(u.name + ":seed")) === num);
-                if (found) {
-                  const idx = contacts.findIndex((c) => c.name === found.name);
-                  if (idx !== -1) { setActive(idx); setView("chat"); }
-                  setContactMsg({ text: `Found: ${found.name}`, ok: true });
-                  setAddingContact(false);
-                  setContactInput("");
-                  blip("click");
-                } else {
-                  setContactMsg({ text: "No user found with that Puei Number.", ok: false });
-                  blip("error");
-                }
-              }}>Find</button>
-              {contactMsg && <div className={`text-[10px] mt-0.5 ${contactMsg.ok ? "text-green-600" : "text-red-500"}`}>{contactMsg.text}</div>}
-            </div>
-          )}
-        </div>
-        {view === "chat" && contacts.map((c, i) => {
-          const last = [...allMsgs].reverse().find((m) => (m.from === user && m.to === c.name) || (m.from === c.name && m.to === user));
-          return (
-            <div key={c.name} onClick={() => setActive(i)}
-              className="px-3 py-2 cursor-pointer text-sm flex items-center gap-2"
-              style={{ background: active === i ? "var(--gradient-aero)" : "transparent", color: active === i ? "white" : undefined }}>
-              <div className="w-7 h-7 rounded overflow-hidden flex items-center justify-center text-base"
-                style={{ background: `linear-gradient(135deg, oklch(0.7 0.18 ${c.color}), oklch(0.45 0.2 ${c.color}))` }}>
-                {c.avatar.startsWith("data:") ? <img src={c.avatar} alt="" className="w-full h-full object-cover" /> : c.avatar}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="truncate">{c.name}</div>
-                <div className="text-xs opacity-70 truncate">{last ? last.text : "Say hi 👋"}</div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-      {view === "settings" ? <SettingsView /> : (
-        <div className="flex-1 flex flex-col">
-          <div className="aero-titlebar px-3 py-1.5 text-sm font-semibold flex items-center justify-between">
-            <span>{partner?.avatar.startsWith("data:") ? "🙂" : partner?.avatar} {partner?.name}</span>
-            <span className="text-[10px] opacity-60 font-mono">#{partner?.pueiNumber || (partner ? pueiNumberFor(partner.name + ":seed") : "")}</span>
-          </div>
-          <div className="flex-1 p-3 overflow-auto space-y-2 text-sm">
-            {conversation.length === 0 && <div className="text-xs opacity-60 text-center">No messages yet. Sign in as {partner?.name} in another tab to chat back!</div>}
-            {conversation.map((m) => (
-              <div key={m.id} className={m.from === user ? "text-right" : "text-left"}>
-                <div className="inline-block px-3 py-1.5 rounded-2xl max-w-xs"
-                  style={{
-                    background: m.from === user ? "var(--gradient-aero)" : "var(--glass)",
-                    color: m.from === user ? "white" : undefined,
-                    border: "1px solid var(--border)",
-                  }}>{m.text}</div>
-              </div>
-            ))}
-          </div>
-          <div className="p-2 flex gap-2 border-t">
-            <input value={text} onChange={(e) => setText(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && send()}
-              className="flex-1 px-3 py-1.5 rounded-md outline-none text-sm"
-              style={{ background: "white", border: "1px solid var(--border)" }}
-              placeholder={`Message ${partner?.name}…`} />
-            <button className="aero-button rounded-md px-3" onClick={send}>Send</button>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function FileExplorerApp({ openApp, icons, openFolder }: { openApp: (id: AppId, fileId?: string) => void; icons: DesktopIcon[]; openFolder: (id: string, title: string) => void }) {
-  const [files, setFiles] = useState<SavedFile[]>(() => loadFiles());
+function FileExplorerApp({ openApp, icons, openFolder, currentUser }: { openApp: (id: AppId, fileId?: string) => void; icons: DesktopIcon[]; openFolder: (id: string, title: string) => void; currentUser: string }) {
+  const myFiles = () => loadFiles().filter((f) => !f.owner || f.owner === currentUser);
+  const [files, setFiles] = useState<SavedFile[]>(() => myFiles());
   const [folder, setFolder] = useState<"home" | "documents" | "pictures" | "apps" | "folders">("home");
   const [dragFileId, setDragFileId] = useState<string | null>(null);
   const [dropTarget, setDropTarget] = useState<string | null>(null);
 
   useEffect(() => {
-    const fn = () => setFiles(loadFiles());
+    const fn = () => setFiles(myFiles());
     window.addEventListener("pueios-files-changed", fn);
     window.addEventListener("storage", fn);
     return () => {
       window.removeEventListener("pueios-files-changed", fn);
       window.removeEventListener("storage", fn);
     };
-  }, []);
+  }, [currentUser]);
 
   const folders = [
     { id: "documents" as const, name: "Documents", icon: "📁" },
@@ -1349,7 +1572,7 @@ function FileExplorerApp({ openApp, icons, openFolder }: { openApp: (id: AppId, 
   const handleDrop = (folderId: string) => {
     if (!dragFileId) return;
     moveFile(dragFileId, folderId);
-    setFiles(loadFiles());
+    setFiles(myFiles());
     setDragFileId(null); setDropTarget(null);
     blip("notify");
   };
@@ -1406,14 +1629,14 @@ function FileExplorerApp({ openApp, icons, openFolder }: { openApp: (id: AppId, 
         {folder === "documents" && (
           <FileGrid files={textFiles} emptyHint="No saved documents. Open Notepad and click Save to create one."
             openFile={openFile}
-            onDelete={(id) => { deleteFile(id); setFiles(loadFiles()); }}
+            onDelete={(id) => { deleteFile(id); setFiles(myFiles()); }}
             onDragStart={(id) => setDragFileId(id)}
             onDragEnd={() => { setDragFileId(null); setDropTarget(null); }} />
         )}
         {folder === "pictures" && (
           <FileGrid files={imgFiles} emptyHint="No saved pictures. Open Puei Paint 2 and click Save to create one."
             openFile={openFile}
-            onDelete={(id) => { deleteFile(id); setFiles(loadFiles()); }}
+            onDelete={(id) => { deleteFile(id); setFiles(myFiles()); }}
             onDragStart={(id) => setDragFileId(id)}
             onDragEnd={() => { setDragFileId(null); setDropTarget(null); }} />
         )}
@@ -1559,7 +1782,7 @@ function InstallerPane({ installWebApp }: { installWebApp: (label: string, url: 
     if (!label) {
       try { label = new URL(res.url).hostname.split(".")[0]; } catch { label = "Web App"; }
     }
-    const icon = trustedIconFor(res.kind);
+    const icon = googleFaviconFor(res.url, 64);
     installWebApp(label, res.url, icon);
     setMsg({ kind: "ok", text: `Installed "${label}" (${res.kind === "lovable" ? "Lovable" : "Base44"} app) on your desktop ✓` });
     blip("notify");
@@ -1595,7 +1818,7 @@ function InstallerPane({ installWebApp }: { installWebApp: (label: string, url: 
           </div>
         )}
         <div className="text-[10px] opacity-60 leading-snug">
-          Icons are assigned automatically based on the source domain (Lovable or Base44). Manual icon overrides are not allowed for trusted web-installed apps.
+          Icons are fetched automatically from the website's favicon (Google service). Each app gets its own real logo.
         </div>
       </div>
     </div>
@@ -1657,6 +1880,8 @@ function PueiSocialApp({ user, users }: { user: string; users: User[] }) {
   const [posts, setPosts] = useState<SocialPost[]>(() => loadSocial());
   const [text, setText] = useState("");
   const [media, setMedia] = useState<{ kind: "image" | "video"; src: string } | undefined>();
+  const [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({});
+  const [openComments, setOpenComments] = useState<Record<string, boolean>>({});
   useEffect(() => {
     const fn = () => setPosts(loadSocial());
     window.addEventListener("pueios-social", fn);
@@ -1673,14 +1898,46 @@ function PueiSocialApp({ user, users }: { user: string; users: User[] }) {
     const p: SocialPost = {
       id: `p-${Date.now().toString(36)}`,
       author: user, authorAvatar: me?.avatar || "🧑",
-      text, media, at: Date.now(), likes: 0,
+      text, media, at: Date.now(), likes: 0, likedBy: [], comments: [],
     };
     const next = [p, ...posts];
     setPosts(next); saveSocial(next);
     setText(""); setMedia(undefined);
   };
-  const like = (id: string) => {
-    const next = posts.map((p) => p.id === id ? { ...p, likes: p.likes + 1 } : p);
+  const toggleLike = (id: string) => {
+    blip("click");
+    const next = posts.map((p) => {
+      if (p.id !== id) return p;
+      const likedBy = p.likedBy || [];
+      const has = likedBy.includes(user);
+      const nextLikedBy = has ? likedBy.filter((n) => n !== user) : [...likedBy, user];
+      return { ...p, likedBy: nextLikedBy, likes: nextLikedBy.length };
+    });
+    setPosts(next); saveSocial(next);
+  };
+  const addComment = (postId: string) => {
+    const body = (commentDrafts[postId] || "").trim();
+    if (!body) return;
+    blip("click");
+    const c: SocialComment = {
+      id: `c-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 5)}`,
+      author: user, authorAvatar: me?.avatar || "🧑", text: body, at: Date.now(),
+    };
+    const next = posts.map((p) => p.id === postId
+      ? { ...p, comments: [...(p.comments || []), c] }
+      : p);
+    setPosts(next); saveSocial(next);
+    setCommentDrafts({ ...commentDrafts, [postId]: "" });
+  };
+  const deleteComment = (postId: string, commentId: string) => {
+    const next = posts.map((p) => p.id === postId
+      ? { ...p, comments: (p.comments || []).filter((c) => c.id !== commentId) }
+      : p);
+    setPosts(next); saveSocial(next);
+  };
+  const deletePost = (postId: string) => {
+    if (!confirm("Delete this post?")) return;
+    const next = posts.filter((p) => p.id !== postId);
     setPosts(next); saveSocial(next);
   };
   const onFile = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1742,27 +1999,80 @@ function PueiSocialApp({ user, users }: { user: string; users: User[] }) {
         </div>
         {/* Feed */}
         {posts.length === 0 && <div className="text-center text-sm opacity-60 p-6">No posts yet. Be the first!</div>}
-        {posts.map((p) => (
-          <div key={p.id} className="aero-glass-light rounded-xl p-3">
-            <div className="flex items-center gap-2 mb-1">
-              <div className="w-9 h-9 rounded-full overflow-hidden flex items-center justify-center text-lg"
-                style={{ background: "var(--gradient-aero)" }}>
-                {p.authorAvatar.startsWith("data:") ? <img src={p.authorAvatar} alt="" className="w-full h-full object-cover" /> : p.authorAvatar}
+        {posts.map((p) => {
+          const liked = (p.likedBy || []).includes(user);
+          const comments = p.comments || [];
+          const commentsOpen = !!openComments[p.id];
+          return (
+            <div key={p.id} className="aero-glass-light rounded-xl p-3">
+              <div className="flex items-center gap-2 mb-1">
+                <div className="w-9 h-9 rounded-full overflow-hidden flex items-center justify-center text-lg"
+                  style={{ background: "var(--gradient-aero)" }}>
+                  {p.authorAvatar.startsWith("data:") ? <img src={p.authorAvatar} alt="" className="w-full h-full object-cover" /> : p.authorAvatar}
+                </div>
+                <div className="flex-1">
+                  <div className="text-sm font-semibold">{p.author}</div>
+                  <div className="text-[10px] opacity-60">{new Date(p.at).toLocaleString()}</div>
+                </div>
+                {p.author === user && (
+                  <button onClick={() => deletePost(p.id)} className="text-xs opacity-50 hover:opacity-100 hover:text-red-500" title="Delete post">🗑️</button>
+                )}
               </div>
-              <div>
-                <div className="text-sm font-semibold">{p.author}</div>
-                <div className="text-[10px] opacity-60">{new Date(p.at).toLocaleString()}</div>
+              {p.text && <div className="text-sm whitespace-pre-wrap mb-2">{p.text}</div>}
+              {p.media?.kind === "image" && <img src={p.media.src} className="max-h-80 rounded w-auto" alt="" />}
+              {p.media?.kind === "video" && <video src={p.media.src} controls className="max-h-80 rounded w-full" />}
+              <div className="flex gap-2 mt-2 text-xs">
+                <button onClick={() => toggleLike(p.id)}
+                  className="aero-button rounded px-2 py-0.5 flex items-center gap-1"
+                  style={liked ? { background: "var(--gradient-aero)", color: "white" } : undefined}>
+                  {liked ? "💙" : "👍"} {p.likes}
+                </button>
+                <button onClick={() => setOpenComments({ ...openComments, [p.id]: !commentsOpen })}
+                  className="aero-button rounded px-2 py-0.5">
+                  💬 {comments.length}
+                </button>
+                <span className="opacity-60 self-center ml-auto">PueiSocial · cross-platform</span>
               </div>
+              {commentsOpen && (
+                <div className="mt-3 pl-2 border-l-2 border-white/20 space-y-2">
+                  {comments.length === 0 && (
+                    <div className="text-[11px] opacity-50">No comments yet. Be the first to reply.</div>
+                  )}
+                  {comments.map((c) => (
+                    <div key={c.id} className="flex items-start gap-2">
+                      <div className="w-7 h-7 rounded-full flex items-center justify-center text-sm overflow-hidden flex-shrink-0"
+                        style={{ background: "var(--gradient-aero)" }}>
+                        {c.authorAvatar.startsWith("data:")
+                          ? <img src={c.authorAvatar} alt="" className="w-full h-full object-cover" />
+                          : c.authorAvatar}
+                      </div>
+                      <div className="flex-1 bg-white/15 rounded-lg px-2 py-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-xs font-semibold">{c.author}</span>
+                          <span className="text-[10px] opacity-50">{new Date(c.at).toLocaleString()}</span>
+                        </div>
+                        <div className="text-xs whitespace-pre-wrap">{c.text}</div>
+                      </div>
+                      {c.author === user && (
+                        <button onClick={() => deleteComment(p.id, c.id)} className="text-xs opacity-40 hover:opacity-100 hover:text-red-500" title="Delete">✕</button>
+                      )}
+                    </div>
+                  ))}
+                  <div className="flex gap-1 pt-1">
+                    <input
+                      value={commentDrafts[p.id] || ""}
+                      onChange={(e) => setCommentDrafts({ ...commentDrafts, [p.id]: e.target.value })}
+                      onKeyDown={(e) => { if (e.key === "Enter") addComment(p.id); }}
+                      placeholder="Write a comment…"
+                      className="flex-1 px-2 py-1 rounded text-xs outline-none"
+                      style={{ background: "white", color: "#111", border: "1px solid var(--border)" }} />
+                    <button className="aero-button rounded px-3 py-1 text-xs" onClick={() => addComment(p.id)}>Reply</button>
+                  </div>
+                </div>
+              )}
             </div>
-            {p.text && <div className="text-sm whitespace-pre-wrap mb-2">{p.text}</div>}
-            {p.media?.kind === "image" && <img src={p.media.src} className="max-h-80 rounded w-auto" alt="" />}
-            {p.media?.kind === "video" && <video src={p.media.src} controls className="max-h-80 rounded w-full" />}
-            <div className="flex gap-3 mt-2 text-xs opacity-80">
-              <button onClick={() => like(p.id)} className="aero-button rounded px-2 py-0.5">👍 {p.likes}</button>
-              <span className="opacity-60 self-center">PueiSocial · cross-platform</span>
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

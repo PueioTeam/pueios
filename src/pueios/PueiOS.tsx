@@ -694,10 +694,6 @@ export function PueiOS() {
                 className="w-full px-3 py-2 rounded text-sm outline-none"
                 style={{ background: "white", color: "#111" }} />
               {pwError && <div className="text-red-400 text-xs mt-1">{pwError}</div>}
-              <label className="flex items-center gap-2 text-xs mt-2">
-                <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} />
-                Remember me
-              </label>
               <div className="flex gap-2 mt-3">
                 <button className="aero-button rounded px-3 py-1 text-sm flex-1" onClick={trySignIn}>Sign in →</button>
                 <button className="aero-button rounded px-3 py-1 text-sm" onClick={() => setPhase("recovery")}>Recovery</button>
@@ -853,6 +849,15 @@ export function PueiOS() {
               openWebApp={(url, title) => openApp("web-app", { webUrl: url, title })}
               openFolder={(folderIconId, title) => openApp("folder", { folderIconId, title })}
               setUsers={setUsers}
+              signOut={() => { blip("shutdown"); setWindows([]); setCurrentUser(""); setPhase("login"); setPwInput(""); }}
+              lockScreen={() => { blip("click"); setLocked(true); setPwInput(""); }}
+              deleteAccount={(name) => {
+                setUsers((prev) => prev.filter((u) => u.name !== name));
+                setWindows([]);
+                setCurrentUser("");
+                setPhase("login");
+                setPwInput("");
+              }}
               onCreateShortcut={(label, fileId) => addIcon({ id: `f-${fileId}`, label, appId: w.appId, fileId })} />
           </AppWindow>
         );
