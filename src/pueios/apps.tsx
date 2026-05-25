@@ -817,158 +817,344 @@ function PueiWebApp({ currentUser, users }: { currentUser: string; users: User[]
 }
 
 // ---------- PueiMail ----------
+const SYSTEM_FOLDERS: { id: MailFolderId; label: string; icon: string }[] = [
+  { id: "inbox", label: "Inbox", icon: "📥" },
+  { id: "important", label: "Important", icon: "⭐" },
+  { id: "drafts", label: "Drafts", icon: "📝" },
+  { id: "sent", label: "Sent", icon: "📤" },
+  { id: "spam", label: "Spam", icon: "🚫" },
+  { id: "trash", label: "Trash", icon: "🗑️" },
+];
+
+function readFileAsAttachment(file: File): Promise<MailAttachment> {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => {
+      const kind: MailAttachment["kind"] =
+        file.type.startsWith("image/") ? "image" :
+        file.type.startsWith("video/") ? "video" : "file";
+      resolve({
+        id: `att-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        name: file.name, kind, mime: file.type || "application/octet-stream",
+        size: file.size, dataUrl: String(r.result), savedAt: Date.now(),
+      });
+    };
+    r.onerror = () => reject(r.error);
+    r.readAsDataURL(file);
+  });
+}
+
+function downloadAttachment(att: MailAttachment) {
+  const a = document.createElement("a");
+  a.href = att.dataUrl; a.download = att.name;
+  document.body.appendChild(a); a.click(); a.remove();
+}
+
 function PueiMailApp({ currentUser, users }: { currentUser: string; users: User[] }) {
-  const [folder, setFolder] = useState<"inbox" | "sent" | "trash">("inbox");
+  const [folder, setFolder] = useState<MailFolderId>("inbox");
   const [msgs, setMsgs] = useState<MailMessage[]>(() => loadMail(currentUser));
+  const [customFolders, setCustomFolders] = useState<string[]>(() => loadMailFolders(currentUser));
   const [selected, setSelected] = useState<MailMessage | null>(null);
   const [composing, setComposing] = useState(false);
+  const [draftId, setDraftId] = useState<string | null>(null);
   const [draft, setDraft] = useState({ to: "", subject: "", body: "" });
+  const [pending, setPending] = useState<MailAttachment[]>([]);
   const [sendStatus, setSendStatus] = useState<string>("");
+  const [search, setSearch] = useState("");
+  const [showAttachmentsView, setShowAttachmentsView] = useState(false);
+  const [showDownloadsView, setShowDownloadsView] = useState(false);
+  const [downloads, setDownloads] = useState<DownloadEntry[]>(() => loadDownloads(currentUser));
+  const fileInput = useRef<HTMLInputElement>(null);
 
   const reload = () => setMsgs(loadMail(currentUser));
+  const myAddress = mailAddressFor(currentUser);
 
   useEffect(() => {
     const fn = () => reload();
+    const fnDl = () => setDownloads(loadDownloads(currentUser));
     window.addEventListener("pueios-mail", fn);
     window.addEventListener("storage", fn);
+    window.addEventListener("pueios-downloads", fnDl);
     return () => {
       window.removeEventListener("pueios-mail", fn);
       window.removeEventListener("storage", fn);
+      window.removeEventListener("pueios-downloads", fnDl);
     };
   }, [currentUser]);
 
-  // Poll server inbox for cross-device mail every 4 seconds
+  // Cloud sync: pull full mailbox snapshot for this user (cross-device sync)
   useEffect(() => {
     let cancelled = false;
-    const seenIds = new Set<string>();
-    // Seed with current inbox ids so we don't re-import
-    try {
-      const all: MailMessage[] = JSON.parse(localStorage.getItem("pueios2-mail-v1") || "[]");
-      for (const m of all) if (m.owner === currentUser) seenIds.add(m.id);
-    } catch {}
+    (async () => {
+      try {
+        const res = await fetch(`/api/mail?owner=${encodeURIComponent(currentUser)}&mode=full`);
+        if (!res.ok || cancelled) return;
+        const remote = await res.json();
+        if (remote && Array.isArray(remote)) {
+          // Merge: server wins for entries with later `at`; keep local-only too
+          const local = loadMail(currentUser);
+          const byId = new Map<string, MailMessage>();
+          for (const m of local) byId.set(m.id, m);
+          for (const m of remote as MailMessage[]) {
+            const ex = byId.get(m.id);
+            if (!ex || (m.at >= ex.at)) byId.set(m.id, m);
+          }
+          replaceMailFor(currentUser, [...byId.values()]);
+          reload();
+        }
+      } catch {}
+    })();
+    return () => { cancelled = true; };
+  }, [currentUser]);
+
+  // Push full mailbox snapshot to cloud on changes (debounced)
+  useEffect(() => {
+    const t = setTimeout(() => {
+      fetch("/api/mail", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ owner: currentUser, mailbox: loadMail(currentUser) }),
+      }).catch(() => {});
+    }, 600);
+    return () => clearTimeout(t);
+  }, [msgs, currentUser]);
+
+  // Poll inbox for new mail every 4s
+  useEffect(() => {
+    let cancelled = false;
+    const seen = new Set<string>(loadMail(currentUser).map((m) => m.id));
     const poll = async () => {
       try {
         const res = await fetch(`/api/mail?owner=${encodeURIComponent(currentUser)}`);
         if (!res.ok || cancelled) return;
-        const remote = (await res.json()) as Array<{ id: string; from: string; to: string; subject: string; body: string; at: number }>;
-        const fresh = remote.filter((m) => !seenIds.has(m.id));
-        if (fresh.length === 0) return;
-        for (const m of fresh) seenIds.add(m.id);
-        const localAll: MailMessage[] = (() => {
-          try { return JSON.parse(localStorage.getItem("pueios2-mail-v1") || "[]"); } catch { return []; }
-        })();
-        const inbox: MailMessage[] = fresh.map((m) => ({
-          id: m.id, from: m.from, to: m.to, subject: m.subject, body: m.body,
-          at: m.at, read: false, folder: "inbox", owner: currentUser,
+        const remote = (await res.json()) as Array<{ id: string; from: string; to: string; subject: string; body: string; at: number; attachments?: MailAttachment[] }>;
+        const fresh = remote.filter((m) => !seen.has(m.id));
+        if (!fresh.length) return;
+        fresh.forEach((m) => seen.add(m.id));
+        const cur = loadMail(currentUser);
+        const newOnes: MailMessage[] = fresh.map((m) => ({
+          id: m.id, from: m.from, to: m.to, subject: m.subject, body: m.body, at: m.at,
+          read: false, folder: isLikelySpam(m) ? "spam" : "inbox", owner: currentUser,
+          attachments: m.attachments,
         }));
-        localStorage.setItem("pueios2-mail-v1", JSON.stringify([...localAll, ...inbox]));
-        window.dispatchEvent(new CustomEvent("pueios-mail"));
+        replaceMailFor(currentUser, [...cur, ...newOnes]);
         reload();
         blip("notify");
-      } catch { /* silent */ }
+      } catch {}
     };
     poll();
-    const interval = setInterval(poll, 4000);
-    return () => { cancelled = true; clearInterval(interval); };
+    const id = setInterval(poll, 4000);
+    return () => { cancelled = true; clearInterval(id); };
   }, [currentUser]);
 
+  const updateMsg = (patch: (m: MailMessage) => MailMessage, id: string) => {
+    const updated = msgs.map((m) => (m.id === id ? patch(m) : m));
+    setMsgs(updated); saveMail(updated);
+  };
+
+  const deleteMsg = (id: string, perm = false) => {
+    if (perm) {
+      const updated = msgs.filter((m) => m.id !== id);
+      setMsgs(updated); saveMail(updated);
+    } else {
+      updateMsg((m) => ({ ...m, folder: "trash" }), id);
+    }
+    if (selected?.id === id) setSelected(null);
+  };
+
+  const matchFolder = (m: MailMessage) => {
+    if (folder === "important") return m.important && m.folder !== "trash";
+    if (folder === "spam") return m.folder === "spam";
+    if (folder === "trash") return m.folder === "trash";
+    if (folder === "drafts") return m.folder === "drafts";
+    if (folder === "inbox") return m.folder === "inbox";
+    if (folder === "sent") return m.folder === "sent";
+    return m.folder === folder; // custom folder id
+  };
+
   const folderMsgs = msgs
-    .filter((m) => m.folder === folder)
+    .filter(matchFolder)
+    .filter((m) => !search.trim() || `${m.subject} ${m.body} ${m.from} ${m.to}`.toLowerCase().includes(search.toLowerCase()))
     .sort((a, b) => b.at - a.at);
 
-  const unread = msgs.filter((m) => m.folder === "inbox" && !m.read).length;
+  const unread = (fid: MailFolderId) => msgs.filter((m) => m.folder === fid && !m.read).length;
 
-  const markRead = (msg: MailMessage) => {
-    if (msg.read) return;
-    const updated = msgs.map((m) => m.id === msg.id ? { ...m, read: true } : m);
-    setMsgs(updated);
-    saveMail(updated);
+  const allAttachments = msgs.flatMap((m) => (m.attachments || []).map((a) => ({ ...a, mailId: m.id, from: m.from, subject: m.subject })));
+
+  const handleAttachClick = () => fileInput.current?.click();
+  const handleFiles = async (files: FileList | null) => {
+    if (!files) return;
+    const list = await Promise.all([...files].map(readFileAsAttachment));
+    setPending([...pending, ...list]);
   };
 
-  const moveToTrash = (msg: MailMessage) => {
-    const updated = msgs.map((m) => m.id === msg.id ? { ...m, folder: "trash" as const } : m);
-    setMsgs(updated);
-    saveMail(updated);
-    if (selected?.id === msg.id) setSelected(null);
-  };
-
-  const permanentlyDelete = (msg: MailMessage) => {
-    const updated = msgs.filter((m) => m.id !== msg.id);
-    setMsgs(updated);
-    saveMail(updated);
-    if (selected?.id === msg.id) setSelected(null);
+  const saveDraft = () => {
+    if (!draft.to && !draft.subject && !draft.body && pending.length === 0) return;
+    const id = draftId || `draft-${Date.now().toString(36)}`;
+    const d: MailMessage = {
+      id, from: currentUser, to: draft.to, subject: draft.subject, body: draft.body,
+      at: Date.now(), read: true, folder: "drafts", owner: currentUser, attachments: pending,
+    };
+    const others = msgs.filter((m) => m.id !== id);
+    const updated = [...others, d];
+    setMsgs(updated); saveMail(updated);
+    setDraftId(id);
   };
 
   const doSend = () => {
-    const to = draft.to.trim();
-    if (!to) { setSendStatus("Enter a recipient."); return; }
+    const resolved = resolveMailRecipient(draft.to, users);
+    if (!resolved) { setSendStatus("Enter a valid username, Pueio number, or @pueimail.puei address."); return; }
     if (!draft.subject.trim()) { setSendStatus("Enter a subject."); return; }
-    sendMail(currentUser, to, draft.subject.trim(), draft.body, users);
-    // Mirror to server so recipients on other devices/browsers receive it
+    sendMail(currentUser, resolved, draft.subject.trim(), draft.body, users, pending);
+    // Deliver to server inbox
     fetch("/api/mail", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ from: currentUser, to, subject: draft.subject.trim(), body: draft.body }),
+      body: JSON.stringify({ from: currentUser, to: resolved, subject: draft.subject.trim(), body: draft.body, attachments: pending }),
     }).catch(() => {});
-    setDraft({ to: "", subject: "", body: "" });
-    setComposing(false);
-    setSendStatus("");
-    setFolder("sent");
-    reload();
-    blip("notify");
+    // Drop draft if any
+    if (draftId) {
+      const updated = msgs.filter((m) => m.id !== draftId);
+      setMsgs(updated); saveMail(updated);
+    }
+    setDraft({ to: "", subject: "", body: "" }); setPending([]); setDraftId(null);
+    setComposing(false); setSendStatus(""); setFolder("sent");
+    reload(); blip("notify");
+  };
+
+  const openCompose = (presets?: { to?: string; subject?: string; body?: string; draftId?: string; attachments?: MailAttachment[] }) => {
+    setDraft({ to: presets?.to ?? "", subject: presets?.subject ?? "", body: presets?.body ?? "" });
+    setPending(presets?.attachments ?? []);
+    setDraftId(presets?.draftId ?? null);
+    setComposing(true); setSelected(null); setShowAttachmentsView(false); setShowDownloadsView(false);
+    blip("click");
   };
 
   const formatDate = (ts: number) => {
-    const d = new Date(ts);
-    const now = new Date();
-    if (d.toDateString() === now.toDateString()) return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-    return d.toLocaleDateString([], { month: "short", day: "numeric" });
+    const d = new Date(ts), now = new Date();
+    return d.toDateString() === now.toDateString()
+      ? d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+      : d.toLocaleDateString([], { month: "short", day: "numeric" });
   };
+
+  const addCustomFolder = () => {
+    const name = prompt("Folder name?")?.trim();
+    if (!name) return;
+    const id = `f-${Date.now().toString(36)}`;
+    const next = [...customFolders, `${id}|${name}`];
+    setCustomFolders(next); saveMailFolders(currentUser, next);
+  };
+
+  const moveToFolder = (id: string, fid: MailFolderId) => updateMsg((m) => ({ ...m, folder: fid }), id);
 
   return (
     <div className="flex h-full" style={{ background: "var(--glass)" }}>
       {/* Sidebar */}
-      <div className="w-44 flex-shrink-0 p-3 border-r flex flex-col gap-1" style={{ background: "var(--glass)" }}>
+      <div className="w-52 flex-shrink-0 p-3 border-r flex flex-col gap-1 overflow-y-auto" style={{ background: "var(--glass)" }}>
         <button className="aero-button rounded-lg px-3 py-2 text-sm font-semibold mb-2 w-full"
-          onClick={() => { setComposing(true); setSelected(null); blip("click"); }}>
-          ✏️ Compose
-        </button>
-        {(["inbox", "sent", "trash"] as const).map((f) => (
-          <div key={f} onClick={() => { setFolder(f); setSelected(null); blip("click"); }}
-            className="px-3 py-2 rounded-md cursor-pointer text-sm capitalize flex justify-between items-center"
-            style={{ background: folder === f ? "var(--gradient-aero)" : "transparent", color: folder === f ? "white" : "inherit" }}>
-            <span>{f === "inbox" ? "📥" : f === "sent" ? "📤" : "🗑️"} {f.charAt(0).toUpperCase() + f.slice(1)}</span>
-            {f === "inbox" && unread > 0 && (
-              <span className="bg-blue-500 text-white text-[10px] rounded-full px-1.5 py-0.5">{unread}</span>
+          onClick={() => openCompose()}>✏️ Compose</button>
+        {SYSTEM_FOLDERS.map((f) => (
+          <div key={f.id} onClick={() => { setFolder(f.id); setSelected(null); setShowAttachmentsView(false); setShowDownloadsView(false); }}
+            className="px-3 py-2 rounded-md cursor-pointer text-sm flex justify-between items-center"
+            style={{ background: folder === f.id && !showAttachmentsView && !showDownloadsView ? "var(--gradient-aero)" : "transparent", color: folder === f.id && !showAttachmentsView && !showDownloadsView ? "white" : "inherit" }}>
+            <span>{f.icon} {f.label}</span>
+            {f.id === "inbox" && unread("inbox") > 0 && (
+              <span className="bg-blue-500 text-white text-[10px] rounded-full px-1.5 py-0.5">{unread("inbox")}</span>
             )}
           </div>
         ))}
-        <div className="mt-auto text-[10px] opacity-40 px-1 pt-4">
-          PueiMail · {currentUser}
+        <div className="text-[10px] uppercase opacity-50 px-2 pt-3 pb-1">My folders</div>
+        {customFolders.map((entry) => {
+          const [id, name] = entry.split("|");
+          return (
+            <div key={id} onClick={() => { setFolder(id); setSelected(null); setShowAttachmentsView(false); setShowDownloadsView(false); }}
+              className="px-3 py-2 rounded-md cursor-pointer text-sm flex justify-between items-center"
+              style={{ background: folder === id ? "var(--gradient-aero)" : "transparent", color: folder === id ? "white" : "inherit" }}>
+              <span>📁 {name}</span>
+            </div>
+          );
+        })}
+        <button onClick={addCustomFolder} className="text-xs opacity-60 hover:opacity-100 text-left px-3 py-1">+ New folder</button>
+
+        <div className="border-t mt-2 pt-2">
+          <div onClick={() => { setShowAttachmentsView(true); setShowDownloadsView(false); setSelected(null); setComposing(false); }}
+            className="px-3 py-2 rounded-md cursor-pointer text-sm"
+            style={{ background: showAttachmentsView ? "var(--gradient-aero)" : "transparent", color: showAttachmentsView ? "white" : "inherit" }}>
+            📎 Saved attachments
+          </div>
+          <div onClick={() => { setShowDownloadsView(true); setShowAttachmentsView(false); setSelected(null); setComposing(false); }}
+            className="px-3 py-2 rounded-md cursor-pointer text-sm"
+            style={{ background: showDownloadsView ? "var(--gradient-aero)" : "transparent", color: showDownloadsView ? "white" : "inherit" }}>
+            ⬇️ Download history
+          </div>
+        </div>
+
+        <div className="mt-auto text-[10px] opacity-50 px-1 pt-4 break-all">
+          <div className="font-semibold">{currentUser}</div>
+          <div>{myAddress}</div>
         </div>
       </div>
 
-      {/* Message list */}
-      <div className="w-56 flex-shrink-0 border-r flex flex-col overflow-hidden">
-        <div className="px-3 py-2 text-xs font-semibold opacity-60 border-b capitalize">{folder} · {folderMsgs.length}</div>
+      {/* Center column */}
+      <div className="w-64 flex-shrink-0 border-r flex flex-col overflow-hidden">
+        <div className="p-2 border-b">
+          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="🔍 Search mail…"
+            className="w-full px-2 py-1 text-xs rounded outline-none"
+            style={{ background: "white", color: "#111", border: "1px solid var(--border)" }} />
+        </div>
+        {showAttachmentsView ? (
+          <div className="px-3 py-2 text-xs font-semibold opacity-70 border-b">Saved attachments · {allAttachments.length}</div>
+        ) : showDownloadsView ? (
+          <div className="px-3 py-2 text-xs font-semibold opacity-70 border-b">Download history · {downloads.length}</div>
+        ) : (
+          <div className="px-3 py-2 text-xs font-semibold opacity-60 border-b capitalize">
+            {SYSTEM_FOLDERS.find((f) => f.id === folder)?.label || (customFolders.find((c) => c.split("|")[0] === folder)?.split("|")[1] ?? folder)} · {folderMsgs.length}
+          </div>
+        )}
         <div className="flex-1 overflow-auto">
-          {folderMsgs.length === 0 ? (
+          {showAttachmentsView ? (
+            allAttachments.length === 0 ? <div className="p-4 text-xs opacity-50 text-center">No attachments saved.</div>
+            : allAttachments.map((a) => (
+              <div key={a.id} className="px-3 py-2 border-b text-xs cursor-pointer hover:bg-white/20"
+                onClick={() => { downloadAttachment(a); recordDownload(currentUser, { id: `dl-${Date.now()}`, name: a.name, kind: a.kind, size: a.size, at: Date.now(), mailId: a.mailId }); }}>
+                <div className="font-semibold truncate">{a.kind === "image" ? "🖼️" : a.kind === "video" ? "🎬" : "📎"} {a.name}</div>
+                <div className="opacity-60 truncate">{a.from} · {a.subject}</div>
+              </div>
+            ))
+          ) : showDownloadsView ? (
+            downloads.length === 0 ? <div className="p-4 text-xs opacity-50 text-center">No downloads yet.</div>
+            : downloads.map((d) => (
+              <div key={d.id} className="px-3 py-2 border-b text-xs">
+                <div className="font-semibold truncate">{d.name}</div>
+                <div className="opacity-60">{new Date(d.at).toLocaleString()} · {Math.round(d.size / 1024)} KB</div>
+              </div>
+            ))
+          ) : folderMsgs.length === 0 ? (
             <div className="p-4 text-xs opacity-50 text-center">No messages here.</div>
           ) : folderMsgs.map((msg) => (
             <div key={msg.id}
-              onClick={() => { setSelected(msg); setComposing(false); markRead(msg); }}
+              onClick={() => {
+                if (msg.folder === "drafts") {
+                  openCompose({ to: msg.to, subject: msg.subject, body: msg.body, draftId: msg.id, attachments: msg.attachments });
+                } else {
+                  setSelected(msg); setComposing(false);
+                  if (!msg.read) updateMsg((m) => ({ ...m, read: true }), msg.id);
+                }
+              }}
               className="px-3 py-2 cursor-pointer border-b hover:bg-white/20 transition-colors"
               style={{ background: selected?.id === msg.id ? "rgba(255,255,255,0.25)" : undefined }}>
               <div className="flex justify-between items-center">
-                <span className="text-xs truncate max-w-[120px]" style={{ fontWeight: !msg.read && msg.folder === "inbox" ? 700 : 400 }}>
-                  {folder === "sent" ? `→ ${msg.to}` : msg.from}
+                <span className="text-xs truncate max-w-[140px]" style={{ fontWeight: !msg.read && msg.folder === "inbox" ? 700 : 400 }}>
+                  {msg.important && "⭐ "}{folder === "sent" || msg.folder === "sent" ? `→ ${msg.to}` : msg.from}
                 </span>
                 <span className="text-[10px] opacity-50 flex-shrink-0">{formatDate(msg.at)}</span>
               </div>
               <div className="text-xs truncate opacity-80" style={{ fontWeight: !msg.read && msg.folder === "inbox" ? 600 : 400 }}>
                 {msg.subject || "(no subject)"}
               </div>
-              <div className="text-[10px] truncate opacity-50">{msg.body.slice(0, 60)}</div>
+              <div className="text-[10px] truncate opacity-50">
+                {msg.attachments?.length ? `📎${msg.attachments.length} ` : ""}{msg.body.slice(0, 60)}
+              </div>
             </div>
           ))}
         </div>
@@ -978,22 +1164,22 @@ function PueiMailApp({ currentUser, users }: { currentUser: string; users: User[
       <div className="flex-1 overflow-auto p-5">
         {composing ? (
           <div className="h-full flex flex-col gap-3 max-w-2xl">
-            <div className="text-lg font-semibold mb-1">New Message</div>
+            <div className="text-lg font-semibold mb-1">New Message {draftId && <span className="text-xs opacity-50">(draft)</span>}</div>
             <div className="flex items-center gap-2">
-              <span className="text-xs w-16 opacity-60">To:</span>
+              <span className="text-xs w-20 opacity-60">To:</span>
               <input value={draft.to} onChange={(e) => setDraft({ ...draft, to: e.target.value })}
-                placeholder="Recipient username"
+                placeholder="username, 123-456-789, or name@pueimail.puei"
                 className="flex-1 px-3 py-1.5 rounded text-sm outline-none"
                 style={{ background: "white", color: "#111", border: "1px solid var(--border)" }}
                 list="mail-contacts" />
               <datalist id="mail-contacts">
                 {users.filter((u) => u.name !== currentUser).map((u) => (
-                  <option key={u.name} value={u.name} />
+                  <option key={u.name} value={mailAddressFor(u.name)} />
                 ))}
               </datalist>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-xs w-16 opacity-60">Subject:</span>
+              <span className="text-xs w-20 opacity-60">Subject:</span>
               <input value={draft.subject} onChange={(e) => setDraft({ ...draft, subject: e.target.value })}
                 placeholder="Subject"
                 className="flex-1 px-3 py-1.5 rounded text-sm outline-none"
@@ -1001,47 +1187,140 @@ function PueiMailApp({ currentUser, users }: { currentUser: string; users: User[
             </div>
             <textarea value={draft.body} onChange={(e) => setDraft({ ...draft, body: e.target.value })}
               placeholder="Write your message…"
-              className="flex-1 px-3 py-2 rounded text-sm outline-none resize-none min-h-[180px]"
+              className="flex-1 px-3 py-2 rounded text-sm outline-none resize-none min-h-[160px]"
               style={{ background: "white", color: "#111", border: "1px solid var(--border)" }} />
+
+            {pending.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {pending.map((a) => (
+                  <div key={a.id} className="aero-glass-light rounded px-2 py-1 text-xs flex items-center gap-2">
+                    <span>{a.kind === "image" ? "🖼️" : a.kind === "video" ? "🎬" : "📎"} {a.name}</span>
+                    <button className="opacity-60 hover:opacity-100" onClick={() => setPending(pending.filter((x) => x.id !== a.id))}>×</button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="text-[11px] opacity-60">
+              <strong>✦ AI suggestions:</strong>
+              <div className="flex flex-wrap gap-1 mt-1">
+                {aiMailSuggestions({ subject: draft.subject, body: draft.body }).map((s, i) => (
+                  <button key={i} onClick={() => setDraft({ ...draft, body: (draft.body ? draft.body + "\n\n" : "") + s })}
+                    className="aero-button rounded px-2 py-0.5 text-[10px]">{s.slice(0, 40)}{s.length > 40 ? "…" : ""}</button>
+                ))}
+              </div>
+            </div>
+
             {sendStatus && <div className="text-red-400 text-xs">{sendStatus}</div>}
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
               <button className="aero-button rounded-lg px-5 py-2 text-sm font-semibold" onClick={doSend}>📨 Send</button>
-              <button className="aero-button rounded-lg px-4 py-2 text-sm" onClick={() => { setComposing(false); setSendStatus(""); }}>Discard</button>
+              <button className="aero-button rounded-lg px-4 py-2 text-sm" onClick={handleAttachClick}>📎 Attach</button>
+              <input type="file" multiple ref={fileInput} className="hidden"
+                accept="image/*,video/*,.pdf,.txt,.doc,.docx,.zip"
+                onChange={(e) => { handleFiles(e.target.files); e.target.value = ""; }} />
+              <button className="aero-button rounded-lg px-4 py-2 text-sm" onClick={saveDraft}>💾 Save draft</button>
+              <button className="aero-button rounded-lg px-4 py-2 text-sm" onClick={() => { setComposing(false); setSendStatus(""); setPending([]); setDraftId(null); }}>Discard</button>
             </div>
           </div>
         ) : selected ? (
           <div className="max-w-2xl">
-            <div className="flex justify-between items-start mb-4">
-              <h2 className="text-xl font-semibold">{selected.subject || "(no subject)"}</h2>
-              <div className="flex gap-2">
-                <button className="aero-button rounded px-3 py-1 text-xs"
-                  onClick={() => { setDraft({ to: selected.from === currentUser ? selected.to : selected.from, subject: `Re: ${selected.subject}`, body: `\n\n--- Original message from ${selected.from} ---\n${selected.body}` }); setComposing(true); blip("click"); }}>
+            <div className="flex justify-between items-start mb-4 flex-wrap gap-2">
+              <h2 className="text-xl font-semibold">{selected.important && "⭐ "}{selected.subject || "(no subject)"}</h2>
+              <div className="flex gap-1 flex-wrap">
+                <button className="aero-button rounded px-2 py-1 text-xs"
+                  onClick={() => openCompose({ to: selected.from === currentUser ? selected.to : selected.from, subject: `Re: ${selected.subject}`, body: `\n\n--- Original from ${selected.from} ---\n${selected.body}` })}>
                   ↩ Reply
                 </button>
-                {selected.folder !== "trash" ? (
-                  <button className="aero-button rounded px-3 py-1 text-xs" onClick={() => moveToTrash(selected)}>🗑️ Delete</button>
+                <button className="aero-button rounded px-2 py-1 text-xs" onClick={() => updateMsg((m) => ({ ...m, important: !m.important }), selected.id)}>
+                  {selected.important ? "☆ Unstar" : "⭐ Important"}
+                </button>
+                <button className="aero-button rounded px-2 py-1 text-xs" onClick={() => moveToFolder(selected.id, selected.folder === "spam" ? "inbox" : "spam")}>
+                  {selected.folder === "spam" ? "✓ Not spam" : "🚫 Spam"}
+                </button>
+                {selected.folder === "trash" ? (
+                  <>
+                    <button className="aero-button rounded px-2 py-1 text-xs" onClick={() => moveToFolder(selected.id, "inbox")}>♻️ Restore</button>
+                    <button className="aero-button rounded px-2 py-1 text-xs" onClick={() => deleteMsg(selected.id, true)}>🗑️ Delete forever</button>
+                  </>
                 ) : (
-                  <button className="aero-button rounded px-3 py-1 text-xs" onClick={() => permanentlyDelete(selected)}>🗑️ Delete permanently</button>
+                  <button className="aero-button rounded px-2 py-1 text-xs" onClick={() => deleteMsg(selected.id)}>🗑️ Trash</button>
+                )}
+                {customFolders.length > 0 && (
+                  <select className="text-xs rounded px-1 py-0.5" style={{ background: "white", color: "#111" }}
+                    value="" onChange={(e) => e.target.value && moveToFolder(selected.id, e.target.value)}>
+                    <option value="">Move to…</option>
+                    {customFolders.map((c) => { const [id, name] = c.split("|"); return <option key={id} value={id}>{name}</option>; })}
+                  </select>
                 )}
               </div>
             </div>
-            <div className="text-xs opacity-60 mb-1">From: <span className="font-medium">{selected.from}</span></div>
+            <div className="text-xs opacity-60 mb-1">From: <span className="font-medium">{selected.from}</span> &lt;{mailAddressFor(selected.from)}&gt;</div>
             <div className="text-xs opacity-60 mb-1">To: <span className="font-medium">{selected.to}</span></div>
             <div className="text-xs opacity-60 mb-4">{new Date(selected.at).toLocaleString()}</div>
-            <div className="aero-glass-light rounded-lg p-4 text-sm whitespace-pre-wrap leading-relaxed">
+            <div className="aero-glass-light rounded-lg p-4 text-sm whitespace-pre-wrap leading-relaxed mb-3">
               {selected.body || "(empty)"}
             </div>
+            {selected.attachments && selected.attachments.length > 0 && (
+              <div className="space-y-2">
+                <div className="text-xs font-semibold opacity-70">📎 Attachments ({selected.attachments.length})</div>
+                {selected.attachments.map((a) => (
+                  <div key={a.id} className="aero-glass-light rounded p-2 flex items-center gap-3">
+                    {a.kind === "image" && <img src={a.dataUrl} alt={a.name} className="w-16 h-16 object-cover rounded" />}
+                    {a.kind === "video" && <video src={a.dataUrl} className="w-24 h-16 rounded" />}
+                    {a.kind === "file" && <div className="w-16 h-16 flex items-center justify-center text-2xl bg-white/30 rounded">📄</div>}
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm truncate">{a.name}</div>
+                      <div className="text-[10px] opacity-60">{Math.round(a.size / 1024)} KB · {a.mime}</div>
+                    </div>
+                    <button className="aero-button rounded px-2 py-1 text-xs"
+                      onClick={() => { downloadAttachment(a); recordDownload(currentUser, { id: `dl-${Date.now()}`, name: a.name, kind: a.kind, size: a.size, at: Date.now(), mailId: selected.id }); }}>
+                      ⬇️ Download
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        ) : showAttachmentsView ? (
+          <div className="grid grid-cols-3 gap-3">
+            {allAttachments.length === 0 ? <div className="opacity-50 text-sm col-span-3 text-center">No attachments yet.</div>
+            : allAttachments.map((a) => (
+              <div key={a.id} className="aero-glass-light rounded p-2">
+                {a.kind === "image" ? <img src={a.dataUrl} className="w-full h-24 object-cover rounded" /> :
+                 a.kind === "video" ? <video src={a.dataUrl} className="w-full h-24 rounded" controls /> :
+                 <div className="w-full h-24 flex items-center justify-center text-3xl bg-white/30 rounded">📄</div>}
+                <div className="text-xs truncate mt-1">{a.name}</div>
+                <div className="text-[10px] opacity-60 truncate">{a.from}</div>
+                <button className="aero-button rounded w-full mt-1 text-[10px] py-0.5"
+                  onClick={() => { downloadAttachment(a); recordDownload(currentUser, { id: `dl-${Date.now()}`, name: a.name, kind: a.kind, size: a.size, at: Date.now(), mailId: a.mailId }); }}>
+                  Download
+                </button>
+              </div>
+            ))}
+          </div>
+        ) : showDownloadsView ? (
+          <div className="space-y-1">
+            <div className="text-lg font-semibold mb-2">Download history</div>
+            {downloads.length === 0 ? <div className="opacity-50 text-sm">Nothing downloaded yet.</div>
+            : downloads.map((d) => (
+              <div key={d.id} className="aero-glass-light rounded p-2 text-sm flex justify-between">
+                <span>{d.kind === "image" ? "🖼️" : d.kind === "video" ? "🎬" : "📎"} {d.name}</span>
+                <span className="text-xs opacity-60">{new Date(d.at).toLocaleString()}</span>
+              </div>
+            ))}
           </div>
         ) : (
           <div className="h-full flex flex-col items-center justify-center opacity-50 text-sm gap-2">
             <div className="text-5xl">✉️</div>
-            <div>Select a message to read, or compose a new one.</div>
+            <div>Puei Mail · {myAddress}</div>
+            <div className="text-xs">Select a message to read, or compose a new one.</div>
           </div>
         )}
       </div>
     </div>
   );
 }
+
 
 function MessengerApp({ user, users, setUsers }: { user: string; users: User[]; setUsers: (u: User[]) => void }) {
   const localContacts = users.filter((u) => u.name !== user);
