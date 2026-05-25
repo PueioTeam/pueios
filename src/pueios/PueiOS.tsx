@@ -166,6 +166,31 @@ export function PueiOS() {
     }
   }, [phase, currentUser]);
 
+  // Cloud sync: pull all files for this user on sign-in (cross-device/browser)
+  useEffect(() => {
+    if (!currentUser) return;
+    pullAndMergeFiles(currentUser).catch(() => {});
+  }, [currentUser]);
+
+  // Cloud sync: push file changes to server (debounced)
+  useEffect(() => {
+    if (!currentUser) return;
+    let lastIds = new Set(loadFiles().filter((f) => !f.owner || f.owner === currentUser).map((f) => f.id));
+    const onChange = () => {
+      const files = loadFiles().filter((f) => !f.owner || f.owner === currentUser);
+      const currentIds = new Set(files.map((f) => f.id));
+      // push current
+      files.forEach((f) => pushFileToServer(currentUser, f).catch(() => {}));
+      // detect removals
+      for (const id of lastIds) if (!currentIds.has(id)) removeFileFromServer(currentUser, id).catch(() => {});
+      lastIds = currentIds;
+    };
+    window.addEventListener("pueios-files-changed", onChange);
+    return () => window.removeEventListener("pueios-files-changed", onChange);
+  }, [currentUser]);
+
+
+
   const setTheme = (t: Theme) => setThemeState(t);
   const setWallpaper = (w: WallpaperId) => setThemeState({ ...theme, wallpaper: w });
 
