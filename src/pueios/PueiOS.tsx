@@ -10,6 +10,7 @@ import { AppRenderer } from "./apps";
 import { PueiMascot, PueiLogoSvg } from "./Mascot";
 import { pullAndMergeFiles, pushFile as pushFileToServer, removeFileFromServer } from "./fileSync";
 import { loadFiles } from "./state";
+import { loginRemote, createRemote, applySnapshot, schedulePush, type AccountSnapshot } from "./accountSync";
 
 
 type Phase = "install" | "boot" | "login" | "desktop" | "shutdown" | "recovery" | "upgrade";
@@ -188,6 +189,19 @@ export function PueiOS() {
     window.addEventListener("pueios-files-changed", onChange);
     return () => window.removeEventListener("pueios-files-changed", onChange);
   }, [currentUser]);
+
+  // Cloud account sync: push full snapshot whenever account-scoped data changes
+  useEffect(() => {
+    if (!currentUser) return;
+    const u = users.find((x) => x.name === currentUser);
+    if (!u) return;
+    schedulePush(u);
+    const evts = ["pueios-files-changed", "pueios-chat", "pueios-mail", "pueios-social", "pueios-recycle-changed"];
+    const fn = () => schedulePush(u);
+    evts.forEach((e) => window.addEventListener(e, fn));
+    return () => evts.forEach((e) => window.removeEventListener(e, fn));
+  }, [currentUser, users, theme, icons]);
+
 
 
 
@@ -464,14 +478,31 @@ export function PueiOS() {
           {installErr && <div className="text-red-300 text-xs">{installErr}</div>}
           <div className="flex gap-2">
             <button className="aero-button rounded px-3 py-2 text-sm" onClick={() => { setInstallMode(null); setPwOption("have"); setInstallErr(""); }}>← Back</button>
-            <button className="aero-button rounded px-3 py-2 text-sm flex-1" onClick={() => {
+            <button className="aero-button rounded px-3 py-2 text-sm flex-1" onClick={async () => {
               const name = newAcc.name.trim();
               if (!name) { setInstallErr("Enter a username"); return; }
+              // Cloud-first restore: pull the original account + all data from any browser.
+              const remote = await loginRemote(name, newAcc.password);
+              if (remote.status === "wrong-password") { setInstallErr("Wrong password for that account"); return; }
+              if (remote.status === "ok" && remote.snapshot) {
+                applySnapshot(remote.snapshot);
+                const s = loadState();
+                setUsers(s.users); setThemeState(s.theme); setIcons(s.icons);
+                setLoginUser(name); setInstalled(true); setInstallErr("");
+                setInstallStep(5); blip("notify");
+                setTimeout(() => { setPhase("boot"); setBootProgress(0); setInstallStep(0); setInstallMode(null); setPwOption("have"); }, 1400);
+                return;
+              }
+              if (remote.status === "not-found") {
+                setInstallErr("No PueiOS account with that name. Use Create instead."); return;
+              }
+              // Network error → offline fallback: create a local-only account.
               const nu: User = { name, password: newAcc.password, avatar: "🧑", color: "200", pueiNumber: pueiNumberFor(name + ":" + Date.now()), friends: [] };
               setUsers([nu]); setLoginUser(name); setInstalled(true); setInstallErr("");
               setInstallStep(5); blip("notify");
               setTimeout(() => { setPhase("boot"); setBootProgress(0); setInstallStep(0); setInstallMode(null); setPwOption("have"); }, 1400);
             }}>Continue →</button>
+
           </div>
         </div>
       ) : (
@@ -526,7 +557,7 @@ export function PueiOS() {
         {installErr && <div className="text-red-300 text-xs">{installErr}</div>}
         <div className="flex gap-2">
           <button className="aero-button rounded px-3 py-2 text-sm" onClick={() => setInstallMode(null)}>← Back</button>
-          <button className="aero-button rounded px-3 py-2 text-sm flex-1" onClick={() => {
+          <button className="aero-button rounded px-3 py-2 text-sm flex-1" onClick={async () => {
             const name = newAcc.name.trim();
             if (!name) { setInstallErr("Pick a name"); return; }
             const noPw = !newAcc.password;
@@ -535,12 +566,17 @@ export function PueiOS() {
               pueiNumber: pueiNumberFor(name + ":" + Date.now()), friends: [],
               noPassword: noPw, limitedMode: noPw,
             };
+            // Reserve the account name in the cloud so the same name can't be re-created in another browser.
+            const snap: AccountSnapshot = { version: 1, user: nu, theme, icons: defaultIcons, files: [], chat: [], social: [], recycle: [], mail: [], mailFolders: {}, downloads: {} };
+            const r = await createRemote(nu, snap);
+            if (r.conflict) { setInstallErr("That account already exists. Use 'Log in to existing account' instead."); return; }
             setUsers([nu]); setLoginUser(name); setInstalled(true); setInstallErr("");
             setNewAcc({ name: "", password: "", avatar: "🧑", color: "200" });
             blip("notify");
             setInstallStep(5);
             setTimeout(() => { setPhase("boot"); setBootProgress(0); setInstallStep(0); setInstallMode(null); }, 1400);
           }}>Finish installation</button>
+
         </div>
       </div>),
       // 5 done
@@ -660,20 +696,38 @@ export function PueiOS() {
 
 
   if (phase === "login" || locked) {
-    const trySignIn = () => {
-      const u = users.find((x) => x.name === loginUser);
-      if (!u) { blip("error"); setPwError("Unknown user"); return; }
-      if (u.password === pwInput) {
-        blip("start");
-        setCurrentUser(loginUser); setPwInput(""); setPwError("");
-        setLocked(false); setPhase("desktop");
-      } else { blip("error"); setPwError("Wrong password"); }
+    const enterDesktop = (name: string) => {
+      blip("start");
+      setCurrentUser(name); setPwInput(""); setPwError("");
+      setLocked(false); setPhase("desktop");
     };
-    const createAccount = () => {
+    const trySignIn = async () => {
+      const name = loginUser.trim();
+      if (!name) { setPwError("Pick or type a username"); return; }
+      // Cloud-first: restore the account from the server so it follows the user across browsers.
+      const remote = await loginRemote(name, pwInput);
+      if (remote.status === "wrong-password") { blip("error"); setPwError("Wrong password"); return; }
+      if (remote.status === "ok" && remote.snapshot) {
+        applySnapshot(remote.snapshot);
+        const s = loadState();
+        setUsers(s.users); setThemeState(s.theme); setIcons(s.icons);
+        enterDesktop(name); return;
+      }
+      // Cloud said not-found OR network error → fall back to local auth.
+      const u = users.find((x) => x.name === name);
+      if (!u) { blip("error"); setPwError(remote.status === "not-found" ? "No PueiOS account with that name" : "Unknown user"); return; }
+      if ((u.password ?? "") === pwInput) enterDesktop(name);
+      else { blip("error"); setPwError("Wrong password"); }
+    };
+    const createAccount = async () => {
       const name = newAcc.name.trim();
       if (!name) { setPwError("Pick a name"); return; }
-      if (users.some((u) => u.name === name)) { setPwError("Name already exists"); return; }
+      if (users.some((u) => u.name === name)) { setPwError("Name already exists locally"); return; }
       const nu: User = { name, password: newAcc.password, avatar: newAcc.avatar || "🧑", color: newAcc.color || "200", pueiNumber: pueiNumberFor(name + ":" + Date.now()), friends: [] };
+      // Reserve the name in the cloud so duplicate accounts can't exist across browsers.
+      const snap: AccountSnapshot = { version: 1, user: nu, theme, icons, files: [], chat: [], social: [], recycle: [], mail: [], mailFolders: {}, downloads: {} };
+      const r = await createRemote(nu, snap);
+      if (r.conflict) { setPwError("That account already exists in the cloud. Sign in instead."); return; }
       const next = [...users, nu];
       setUsers(next); setLoginUser(name); setCreating(false);
       setNewAcc({ name: "", password: "", avatar: "🧑", color: "200" }); setPwError(""); blip("notify");
@@ -686,6 +740,7 @@ export function PueiOS() {
           <PueiLogoSvg size={28} /> {locked ? "Locked" : "Welcome to PueiOS 2"}
         </div>
         <div className="absolute top-6 right-6 text-white/70 text-sm">{now.toLocaleString()}</div>
+
 
         {!creating ? (
           <>
