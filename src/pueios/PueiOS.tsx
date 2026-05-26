@@ -10,6 +10,7 @@ import { AppRenderer } from "./apps";
 import { PueiMascot, PueiLogoSvg } from "./Mascot";
 import { pullAndMergeFiles, pushFile as pushFileToServer, removeFileFromServer } from "./fileSync";
 import { loadFiles } from "./state";
+import { loginRemote, createRemote, applySnapshot, schedulePush, gatherSnapshot, type AccountSnapshot } from "./accountSync";
 
 
 type Phase = "install" | "boot" | "login" | "desktop" | "shutdown" | "recovery" | "upgrade";
