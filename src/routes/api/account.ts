@@ -69,16 +69,16 @@ export const Route = createFileRoute("/api/account")({
         });
         return json({ ok: true });
       },
-      // PUT → sync snapshot. body: { name, password, snapshot }
+      // PUT → sync snapshot. body: { name, password, newPassword?, snapshot }
       PUT: async ({ request }) => {
-        const body = (await request.json()) as { name?: string; password?: string; snapshot?: unknown };
+        const body = (await request.json()) as { name?: string; password?: string; newPassword?: string; snapshot?: unknown };
         if (!body.name) return json({ error: "Missing name" }, 400);
         const existing = await fetchAccount(body.name);
         if (!existing) {
           // first-time push (account created locally before cloud existed) — accept
           await saveAccount({
             name: body.name.trim(),
-            password: body.password ?? "",
+            password: body.newPassword ?? body.password ?? "",
             snapshot: body.snapshot ?? null,
             updatedAt: Date.now(),
           });
@@ -89,7 +89,7 @@ export const Route = createFileRoute("/api/account")({
         }
         await saveAccount({
           name: existing.name,
-          password: existing.password,
+          password: body.newPassword ?? existing.password,
           snapshot: body.snapshot ?? null,
           updatedAt: Date.now(),
         });

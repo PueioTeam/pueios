@@ -10,6 +10,7 @@ import {
   loadDownloads, recordDownload, isLikelySpam, aiMailSuggestions,
 } from "./state";
 import { pullAndMergeFiles, pushFile as pushFileToServer, removeFileFromServer } from "./fileSync";
+import { changePasswordRemote } from "./accountSync";
 
 
 export type AppRendererProps = {
@@ -379,10 +380,12 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, curren
                           if (pcCurPw !== me.password) { setPcMsg({ kind: "err", text: "Current password is incorrect." }); return; }
                           if (!pcNewPw) { setPcMsg({ kind: "err", text: "Enter a new password." }); return; }
                           if (pcNewPw !== pcConfirm) { setPcMsg({ kind: "err", text: "Passwords do not match." }); return; }
+                          const oldPw = pcCurPw;
                           updateMe({ password: pcNewPw });
                           setPcCurPw(""); setPcNewPw(""); setPcConfirm("");
                           setPcMsg({ kind: "ok", text: "✓ Password changed." });
                           blip("notify");
+                          changePasswordRemote(me.name, oldPw, pcNewPw, { ...me, password: pcNewPw }).catch(() => {});
                         }}}
                         className="w-full px-3 py-2 rounded text-sm outline-none mt-1" style={{ background: "white", color: "#111" }} />
                     </div>
@@ -393,10 +396,12 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, curren
                       if (pcCurPw !== me.password) { setPcMsg({ kind: "err", text: "Current password is incorrect." }); return; }
                       if (!pcNewPw) { setPcMsg({ kind: "err", text: "Enter a new password." }); return; }
                       if (pcNewPw !== pcConfirm) { setPcMsg({ kind: "err", text: "Passwords do not match." }); return; }
+                      const oldPw = pcCurPw;
                       updateMe({ password: pcNewPw });
                       setPcCurPw(""); setPcNewPw(""); setPcConfirm("");
                       setPcMsg({ kind: "ok", text: "✓ Password changed." });
                       blip("notify");
+                      changePasswordRemote(me.name, oldPw, pcNewPw, { ...me, password: pcNewPw }).catch(() => {});
                     }}>Change password</button>
                     <button className="text-xs opacity-60 underline hover:opacity-100" onClick={() => {
                       if (confirm("Remove your password? This switches you to Limited Access mode.")) {

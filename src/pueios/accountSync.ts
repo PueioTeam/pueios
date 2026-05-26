@@ -198,6 +198,21 @@ export async function pushSnapshot(user: User): Promise<boolean> {
   }
 }
 
+/** Change password on the server, authenticated with the old password. */
+export async function changePasswordRemote(name: string, oldPassword: string, newPassword: string, user: User): Promise<boolean> {
+  try {
+    const snap = gatherSnapshot(user);
+    const r = await fetch("/api/account", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, password: oldPassword, newPassword, snapshot: snap }),
+    });
+    return r.ok;
+  } catch {
+    return false;
+  }
+}
+
 let pushTimer: ReturnType<typeof setTimeout> | null = null;
 export function schedulePush(user: User | undefined, delayMs = 1500) {
   if (!user) return;
