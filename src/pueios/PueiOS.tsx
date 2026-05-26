@@ -758,7 +758,29 @@ export function PueiOS() {
         <div className="absolute top-6 right-6 text-white/70 text-sm">{now.toLocaleString()}</div>
 
 
-        {!creating ? (
+        {switching ? (
+          <div className="aero-glass rounded-lg p-5 w-80 space-y-3">
+            <div className="text-base font-semibold">↩ Sign in to another account</div>
+            <div>
+              <label className="text-xs opacity-70">Account name</label>
+              <input value={switchName} onChange={(e) => { setSwitchName(e.target.value); setSwitchErr(""); }}
+                onKeyDown={(e) => { if (e.key === "Enter") switchToAccount(); }}
+                autoFocus
+                className="w-full px-3 py-2 rounded text-sm outline-none mt-1" style={{ background: "white", color: "#111" }} />
+            </div>
+            <div>
+              <label className="text-xs opacity-70">Password</label>
+              <input type="password" value={switchPw} onChange={(e) => setSwitchPw(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") switchToAccount(); }}
+                className="w-full px-3 py-2 rounded text-sm outline-none mt-1" style={{ background: "white", color: "#111" }} />
+            </div>
+            {switchErr && <div className="text-red-400 text-xs">{switchErr}</div>}
+            <div className="flex gap-2">
+              <button className="aero-button rounded px-3 py-1 text-sm" onClick={() => { setSwitching(false); setSwitchErr(""); }}>← Back</button>
+              <button className="aero-button rounded px-3 py-1 text-sm flex-1" onClick={switchToAccount}>Sign in →</button>
+            </div>
+          </div>
+        ) : !creating ? (
           <>
             <div className="grid gap-6 mb-8" style={{ gridTemplateColumns: `repeat(${Math.min(Math.max(users.length, 1), 4)}, minmax(0, 1fr))` }}>
               {users.map((u) => (
@@ -816,28 +838,6 @@ export function PueiOS() {
               )}
             </div>
           </>
-        ) : switching ? (
-          <div className="aero-glass rounded-lg p-5 w-80 space-y-3">
-            <div className="text-base font-semibold">↩ Sign in to another account</div>
-            <div>
-              <label className="text-xs opacity-70">Account name</label>
-              <input value={switchName} onChange={(e) => { setSwitchName(e.target.value); setSwitchErr(""); }}
-                onKeyDown={(e) => { if (e.key === "Enter") switchToAccount(); }}
-                autoFocus
-                className="w-full px-3 py-2 rounded text-sm outline-none mt-1" style={{ background: "white", color: "#111" }} />
-            </div>
-            <div>
-              <label className="text-xs opacity-70">Password</label>
-              <input type="password" value={switchPw} onChange={(e) => setSwitchPw(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Enter") switchToAccount(); }}
-                className="w-full px-3 py-2 rounded text-sm outline-none mt-1" style={{ background: "white", color: "#111" }} />
-            </div>
-            {switchErr && <div className="text-red-400 text-xs">{switchErr}</div>}
-            <div className="flex gap-2">
-              <button className="aero-button rounded px-3 py-1 text-sm" onClick={() => { setSwitching(false); setSwitchErr(""); }}>← Back</button>
-              <button className="aero-button rounded px-3 py-1 text-sm flex-1" onClick={switchToAccount}>Sign in →</button>
-            </div>
-          </div>
         ) : (
           <div className="aero-glass rounded-lg p-5 w-96 space-y-3">
             <div className="text-base font-semibold flex items-center gap-2"><PueiLogoSvg size={28} /> Create a new account</div>
