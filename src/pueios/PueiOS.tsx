@@ -674,20 +674,38 @@ export function PueiOS() {
 
 
   if (phase === "login" || locked) {
-    const trySignIn = () => {
-      const u = users.find((x) => x.name === loginUser);
-      if (!u) { blip("error"); setPwError("Unknown user"); return; }
-      if (u.password === pwInput) {
-        blip("start");
-        setCurrentUser(loginUser); setPwInput(""); setPwError("");
-        setLocked(false); setPhase("desktop");
-      } else { blip("error"); setPwError("Wrong password"); }
+    const enterDesktop = (name: string) => {
+      blip("start");
+      setCurrentUser(name); setPwInput(""); setPwError("");
+      setLocked(false); setPhase("desktop");
     };
-    const createAccount = () => {
+    const trySignIn = async () => {
+      const name = loginUser.trim();
+      if (!name) { setPwError("Pick or type a username"); return; }
+      // Cloud-first: restore the account from the server so it follows the user across browsers.
+      const remote = await loginRemote(name, pwInput);
+      if (remote.status === "wrong-password") { blip("error"); setPwError("Wrong password"); return; }
+      if (remote.status === "ok" && remote.snapshot) {
+        applySnapshot(remote.snapshot);
+        const s = loadState();
+        setUsers(s.users); setThemeState(s.theme); setIcons(s.icons);
+        enterDesktop(name); return;
+      }
+      // Cloud said not-found OR network error → fall back to local auth.
+      const u = users.find((x) => x.name === name);
+      if (!u) { blip("error"); setPwError(remote.status === "not-found" ? "No PueiOS account with that name" : "Unknown user"); return; }
+      if ((u.password ?? "") === pwInput) enterDesktop(name);
+      else { blip("error"); setPwError("Wrong password"); }
+    };
+    const createAccount = async () => {
       const name = newAcc.name.trim();
       if (!name) { setPwError("Pick a name"); return; }
-      if (users.some((u) => u.name === name)) { setPwError("Name already exists"); return; }
+      if (users.some((u) => u.name === name)) { setPwError("Name already exists locally"); return; }
       const nu: User = { name, password: newAcc.password, avatar: newAcc.avatar || "🧑", color: newAcc.color || "200", pueiNumber: pueiNumberFor(name + ":" + Date.now()), friends: [] };
+      // Reserve the name in the cloud so duplicate accounts can't exist across browsers.
+      const snap: AccountSnapshot = { version: 1, user: nu, theme, icons, files: [], chat: [], social: [], recycle: [], mail: [], mailFolders: {}, downloads: {} };
+      const r = await createRemote(nu, snap);
+      if (r.conflict) { setPwError("That account already exists in the cloud. Sign in instead."); return; }
       const next = [...users, nu];
       setUsers(next); setLoginUser(name); setCreating(false);
       setNewAcc({ name: "", password: "", avatar: "🧑", color: "200" }); setPwError(""); blip("notify");
@@ -700,6 +718,7 @@ export function PueiOS() {
           <PueiLogoSvg size={28} /> {locked ? "Locked" : "Welcome to PueiOS 2"}
         </div>
         <div className="absolute top-6 right-6 text-white/70 text-sm">{now.toLocaleString()}</div>
+
 
         {!creating ? (
           <>
