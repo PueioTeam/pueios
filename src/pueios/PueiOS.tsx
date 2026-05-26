@@ -557,7 +557,7 @@ export function PueiOS() {
         {installErr && <div className="text-red-300 text-xs">{installErr}</div>}
         <div className="flex gap-2">
           <button className="aero-button rounded px-3 py-2 text-sm" onClick={() => setInstallMode(null)}>← Back</button>
-          <button className="aero-button rounded px-3 py-2 text-sm flex-1" onClick={() => {
+          <button className="aero-button rounded px-3 py-2 text-sm flex-1" onClick={async () => {
             const name = newAcc.name.trim();
             if (!name) { setInstallErr("Pick a name"); return; }
             const noPw = !newAcc.password;
@@ -566,12 +566,17 @@ export function PueiOS() {
               pueiNumber: pueiNumberFor(name + ":" + Date.now()), friends: [],
               noPassword: noPw, limitedMode: noPw,
             };
+            // Reserve the account name in the cloud so the same name can't be re-created in another browser.
+            const snap: AccountSnapshot = { version: 1, user: nu, theme, icons: defaultIcons, files: [], chat: [], social: [], recycle: [], mail: [], mailFolders: {}, downloads: {} };
+            const r = await createRemote(nu, snap);
+            if (r.conflict) { setInstallErr("That account already exists. Use 'Log in to existing account' instead."); return; }
             setUsers([nu]); setLoginUser(name); setInstalled(true); setInstallErr("");
             setNewAcc({ name: "", password: "", avatar: "🧑", color: "200" });
             blip("notify");
             setInstallStep(5);
             setTimeout(() => { setPhase("boot"); setBootProgress(0); setInstallStep(0); setInstallMode(null); }, 1400);
           }}>Finish installation</button>
+
         </div>
       </div>),
       // 5 done
