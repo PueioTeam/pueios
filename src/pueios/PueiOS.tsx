@@ -84,6 +84,10 @@ export function PueiOS() {
   const [locked, setLocked] = useState(false);
   const [loginUser, setLoginUser] = useState("");
   const [creating, setCreating] = useState(false);
+  const [switching, setSwitching] = useState(false);
+  const [switchName, setSwitchName] = useState("");
+  const [switchPw, setSwitchPw] = useState("");
+  const [switchErr, setSwitchErr] = useState("");
   const [newAcc, setNewAcc] = useState({ name: "", password: "", avatar: "🧑", color: "200" });
 
   // Install wizard state
@@ -719,9 +723,21 @@ export function PueiOS() {
       if ((u.password ?? "") === pwInput) enterDesktop(name);
       else { blip("error"); setPwError("Wrong password"); }
     };
+    const switchToAccount = async () => {
+      const name = switchName.trim();
+      if (!name) { setSwitchErr("Enter an account name"); return; }
+      setSwitchErr("");
+      const remote = await loginRemote(name, switchPw);
+      if (remote.status === "wrong-password") { blip("error"); setSwitchErr("Wrong password"); return; }
+      if (remote.status === "not-found") { blip("error"); setSwitchErr("No PueiOS account with that name"); return; }
+      if (remote.status === "network-error") { blip("error"); setSwitchErr("Could not reach server. Check your connection."); return; }
+      if (remote.snapshot) applySnapshot(remote.snapshot);
+      const s = loadState();
+      setUsers(s.users); setThemeState(s.theme); setIcons(s.icons);
+      setLoginUser(name); setSwitching(false); setSwitchName(""); setSwitchPw(""); setSwitchErr("");
+      enterDesktop(name);
+    };
     const createAccount = async () => {
-      const name = newAcc.name.trim();
-      if (!name) { setPwError("Pick a name"); return; }
       if (users.some((u) => u.name === name)) { setPwError("Name already exists locally"); return; }
       const nu: User = { name, password: newAcc.password, avatar: newAcc.avatar || "🧑", color: newAcc.color || "200", pueiNumber: pueiNumberFor(name + ":" + Date.now()), friends: [] };
       // Reserve the name in the cloud so duplicate accounts can't exist across browsers.
@@ -792,8 +808,36 @@ export function PueiOS() {
                 <button className="aero-button rounded px-3 py-1 text-sm flex-1" onClick={trySignIn}>Sign in →</button>
                 <button className="aero-button rounded px-3 py-1 text-sm" onClick={() => setPhase("recovery")}>Recovery</button>
               </div>
+              {!locked && users.length > 0 && (
+                <button className="text-xs text-white/60 underline hover:text-white/90 mt-2 w-full text-center block"
+                  onClick={() => { setSwitching(true); setSwitchName(""); setSwitchPw(""); setSwitchErr(""); }}>
+                  Switch to a different account
+                </button>
+              )}
             </div>
           </>
+        ) : switching ? (
+          <div className="aero-glass rounded-lg p-5 w-80 space-y-3">
+            <div className="text-base font-semibold">↩ Sign in to another account</div>
+            <div>
+              <label className="text-xs opacity-70">Account name</label>
+              <input value={switchName} onChange={(e) => { setSwitchName(e.target.value); setSwitchErr(""); }}
+                onKeyDown={(e) => { if (e.key === "Enter") switchToAccount(); }}
+                autoFocus
+                className="w-full px-3 py-2 rounded text-sm outline-none mt-1" style={{ background: "white", color: "#111" }} />
+            </div>
+            <div>
+              <label className="text-xs opacity-70">Password</label>
+              <input type="password" value={switchPw} onChange={(e) => setSwitchPw(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") switchToAccount(); }}
+                className="w-full px-3 py-2 rounded text-sm outline-none mt-1" style={{ background: "white", color: "#111" }} />
+            </div>
+            {switchErr && <div className="text-red-400 text-xs">{switchErr}</div>}
+            <div className="flex gap-2">
+              <button className="aero-button rounded px-3 py-1 text-sm" onClick={() => { setSwitching(false); setSwitchErr(""); }}>← Back</button>
+              <button className="aero-button rounded px-3 py-1 text-sm flex-1" onClick={switchToAccount}>Sign in →</button>
+            </div>
+          </div>
         ) : (
           <div className="aero-glass rounded-lg p-5 w-96 space-y-3">
             <div className="text-base font-semibold flex items-center gap-2"><PueiLogoSvg size={28} /> Create a new account</div>
