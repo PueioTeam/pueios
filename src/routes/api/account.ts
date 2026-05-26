@@ -7,32 +7,28 @@ interface AccountRecord {
   updatedAt: number;
 }
 
-interface KVNamespace {
-  get(key: string, type: "text"): Promise<string | null>;
-  put(key: string, value: string, options?: { expirationTtl?: number }): Promise<void>;
-  delete(key: string): Promise<void>;
-}
-interface CfEnv { ACCOUNT_KV?: KVNamespace; MESSAGES_KV?: KVNamespace }
+const UPSTASH_URL = "https://free-elephant-40203.upstash.io";
+const UPSTASH_TOKEN = "AZ0LAAIgcDEzNzg3YmJmODc5Mjg0ODdmYTg3YjM4YjA4NjE0MmE0Yg";
 
-const memStore = new Map<string, AccountRecord>();
-const getKV = (): KVNamespace | null => {
-  const env = (globalThis as Record<string, unknown>).__cfEnv as CfEnv | undefined;
-  return env?.ACCOUNT_KV ?? env?.MESSAGES_KV ?? null;
-};
 const key = (name: string) => `account:${name.toLowerCase().trim()}`;
 
-async function fetchAccount(name: string): Promise<AccountRecord | null> {
-  const kv = getKV();
-  if (kv) {
-    const raw = await kv.get(key(name), "text");
-    return raw ? (JSON.parse(raw) as AccountRecord) : null;
-  }
-  return memStore.get(key(name)) ?? null;
+async function upstash(command: string, ...args: string[]): Promise<unknown> {
+  const r = await fetch(UPSTASH_URL, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${UPSTASH_TOKEN}`, "Content-Type": "application/json" },
+    body: JSON.stringify([command, ...args]),
+  });
+  const data = await r.json() as { result: unknown };
+  return data.result;
 }
+
+async function fetchAccount(name: string): Promise<AccountRecord | null> {
+  const raw = await upstash("GET", key(name)) as string | null;
+  return raw ? (JSON.parse(raw) as AccountRecord) : null;
+}
+
 async function saveAccount(rec: AccountRecord) {
-  const kv = getKV();
-  if (kv) await kv.put(key(rec.name), JSON.stringify(rec), { expirationTtl: 60 * 60 * 24 * 365 * 5 });
-  else memStore.set(key(rec.name), rec);
+  await upstash("SET", key(rec.name), JSON.stringify(rec));
 }
 
 const json = (d: unknown, s = 200) =>
