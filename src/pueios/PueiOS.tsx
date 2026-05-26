@@ -770,7 +770,18 @@ export function PueiOS() {
               )}
             </div>
             <div className="aero-glass rounded-lg p-4 w-80">
-              <div className="text-sm font-medium mb-2">{loginUser || "Select an account"}</div>
+              {users.length === 0 ? (
+                <div className="mb-2">
+                  <div className="text-xs opacity-70 mb-1">Account name</div>
+                  <input value={loginUser} onChange={(e) => { setLoginUser(e.target.value); setPwError(""); }}
+                    onKeyDown={(e) => { if (e.key === "Enter") trySignIn(); }}
+                    placeholder="Your PueiOS username"
+                    className="w-full px-3 py-2 rounded text-sm outline-none"
+                    style={{ background: "white", color: "#111" }} />
+                </div>
+              ) : (
+                <div className="text-sm font-medium mb-2">{loginUser || "Select an account"}</div>
+              )}
               <input type="password" value={pwInput} onChange={(e) => setPwInput(e.target.value)}
                 onKeyDown={(e) => { if (e.key === "Enter") trySignIn(); }}
                 placeholder={activeUser?.password ? "Password" : "Press Enter (no password)"}
