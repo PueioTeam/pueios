@@ -190,6 +190,19 @@ export function PueiOS() {
     return () => window.removeEventListener("pueios-files-changed", onChange);
   }, [currentUser]);
 
+  // Cloud account sync: push full snapshot whenever account-scoped data changes
+  useEffect(() => {
+    if (!currentUser) return;
+    const u = users.find((x) => x.name === currentUser);
+    if (!u) return;
+    schedulePush(u);
+    const evts = ["pueios-files-changed", "pueios-chat", "pueios-mail", "pueios-social", "pueios-recycle-changed"];
+    const fn = () => schedulePush(u);
+    evts.forEach((e) => window.addEventListener(e, fn));
+    return () => evts.forEach((e) => window.removeEventListener(e, fn));
+  }, [currentUser, users, theme, icons]);
+
+
 
 
   const setTheme = (t: Theme) => setThemeState(t);
