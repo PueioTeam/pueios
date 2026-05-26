@@ -478,14 +478,31 @@ export function PueiOS() {
           {installErr && <div className="text-red-300 text-xs">{installErr}</div>}
           <div className="flex gap-2">
             <button className="aero-button rounded px-3 py-2 text-sm" onClick={() => { setInstallMode(null); setPwOption("have"); setInstallErr(""); }}>← Back</button>
-            <button className="aero-button rounded px-3 py-2 text-sm flex-1" onClick={() => {
+            <button className="aero-button rounded px-3 py-2 text-sm flex-1" onClick={async () => {
               const name = newAcc.name.trim();
               if (!name) { setInstallErr("Enter a username"); return; }
+              // Cloud-first restore: pull the original account + all data from any browser.
+              const remote = await loginRemote(name, newAcc.password);
+              if (remote.status === "wrong-password") { setInstallErr("Wrong password for that account"); return; }
+              if (remote.status === "ok" && remote.snapshot) {
+                applySnapshot(remote.snapshot);
+                const s = loadState();
+                setUsers(s.users); setThemeState(s.theme); setIcons(s.icons);
+                setLoginUser(name); setInstalled(true); setInstallErr("");
+                setInstallStep(5); blip("notify");
+                setTimeout(() => { setPhase("boot"); setBootProgress(0); setInstallStep(0); setInstallMode(null); setPwOption("have"); }, 1400);
+                return;
+              }
+              if (remote.status === "not-found") {
+                setInstallErr("No PueiOS account with that name. Use Create instead."); return;
+              }
+              // Network error → offline fallback: create a local-only account.
               const nu: User = { name, password: newAcc.password, avatar: "🧑", color: "200", pueiNumber: pueiNumberFor(name + ":" + Date.now()), friends: [] };
               setUsers([nu]); setLoginUser(name); setInstalled(true); setInstallErr("");
               setInstallStep(5); blip("notify");
               setTimeout(() => { setPhase("boot"); setBootProgress(0); setInstallStep(0); setInstallMode(null); setPwOption("have"); }, 1400);
             }}>Continue →</button>
+
           </div>
         </div>
       ) : (
