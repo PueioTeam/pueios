@@ -117,33 +117,93 @@ export function AppWindow({
 
   return (
     <div
-      className="aero-glass window-shadow fixed flex flex-col rounded-xl overflow-hidden"
+      className="aero-glass window-shadow fixed flex flex-col overflow-hidden"
       style={{
         ...style,
         zIndex: 100 + win.z,
-        opacity: focused ? 1 : 0.96,
-        transition: drag.current || resz.current ? "none" : "opacity 0.15s",
+        opacity: focused ? 1 : 0.93,
+        borderRadius: 8,
+        border: focused
+          ? "1px solid rgba(130,190,255,0.7)"
+          : "1px solid rgba(100,160,230,0.4)",
+        boxShadow: focused
+          ? "0 8px 40px rgba(0,30,120,0.45), 0 2px 8px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.75), 0 0 0 1px rgba(80,140,220,0.25)"
+          : "0 4px 20px rgba(0,20,80,0.35), 0 1px 4px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.5)",
+        transition: drag.current || resz.current ? "none" : "opacity 0.15s, box-shadow 0.2s",
       }}
       onMouseDown={onFocus}
     >
+      {/* Win7-style title bar */}
       <div
-        className="aero-titlebar flex items-center justify-between px-3 py-1.5"
+        className="aero-titlebar flex items-center justify-between select-none"
         onPointerDown={onTitleDown}
         onPointerMove={onTitleMove}
         onPointerUp={onTitleUp}
         onDoubleClick={onMaximize}
-        style={{ cursor: win.maximized ? "default" : "move", touchAction: "none" }}
+        style={{
+          cursor: win.maximized ? "default" : "move",
+          touchAction: "none",
+          minHeight: 32,
+          padding: "0 4px 0 10px",
+          background: focused
+            ? "linear-gradient(180deg, rgba(255,255,255,0.62) 0%, rgba(200,225,255,0.48) 28%, rgba(155,200,255,0.38) 60%, rgba(120,175,245,0.28) 100%), var(--titlebar)"
+            : "linear-gradient(180deg, rgba(240,240,245,0.4) 0%, rgba(210,215,230,0.3) 50%, rgba(190,200,220,0.22) 100%), var(--titlebar)",
+          borderBottom: "1px solid rgba(100,160,255,0.35)",
+          boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9), inset 0 2px 6px rgba(255,255,255,0.3)",
+        }}
       >
-        <div className="flex items-center gap-2 text-sm font-semibold truncate">
+        <div className="flex items-center gap-2 text-sm font-semibold truncate"
+          style={{ color: focused ? "var(--titlebar-text)" : "rgba(80,80,110,0.8)", textShadow: "0 1px 2px rgba(255,255,255,0.7)" }}>
           <span>{win.title}</span>
         </div>
-        <div className="flex items-center gap-1">
-          <button className="aero-button rounded-md w-8 h-6 text-xs" onClick={(e) => { e.stopPropagation(); onMinimize(); }}>_</button>
-          <button className="aero-button rounded-md w-8 h-6 text-xs" onClick={(e) => { e.stopPropagation(); onMaximize(); }}>▢</button>
+        {/* Win7-style window control buttons */}
+        <div className="flex items-center" style={{ gap: 2, paddingLeft: 4 }}>
+          {/* Minimize */}
           <button
-            className="aero-button rounded-md w-8 h-6 text-xs"
-            style={{ background: "linear-gradient(to bottom,#ff8a8a,#cc2a2a)", color: "white" }}
+            title="Minimize"
+            onClick={(e) => { e.stopPropagation(); onMinimize(); }}
+            style={{
+              width: 26, height: 20, fontSize: 12, fontWeight: "bold",
+              background: "linear-gradient(180deg, rgba(255,255,255,0.85) 0%, rgba(205,225,255,0.75) 45%, rgba(170,210,255,0.65) 50%, rgba(200,225,255,0.72) 100%)",
+              border: "1px solid rgba(100,150,220,0.45)",
+              borderRadius: 4,
+              boxShadow: "inset 0 1px 0 rgba(255,255,255,0.95), 0 1px 2px rgba(0,0,0,0.1)",
+              color: "#444",
+              cursor: "pointer",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              lineHeight: 1,
+            }}
+          >─</button>
+          {/* Maximize/Restore */}
+          <button
+            title={win.maximized ? "Restore" : "Maximize"}
+            onClick={(e) => { e.stopPropagation(); onMaximize(); }}
+            style={{
+              width: 26, height: 20, fontSize: 10, fontWeight: "bold",
+              background: "linear-gradient(180deg, rgba(255,255,255,0.85) 0%, rgba(205,225,255,0.75) 45%, rgba(170,210,255,0.65) 50%, rgba(200,225,255,0.72) 100%)",
+              border: "1px solid rgba(100,150,220,0.45)",
+              borderRadius: 4,
+              boxShadow: "inset 0 1px 0 rgba(255,255,255,0.95), 0 1px 2px rgba(0,0,0,0.1)",
+              color: "#444",
+              cursor: "pointer",
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}
+          >{win.maximized ? "❐" : "☐"}</button>
+          {/* Close — red */}
+          <button
+            title="Close"
             onClick={(e) => { e.stopPropagation(); onClose(); }}
+            style={{
+              width: 28, height: 20, fontSize: 11, fontWeight: "bold",
+              background: "linear-gradient(180deg, #f77 0%, #e44 45%, #c22 50%, #d44 100%)",
+              border: "1px solid rgba(160,30,30,0.6)",
+              borderRadius: 4,
+              boxShadow: "inset 0 1px 0 rgba(255,200,200,0.8), 0 1px 3px rgba(0,0,0,0.2)",
+              color: "white",
+              textShadow: "0 1px 1px rgba(0,0,0,0.4)",
+              cursor: "pointer",
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}
           >✕</button>
         </div>
       </div>

@@ -621,6 +621,77 @@ function PaintApp({ fileId, onCreateShortcut, currentUser }: { fileId?: string; 
 }
 
 // ---------- Puei Copilot (integrated into PueiSearch) ----------
+
+/** Generate a relevant answer for a search query using a local knowledge base + generic reasoning. */
+function generateCopilotAnswer(q: string): string {
+  const lq = q.toLowerCase();
+
+  // PueiOS-specific knowledge
+  if (lq.includes("pueios") || lq.includes("puei os")) {
+    return `PueiOS 2 is an alternate-universe operating system with a Windows 7 Aero-inspired glass UI, built as a web app. It features draggable windows with real glass blur effects, a cloud-synced account system (your profile, files, and settings follow you across every browser), Puei Messenger, PueiSocial, Puei Paint, a Calculator, Notepad, Solitaire, Chess, an App Store, and the PueiWeb browser. It was designed in an alternate 2020 timeline where glossy Aero-style UIs never went out of fashion.`;
+  }
+  if (lq.includes("pueio number") || lq.includes("puei number")) {
+    return `A Pueio Number is a unique 6-digit identifier assigned to every PueiOS account. It works like a phone number for Puei Messenger — you can add friends by their Pueio Number and send them messages. Your Pueio Number is shown in Settings → Account and in your Messenger contacts list.`;
+  }
+  if (lq.includes("puei messenger") || lq.includes("messenger")) {
+    return `Puei Messenger is PueiOS 2's built-in chat app. You can add friends using their Pueio Number, start conversations, and send messages. All messages are stored in your account and sync across browsers when you're logged in.`;
+  }
+  if (lq.includes("app store") || lq.includes("installer")) {
+    return `The PueiOS 2 App Store lets you install web apps from *.lovable.app and *.base44.app domains. You can also install sites as shortcuts on your desktop. Installed web apps get their own window and icon, just like native apps.`;
+  }
+  if (lq.includes("puei paint") || lq.includes("paint")) {
+    return `Puei Paint 2 is the built-in drawing app. You can draw with different brush sizes and colors, save your artwork as image files, and even set a painting as your desktop wallpaper via Settings → Wallpaper.`;
+  }
+  if (lq.includes("file") && (lq.includes("sync") || lq.includes("cloud") || lq.includes("browser"))) {
+    return `PueiOS 2 syncs your files across all browsers automatically. When you log in, your files are pulled from the cloud server. Any file you create or edit is immediately pushed to the server so it appears in Firefox, Chrome, Edge, or any other browser — just log in with your account.`;
+  }
+
+  // General knowledge topics
+  if (lq.includes("what is") || lq.includes("who is") || lq.includes("define") || lq.includes("explain")) {
+    const topic = q.replace(/^(what is|who is|define|explain)\s+/i, "").trim();
+    return `${topic} is a well-documented topic. Based on information gathered across multiple sources:\n\n` +
+      `${topic} refers to a concept, entity, or subject with information available in encyclopedias, news archives, and educational databases. ` +
+      `Cross-referencing results from Google, Edge, Firefox, and Opera shows consistent information across all four sources — no major discrepancies were found.\n\n` +
+      `For the most accurate and detailed information about "${topic}", I recommend checking an encyclopedia or official documentation, as my knowledge covers general topics up to my training cutoff.`;
+  }
+
+  if (lq.includes("how to") || lq.includes("how do") || lq.includes("how can")) {
+    const action = q.replace(/^how (to|do|can( i)?)\s+/i, "").trim();
+    return `Here's how to ${action}:\n\n` +
+      `Based on results gathered from Google, Edge, Firefox, and Opera, the most common approach is:\n\n` +
+      `1. Start by identifying the specific goal or context for "${action}"\n` +
+      `2. Look for official documentation or tutorials related to the topic\n` +
+      `3. Follow step-by-step guides from verified sources\n` +
+      `4. Test the result and adjust as needed\n\n` +
+      `All four search sources agree on this general approach. For step-by-step instructions specific to your use case, the PueiWeb browser can load *.base44.app resources on this topic.`;
+  }
+
+  if (lq.includes("weather")) {
+    return `Current weather information is gathered from live data sources. Based on Puei Copilot's aggregated results from Google, Edge, Firefox, and Opera:\n\nWeather data varies by location. In Pueiville (the default PueiOS locale), the current conditions are: 21°C, partly glassy with light bloom. For your local weather, check a weather service in PueiWeb.`;
+  }
+
+  if (lq.includes("news") || lq.includes("today") || lq.includes("latest")) {
+    return `Here's a summary of today's top results gathered from Google, Edge, Firefox, and Opera:\n\n` +
+      `• Technology: Cloud-synced operating systems continue to gain traction across browsers\n` +
+      `• Design: Glass UI aesthetics are making a strong comeback in 2020\n` +
+      `• Science: New research confirms that blur effects improve perceived depth by 40%\n` +
+      `• PueiOS: Version 2 Ultimate Edition is now available with cross-browser file sync\n\n` +
+      `All sources confirmed consistent coverage of these topics. Untrusted sources were filtered automatically by PueiOS security policies.`;
+  }
+
+  // Fallback: give a generic but meaningful answer
+  return `Based on information gathered from Google, Edge, Firefox, and Opera for "${q}":\n\n` +
+    `All four sources returned consistent results. Here's what Puei Copilot found:\n\n` +
+    `"${q}" is a topic with coverage across multiple domains including reference articles, educational content, and community discussions. ` +
+    `The information is widely available and verified across authoritative sources.\n\n` +
+    `Key points from the aggregated results:\n` +
+    `• The topic is well-documented with multiple reliable sources\n` +
+    `• Results are consistent across all four search engines\n` +
+    `• No conflicting or misleading information was detected\n` +
+    `• Untrusted and spam sources were automatically filtered\n\n` +
+    `For a deeper dive, try searching for "${q}" with more specific keywords or visit PueiWeb for curated resources.`;
+}
+
 function PueiCopilotPage() {
   const [query, setQuery] = useState("");
   const [thinking, setThinking] = useState(false);
@@ -632,25 +703,19 @@ function PueiCopilotPage() {
     setThinking(true); setResults(null); setAnswer("");
     blip("click");
     setTimeout(() => {
+      const count1 = Math.floor(Math.random() * 900000) + 100000;
+      const count2 = Math.floor(Math.random() * 90000) + 10000;
+      const blocked = Math.floor(Math.random() * 5) + 1;
       const sources = [
-        { source: "Google", title: `${q} — Overview`, summary: `Google: "${q}" is documented across multiple verified sources. Top results include reference articles, encyclopedias, and news from the past 30 days.` },
-        { source: "Edge", title: `${q} — Microsoft results`, summary: `Edge: Found ${Math.floor(Math.random() * 90000) + 10000} results for "${q}". Bing Search confirms multiple authoritative pages with consistent information.` },
-        { source: "Firefox", title: `${q} — Community sources`, summary: `Firefox: Community-curated results for "${q}" from open encyclopedias, forums, and educational sites. 3 blocked sources filtered automatically.` },
-        { source: "Opera", title: `${q} — Global search`, summary: `Opera: "${q}" surfaced in international news and reference databases. Cross-referenced with Google and Edge for consistency.` },
+        { source: "Google", title: `${q} — Overview`, summary: `Google: Found ${count1.toLocaleString()} results. Top results include reference articles, encyclopedias, and news. Authoritative sources verified.` },
+        { source: "Edge", title: `${q} — Microsoft Search`, summary: `Edge / Bing: Found ${count2.toLocaleString()} results. Multiple authoritative pages with consistent information confirmed.` },
+        { source: "Firefox", title: `${q} — Community sources`, summary: `Firefox: Community-curated results from open encyclopedias, forums, and educational sites. ${blocked} blocked sources filtered automatically.` },
+        { source: "Opera", title: `${q} — Global search`, summary: `Opera: Surfaced in international news and reference databases. Cross-referenced with Google and Edge — results are consistent.` },
       ];
       setResults(sources);
-      setAnswer(
-        `Puei Copilot gathered results for "${q}" from Google, Edge, Firefox, and Opera.\n\n` +
-        `All four supported search sources agree this topic has reliable, consistent information available across verified domains. ` +
-        `Untrusted sources and blocked domains have been automatically filtered by Pueios2 security policies.\n\n` +
-        `• Google — ${Math.floor(Math.random() * 900000) + 100000} results · top sources verified\n` +
-        `• Edge — Bing index cross-referenced · authoritative pages found\n` +
-        `• Firefox — Community sources curated · ${Math.floor(Math.random() * 5) + 1} blocked sources filtered\n` +
-        `• Opera — International databases checked · consistent results confirmed\n\n` +
-        `Summary: "${q}" is a well-documented topic. See source details below for more information.`
-      );
+      setAnswer(generateCopilotAnswer(q));
       setThinking(false);
-    }, 1400 + Math.random() * 800);
+    }, 1200 + Math.random() * 700);
   };
 
   return (
@@ -673,7 +738,7 @@ function PueiCopilotPage() {
       {thinking && (
         <div className="aero-glass-light rounded-xl p-4 mb-4 text-sm flex items-center gap-3 animate-pulse">
           <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin opacity-60 flex-shrink-0" />
-          Puei Copilot is gathering and summarizing information from Google, Edge, Firefox, and Opera…
+          Puei Copilot is searching Google, Edge, Firefox, and Opera and generating your answer…
         </div>
       )}
       {answer && (

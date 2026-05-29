@@ -90,14 +90,27 @@
   border-color: oklch(0.45 0.05 220 / 0.5) !important;
 }
 .dark .aero-button {
-  background: linear-gradient(to bottom,
-    oklch(0.30 0.05 240 / 0.95),
-    oklch(0.20 0.05 240 / 0.9)) !important;
+  background: linear-gradient(180deg,
+    rgba(60,80,120,0.9) 0%,
+    rgba(30,50,100,0.85) 45%,
+    rgba(20,40,90,0.8) 50%,
+    rgba(40,60,110,0.88) 100%) !important;
   color: oklch(0.95 0.02 220);
-  border-color: oklch(0.45 0.05 220 / 0.5);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.1), 0 1px 2px rgba(0,0,0,0.4);
+  border-color: rgba(80,130,220,0.5) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.15), 0 1px 2px rgba(0,0,0,0.4) !important;
 }
-.dark .aero-titlebar { color: oklch(0.95 0.02 220); }
+.dark .aero-glass {
+  background:
+    linear-gradient(180deg, rgba(60,100,180,0.18) 0%, rgba(40,70,150,0.10) 100%),
+    var(--glass-strong);
+  border-color: rgba(80,140,240,0.35);
+}
+.dark .aero-titlebar {
+  color: oklch(0.95 0.02 220);
+  background:
+    linear-gradient(180deg, rgba(60,90,160,0.45) 0%, rgba(30,55,120,0.35) 50%, rgba(20,40,100,0.25) 100%),
+    var(--titlebar) !important;
+}
 
 /* High-Contrast (Accessibility) — replaces Performance Mode.
    Strong borders, pure colors, no transparency, no decorative blur. */
@@ -169,84 +182,152 @@
   }
 }
 
-/* Aero glass */
+/* ── Windows 7 Aero Glass ── */
 .aero-glass {
-  background: var(--glass-strong);
-  backdrop-filter: blur(18px) saturate(160%);
-  -webkit-backdrop-filter: blur(18px) saturate(160%);
-  border: 1px solid var(--border);
-  box-shadow: var(--aero-shadow), inset 0 1px 0 rgba(255,255,255,0.6);
+  background:
+    linear-gradient(180deg,
+      rgba(180,210,255,0.22) 0%,
+      rgba(140,185,255,0.10) 40%,
+      rgba(100,160,240,0.08) 100%),
+    var(--glass-strong);
+  backdrop-filter: blur(22px) saturate(180%) brightness(1.08);
+  -webkit-backdrop-filter: blur(22px) saturate(180%) brightness(1.08);
+  border: 1px solid rgba(160,200,255,0.55);
+  box-shadow:
+    var(--aero-shadow),
+    inset 0 1px 0 rgba(255,255,255,0.75),
+    inset 0 0 0 1px rgba(100,160,255,0.12),
+    0 0 0 1px rgba(80,130,220,0.18);
 }
 .aero-glass-light {
-  background: var(--glass);
-  backdrop-filter: blur(14px) saturate(150%);
-  -webkit-backdrop-filter: blur(14px) saturate(150%);
-  border: 1px solid var(--border);
+  background:
+    linear-gradient(180deg, rgba(180,215,255,0.18) 0%, rgba(140,185,255,0.08) 100%),
+    var(--glass);
+  backdrop-filter: blur(16px) saturate(160%);
+  -webkit-backdrop-filter: blur(16px) saturate(160%);
+  border: 1px solid rgba(140,190,255,0.4);
 }
 
+/* Win7-style title bar: blue gradient with top shine reflection */
 .aero-titlebar {
-  background: var(--titlebar);
+  background:
+    linear-gradient(180deg,
+      rgba(255,255,255,0.55) 0%,
+      rgba(210,230,255,0.45) 30%,
+      rgba(160,200,255,0.35) 65%,
+      rgba(120,170,240,0.25) 100%),
+    var(--titlebar);
   color: var(--titlebar-text);
-  border-bottom: 1px solid var(--border);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.8);
+  border-bottom: 1px solid rgba(100,160,255,0.4);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.92),
+    inset 0 2px 4px rgba(255,255,255,0.35);
+  text-shadow: 0 1px 2px rgba(255,255,255,0.6);
 }
 
+/* Win7-style glass buttons */
 .aero-button {
-  background: linear-gradient(to bottom,
-    oklch(0.98 0.01 220 / 0.9),
-    oklch(0.85 0.04 220 / 0.8));
-  border: 1px solid oklch(0.6 0.05 220 / 0.5);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.9), 0 1px 2px rgba(0,0,0,0.1);
-  transition: all 0.15s ease;
+  background: linear-gradient(180deg,
+    rgba(255,255,255,0.88) 0%,
+    rgba(210,230,255,0.75) 45%,
+    rgba(175,210,255,0.65) 50%,
+    rgba(200,225,255,0.72) 100%);
+  border: 1px solid rgba(100,150,220,0.45);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.95),
+    inset 0 -1px 0 rgba(100,150,220,0.2),
+    0 1px 3px rgba(0,0,0,0.12);
+  transition: all 0.12s ease;
 }
 .aero-button:hover {
-  background: linear-gradient(to bottom,
-    oklch(0.95 0.06 var(--accent-h) / 0.95),
-    oklch(0.75 0.12 var(--accent-h) / 0.9));
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.9), 0 0 8px oklch(var(--accent) / 0.5);
+  background: linear-gradient(180deg,
+    rgba(255,255,255,0.95) 0%,
+    oklch(0.88 0.12 var(--accent-h) / 0.85) 45%,
+    oklch(0.72 0.16 var(--accent-h) / 0.8) 50%,
+    oklch(0.82 0.14 var(--accent-h) / 0.88) 100%);
+  border-color: rgba(80,130,220,0.6);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.95),
+    0 0 10px oklch(var(--accent) / 0.4),
+    0 1px 4px rgba(0,0,0,0.15);
 }
-.aero-button:active { transform: translateY(1px); }
+.aero-button:active {
+  transform: translateY(1px);
+  box-shadow: inset 0 1px 3px rgba(0,0,80,0.2);
+}
 
+/* Win7 Start orb - glowing sphere */
 .aero-start-orb {
-  background: radial-gradient(circle at 30% 30%,
-    oklch(0.9 0.15 var(--accent-h)),
-    oklch(0.5 0.22 var(--accent-h)) 60%,
-    oklch(0.25 0.15 240) 100%);
-  box-shadow: 0 0 12px oklch(var(--accent) / 0.8),
-    inset 0 2px 4px rgba(255,255,255,0.6),
-    inset 0 -2px 4px rgba(0,0,0,0.3);
+  background:
+    radial-gradient(ellipse at 35% 25%,
+      rgba(255,255,255,0.9) 0%,
+      oklch(0.82 0.18 var(--accent-h)) 35%,
+      oklch(0.5 0.25 var(--accent-h)) 65%,
+      oklch(0.28 0.15 240) 100%);
+  box-shadow:
+    0 0 16px oklch(var(--accent) / 0.9),
+    0 0 32px oklch(var(--accent) / 0.4),
+    inset 0 2px 5px rgba(255,255,255,0.7),
+    inset 0 -3px 5px rgba(0,0,0,0.35);
+  border: 1px solid oklch(0.55 0.2 var(--accent-h) / 0.6);
 }
 .aero-start-orb:hover {
-  box-shadow: 0 0 22px oklch(var(--accent) / 1),
-    inset 0 2px 4px rgba(255,255,255,0.8),
-    inset 0 -2px 4px rgba(0,0,0,0.3);
+  box-shadow:
+    0 0 24px oklch(var(--accent) / 1),
+    0 0 48px oklch(var(--accent) / 0.5),
+    inset 0 2px 6px rgba(255,255,255,0.85),
+    inset 0 -3px 6px rgba(0,0,0,0.3);
+  transform: scale(1.06);
 }
+.aero-start-orb:active { transform: scale(0.96); }
 
+/* Win7 taskbar: dark glass with blue accent border at top */
 .taskbar-bg {
-  background: var(--taskbar);
-  backdrop-filter: blur(20px) saturate(160%);
-  -webkit-backdrop-filter: blur(20px) saturate(160%);
-  border-top: 1px solid oklch(0.6 0.1 220 / 0.5);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.15), 0 -2px 12px rgba(0,0,0,0.3);
+  background:
+    linear-gradient(180deg,
+      rgba(30,60,120,0.72) 0%,
+      rgba(10,30,80,0.88) 40%,
+      rgba(5,18,55,0.95) 100%);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border-top: 1px solid rgba(100,160,255,0.55);
+  box-shadow:
+    inset 0 1px 0 rgba(140,200,255,0.25),
+    inset 0 2px 0 rgba(80,140,255,0.12),
+    0 -4px 16px rgba(0,0,80,0.4);
 }
 
+/* Win7 taskbar buttons: glass pill style */
 .taskbar-item {
-  background: linear-gradient(to bottom, rgba(255,255,255,0.1), rgba(255,255,255,0.04));
-  border: 1px solid rgba(255,255,255,0.15);
+  background: linear-gradient(180deg,
+    rgba(255,255,255,0.08) 0%,
+    rgba(80,140,220,0.12) 50%,
+    rgba(255,255,255,0.04) 100%);
+  border: 1px solid rgba(120,180,255,0.2);
   color: white;
-  transition: all 0.2s ease;
+  transition: all 0.18s ease;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
 }
 .taskbar-item:hover {
-  background: linear-gradient(to bottom,
-    oklch(0.7 0.15 var(--accent-h) / 0.5),
-    oklch(0.5 0.18 var(--accent-h) / 0.4));
-  box-shadow: inset 0 0 10px oklch(var(--accent) / 0.4);
+  background: linear-gradient(180deg,
+    rgba(160,210,255,0.28) 0%,
+    rgba(80,150,240,0.22) 50%,
+    rgba(120,180,255,0.18) 100%);
+  border-color: rgba(140,200,255,0.45);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.2),
+    0 0 12px rgba(100,170,255,0.3);
 }
 .taskbar-item.active {
-  background: linear-gradient(to bottom,
-    oklch(0.7 0.15 var(--accent-h) / 0.6),
-    oklch(0.5 0.18 var(--accent-h) / 0.55));
-  box-shadow: inset 0 0 14px oklch(var(--accent) / 0.6);
+  background: linear-gradient(180deg,
+    rgba(180,225,255,0.38) 0%,
+    rgba(100,170,255,0.32) 50%,
+    rgba(140,200,255,0.28) 100%);
+  border-color: rgba(160,215,255,0.6);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.3),
+    inset 0 -1px 0 rgba(100,170,255,0.2),
+    0 0 18px rgba(120,190,255,0.4);
 }
 
 .desktop-icon {

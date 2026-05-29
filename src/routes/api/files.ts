@@ -15,6 +15,26 @@ interface KVNamespace {
 }
 interface CfEnv { MESSAGES_KV?: KVNamespace; FILES_KV?: KVNamespace }
 
+// Upstash Redis REST (same instance as accounts so files survive server restarts)
+const UPSTASH_URL = "https://free-elephant-40203.upstash.io";
+const UPSTASH_TOKEN = "AZ0LAAIgcDEzNzg3YmJmODc5Mjg0ODdmYTg3YjM4YjA4NjE0MmE0Yg";
+
+async function upstashFiles(command: string, ...args: string[]): Promise<unknown> {
+  try {
+    const r = await fetch(UPSTASH_URL, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${UPSTASH_TOKEN}`, "Content-Type": "application/json" },
+      body: JSON.stringify([command, ...args]),
+    });
+    const data = await r.json() as { result?: unknown; error?: string };
+    if (!r.ok || data.error) throw new Error(data.error ?? `Upstash error ${r.status}`);
+    return data.result;
+  } catch {
+    return null;
+  }
+}
+
+// Fallback in-memory store for local dev (no Upstash reachable)
 const memStore = new Map<string, SavedFile[]>();
 const getKV = (): KVNamespace | null => {
   const env = (globalThis as Record<string, unknown>).__cfEnv as CfEnv | undefined;
@@ -23,14 +43,23 @@ const getKV = (): KVNamespace | null => {
 const key = (u: string) => `files:${u.toLowerCase().trim()}`;
 
 async function fetchUserFiles(u: string): Promise<SavedFile[]> {
+  // 1. Try Cloudflare KV (production Workers)
   const kv = getKV();
   if (kv) { const raw = await kv.get(key(u), "text"); return raw ? JSON.parse(raw) as SavedFile[] : []; }
+  // 2. Try Upstash (Node / any environment)
+  const raw = await upstashFiles("GET", key(u)) as string | null;
+  if (raw) { try { return JSON.parse(raw) as SavedFile[]; } catch {} }
+  // 3. In-memory fallback
   return memStore.get(key(u)) ?? [];
 }
 async function saveUserFiles(u: string, files: SavedFile[]) {
+  const serialized = JSON.stringify(files);
   const kv = getKV();
-  if (kv) await kv.put(key(u), JSON.stringify(files), { expirationTtl: 60 * 60 * 24 * 365 });
-  else memStore.set(key(u), files);
+  if (kv) { await kv.put(key(u), serialized, { expirationTtl: 60 * 60 * 24 * 365 }); return; }
+  // Upstash with 1-year TTL
+  await upstashFiles("SET", key(u), serialized, "EX", String(60 * 60 * 24 * 365));
+  // Also keep in-memory as instant cache
+  memStore.set(key(u), files);
 }
 
 const json = (d: unknown, s = 200) =>
