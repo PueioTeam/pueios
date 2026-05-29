@@ -622,74 +622,249 @@ function PaintApp({ fileId, onCreateShortcut, currentUser }: { fileId?: string; 
 
 // ---------- Puei Copilot (integrated into PueiSearch) ----------
 
-/** Generate a relevant answer for a search query using a local knowledge base + generic reasoning. */
+/** General knowledge base for Puei Copilot. Returns a real answer or null if unknown. */
+const KNOWLEDGE: Array<{ match: (q: string) => boolean; answer: (q: string) => string }> = [
+  // ── Machines & vehicles ──
+  {
+    match: (q) => q.includes("bulldozer") || q.includes("bull dozer"),
+    answer: () =>
+      `A bulldozer is a large, powerful construction machine used to move earth, rocks, rubble, sand, and other heavy materials. Here's how it works and how it's used:\n\n` +
+      `**Main parts:**\n` +
+      `• Blade — the wide metal plate at the front that pushes material. It can tilt left/right and angle up/down.\n` +
+      `• Tracks (caterpillar tracks) — instead of wheels, it runs on steel tracks for grip on rough or soft terrain.\n` +
+      `• Ripper — a claw-like attachment at the rear used to break up hard rock or compacted soil before pushing.\n` +
+      `• Cab — the enclosed operator cabin with controls for the blade, tracks, and ripper.\n\n` +
+      `**How it's used:**\n` +
+      `1. The operator drives it toward the material to be moved.\n` +
+      `2. The blade is lowered to ground level and digs into the material.\n` +
+      `3. The bulldozer drives forward, pushing the material ahead of the blade.\n` +
+      `4. The blade is raised to drop the pile, then the machine reverses and repeats.\n` +
+      `5. The ripper can be dragged along hard ground first to loosen it before pushing.\n\n` +
+      `**Common uses:** land clearing, road building, mining, demolition, grading flat surfaces, pushing material into piles, and digging shallow trenches.\n\n` +
+      `Famous models include the Caterpillar D9 and Komatsu D375, which can weigh over 100 tonnes.`,
+  },
+  {
+    match: (q) => q.includes("excavator") || q.includes("digger"),
+    answer: () =>
+      `An excavator (also called a digger) is a heavy construction machine used mainly for digging. It has a rotating cab on a tracked or wheeled base, a long boom arm, and a bucket at the end.\n\n` +
+      `**How it works:**\n` +
+      `• The operator sits in the rotating cab and uses joysticks to control the boom, arm, and bucket.\n` +
+      `• The bucket curls inward to scoop up soil or rock.\n` +
+      `• The cab rotates 360° to swing the bucket and dump the load into a truck or pile.\n\n` +
+      `**Common uses:** digging foundations, trenches, and pits; demolishing buildings; lifting heavy objects; mining; dredging rivers.`,
+  },
+  {
+    match: (q) => q.includes("crane"),
+    answer: () =>
+      `A crane is a machine used for lifting and moving heavy objects. It uses cables, pulleys, and a hook to hoist loads. Types include tower cranes (used in building construction), mobile cranes (on trucks), and overhead cranes (in factories). The operator controls the lifting, lowering, and swinging of the load using levers or a remote control.`,
+  },
+  {
+    match: (q) => q.includes("forklift"),
+    answer: () =>
+      `A forklift is a powered industrial truck used to lift and transport materials on two front forks. It's driven by an operator in a cab and used in warehouses, factories, and construction sites to move pallets and heavy loads. The forks slide under pallets, then the hydraulic mast lifts the load up to stack it or load it onto a truck.`,
+  },
+  {
+    match: (q) => q.includes("tractor"),
+    answer: () =>
+      `A tractor is a vehicle designed to deliver high tractive effort at slow speed for hauling equipment or pulling trailers. In farming it pulls plows, seeders, and harvesters. Construction tractors pull scrapers or compactors. They typically run on diesel engines and use large rear wheels (or tracks) for traction on soft ground.`,
+  },
+  // ── Science ──
+  {
+    match: (q) => q.includes("black hole"),
+    answer: () =>
+      `A black hole is a region in space where gravity is so strong that nothing — not even light — can escape it. It forms when a massive star collapses at the end of its life. The boundary around a black hole is called the event horizon. Beyond this point, escape velocity exceeds the speed of light. Black holes can be stellar (a few times the Sun's mass), intermediate, or supermassive (billions of solar masses, found at galaxy centres). They are detected by the effect they have on nearby stars and gas.`,
+  },
+  {
+    match: (q) => q.includes("gravity") && !q.includes("black hole"),
+    answer: () =>
+      `Gravity is a fundamental force of nature that attracts objects with mass toward each other. On Earth it gives you weight and keeps you on the ground. Isaac Newton described it as a force proportional to mass and inversely proportional to the square of distance. Albert Einstein later described it as the curvature of space-time caused by mass. The acceleration due to gravity on Earth's surface is approximately 9.8 m/s².`,
+  },
+  {
+    match: (q) => q.includes("photosynthesis"),
+    answer: () =>
+      `Photosynthesis is the process by which plants, algae, and some bacteria convert sunlight, water, and carbon dioxide into glucose (sugar) and oxygen. The formula is:\n\n6CO₂ + 6H₂O + light energy → C₆H₁₂O₆ + 6O₂\n\nIt happens mainly in the chloroplasts of plant cells, using the green pigment chlorophyll to absorb light. The oxygen released is what makes Earth's atmosphere breathable.`,
+  },
+  {
+    match: (q) => q.includes("dna"),
+    answer: () =>
+      `DNA (deoxyribonucleic acid) is the molecule that carries genetic instructions for the development, functioning, and reproduction of all living organisms. It's shaped like a double helix — two strands twisted around each other. The sequence of four chemical bases (adenine, thymine, guanine, cytosine) encodes genetic information. Humans have about 3 billion base pairs of DNA packed into 46 chromosomes inside each cell's nucleus.`,
+  },
+  // ── History ──
+  {
+    match: (q) => q.includes("world war 2") || q.includes("world war ii") || q.includes("ww2") || q.includes("wwii"),
+    answer: () =>
+      `World War II (1939–1945) was the deadliest conflict in human history, involving most of the world's nations. It was fought between the Allies (including the UK, USA, USSR, and France) and the Axis powers (Nazi Germany, Fascist Italy, and Imperial Japan). Key events include the German invasion of Poland (1939), the Battle of Britain (1940), Operation Barbarossa (1941), the Holocaust, D-Day (1944), and the atomic bombings of Hiroshima and Nagasaki (1945). An estimated 70–85 million people died. It ended with Germany's surrender on 8 May 1945 and Japan's on 2 September 1945.`,
+  },
+  {
+    match: (q) => q.includes("world war 1") || q.includes("world war i") || q.includes("ww1") || q.includes("wwi"),
+    answer: () =>
+      `World War I (1914–1918) was a global conflict mainly fought in Europe between the Allied Powers (France, UK, Russia, later USA) and the Central Powers (Germany, Austria-Hungary, Ottoman Empire). It was triggered by the assassination of Archduke Franz Ferdinand of Austria in 1914. The war introduced trench warfare, chemical weapons, and tanks. Around 20 million people died. It ended with the Armistice of 11 November 1918 and the Treaty of Versailles (1919).`,
+  },
+  // ── Geography ──
+  {
+    match: (q) => q.includes("mount everest") || q.includes("everest"),
+    answer: () =>
+      `Mount Everest is the highest mountain on Earth, standing at 8,848.86 metres (29,031.7 ft) above sea level. It is located in the Himalayas on the border between Nepal and Tibet (China). It was first summited on 29 May 1953 by Sir Edmund Hillary (New Zealand) and Tenzing Norgay (Nepal). Thousands of climbers have reached the summit since, though it remains a dangerous climb due to altitude, cold, and weather.`,
+  },
+  {
+    match: (q) => q.includes("amazon") && (q.includes("river") || q.includes("rainforest") || q.includes("jungle")),
+    answer: () =>
+      `The Amazon is the world's largest tropical rainforest and home to the Amazon River, the largest river by water discharge. The rainforest covers about 5.5 million km² across Brazil, Peru, Colombia, and other South American countries. It holds around 10% of all species on Earth and produces roughly 20% of the world's oxygen. The Amazon River flows about 6,400 km into the Atlantic Ocean.`,
+  },
+  // ── Technology ──
+  {
+    match: (q) => q.includes("internet") && !q.includes("pueios"),
+    answer: () =>
+      `The Internet is a global network of interconnected computers that communicate using standardised protocols (mainly TCP/IP). It was developed from ARPANET in the 1960s–70s and became publicly available in the early 1990s. The World Wide Web (websites accessed via browsers) is built on top of the Internet. Today it connects billions of devices worldwide and enables communication, commerce, entertainment, and information sharing.`,
+  },
+  {
+    match: (q) => q.includes("artificial intelligence") || (q.includes(" ai ") && q.length < 60),
+    answer: () =>
+      `Artificial Intelligence (AI) is the simulation of human intelligence by computer systems. It includes machine learning (systems that learn from data), natural language processing (understanding text and speech), computer vision, and robotics. Modern AI uses neural networks — layers of mathematical functions inspired by the brain — trained on large datasets. Applications include voice assistants, image recognition, translation, recommendation systems, and medical diagnosis.`,
+  },
+  {
+    match: (q) => q.includes("bitcoin") || q.includes("cryptocurrency") || q.includes("crypto"),
+    answer: () =>
+      `Bitcoin is a decentralised digital currency created in 2009 by the pseudonymous Satoshi Nakamoto. It operates on a blockchain — a public, distributed ledger that records all transactions. New bitcoins are created through "mining" (solving cryptographic puzzles). There will only ever be 21 million bitcoins. Cryptocurrency broadly refers to any digital currency using cryptography for security, including Ethereum, Litecoin, and thousands of others.`,
+  },
+  // ── Animals ──
+  {
+    match: (q) => q.includes("shark"),
+    answer: () =>
+      `Sharks are cartilaginous fish that have existed for over 450 million years. There are over 500 species, ranging from the 20 cm dwarf lanternshark to the 12 m whale shark (the largest fish in the ocean). Most sharks are predators with rows of replaceable teeth. They have keen senses including electroreception to detect electrical fields from prey. Only a handful of species (like great whites, bulls, and tigers) are considered dangerous to humans.`,
+  },
+  {
+    match: (q) => q.includes("dinosaur"),
+    answer: () =>
+      `Dinosaurs were a diverse group of reptiles that dominated terrestrial ecosystems for about 165 million years, from the Triassic period (~230 million years ago) until a mass extinction event ~66 million years ago (likely caused by an asteroid impact). They ranged from chicken-sized feathered creatures to the massive Argentinosaurus (~80 tonnes). Birds are the living descendants of theropod dinosaurs.`,
+  },
+  // ── Math ──
+  {
+    match: (q) => /what is \d+[\s]*[+\-*/×÷][\s]*\d+/.test(q),
+    answer: (q) => {
+      const m = q.match(/(\d+(?:\.\d+)?)\s*([+\-*/×÷])\s*(\d+(?:\.\d+)?)/);
+      if (!m) return "";
+      const a = parseFloat(m[1]), op = m[2], b = parseFloat(m[3]);
+      let result: number;
+      if (op === "+" ) result = a + b;
+      else if (op === "-") result = a - b;
+      else if (op === "*" || op === "×") result = a * b;
+      else if (op === "/" || op === "÷") result = b !== 0 ? a / b : NaN;
+      else return "";
+      if (isNaN(result)) return `Cannot divide by zero.`;
+      return `${a} ${op} ${b} = **${result}**\n\nCalculated directly by Puei Copilot's math engine. All four search sources confirmed the result.`;
+    },
+  },
+  // ── Food ──
+  {
+    match: (q) => q.includes("pizza"),
+    answer: () =>
+      `Pizza is a dish originating from Naples, Italy, consisting of a flat, round bread dough topped with tomato sauce, cheese (typically mozzarella), and various toppings such as vegetables, meats, or seafood, then baked in a hot oven. It became globally popular in the 20th century, with major variations including Neapolitan (thin, soft crust), New York-style (large, foldable slices), Chicago deep-dish, and many regional styles worldwide.`,
+  },
+  {
+    match: (q) => q.includes("spaghetti") || q.includes("pasta"),
+    answer: () =>
+      `Pasta is an Italian food made from durum wheat semolina dough shaped into various forms — spaghetti (long thin strands), penne, rigatoni, fusilli, lasagne, and hundreds more. It is typically boiled in salted water and served with a sauce. Spaghetti is commonly paired with tomato-based sauces (like bolognese or marinara), carbonara (eggs, cheese, pancetta), or aglio e olio (garlic, olive oil, chilli).`,
+  },
+  // ── Sports ──
+  {
+    match: (q) => q.includes("football") || q.includes("soccer"),
+    answer: () =>
+      `Football (known as soccer in the USA and Canada) is the world's most popular sport, with an estimated 4 billion fans. Two teams of 11 players try to score by getting the ball into the opposing goal using any body part except hands and arms (goalkeepers excepted). A standard match lasts 90 minutes (two 45-minute halves). The FIFA World Cup, held every 4 years, is the most-watched sporting event on Earth. Brazil has won it the most times (5).`,
+  },
+  {
+    match: (q) => q.includes("basketball"),
+    answer: () =>
+      `Basketball is a sport invented by Dr. James Naismith in 1891 in the USA. Two teams of 5 players try to score by shooting a ball through the opposing team's hoop (10 feet/3 m high). Games have four 12-minute quarters (NBA) or two 20-minute halves (FIBA). The NBA (National Basketball Association) is the premier professional league. Famous players include Michael Jordan, LeBron James, and Kobe Bryant.`,
+  },
+  // ── PueiOS-specific ──
+  {
+    match: (q) => q.includes("pueios") || q.includes("puei os"),
+    answer: () =>
+      `PueiOS 2 is an alternate-universe operating system with a Windows 7 Aero-inspired glass UI, built as a web app. It features draggable windows with real glass blur effects, a cloud-synced account system (your profile, files, and settings follow you across every browser), Puei Messenger, PueiSocial, Puei Paint, a Calculator, Notepad, Solitaire, Chess, an App Store, and the PueiWeb browser.`,
+  },
+  {
+    match: (q) => q.includes("pueio number") || q.includes("puei number"),
+    answer: () =>
+      `A Pueio Number is a unique 6-digit identifier assigned to every PueiOS account. It works like a phone number for Puei Messenger — you can add friends by their Pueio Number and send them messages.`,
+  },
+  {
+    match: (q) => q.includes("puei messenger"),
+    answer: () =>
+      `Puei Messenger is PueiOS 2's built-in chat app. Add friends using their Pueio Number, start conversations, and send messages. All messages sync across browsers when you're logged in.`,
+  },
+  {
+    match: (q) => q.includes("puei paint"),
+    answer: () =>
+      `Puei Paint 2 is the built-in drawing app. Draw with different brush sizes and colors, save artwork as image files, and set a painting as your desktop wallpaper via Settings → Wallpaper.`,
+  },
+];
+
+/** Generate a relevant answer for any search query. */
 function generateCopilotAnswer(q: string): string {
-  const lq = q.toLowerCase();
+  const lq = q.toLowerCase().replace(/[?!.,]/g, "");
 
-  // PueiOS-specific knowledge
-  if (lq.includes("pueios") || lq.includes("puei os")) {
-    return `PueiOS 2 is an alternate-universe operating system with a Windows 7 Aero-inspired glass UI, built as a web app. It features draggable windows with real glass blur effects, a cloud-synced account system (your profile, files, and settings follow you across every browser), Puei Messenger, PueiSocial, Puei Paint, a Calculator, Notepad, Solitaire, Chess, an App Store, and the PueiWeb browser. It was designed in an alternate 2020 timeline where glossy Aero-style UIs never went out of fashion.`;
-  }
-  if (lq.includes("pueio number") || lq.includes("puei number")) {
-    return `A Pueio Number is a unique 6-digit identifier assigned to every PueiOS account. It works like a phone number for Puei Messenger — you can add friends by their Pueio Number and send them messages. Your Pueio Number is shown in Settings → Account and in your Messenger contacts list.`;
-  }
-  if (lq.includes("puei messenger") || lq.includes("messenger")) {
-    return `Puei Messenger is PueiOS 2's built-in chat app. You can add friends using their Pueio Number, start conversations, and send messages. All messages are stored in your account and sync across browsers when you're logged in.`;
-  }
-  if (lq.includes("app store") || lq.includes("installer")) {
-    return `The PueiOS 2 App Store lets you install web apps from *.lovable.app and *.base44.app domains. You can also install sites as shortcuts on your desktop. Installed web apps get their own window and icon, just like native apps.`;
-  }
-  if (lq.includes("puei paint") || lq.includes("paint")) {
-    return `Puei Paint 2 is the built-in drawing app. You can draw with different brush sizes and colors, save your artwork as image files, and even set a painting as your desktop wallpaper via Settings → Wallpaper.`;
-  }
-  if (lq.includes("file") && (lq.includes("sync") || lq.includes("cloud") || lq.includes("browser"))) {
-    return `PueiOS 2 syncs your files across all browsers automatically. When you log in, your files are pulled from the cloud server. Any file you create or edit is immediately pushed to the server so it appears in Firefox, Chrome, Edge, or any other browser — just log in with your account.`;
+  // Try knowledge base first
+  for (const entry of KNOWLEDGE) {
+    if (entry.match(lq)) {
+      const ans = entry.answer(lq);
+      if (ans) return ans;
+    }
   }
 
-  // General knowledge topics
-  if (lq.includes("what is") || lq.includes("who is") || lq.includes("define") || lq.includes("explain")) {
-    const topic = q.replace(/^(what is|who is|define|explain)\s+/i, "").trim();
-    return `${topic} is a well-documented topic. Based on information gathered across multiple sources:\n\n` +
-      `${topic} refers to a concept, entity, or subject with information available in encyclopedias, news archives, and educational databases. ` +
-      `Cross-referencing results from Google, Edge, Firefox, and Opera shows consistent information across all four sources — no major discrepancies were found.\n\n` +
-      `For the most accurate and detailed information about "${topic}", I recommend checking an encyclopedia or official documentation, as my knowledge covers general topics up to my training cutoff.`;
+  // "how to" / "how do" questions — give structured steps
+  if (/how (to|do|does|can|should)/.test(lq)) {
+    const action = q.replace(/^how (to|do|does|can|should)( i| you| we)?\s+/i, "").trim();
+    return (
+      `Here's how to ${action}:\n\n` +
+      `Based on results aggregated from Google, Edge, Firefox, and Opera:\n\n` +
+      `1. Research the specific requirements or prerequisites for "${action}"\n` +
+      `2. Gather the necessary tools, materials, or knowledge beforehand\n` +
+      `3. Follow authoritative step-by-step guides (manuals, official documentation, or expert tutorials)\n` +
+      `4. Practice or test carefully — start small if possible\n` +
+      `5. Adjust based on results and consult additional sources if needed\n\n` +
+      `All four search engines returned consistent guidance on this topic.`
+    );
   }
 
-  if (lq.includes("how to") || lq.includes("how do") || lq.includes("how can")) {
-    const action = q.replace(/^how (to|do|can( i)?)\s+/i, "").trim();
-    return `Here's how to ${action}:\n\n` +
-      `Based on results gathered from Google, Edge, Firefox, and Opera, the most common approach is:\n\n` +
-      `1. Start by identifying the specific goal or context for "${action}"\n` +
-      `2. Look for official documentation or tutorials related to the topic\n` +
-      `3. Follow step-by-step guides from verified sources\n` +
-      `4. Test the result and adjust as needed\n\n` +
-      `All four search sources agree on this general approach. For step-by-step instructions specific to your use case, the PueiWeb browser can load *.base44.app resources on this topic.`;
+  // "what is" / "who is" — extract topic and give a real-sounding answer
+  const whatMatch = lq.match(/^(what is|what are|who is|who are|what was|who was)\s+(.+)/);
+  if (whatMatch) {
+    const topic = whatMatch[2].trim();
+    const capitalised = topic.charAt(0).toUpperCase() + topic.slice(1);
+    return (
+      `${capitalised} — here's what Puei Copilot found across Google, Edge, Firefox, and Opera:\n\n` +
+      `${capitalised} is a topic well-covered in encyclopedias, academic sources, and news databases. ` +
+      `All four search sources returned consistent, reliable results with no major discrepancies.\n\n` +
+      `For a precise and detailed answer, the most authoritative sources are Wikipedia, official organisation websites, or peer-reviewed articles. ` +
+      `You can browse these using PueiWeb (enter a *.base44.app URL) or by asking a more specific follow-up question here.`
+    );
   }
 
-  if (lq.includes("weather")) {
-    return `Current weather information is gathered from live data sources. Based on Puei Copilot's aggregated results from Google, Edge, Firefox, and Opera:\n\nWeather data varies by location. In Pueiville (the default PueiOS locale), the current conditions are: 21°C, partly glassy with light bloom. For your local weather, check a weather service in PueiWeb.`;
+  // Math quick-calc fallback
+  const mathMatch = q.match(/(\d+(?:\.\d+)?)\s*([+\-*/×÷])\s*(\d+(?:\.\d+)?)/);
+  if (mathMatch) {
+    const a = parseFloat(mathMatch[1]), op = mathMatch[2], b = parseFloat(mathMatch[3]);
+    let result: number;
+    if (op === "+") result = a + b;
+    else if (op === "-") result = a - b;
+    else if (op === "*" || op === "×") result = a * b;
+    else if (op === "/" || op === "÷") result = b !== 0 ? a / b : NaN;
+    else result = NaN;
+    if (!isNaN(result)) return `${a} ${op} ${b} = **${result}**\n\nCalculated by Puei Copilot's built-in math engine.`;
   }
 
-  if (lq.includes("news") || lq.includes("today") || lq.includes("latest")) {
-    return `Here's a summary of today's top results gathered from Google, Edge, Firefox, and Opera:\n\n` +
-      `• Technology: Cloud-synced operating systems continue to gain traction across browsers\n` +
-      `• Design: Glass UI aesthetics are making a strong comeback in 2020\n` +
-      `• Science: New research confirms that blur effects improve perceived depth by 40%\n` +
-      `• PueiOS: Version 2 Ultimate Edition is now available with cross-browser file sync\n\n` +
-      `All sources confirmed consistent coverage of these topics. Untrusted sources were filtered automatically by PueiOS security policies.`;
-  }
-
-  // Fallback: give a generic but meaningful answer
-  return `Based on information gathered from Google, Edge, Firefox, and Opera for "${q}":\n\n` +
-    `All four sources returned consistent results. Here's what Puei Copilot found:\n\n` +
-    `"${q}" is a topic with coverage across multiple domains including reference articles, educational content, and community discussions. ` +
-    `The information is widely available and verified across authoritative sources.\n\n` +
-    `Key points from the aggregated results:\n` +
-    `• The topic is well-documented with multiple reliable sources\n` +
-    `• Results are consistent across all four search engines\n` +
-    `• No conflicting or misleading information was detected\n` +
-    `• Untrusted and spam sources were automatically filtered\n\n` +
-    `For a deeper dive, try searching for "${q}" with more specific keywords or visit PueiWeb for curated resources.`;
+  // General fallback — still gives a real-feeling answer
+  return (
+    `Here's what Puei Copilot found for "${q}" across Google, Edge, Firefox, and Opera:\n\n` +
+    `This topic appears in reference articles, educational content, news archives, and community discussions. ` +
+    `All four search sources agree the information is widely available and consistent.\n\n` +
+    `Key findings:\n` +
+    `• Multiple authoritative sources cover this topic in depth\n` +
+    `• No conflicting or misleading information was detected across the four search engines\n` +
+    `• Untrusted and spam sources were filtered automatically\n\n` +
+    `Try rephrasing your question with more detail (e.g. "how does a bulldozer work", "what is gravity") for a more specific answer from Puei Copilot.`
+  );
 }
 
 function PueiCopilotPage() {
@@ -748,7 +923,13 @@ function PueiCopilotPage() {
               style={{ background: "var(--gradient-aero)", color: "white" }}>✦</div>
             <div className="font-semibold text-sm">Puei Copilot Summary</div>
           </div>
-          <div className="text-sm whitespace-pre-wrap leading-relaxed opacity-90">{answer}</div>
+          <div className="text-sm whitespace-pre-wrap leading-relaxed opacity-90">
+            {answer.split(/(\*\*[^*]+\*\*)/).map((part, i) =>
+              part.startsWith("**") && part.endsWith("**")
+                ? <strong key={i}>{part.slice(2, -2)}</strong>
+                : part
+            )}
+          </div>
         </div>
       )}
       {results && (
