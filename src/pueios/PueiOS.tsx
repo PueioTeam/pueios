@@ -82,7 +82,7 @@ export function PueiOS() {
   const [showMascot] = useState(true);
   const [showVolume, setShowVolume] = useState(false);
   const [showNetwork, setShowNetwork] = useState(false);
-  const [volume, setVolume] = useState(80);
+  const [volume, setVolume] = useState(() => { try { const v = localStorage.getItem("pueios2-volume"); return v !== null ? Number(v) : 80; } catch { return 80; } });
   const [netInfo, setNetInfo] = useState<{ ping: number | null; speed: number | null; type: string; online: boolean }>({ ping: null, speed: null, type: "?", online: true });
   const [cursorPos, setCursorPos] = useState({ x: 0, y: 0 });
   const [locked, setLocked] = useState(false);
@@ -1155,7 +1155,7 @@ export function PueiOS() {
         <div className="fixed bottom-14 right-24 aero-glass rounded-xl p-4 z-[9000] w-52" onMouseDown={(e) => e.stopPropagation()}>
           <div className="font-semibold text-sm mb-3">🔊 Volume</div>
           <input type="range" min={0} max={100} value={volume}
-            onChange={(e) => { setVolume(Number(e.target.value)); }}
+            onChange={(e) => { const v = Number(e.target.value); setVolume(v); try { localStorage.setItem("pueios2-volume", String(v)); } catch {} }}
             className="w-full" />
           <div className="text-center text-xs opacity-70 mt-1">{volume}%</div>
           {volume === 0 && <div className="text-center text-xs opacity-60 mt-1">Muted</div>}
