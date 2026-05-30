@@ -1015,7 +1015,7 @@ export function PueiOS() {
       </div>
 
       {/* Mascot */}
-      {showMascot && windows.filter(w => !w.minimized).length === 0 && (
+      {showMascot && windows.some(w => !w.minimized && w.maximized) && (
         <PueiMascot cursorPos={cursorPos} speak={mascotSpeak}
           onClick={() => {
             const tips = [
