@@ -2385,7 +2385,8 @@ function FileExplorerApp({ openApp, icons, openFolder, currentUser }: { openApp:
           return (
             <div className="grid grid-cols-5 gap-3">
               {folderFiles.map((f) => (
-                <div key={f.id} className="text-center p-2 rounded hover:bg-white/30 cursor-pointer">
+                <div key={f.id} onDoubleClick={() => openApp(f.type === "image" ? "puei-paint" : "notepad", f.id)}
+                  className="text-center p-2 rounded hover:bg-white/30 cursor-pointer">
                   <div className="text-4xl">{f.type === "image" ? "🖼️" : "📄"}</div>
                   <div className="text-xs mt-1 truncate">{f.name}</div>
                 </div>
