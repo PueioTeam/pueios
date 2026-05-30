@@ -949,6 +949,7 @@ export function PueiOS() {
       <div className="absolute top-3 left-3 grid" style={{ gridTemplateColumns: `repeat(12, ${GRID_W}px)`, gridAutoRows: `${GRID_H}px`, gap: 2 }}>
         {desktopIcons.map((ic, idx) => {
           const { col, row } = iconGridPos(idx);
+          const iconPx = theme.iconSize === "small" ? 32 : theme.iconSize === "large" ? 56 : 44;
           const dbl = () => {
             if (ic.appId === "folder") openApp("folder", { folderIconId: ic.id, title: ic.label });
             else if (ic.appId === "web-app") openApp("web-app", { webUrl: ic.webUrl, title: ic.label });
@@ -969,7 +970,7 @@ export function PueiOS() {
               onTouchStart={(e) => { e.stopPropagation(); setSelectedIcon(ic.id); onTouchStart(e, iconCtx(ic)); }}
               onTouchEnd={onTouchEnd}
             >
-              <div className="flex justify-center mb-1">{appIcon(ic.appId, 44, ic.iconEmoji, ic.iconUrl)}</div>
+              <div className="flex justify-center mb-1">{appIcon(ic.appId, iconPx, ic.iconEmoji, ic.iconUrl)}</div>
               <div>{ic.label}</div>
             </div>
           );

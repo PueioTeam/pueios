@@ -136,6 +136,19 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, curren
                 <input type="checkbox" checked={theme.animations} onChange={(e) => setTheme({ ...theme, animations: e.target.checked })} /> Animations & motion
               </label>
             </div>
+            <div className="mt-6">
+              <div className="text-sm font-semibold mb-3">🖼️ Icon size</div>
+              <div className="flex gap-3">
+                {([["small","Small","48px"],["medium","Medium","64px"],["large","Large","80px"]] as const).map(([val, label, px]) => (
+                  <button key={val} onClick={() => setTheme({ ...theme, iconSize: val })}
+                    className="flex flex-col items-center gap-1 px-4 py-3 rounded-lg border-2 transition-all"
+                    style={{ borderColor: (theme.iconSize ?? "medium") === val ? "var(--accent)" : "rgba(255,255,255,0.3)", background: (theme.iconSize ?? "medium") === val ? "rgba(255,255,255,0.3)" : "rgba(255,255,255,0.1)" }}>
+                    <span style={{ fontSize: px }}>🗂️</span>
+                    <span className="text-xs font-semibold">{label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
         )}
         {tab === "wallpaper" && (

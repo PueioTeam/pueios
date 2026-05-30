@@ -13,6 +13,7 @@ export type Theme = {
   wallpaper: WallpaperId;
   highContrast: boolean;
   highContrastColor: string; // hex
+  iconSize: "small" | "medium" | "large";
 };
 
 // Trusted domains for the Installer (closed-ecosystem rule)
@@ -248,6 +249,7 @@ export const defaultTheme: Theme = {
   wallpaper: "bliss",
   highContrast: false,
   highContrastColor: "#ffb300",
+  iconSize: "medium",
 };
 
 export const defaultIcons: DesktopIcon[] = [
