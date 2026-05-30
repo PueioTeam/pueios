@@ -1069,7 +1069,70 @@ function PueiWebApp({ currentUser, users }: { currentUser: string; users: User[]
       </div>
     ),
     "puei://news": <div className="p-6"><h2 className="text-2xl font-bold mb-3">PueiNews</h2><ul className="text-sm space-y-2"><li>• PueiOS 2 Ultimate Edition lands on glassy desktops everywhere</li><li>• Mascot Puei voted "Most Confusing Helper of 2020"</li><li>• Glass blur now uses 40% less RAM</li><li>• Puei Copilot now integrates with Google, Edge, Firefox and Opera</li></ul></div>,
-    "puei://forum": <div className="p-6"><h2 className="text-2xl font-bold mb-3">PueiForum</h2><p className="text-sm opacity-70">[user1138]: did anyone else's mascot start blinking morse code??</p></div>,
+    "puei://forum": (
+      <div className="p-6 space-y-6 text-sm">
+        <div>
+          <h2 className="text-2xl font-bold mb-1">💬 Puei Forum</h2>
+          <p className="opacity-60 text-xs">The largest community for all Puei and PueiOS 2 users.</p>
+        </div>
+        <div>
+          <div className="font-semibold mb-2 opacity-80">Talk about:</div>
+          <ul className="space-y-1 opacity-70 list-disc list-inside">
+            <li>Puei lore</li>
+            <li>PueiOS 2 updates</li>
+            <li>PueiWeb AI</li>
+            <li>Puei Messenger</li>
+            <li>Pueio Videos</li>
+            <li>Custom themes</li>
+            <li>Bugs</li>
+            <li>Concepts</li>
+            <li>Memes</li>
+            <li>Fan art</li>
+            <li>Beta builds</li>
+            <li>Old PueiOS versions</li>
+          </ul>
+        </div>
+        <div>
+          <div className="font-semibold mb-2 opacity-80">🔥 Popular discussions:</div>
+          <ul className="space-y-1 opacity-70 list-disc list-inside">
+            <li>"Why was old PueiOS 2 smoother?"</li>
+            <li>"Rate my Puei desktop."</li>
+            <li>"Best Base44 apps for PueiOS 2"</li>
+            <li>"Puei Copilot answered something weird."</li>
+            <li>"Rare puei colors thread"</li>
+            <li>"PueiOS 3 leaked screenshots"</li>
+            <li>"How to restore files from Recycle Bin"</li>
+            <li>"Dark mode vs High Contrast mode"</li>
+            <li>"Pueian Rosos hidden concepts"</li>
+          </ul>
+        </div>
+        <div>
+          <div className="font-semibold mb-2 opacity-80">📋 Forum Rules:</div>
+          <ul className="space-y-1 opacity-70 list-disc list-inside">
+            <li>No corrupted files</li>
+            <li>No fake Pueio Numbers</li>
+            <li>No untrusted URLs</li>
+            <li>Respect other puei users</li>
+            <li>No unofficial AppStore apps</li>
+            <li>Only Base44 apps allowed</li>
+          </ul>
+        </div>
+        <div className="rounded-lg p-3" style={{ background: "rgba(255,255,255,0.07)" }}>
+          <div className="font-semibold mb-2 opacity-90">📰 Latest News — PueiOS 2+ Update:</div>
+          <ul className="space-y-1 opacity-70 list-disc list-inside">
+            <li>Faster cloud sync</li>
+            <li>Improved Messenger saving</li>
+            <li>Better Recycle Bin recovery</li>
+            <li>Customizable High Contrast colors</li>
+            <li>New Puei Copilot responses</li>
+          </ul>
+        </div>
+        <div className="rounded-lg p-3 border" style={{ borderColor: "rgba(255,255,255,0.15)", background: "rgba(255,255,255,0.04)" }}>
+          <div className="text-xs opacity-50 mb-1">🔥 Trending</div>
+          <div className="opacity-80">"My puei deleted my desktop shortcuts again 💀"</div>
+        </div>
+      </div>
+    ),
     "puei://games": <div className="p-6"><h2 className="text-2xl font-bold">PueiGames</h2><p className="opacity-70 mt-2">Free Pueilike clones for your enjoyment.</p></div>,
     "puei://mail": null, // handled below as PueiMailApp
     "puei://about": <div className="p-6"><h2 className="text-2xl font-bold">About PueiNet</h2><p className="text-sm opacity-70 mt-2">A browser for an alternate 2020. Only https://&lt;app&gt;.base44.app external URLs are trusted.</p></div>,
