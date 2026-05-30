@@ -1706,7 +1706,7 @@ function PueiMailApp({ currentUser, users }: { currentUser: string; users: User[
 function MessengerApp({ user, users, setUsers }: { user: string; users: User[]; setUsers: (u: User[]) => void }) {
   const localContacts = users.filter((u) => u.name !== user);
   const me = users.find((u) => u.name === user);
-  const myPueiNumber = me?.pueiNumber || pueiNumberFor(user + ":seed");
+  const myPueiNumber = me?.pueiNumber ?? "";
 
   // External contacts stored in localStorage (cross-device, identified by Puei Number only)
   const [externalContacts, setExternalContacts] = useState<{ pueiNumber: string }[]>(() => {
@@ -1829,9 +1829,11 @@ function MessengerApp({ user, users, setUsers }: { user: string; users: User[]; 
   }, [myPueiNumber, blockedNumbers, users]);
 
   const doAddContact = () => {
-    const num = contactInput.trim().toUpperCase();
-    if (!/^[A-Z0-9]{3}-[A-Z0-9]{3}-[A-Z0-9]{3}$/.test(num)) {
-      setContactMsg({ text: "Invalid format. Use XXX-XXX-XXX.", ok: false });
+    let raw = contactInput.trim().replace(/[-\s]/g, "");
+    if (/^\d{9}$/.test(raw)) raw = `${raw.slice(0,3)}-${raw.slice(3,6)}-${raw.slice(6,9)}`;
+    const num = raw;
+    if (!/^\d{3}-\d{3}-\d{3}$/.test(num)) {
+      setContactMsg({ text: "Invalid format. Enter a 9-digit Pueio Number (e.g. 123-456-789).", ok: false });
       blip("error"); return;
     }
     if (num === myPueiNumber) {
@@ -1839,7 +1841,7 @@ function MessengerApp({ user, users, setUsers }: { user: string; users: User[]; 
       blip("error"); return;
     }
     // Check if it's a local user
-    const localUser = users.find((u) => u.name !== user && (u.pueiNumber || pueiNumberFor(u.name + ":seed")) === num);
+    const localUser = users.find((u) => u.name !== user && u.pueiNumber === num);
     if (localUser) {
       setActiveId(localUser.name); setActiveKind("local");
       setContactMsg({ text: `Found on this device: ${localUser.name}`, ok: true });
@@ -1959,7 +1961,8 @@ function MessengerApp({ user, users, setUsers }: { user: string; users: User[]; 
     appendChat({ id: `m-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, from: user, to: localPartner.name, text, at: Date.now() });
     setAllMsgs(loadChat());
     // Also relay via API for cross-device visibility
-    const partnerNumber = localPartner.pueiNumber || pueiNumberFor(localPartner.name + ":seed");
+    const partnerNumber = localPartner.pueiNumber;
+    if (!partnerNumber) { return; } // can't relay without a known Puei Number
     fetch("/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
