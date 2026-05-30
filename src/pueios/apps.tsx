@@ -2411,13 +2411,28 @@ function FolderApp({ folderIconId, icons, openApp, openWebApp }: {
   openWebApp: (url: string, title: string) => void;
 }) {
   const children = icons.filter((i) => i.folderId === folderIconId);
+  const [savedFiles, setSavedFiles] = useState<SavedFile[]>(() => loadFiles().filter((f) => f.folder === folderIconId));
+  useEffect(() => {
+    const refresh = () => setSavedFiles(loadFiles().filter((f) => f.folder === folderIconId));
+    window.addEventListener("pueios-files-changed", refresh);
+    return () => window.removeEventListener("pueios-files-changed", refresh);
+  }, [folderIconId]);
+  const isEmpty = children.length === 0 && savedFiles.length === 0;
   return (
     <div className="p-4 h-full overflow-auto">
-      {children.length === 0
+      {isEmpty
         ? <div className="text-sm opacity-70 text-center p-8">
-            This folder is empty.<br/>Right-click it on the desktop → <b>New shortcut here</b> to add a web app.
+            This folder is empty.<br/>Drag files from Documents or Pictures into this folder.
           </div>
         : <div className="grid grid-cols-5 gap-3">
+            {savedFiles.map((f) => (
+              <div key={f.id}
+                onDoubleClick={() => openApp(f.type === "text" ? "notepad" : "puei-paint", f.id)}
+                className="text-center p-2 rounded hover:bg-white/30 cursor-pointer">
+                <div className="text-4xl">{f.type === "image" ? "🖼️" : "📄"}</div>
+                <div className="text-xs mt-1 truncate">{f.name}</div>
+              </div>
+            ))}
             {children.map((c) => (
               <div key={c.id}
                 onDoubleClick={() => c.appId === "web-app" ? openWebApp(c.webUrl!, c.label) : openApp(c.appId, c.fileId)}
