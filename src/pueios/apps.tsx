@@ -1067,10 +1067,8 @@ function PueiWebApp({ currentUser, users }: { currentUser: string; users: User[]
         <p className="opacity-70 mt-2">The retro-futuristic web, circa 2020.</p>
         <div className="mt-6 grid grid-cols-3 gap-3 max-w-2xl mx-auto">
           {[
-            ["puei://news", "📰 PueiNews"],
             ["puei://search", "✦ Puei Copilot"],
             ["puei://forum", "💬 PueiForum"],
-            ["puei://games", "🎮 PueiGames"],
             ["puei://mail", "✉️ PueiMail"],
             ["puei://about", "ℹ️ About"],
           ].map(([u, l]) => (
@@ -1079,7 +1077,6 @@ function PueiWebApp({ currentUser, users }: { currentUser: string; users: User[]
         </div>
       </div>
     ),
-    "puei://news": <div className="p-6"><h2 className="text-2xl font-bold mb-3">PueiNews</h2><ul className="text-sm space-y-2"><li>• PueiOS 2 Ultimate Edition lands on glassy desktops everywhere</li><li>• Mascot Puei voted "Most Confusing Helper of 2020"</li><li>• Glass blur now uses 40% less RAM</li><li>• Puei Copilot now integrates with Google, Edge, Firefox and Opera</li></ul></div>,
     "puei://forum": (
       <div className="p-6 space-y-6 text-sm">
         <div>
@@ -1144,7 +1141,6 @@ function PueiWebApp({ currentUser, users }: { currentUser: string; users: User[]
         </div>
       </div>
     ),
-    "puei://games": <div className="p-6"><h2 className="text-2xl font-bold">PueiGames</h2><p className="opacity-70 mt-2">Free Pueilike clones for your enjoyment.</p></div>,
     "puei://mail": null, // handled below as PueiMailApp
     "puei://about": <div className="p-6"><h2 className="text-2xl font-bold">About PueiNet</h2><p className="text-sm opacity-70 mt-2">A browser for an alternate 2020. Only https://&lt;app&gt;.base44.app external URLs are trusted.</p></div>,
   };
