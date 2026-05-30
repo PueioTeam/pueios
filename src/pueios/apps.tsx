@@ -376,9 +376,11 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, curren
                     <div>
                       <label className="text-xs opacity-70">Confirm password</label>
                       <input type="password" value={pcConfirm} onChange={(e) => setPcConfirm(e.target.value)}
-                        onKeyDown={(e) => { if (e.key === "Enter") {
+                        onKeyDown={async (e) => { if (e.key === "Enter") {
                           if (!pcNewPw) { setPcMsg({ kind: "err", text: "Enter a password." }); return; }
                           if (pcNewPw !== pcConfirm) { setPcMsg({ kind: "err", text: "Passwords do not match." }); return; }
+                          const updatedUser = { ...me, password: pcNewPw, noPassword: false, limitedMode: false };
+                          await changePasswordRemote(me.name, me.password ?? "", pcNewPw, updatedUser);
                           updateMe({ password: pcNewPw, noPassword: false, limitedMode: false });
                           setPcNewPw(""); setPcConfirm("");
                           setPcMsg({ kind: "ok", text: "✓ Password created! Full access enabled." });
@@ -389,9 +391,11 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, curren
                     {pcMsg && (
                       <div className={`text-xs rounded px-2 py-1.5 ${pcMsg.kind === "ok" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>{pcMsg.text}</div>
                     )}
-                    <button className="aero-button rounded-lg px-4 py-2 text-sm w-full" onClick={() => {
+                    <button className="aero-button rounded-lg px-4 py-2 text-sm w-full" onClick={async () => {
                       if (!pcNewPw) { setPcMsg({ kind: "err", text: "Enter a password." }); return; }
                       if (pcNewPw !== pcConfirm) { setPcMsg({ kind: "err", text: "Passwords do not match." }); return; }
+                      const updatedUser = { ...me, password: pcNewPw, noPassword: false, limitedMode: false };
+                      await changePasswordRemote(me.name, me.password ?? "", pcNewPw, updatedUser);
                       updateMe({ password: pcNewPw, noPassword: false, limitedMode: false });
                       setPcNewPw(""); setPcConfirm("");
                       setPcMsg({ kind: "ok", text: "✓ Password created! Full access enabled." });
