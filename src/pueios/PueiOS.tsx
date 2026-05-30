@@ -734,10 +734,12 @@ export function PueiOS() {
       // Cloud-first: restore the account from the server so it follows the user across browsers.
       const remote = await loginRemote(name, pwInput);
       if (remote.status === "wrong-password") { blip("error"); setPwError("Wrong password"); return; }
-      if (remote.status === "ok" && remote.snapshot) {
-        applySnapshot(remote.snapshot);
-        const s = loadState();
-        setUsers(s.users); setThemeState(s.theme); setIcons(s.icons);
+      if (remote.status === "ok") {
+        if (remote.snapshot) {
+          applySnapshot(remote.snapshot);
+          const s = loadState();
+          setUsers(s.users); setThemeState(s.theme); setIcons(s.icons);
+        }
         enterDesktop(name); return;
       }
       // Cloud said not-found OR network error → fall back to local auth.
