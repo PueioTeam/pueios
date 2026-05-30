@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 
 // Shared SVG: the Puei mascot (a HAND with tiny fly wings + dot eyes).
 // NOT a penguin. NOT an animal. Used as both the floating helper and the logo.
-export function PueiLogoSvg({ size = 72, withWings = true, glow = false }: { size?: number; withWings?: boolean; glow?: boolean }) {
+export function PueiLogoSvg({ size = 72, withWings = true, glow = false, bigEyes = false }: { size?: number; withWings?: boolean; glow?: boolean; bigEyes?: boolean }) {
   return (
     <svg width={size} height={size * (80 / 72)} viewBox="0 0 72 80"
       style={glow ? { filter: "drop-shadow(0 0 12px rgba(125,211,252,0.7))" } : undefined}>
@@ -33,8 +33,9 @@ export function PueiLogoSvg({ size = 72, withWings = true, glow = false }: { siz
       <path d="M32 28 Q32 20 36 20 Q40 20 40 28" fill="url(#handGrad)" stroke="#8a6440" strokeWidth="1.2" />
       <path d="M42 28 Q42 22 46 22 Q50 22 50 28" fill="url(#handGrad)" stroke="#8a6440" strokeWidth="1.2" />
       <path d="M22 34 Q22 30 28 30 L40 30 Q46 30 46 36 L46 42 Q40 44 32 44 Q24 44 22 40 Z" fill="url(#handHi)" />
-      <circle cx="29" cy="46" r="2.2" fill="#0a0a0a" />
-      <circle cx="43" cy="46" r="2.2" fill="#0a0a0a" />
+      <circle cx="29" cy="46" r={bigEyes ? 3.8 : 2.2} fill="#0a0a0a" />
+      <circle cx="43" cy="46" r={bigEyes ? 3.8 : 2.2} fill="#0a0a0a" />
+      {bigEyes && <><circle cx="30.2" cy="44.8" r="1.1" fill="white" opacity="0.7" /><circle cx="44.2" cy="44.8" r="1.1" fill="white" opacity="0.7" /></>}
       <path d="M33 53 Q36 55 39 53" stroke="#5a3a20" strokeWidth="1.1" fill="none" strokeLinecap="round" />
     </svg>
   );

@@ -1113,7 +1113,7 @@ export function PueiOS() {
         <button className="aero-start-orb w-10 h-10 rounded-full flex items-center justify-center mx-1 overflow-hidden"
           title="Start"
           onClick={(e) => { e.stopPropagation(); blip("click"); setStartOpen(!startOpen); setShowCalendar(false); }}>
-          <PueiLogoSvg size={26} />
+          <PueiLogoSvg size={26} bigEyes />
         </button>
         {(["file-explorer", "app-store", "puei-social", "pueinet", "puei-messenger"] as AppId[]).map((id) => (
           <button key={id} onClick={(e) => { e.stopPropagation(); openApp(id); }}
