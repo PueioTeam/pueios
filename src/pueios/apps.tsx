@@ -595,6 +595,7 @@ function PaintApp({ fileId, onCreateShortcut, currentUser }: { fileId?: string; 
   const [name, setName] = useState(initial?.name ?? "Untitled.png");
   const [savedId, setSavedId] = useState<string | undefined>(initial?.id);
   const [status, setStatus] = useState("");
+  const [locked, setLocked] = useState(!!initial?.id);
   useEffect(() => {
     const c = cv.current!; const ctx = c.getContext("2d")!;
     ctx.fillStyle = "white"; ctx.fillRect(0, 0, c.width, c.height);
@@ -605,13 +606,14 @@ function PaintApp({ fileId, onCreateShortcut, currentUser }: { fileId?: string; 
     }
   }, []);
   const start = (e: React.PointerEvent) => {
+    if (locked) return;
     draw.current = true;
     const c = cv.current!; const r = c.getBoundingClientRect();
     const ctx = c.getContext("2d")!; ctx.beginPath();
     ctx.moveTo((e.clientX - r.left) * (c.width / r.width), (e.clientY - r.top) * (c.height / r.height));
   };
   const move = (e: React.PointerEvent) => {
-    if (!draw.current) return;
+    if (!draw.current || locked) return;
     const c = cv.current!; const r = c.getBoundingClientRect();
     const ctx = c.getContext("2d")!;
     ctx.strokeStyle = color; ctx.lineWidth = size; ctx.lineCap = "round";
@@ -622,7 +624,7 @@ function PaintApp({ fileId, onCreateShortcut, currentUser }: { fileId?: string; 
     const data = cv.current!.toDataURL("image/png");
     const id = savedId || `f-${Date.now().toString(36)}`;
     upsertFile({ id, name, type: "image", content: data, updatedAt: Date.now(), owner: currentUser });
-    setSavedId(id); setStatus("Saved ✓"); blip("notify");
+    setSavedId(id); setLocked(true); setStatus("Saved ✓"); blip("notify");
     setTimeout(() => setStatus(""), 1500);
     return id;
   };
@@ -633,7 +635,7 @@ function PaintApp({ fileId, onCreateShortcut, currentUser }: { fileId?: string; 
     if (!pick) return;
     const f = all.find((x) => x.name === pick);
     if (!f) return;
-    setName(f.name); setSavedId(f.id);
+    setName(f.name); setSavedId(f.id); setLocked(true);
     const c = cv.current!; const ctx = c.getContext("2d")!;
     ctx.fillStyle = "white"; ctx.fillRect(0, 0, c.width, c.height);
     const img = new Image(); img.onload = () => ctx.drawImage(img, 0, 0); img.src = f.content;
@@ -641,25 +643,39 @@ function PaintApp({ fileId, onCreateShortcut, currentUser }: { fileId?: string; 
   return (
     <div className="flex flex-col h-full">
       <div className="aero-titlebar flex flex-wrap gap-2 px-2 py-1 items-center text-xs">
-        <input value={name} onChange={(e) => setName(e.target.value)} className="px-2 py-0.5 rounded" style={{ background: "white", color: "#111", width: 140 }} />
-        <button className="aero-button px-2 py-0.5 rounded" onClick={save}>💾 Save</button>
+        <input value={name} onChange={(e) => setName(e.target.value)} disabled={locked} className="px-2 py-0.5 rounded" style={{ background: locked ? "rgba(255,255,255,0.4)" : "white", color: "#111", width: 140 }} />
+        {locked ? (
+          <button className="aero-button px-2 py-0.5 rounded" onClick={() => setLocked(false)}>🔓 Unlock</button>
+        ) : (
+          <>
+            <button className="aero-button px-2 py-0.5 rounded" onClick={save}>💾 Save</button>
+            <button className="aero-button px-2 py-0.5 rounded" onClick={() => { const id = save(); onCreateShortcut(name, id); }}>📌 Shortcut</button>
+            <button className="aero-button px-2 py-0.5 rounded" onClick={() => {
+              const c = cv.current!; const ctx = c.getContext("2d")!;
+              ctx.fillStyle = "white"; ctx.fillRect(0, 0, c.width, c.height);
+            }}>Clear</button>
+            <input type="color" value={color} onChange={(e) => setColor(e.target.value)} />
+            <input type="range" min={1} max={32} value={size} onChange={(e) => setSize(Number(e.target.value))} />
+            <span>size: {size}</span>
+            {["#000000", "#ff0000", "#ffaa00", "#00cc44", "#1ea8ff", "#aa00ff", "#ffffff"].map((c) => (
+              <button key={c} onClick={() => setColor(c)} style={{ background: c, width: 18, height: 18, border: "1px solid #666" }} />
+            ))}
+          </>
+        )}
+        <button className="aero-button px-2 py-0.5 rounded" onClick={() => { setName("Untitled.png"); setSavedId(undefined); setLocked(false); const c = cv.current!; const ctx = c.getContext("2d")!; ctx.fillStyle = "white"; ctx.fillRect(0, 0, c.width, c.height); }}>📄 New</button>
         <button className="aero-button px-2 py-0.5 rounded" onClick={open}>📂 Open</button>
-        <button className="aero-button px-2 py-0.5 rounded" onClick={() => { const id = save(); onCreateShortcut(name, id); }}>📌 Shortcut</button>
-        <button className="aero-button px-2 py-0.5 rounded" onClick={() => {
-          const c = cv.current!; const ctx = c.getContext("2d")!;
-          ctx.fillStyle = "white"; ctx.fillRect(0, 0, c.width, c.height);
-        }}>Clear</button>
-        <input type="color" value={color} onChange={(e) => setColor(e.target.value)} />
-        <input type="range" min={1} max={32} value={size} onChange={(e) => setSize(Number(e.target.value))} />
-        <span>size: {size}</span>
-        {["#000000", "#ff0000", "#ffaa00", "#00cc44", "#1ea8ff", "#aa00ff", "#ffffff"].map((c) => (
-          <button key={c} onClick={() => setColor(c)} style={{ background: c, width: 18, height: 18, border: "1px solid #666" }} />
-        ))}
-        <span className="opacity-70 ml-auto">{status} · Saved images can be set as wallpaper in Settings.</span>
+        <span className="opacity-70 ml-auto">{status}{locked ? " · 🔒 Read-only" : " · Saved images can be set as wallpaper in Settings."}</span>
       </div>
-      <canvas ref={cv} width={800} height={500}
-        onPointerDown={start} onPointerMove={move} onPointerUp={end} onPointerLeave={end}
-        style={{ width: "100%", height: "100%", background: "white", touchAction: "none" }} />
+      <div className="relative flex-1">
+        <canvas ref={cv} width={800} height={500}
+          onPointerDown={start} onPointerMove={move} onPointerUp={end} onPointerLeave={end}
+          style={{ width: "100%", height: "100%", background: "white", touchAction: "none", cursor: locked ? "not-allowed" : "crosshair" }} />
+        {locked && (
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div className="bg-black/30 text-white text-sm px-4 py-2 rounded-lg">🔒 Saved — click Unlock to edit</div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
