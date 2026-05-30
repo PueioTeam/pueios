@@ -85,6 +85,7 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, curren
   const [pcNewPw, setPcNewPw] = useState("");
   const [pcConfirm, setPcConfirm] = useState("");
   const [pcMsg, setPcMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
+  const [pcNumCopied, setPcNumCopied] = useState(false);
 
   const tabs = [
     ["personalize", "🎨 Personalize"],
@@ -349,12 +350,14 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, curren
                     <code className="text-xs font-mono opacity-80 bg-black/10 rounded px-1.5 py-0.5">
                       {me.pueiNumber || "—"}
                     </code>
-                    <button className="text-[10px] opacity-60 hover:opacity-100 underline" onClick={() => {
+                    <button className="text-[10px] px-1.5 py-0.5 rounded transition-all" onClick={() => {
                       if (me.pueiNumber) {
                         navigator.clipboard.writeText(me.pueiNumber).catch(() => {});
-                        blip("notify");
+                        blip("notify"); setPcNumCopied(true); setTimeout(() => setPcNumCopied(false), 1500);
                       }
-                    }}>Copy</button>
+                    }} style={{ background: pcNumCopied ? "rgba(100,220,100,0.25)" : "rgba(255,255,255,0.15)", color: pcNumCopied ? "#4ade80" : undefined }}>
+                      {pcNumCopied ? "✓ Copied!" : "📋 Copy"}
+                    </button>
                   </div>
                 </div>
               </div>
