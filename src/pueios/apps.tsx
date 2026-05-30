@@ -2600,18 +2600,22 @@ function PueiSocialApp({ user, users }: { user: string; users: User[] }) {
           <div className="aero-glass-light rounded-xl p-5 max-w-lg mx-auto">
             <h2 className="text-xl font-bold mb-3">📜 The History of Puei</h2>
             <p className="text-sm leading-relaxed opacity-90">
-              The <strong>Puei</strong> was created in <strong>2020</strong> by <em>Anaïs Albert</em> and <em>Ines Urziceanu</em> while playing outside.
-              It was then long forgotten in history…
+              The <strong>Puei</strong> was created in <strong>2020</strong> by three siblings while playing outside. It quickly became a beloved character among them — full of personality and charm.
             </p>
             <p className="text-sm leading-relaxed opacity-90 mt-3">
-              But after <strong>6 years</strong>, in <strong>2026</strong>, the triplets decided to revive the Puei by creating the official Puei account on BezouSMP and posting Puei content.
-              A few months later, the official <strong>PueiOS</strong> operating system was released.
+              But the Puei was then long forgotten in history, fading into memory for years…
+            </p>
+            <p className="text-sm leading-relaxed opacity-90 mt-3">
+              After <strong>6 long years</strong>, in <strong>2026</strong>, the triplets decided to revive the Puei. They created the official <strong>Puei account on BezoSMP</strong> and started posting Puei content, bringing the character back to life for the world to see.
+            </p>
+            <p className="text-sm leading-relaxed opacity-90 mt-3">
+              A few months later, the official <strong>PueiOS</strong> operating system was released — a full web-based OS built in tribute to the Puei, featuring a Windows 7 Aero-inspired glass UI, cloud-synced accounts, and a whole suite of Puei-themed apps.
             </p>
             <div className="mt-4 pt-3 border-t border-white/20 text-xs opacity-60 space-y-1">
-              <div>📅 2020 — Puei is born</div>
+              <div>📅 2020 — Puei is born, created by three siblings</div>
               <div>💤 2020–2026 — The Forgotten Years</div>
-              <div>📣 2026 — Puei revival on BezouSMP</div>
-              <div>💻 2026 — PueiOS released</div>
+              <div>📣 2026 — Puei revival on BezoSMP</div>
+              <div>💻 2026 — PueiOS officially released</div>
             </div>
           </div>
         )}
