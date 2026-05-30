@@ -83,6 +83,7 @@ export function PueiOS() {
   const [showVolume, setShowVolume] = useState(false);
   const [showNetwork, setShowNetwork] = useState(false);
   const [volume, setVolume] = useState(80);
+  const [netInfo, setNetInfo] = useState<{ ping: number | null; speed: number | null; type: string; online: boolean }>({ ping: null, speed: null, type: "?", online: true });
   const [cursorPos, setCursorPos] = useState({ x: 0, y: 0 });
   const [locked, setLocked] = useState(false);
   const [loginUser, setLoginUser] = useState("");
@@ -156,6 +157,25 @@ export function PueiOS() {
     const t = setInterval(() => setNow(new Date()), 1000 * 15);
     return () => clearInterval(t);
   }, []);
+
+  useEffect(() => {
+    if (!showNetwork) return;
+    const measure = async () => {
+      const online = navigator.onLine;
+      const conn = (navigator as any).connection || (navigator as any).mozConnection || (navigator as any).webkitConnection;
+      const rawType: string = conn?.effectiveType || conn?.type || "";
+      const typeLabel = rawType === "4g" ? "WiFi / 4G" : rawType === "3g" ? "3G" : rawType === "2g" ? "2G" : rawType === "slow-2g" ? "Slow 2G" : rawType === "wifi" ? "WiFi" : rawType === "cellular" ? "Cellular" : "WiFi";
+      const speed: number | null = conn?.downlink != null ? conn.downlink : null;
+      let ping: number | null = null;
+      try {
+        const t0 = performance.now();
+        await fetch(window.location.origin + "/?_ping=" + Date.now(), { method: "HEAD", cache: "no-store" });
+        ping = Math.round(performance.now() - t0);
+      } catch {}
+      setNetInfo({ ping, speed, type: typeLabel, online });
+    };
+    measure();
+  }, [showNetwork]);
   useEffect(() => {
     const fn = (e: PointerEvent) => setCursorPos({ x: e.clientX, y: e.clientY });
     window.addEventListener("pointermove", fn);
@@ -1146,11 +1166,10 @@ export function PueiOS() {
         <div className="fixed bottom-14 right-36 aero-glass rounded-xl p-4 z-[9000] w-56" onMouseDown={(e) => e.stopPropagation()}>
           <div className="font-semibold text-sm mb-2">📶 PueiNet</div>
           <div className="text-xs space-y-1">
-            <div className="flex justify-between"><span className="opacity-60">Status</span><span className="text-green-400 font-semibold">Connected</span></div>
-            <div className="flex justify-between"><span className="opacity-60">Network</span><span>PueiNet 5G</span></div>
-            <div className="flex justify-between"><span className="opacity-60">Ping</span><span>12 ms</span></div>
-            <div className="flex justify-between"><span className="opacity-60">Speed</span><span>↓ 980 Mbps</span></div>
-            <div className="flex justify-between"><span className="opacity-60">IP</span><span className="font-mono">10.0.2.puei</span></div>
+            <div className="flex justify-between"><span className="opacity-60">Status</span><span className={netInfo.online ? "text-green-400 font-semibold" : "text-red-400 font-semibold"}>{netInfo.online ? "Connected" : "Offline"}</span></div>
+            <div className="flex justify-between"><span className="opacity-60">Network</span><span>{netInfo.type || "WiFi"}</span></div>
+            <div className="flex justify-between"><span className="opacity-60">Ping</span><span>{netInfo.ping != null ? netInfo.ping + " ms" : "…"}</span></div>
+            <div className="flex justify-between"><span className="opacity-60">Speed</span><span>{netInfo.speed != null ? "↓ " + netInfo.speed + " Mbps" : "…"}</span></div>
           </div>
         </div>
       )}
