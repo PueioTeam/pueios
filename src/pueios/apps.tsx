@@ -421,35 +421,39 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, curren
                     <div>
                       <label className="text-xs opacity-70">Confirm new password</label>
                       <input type="password" value={pcConfirm} onChange={(e) => setPcConfirm(e.target.value)}
-                        onKeyDown={(e) => { if (e.key === "Enter") {
+                        onKeyDown={async (e) => { if (e.key === "Enter") {
                           if (pcCurPw !== me.password) { setPcMsg({ kind: "err", text: "Current password is incorrect." }); return; }
                           if (!pcNewPw) { setPcMsg({ kind: "err", text: "Enter a new password." }); return; }
                           if (pcNewPw !== pcConfirm) { setPcMsg({ kind: "err", text: "Passwords do not match." }); return; }
-                          const oldPw = pcCurPw;
+                          setPcMsg({ kind: "ok", text: "Saving…" });
+                          const ok = await changePasswordRemote(me.name, pcCurPw, pcNewPw, { ...me, password: pcNewPw });
+                          if (!ok) { setPcMsg({ kind: "err", text: "Could not reach server. Try again." }); return; }
                           updateMe({ password: pcNewPw });
                           setPcCurPw(""); setPcNewPw(""); setPcConfirm("");
                           setPcMsg({ kind: "ok", text: "✓ Password changed." });
                           blip("notify");
-                          changePasswordRemote(me.name, oldPw, pcNewPw, { ...me, password: pcNewPw }).catch(() => {});
                         }}}
                         className="w-full px-3 py-2 rounded text-sm outline-none mt-1" style={{ background: "white", color: "#111" }} />
                     </div>
                     {pcMsg && (
                       <div className={`text-xs rounded px-2 py-1.5 ${pcMsg.kind === "ok" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>{pcMsg.text}</div>
                     )}
-                    <button className="aero-button rounded-lg px-4 py-2 text-sm w-full" onClick={() => {
+                    <button className="aero-button rounded-lg px-4 py-2 text-sm w-full" onClick={async () => {
                       if (pcCurPw !== me.password) { setPcMsg({ kind: "err", text: "Current password is incorrect." }); return; }
                       if (!pcNewPw) { setPcMsg({ kind: "err", text: "Enter a new password." }); return; }
                       if (pcNewPw !== pcConfirm) { setPcMsg({ kind: "err", text: "Passwords do not match." }); return; }
-                      const oldPw = pcCurPw;
+                      setPcMsg({ kind: "ok", text: "Saving…" });
+                      const ok = await changePasswordRemote(me.name, pcCurPw, pcNewPw, { ...me, password: pcNewPw });
+                      if (!ok) { setPcMsg({ kind: "err", text: "Could not reach server. Try again." }); return; }
                       updateMe({ password: pcNewPw });
                       setPcCurPw(""); setPcNewPw(""); setPcConfirm("");
                       setPcMsg({ kind: "ok", text: "✓ Password changed." });
                       blip("notify");
-                      changePasswordRemote(me.name, oldPw, pcNewPw, { ...me, password: pcNewPw }).catch(() => {});
                     }}>Change password</button>
-                    <button className="text-xs opacity-60 underline hover:opacity-100" onClick={() => {
+                    <button className="text-xs opacity-60 underline hover:opacity-100" onClick={async () => {
                       if (confirm("Remove your password? This switches you to Limited Access mode.")) {
+                        const ok = await changePasswordRemote(me.name, me.password ?? "", "", { ...me, password: "", noPassword: true, limitedMode: true });
+                        if (!ok) { setPcMsg({ kind: "err", text: "Could not reach server. Try again." }); return; }
                         updateMe({ password: "", noPassword: true, limitedMode: true });
                         setPcCurPw(""); setPcNewPw(""); setPcConfirm("");
                         setPcMsg({ kind: "ok", text: "Password removed. Now in Limited Access mode." });
