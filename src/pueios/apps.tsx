@@ -1888,7 +1888,6 @@ function MessengerApp({ user, users, setUsers }: { user: string; users: User[]; 
   };
 
   const SettingsView = () => {
-    const [copied, setCopied] = useState(false);
     return (
       <div className="flex-1 p-6 overflow-auto">
         <h2 className="text-xl font-semibold mb-2">Messenger Settings</h2>
@@ -1902,10 +1901,6 @@ function MessengerApp({ user, users, setUsers }: { user: string; users: User[]; 
               style={{ background: "white", color: "#111", border: "1px solid var(--border)" }}>
               {myPueiNumber}
             </div>
-            <button className="aero-button rounded px-3 py-2 text-xs"
-              onClick={() => { navigator.clipboard?.writeText(myPueiNumber); setCopied(true); setTimeout(() => setCopied(false), 1200); blip("click"); }}>
-              {copied ? "Copied ✓" : "Copy"}
-            </button>
           </div>
           <div className="text-[10px] opacity-50 mt-2">Anyone with this number can message you from iPad, Android, Windows, Mac, or any PueiOS device.</div>
         </div>
