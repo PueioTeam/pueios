@@ -2225,7 +2225,8 @@ function MessengerApp({ user, users, setUsers }: { user: string; users: User[]; 
 function FileExplorerApp({ openApp, icons, openFolder, currentUser }: { openApp: (id: AppId, fileId?: string) => void; icons: DesktopIcon[]; openFolder: (id: string, title: string) => void; currentUser: string }) {
   const myFiles = () => loadFiles().filter((f) => !f.owner || f.owner === currentUser);
   const [files, setFiles] = useState<SavedFile[]>(() => myFiles());
-  const [folder, setFolder] = useState<"home" | "documents" | "pictures" | "apps" | "folders">("home");
+  const [folder, setFolder] = useState<"home" | "documents" | "pictures" | "apps" | "folders" | "puei-drive">("home");
+  const [openFolderId, setOpenFolderId] = useState<string | null>(null);
   const [dragFileId, setDragFileId] = useState<string | null>(null);
   const [dropTarget, setDropTarget] = useState<string | null>(null);
 
@@ -2276,7 +2277,7 @@ function FileExplorerApp({ openApp, icons, openFolder, currentUser }: { openApp:
           ["home","🏠 Home"],["documents","📁 Documents"],["pictures","🖼️ Pictures"],
           ["folders","🗃️ My Folders"],["apps","🧩 Apps"],
         ].map(([k, l]) => (
-          <div key={k} onClick={() => setFolder(k as any)}
+          <div key={k} onClick={() => { setFolder(k as any); setOpenFolderId(null); }}
             className="px-2 py-1 rounded hover:bg-white/30 cursor-pointer"
             style={{ background: folder === k ? "rgba(255,255,255,0.4)" : undefined }}>{l}</div>
         ))}
@@ -2284,6 +2285,9 @@ function FileExplorerApp({ openApp, icons, openFolder, currentUser }: { openApp:
         <div className="px-2 py-1 rounded hover:bg-white/30 cursor-pointer"
           onClick={() => setFolder("home")}
           style={{ background: folder === "home" ? "rgba(255,255,255,0.4)" : undefined }}>💽 C:\ PueiDrive</div>
+        <div className="px-2 py-1 rounded hover:bg-white/30 cursor-pointer flex items-center gap-1"
+          onClick={() => setFolder("puei-drive")}
+          style={{ background: folder === "puei-drive" ? "rgba(255,255,255,0.4)" : undefined }}>☁️ Puei Drive</div>
         {dragFileId && (
           <div className="mt-3 text-[10px] opacity-60 px-2">
             📂 Drag to a folder below to move file
@@ -2307,7 +2311,14 @@ function FileExplorerApp({ openApp, icons, openFolder, currentUser }: { openApp:
         </div>
       </div>
       <div className="flex-1 p-4 overflow-auto">
-        <div className="text-xs opacity-70 mb-3">Computer › PueiDrive › Users › You › {folder}</div>
+        <div className="text-xs opacity-70 mb-3 flex items-center gap-1">
+          {openFolderId && (
+            <button className="hover:underline" onClick={() => setOpenFolderId(null)}>My Folders</button>
+          )}
+          {openFolderId ? (
+            <> › {myFolders.find(f => f.id === openFolderId)?.label ?? openFolderId}</>
+          ) : folder === "puei-drive" ? "☁️ Puei Drive" : `Computer › PueiDrive › Users › You › ${folder}`}
+        </div>
         {folder === "home" && (
           <div className="grid grid-cols-5 gap-3">
             {folders.map((f) => (
@@ -2342,7 +2353,10 @@ function FileExplorerApp({ openApp, icons, openFolder, currentUser }: { openApp:
             ))}
           </div>
         )}
-        {folder === "folders" && (
+        {folder === "puei-drive" && (
+          <PueiDrivePane files={files} currentUser={currentUser} />
+        )}
+        {folder === "folders" && !openFolderId && (
           myFolders.length === 0
             ? <div className="text-sm opacity-70 p-6 text-center">No folders yet. Right-click the desktop → New Folder.</div>
             : <div className="grid grid-cols-5 gap-3">
@@ -2350,7 +2364,7 @@ function FileExplorerApp({ openApp, icons, openFolder, currentUser }: { openApp:
                   const folderFiles = files.filter((fi) => fi.folder === f.id);
                   return (
                     <div key={f.id}
-                      onDoubleClick={() => openFolder(f.id, f.label)}
+                      onDoubleClick={() => setOpenFolderId(f.id)}
                       onDragOver={(e) => { e.preventDefault(); setDropTarget(f.id); }}
                       onDragLeave={() => setDropTarget(null)}
                       onDrop={() => handleDrop(f.id)}
@@ -2367,6 +2381,29 @@ function FileExplorerApp({ openApp, icons, openFolder, currentUser }: { openApp:
                 })}
               </div>
         )}
+        {folder === "folders" && openFolderId && (() => {
+          const folderFiles = files.filter((fi) => fi.folder === openFolderId);
+          const folderIcons = icons.filter((i) => i.folderId === openFolderId);
+          if (folderFiles.length === 0 && folderIcons.length === 0)
+            return <div className="text-sm opacity-70 p-6 text-center">This folder is empty.</div>;
+          return (
+            <div className="grid grid-cols-5 gap-3">
+              {folderFiles.map((f) => (
+                <div key={f.id} className="text-center p-2 rounded hover:bg-white/30 cursor-pointer">
+                  <div className="text-4xl">{f.type === "image" ? "🖼️" : "📄"}</div>
+                  <div className="text-xs mt-1 truncate">{f.name}</div>
+                </div>
+              ))}
+              {folderIcons.map((ic) => (
+                <div key={ic.id} onDoubleClick={() => ic.appId !== "web-app" && openApp(ic.appId, ic.fileId)}
+                  className="text-center p-2 rounded hover:bg-white/30 cursor-pointer">
+                  <div className="text-4xl">{ic.appId === "web-app" ? "🔗" : "📄"}</div>
+                  <div className="text-xs mt-1 truncate">{ic.label}</div>
+                </div>
+              ))}
+            </div>
+          );
+        })()}
       </div>
     </div>
   );
