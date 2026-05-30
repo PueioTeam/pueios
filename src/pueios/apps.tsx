@@ -2739,14 +2739,14 @@ function PueiSocialApp({ user, users }: { user: string; users: User[] }) {
               But the Puei was then long forgotten in history, fading into memory for years…
             </p>
             <p className="text-sm leading-relaxed opacity-90 mt-3">
-              After <strong>6 long years</strong>, in <strong>2026</strong>, the triplets decided to revive the Puei. They created the official <strong>Puei account on BezoSMP</strong> and started posting Puei content, bringing the character back to life for the world to see.
+              After <strong>5 long years</strong>, in <strong>2026</strong>, the triplets decided to revive the Puei. They created the official <strong>Puei account on BezoSMP</strong> and started posting Puei content, bringing the character back to life for the world to see.
             </p>
             <p className="text-sm leading-relaxed opacity-90 mt-3">
               A few months later, the official <strong>PueiOS</strong> operating system was released — a full web-based OS built in tribute to the Puei, featuring a Windows 7 Aero-inspired glass UI, cloud-synced accounts, and a whole suite of Puei-themed apps.
             </p>
             <div className="mt-4 pt-3 border-t border-white/20 text-xs opacity-60 space-y-1">
               <div>📅 2020 — Puei is born, created by three siblings</div>
-              <div>💤 2020–2026 — The Forgotten Years</div>
+              <div>💤 2021–2025 — The Forgotten Years</div>
               <div>📣 2026 — Puei revival on BezoSMP</div>
               <div>💻 2026 — PueiOS officially released</div>
             </div>
