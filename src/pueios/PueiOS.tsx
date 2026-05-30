@@ -135,8 +135,8 @@ export function PueiOS() {
     if (theme.highContrast) {
       root.style.setProperty("--glass", "#000");
       root.style.setProperty("--glass-strong", "#000");
-      root.style.setProperty("--accent", theme.highContrastColor);
-      root.style.setProperty("--foreground", theme.highContrastColor);
+      root.style.setProperty("--accent", theme.highContrastColor || "#ffff00");
+      root.style.setProperty("--foreground", theme.highContrastColor || "#ffff00");
     } else if (!theme.transparency) {
       root.style.setProperty("--glass", "oklch(0.96 0.02 220 / 1)");
       root.style.setProperty("--glass-strong", "oklch(0.98 0.01 220 / 1)");
