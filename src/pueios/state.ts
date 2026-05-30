@@ -416,24 +416,16 @@ export function mailAddressFor(name: string): string {
 export function resolveMailRecipient(raw: string, users: { name: string; pueiNumber?: string }[], dir = loadDirectory()): string | null {
   const s = raw.trim();
   if (!s) return null;
-  const m = s.match(/^([a-z0-9._-]+)@pueimail\.puei$/i);
-  if (m) {
-    const handle = m[1].toLowerCase();
-    const u = users.find((x) => x.name.toLowerCase().replace(/[^a-z0-9._-]/g, "") === handle);
-    if (u) return u.name;
-    const d = dir.find((e) => e.name.toLowerCase().replace(/[^a-z0-9._-]/g, "") === handle);
-    if (d) return d.name;
-    return handle;
-  }
+  // Only accept Pueio Number format: 123-456-789 or 123456789
   if (/^\d{3}-?\d{3}-?\d{3}$/.test(s)) {
     const cleaned = s.replace(/-/g, "").replace(/(\d{3})(\d{3})(\d{3})/, "$1-$2-$3");
     const d = dir.find((e) => e.pueiNumber === cleaned);
     if (d) return d.name;
     const u = users.find((x) => x.pueiNumber === cleaned);
     if (u) return u.name;
-    return null;
+    return cleaned; // unknown recipient — use number as identifier
   }
-  return s;
+  return null;
 }
 
 export function loadMail(owner: string): MailMessage[] {
