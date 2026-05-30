@@ -2384,25 +2384,62 @@ function FileExplorerApp({ openApp, icons, openFolder, currentUser }: { openApp:
           if (folderFiles.length === 0 && folderIcons.length === 0)
             return <div className="text-sm opacity-70 p-6 text-center">This folder is empty.</div>;
           return (
-            <div className="grid grid-cols-5 gap-3">
-              {folderFiles.map((f) => (
-                <div key={f.id} onDoubleClick={() => openApp(f.type === "image" ? "puei-paint" : "notepad", f.id)}
-                  className="text-center p-2 rounded hover:bg-white/30 cursor-pointer">
-                  <div className="text-4xl">{f.type === "image" ? "🖼️" : "📄"}</div>
-                  <div className="text-xs mt-1 truncate">{f.name}</div>
-                </div>
-              ))}
-              {folderIcons.map((ic) => (
-                <div key={ic.id} onDoubleClick={() => ic.appId !== "web-app" && openApp(ic.appId, ic.fileId)}
-                  className="text-center p-2 rounded hover:bg-white/30 cursor-pointer">
-                  <div className="text-4xl">{ic.appId === "web-app" ? "🔗" : "📄"}</div>
-                  <div className="text-xs mt-1 truncate">{ic.label}</div>
-                </div>
-              ))}
-            </div>
+            <FolderFileGrid
+              files={folderFiles}
+              icons={folderIcons}
+              onOpen={(f) => openApp(f.type === "image" ? "puei-paint" : "notepad", f.id)}
+              onDelete={(id) => { deleteFile(id); setFiles(myFiles()); }}
+              onOpenIcon={(ic) => { if (ic.appId !== "web-app") openApp(ic.appId, ic.fileId); }}
+            />
           );
         })()}
       </div>
+    </div>
+  );
+}
+
+function FolderFileGrid({ files, icons, onOpen, onDelete, onOpenIcon }: {
+  files: SavedFile[]; icons: DesktopIcon[];
+  onOpen: (f: SavedFile) => void;
+  onDelete: (id: string) => void;
+  onOpenIcon: (ic: DesktopIcon) => void;
+}) {
+  const [ctx, setCtx] = useState<{ x: number; y: number; fileId: string } | null>(null);
+  return (
+    <div className="grid grid-cols-5 gap-3 relative">
+      {files.map((f) => (
+        <div key={f.id}
+          onDoubleClick={() => onOpen(f)}
+          onContextMenu={(e) => { e.preventDefault(); setCtx({ x: e.clientX, y: e.clientY, fileId: f.id }); }}
+          className="text-center p-2 rounded hover:bg-white/30 cursor-pointer select-none">
+          {f.type === "image"
+            ? <img src={f.content} alt={f.name} className="w-12 h-12 mx-auto object-cover rounded shadow" />
+            : <div className="text-4xl">📄</div>}
+          <div className="text-xs mt-1 truncate">{f.name}</div>
+        </div>
+      ))}
+      {icons.map((ic) => (
+        <div key={ic.id}
+          onDoubleClick={() => onOpenIcon(ic)}
+          className="text-center p-2 rounded hover:bg-white/30 cursor-pointer select-none">
+          <div className="text-4xl">{ic.appId === "web-app" ? "🔗" : "📄"}</div>
+          <div className="text-xs mt-1 truncate">{ic.label}</div>
+        </div>
+      ))}
+      {ctx && (
+        <div className="fixed z-[9999] aero-glass rounded shadow-xl py-1 text-sm"
+          style={{ left: ctx.x, top: ctx.y, minWidth: 140 }}
+          onMouseLeave={() => setCtx(null)}>
+          <button className="w-full text-left px-4 py-1.5 hover:bg-white/30"
+            onClick={() => { const f = files.find(fi => fi.id === ctx.fileId); if (f) onOpen(f); setCtx(null); }}>
+            📂 Open
+          </button>
+          <button className="w-full text-left px-4 py-1.5 hover:bg-white/30 text-red-400"
+            onClick={() => { onDelete(ctx.fileId); setCtx(null); }}>
+            🗑️ Delete
+          </button>
+        </div>
+      )}
     </div>
   );
 }
