@@ -2454,14 +2454,13 @@ function WebAppFrame({ url }: { url: string }) {
       <div className="aero-titlebar text-xs px-3 py-1 flex items-center gap-2">
         <span className="opacity-60">🔗</span>
         <span className="truncate flex-1">{url}</span>
-        <a href={url} target="_blank" rel="noreferrer" className="aero-button rounded px-2 py-0.5">Open in new tab ↗</a>
       </div>
       <div className="flex-1 relative" style={{ background: "white" }}>
         <iframe src={url} title={url} className="w-full h-full border-0"
           onError={() => setFailed(true)} />
         {failed && (
           <div className="absolute inset-0 flex items-center justify-center text-sm opacity-70 bg-white">
-            This site refused to load in a frame. Use "Open in new tab" above.
+            This site refused to load in a frame.
           </div>
         )}
       </div>
