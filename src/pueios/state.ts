@@ -416,7 +416,7 @@ export function mailAddressFor(name: string): string {
 export function resolveMailRecipient(raw: string, users: { name: string; pueiNumber?: string }[], dir = loadDirectory()): string | null {
   const s = raw.trim();
   if (!s) return null;
-  // Only accept Pueio Number format: 123-456-789 or 123456789
+  // Pueio Number format: 123-456-789 or 123456789
   if (/^\d{3}-?\d{3}-?\d{3}$/.test(s)) {
     const cleaned = s.replace(/-/g, "").replace(/(\d{3})(\d{3})(\d{3})/, "$1-$2-$3");
     const d = dir.find((e) => e.pueiNumber === cleaned);
@@ -425,6 +425,16 @@ export function resolveMailRecipient(raw: string, users: { name: string; pueiNum
     if (u) return u.name;
     return cleaned; // unknown recipient — use number as identifier
   }
+  // @pueimail.puei email address → extract username and match
+  const emailMatch = s.match(/^([a-z0-9._-]+)@pueimail\.puei$/i);
+  if (emailMatch) {
+    const uname = emailMatch[1].toLowerCase();
+    const u = users.find((x) => x.name.toLowerCase() === uname);
+    return u ? u.name : null;
+  }
+  // Plain username match (case-insensitive)
+  const byName = users.find((x) => x.name.toLowerCase() === s.toLowerCase());
+  if (byName) return byName.name;
   return null;
 }
 

@@ -1381,11 +1381,13 @@ function PueiMailApp({ currentUser, users }: { currentUser: string; users: User[
     const updated = [...others, d];
     setMsgs(updated); saveMail(updated);
     setDraftId(id);
+    setSendStatus("✓ Draft saved!");
+    setTimeout(() => setSendStatus(""), 2000);
   };
 
   const doSend = () => {
     const resolved = resolveMailRecipient(draft.to, users);
-    if (!resolved) { setSendStatus("Enter a valid Pueio Number (e.g. 123-456-789)."); return; }
+    if (!resolved) { setSendStatus("Can't find that recipient. Try a username, Pueio Number, or @pueimail.puei email."); return; }
     if (!draft.subject.trim()) { setSendStatus("Enter a subject."); return; }
     sendMail(currentUser, resolved, draft.subject.trim(), draft.body, users, pending);
     // Deliver to server inbox
@@ -1550,13 +1552,16 @@ function PueiMailApp({ currentUser, users }: { currentUser: string; users: User[
             <div className="flex items-center gap-2">
               <span className="text-xs w-20 opacity-60">To:</span>
               <input value={draft.to} onChange={(e) => setDraft({ ...draft, to: e.target.value })}
-                placeholder="Pueio Number (e.g. 123-456-789)"
+                placeholder="Name, username, Pueio Number, or email@pueimail.puei"
                 className="flex-1 px-3 py-1.5 rounded text-sm outline-none"
                 style={{ background: "white", color: "#111", border: "1px solid var(--border)" }}
                 list="mail-contacts" />
               <datalist id="mail-contacts">
                 {users.filter((u) => u.name !== currentUser).map((u) => (
-                  <option key={u.name} value={mailAddressFor(u.name)} />
+                  <option key={u.name} value={mailAddressFor(u.name)} label={u.name} />
+                ))}
+                {users.filter((u) => u.name !== currentUser && u.pueiNumber).map((u) => (
+                  <option key={u.name + "-num"} value={u.pueiNumber!} label={u.name} />
                 ))}
               </datalist>
             </div>
@@ -1654,10 +1659,16 @@ function PueiMailApp({ currentUser, users }: { currentUser: string; users: User[
                       <div className="text-sm truncate">{a.name}</div>
                       <div className="text-[10px] opacity-60">{Math.round(a.size / 1024)} KB · {a.mime}</div>
                     </div>
-                    <button className="aero-button rounded px-2 py-1 text-xs"
-                      onClick={() => { downloadAttachment(a); recordDownload(currentUser, { id: `dl-${Date.now()}`, name: a.name, kind: a.kind, size: a.size, at: Date.now(), mailId: selected.id }); }}>
-                      ⬇️ Download
-                    </button>
+                    <div className="flex flex-col gap-1">
+                      {a.kind === "image" && (
+                        <button className="aero-button rounded px-2 py-1 text-xs"
+                          onClick={() => window.open(a.dataUrl, "_blank")}>🔍 Open</button>
+                      )}
+                      <button className="aero-button rounded px-2 py-1 text-xs"
+                        onClick={() => { downloadAttachment(a); recordDownload(currentUser, { id: `dl-${Date.now()}`, name: a.name, kind: a.kind, size: a.size, at: Date.now(), mailId: selected.id }); }}>
+                        ⬇️ Download
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
