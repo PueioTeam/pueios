@@ -95,6 +95,7 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, curren
     ["touch", "👆 Touchscreen"],
     ["accessibility", "♿ Accessibility"],
     ["highcontrast", "⚡ High Contrast"],
+    ["upgrade", "⬆️ Upgrade"],
     ["about", "ℹ️ About"],
   ];
   return (
@@ -281,6 +282,30 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, curren
                 <span>Preview: High Contrast UI with selected color · Applied globally across all apps</span>
               </div>
             </div>
+          </div>
+        )}
+        {tab === "upgrade" && (
+          <div className="space-y-4 max-w-lg">
+            <h2 className="text-xl font-semibold">⬆️ System Upgrade</h2>
+            <p className="text-sm opacity-70">Upgrade PueiOS to a newer version. Your files, accounts, messages, and settings are preserved — just like upgrading from Windows XP to Vista to 7.</p>
+            <div className="text-xs opacity-60 mb-2">Current version: <strong>{systemVersion}</strong></div>
+            {SYSTEM_ORDER.filter((v) => compareVersion(v, systemVersion) > 0).length === 0 ? (
+              <div className="aero-glass-light rounded-xl p-4 text-sm text-center opacity-70">✅ You are on the latest version of PueiOS.</div>
+            ) : SYSTEM_ORDER.filter((v) => compareVersion(v, systemVersion) > 0).map((v) => (
+              <div key={v} className="aero-glass-light rounded-xl p-4 flex items-center justify-between gap-4">
+                <div>
+                  <div className="font-semibold text-base">{v}</div>
+                  <div className="text-xs opacity-70 mt-0.5">
+                    {v === "PueiOS 2+" && "New features: improved glass UI, enhanced Copilot, new app layouts, performance improvements."}
+                    {v === "PueiOS 3" && "Major release: redesigned shell, new AI assistant, expanded app ecosystem, PueiNet 3.0."}
+                  </div>
+                </div>
+                <button className="aero-button rounded-lg px-4 py-2 text-sm flex-shrink-0"
+                  onClick={() => { blip("notify"); startUpgrade(v); }}>
+                  Upgrade →
+                </button>
+              </div>
+            ))}
           </div>
         )}
         {tab === "about" && (
@@ -473,10 +498,11 @@ function NotepadApp({ fileId, onCreateShortcut, currentUser }: { fileId?: string
   const [name, setName] = useState(initial?.name ?? "Untitled.txt");
   const [savedId, setSavedId] = useState<string | undefined>(initial?.id);
   const [status, setStatus] = useState("");
+  const [docLocked, setDocLocked] = useState(false);
   const save = () => {
     const id = savedId || `f-${Date.now().toString(36)}`;
     upsertFile({ id, name, type: "text", content: text, updatedAt: Date.now(), owner: currentUser });
-    setSavedId(id); setStatus("Saved ✓"); blip("notify");
+    setSavedId(id); setStatus("Saved ✓"); setDocLocked(true); blip("notify");
     setTimeout(() => setStatus(""), 1500);
     return id;
   };
@@ -487,20 +513,25 @@ function NotepadApp({ fileId, onCreateShortcut, currentUser }: { fileId?: string
     if (!pick) return;
     const f = all.find((x) => x.name === pick);
     if (!f) { alert("Not found"); return; }
-    setText(f.content); setName(f.name); setSavedId(f.id);
+    setText(f.content); setName(f.name); setSavedId(f.id); setDocLocked(false);
   };
   return (
-    <div className="flex flex-col h-full">
-      <div className="aero-titlebar text-xs px-2 py-1 flex items-center gap-2">
-        <input value={name} onChange={(e) => setName(e.target.value)} className="px-2 py-0.5 rounded text-xs" style={{ background: "white", color: "#111", width: 180 }} />
-        <button className="aero-button rounded px-2 py-0.5" onClick={save}>💾 Save</button>
+    <div className="flex flex-col h-full" style={{ overflow: "hidden" }}>
+      <div className="aero-titlebar text-xs px-2 py-1 flex items-center gap-2 flex-shrink-0">
+        <input value={name} onChange={(e) => setName(e.target.value)} disabled={docLocked}
+          className="px-2 py-0.5 rounded text-xs" style={{ background: "white", color: "#111", width: 180 }} />
+        {!docLocked && <button className="aero-button rounded px-2 py-0.5" onClick={save}>💾 Save</button>}
+        {docLocked && <button className="aero-button rounded px-2 py-0.5" onClick={() => { setDocLocked(false); setStatus("Unlocked"); setTimeout(() => setStatus(""), 1200); }}>🔓 Unlock</button>}
         <button className="aero-button rounded px-2 py-0.5" onClick={open}>📂 Open</button>
-        <button className="aero-button rounded px-2 py-0.5" onClick={() => { const id = save(); onCreateShortcut(name, id); }}>📌 Save & shortcut</button>
+        {!docLocked && <button className="aero-button rounded px-2 py-0.5" onClick={() => { const id = save(); onCreateShortcut(name, id); }}>📌 Save & shortcut</button>}
+        <button className="aero-button rounded px-2 py-0.5" onClick={() => { setText("Welcome to Puei Notepad.\n\nType anything..."); setName("Untitled.txt"); setSavedId(undefined); setDocLocked(false); }}>📄 New</button>
         <span className="opacity-70">{status}</span>
+        {docLocked && <span className="opacity-60 text-[10px]">🔒 Read-only — click Unlock to edit</span>}
       </div>
-      <textarea value={text} onChange={(e) => setText(e.target.value)}
+      <textarea value={text} onChange={(e) => { if (!docLocked) setText(e.target.value); }}
+        readOnly={docLocked}
         className="flex-1 p-3 font-mono text-sm outline-none resize-none"
-        style={{ background: "white", color: "#111" }} />
+        style={{ background: "white", color: "#111", overflow: "auto", boxSizing: "border-box", userSelect: "text" }} />
     </div>
   );
 }
@@ -2219,23 +2250,38 @@ function FileGrid({ files, emptyHint, openFile, onDelete, onDragStart, onDragEnd
   openFile: (f: SavedFile) => void; onDelete: (id: string) => void;
   onDragStart?: (id: string) => void; onDragEnd?: () => void;
 }) {
+  const [ctxFile, setCtxFile] = useState<{ x: number; y: number; id: string } | null>(null);
   if (files.length === 0) return <div className="text-sm opacity-70 p-6 text-center">{emptyHint}</div>;
   return (
-    <div className="grid grid-cols-5 gap-3">
+    <div className="grid grid-cols-5 gap-3 relative">
       {files.map((f) => (
         <div key={f.id} onDoubleClick={() => openFile(f)}
           draggable
           onDragStart={(e) => { e.dataTransfer.effectAllowed = "move"; onDragStart?.(f.id); }}
           onDragEnd={() => onDragEnd?.()}
-          className="text-center p-2 rounded hover:bg-white/30 cursor-grab active:cursor-grabbing group relative select-none">
+          onContextMenu={(e) => { e.preventDefault(); setCtxFile({ x: e.clientX, y: e.clientY, id: f.id }); }}
+          className="text-center p-2 rounded hover:bg-white/30 cursor-pointer select-none">
           {f.type === "image"
             ? <img src={f.content} alt={f.name} className="w-12 h-12 mx-auto object-cover rounded shadow" />
             : <div className="text-4xl">📄</div>}
           <div className="text-xs mt-1 truncate">{f.name}</div>
-          <button onClick={(e) => { e.stopPropagation(); onDelete(f.id); }}
-            className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 text-xs text-red-500 px-1">✕</button>
         </div>
       ))}
+      {ctxFile && (
+        <div className="fixed z-[9999] aero-glass rounded shadow-xl py-1 text-sm"
+          style={{ left: ctxFile.x, top: ctxFile.y, minWidth: 140 }}
+          onMouseLeave={() => setCtxFile(null)}>
+          <button className="w-full text-left px-4 py-1.5 hover:bg-white/30"
+            onClick={() => { const f = files.find(x => x.id === ctxFile.id); if (f) openFile(f); setCtxFile(null); }}>
+            Open
+          </button>
+          <div className="my-0.5 border-t border-white/20" />
+          <button className="w-full text-left px-4 py-1.5 hover:bg-white/30 text-red-400"
+            onClick={() => { onDelete(ctxFile.id); setCtxFile(null); }}>
+            🗑️ Delete
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -2415,6 +2461,9 @@ function PueiSocialApp({ user, users }: { user: string; users: User[] }) {
   const [media, setMedia] = useState<{ kind: "image" | "video"; src: string } | undefined>();
   const [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({});
   const [openComments, setOpenComments] = useState<Record<string, boolean>>({});
+  const [socialTab, setSocialTab] = useState<"feed" | "history">("feed");
+  const [editingPostId, setEditingPostId] = useState<string | null>(null);
+  const [editText, setEditText] = useState("");
   useEffect(() => {
     const fn = () => setPosts(loadSocial());
     window.addEventListener("pueios-social", fn);
@@ -2473,6 +2522,11 @@ function PueiSocialApp({ user, users }: { user: string; users: User[] }) {
     const next = posts.filter((p) => p.id !== postId);
     setPosts(next); saveSocial(next);
   };
+  const startEdit = (p: SocialPost) => { setEditingPostId(p.id); setEditText(p.text); };
+  const saveEdit = (postId: string) => {
+    const next = posts.map((p) => p.id === postId ? { ...p, text: editText } : p);
+    setPosts(next); saveSocial(next); setEditingPostId(null); setEditText(""); blip("notify");
+  };
   const onFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0]; if (!f) return;
     const kind: "image" | "video" = f.type.startsWith("video") ? "video" : "image";
@@ -2484,6 +2538,12 @@ function PueiSocialApp({ user, users }: { user: string; users: User[] }) {
     <div className="flex flex-col h-full">
       <div className="aero-titlebar px-4 py-2 flex items-center justify-between">
         <div className="font-bold text-lg flex items-center gap-2">📣 PueiSocial</div>
+        <div className="flex items-center gap-2">
+          <button className="aero-button rounded px-3 py-1 text-xs" style={socialTab === "feed" ? { background: "var(--gradient-aero)", color: "white" } : undefined}
+            onClick={() => setSocialTab("feed")}>Feed</button>
+          <button className="aero-button rounded px-3 py-1 text-xs" style={socialTab === "history" ? { background: "var(--gradient-aero)", color: "white" } : undefined}
+            onClick={() => setSocialTab("history")}>📜 History</button>
+        </div>
         <div className="flex flex-col gap-0.5 items-end">
           <div className="text-xs opacity-70 flex items-center gap-1.5">
             Available on:
@@ -2501,7 +2561,26 @@ function PueiSocialApp({ user, users }: { user: string; users: User[] }) {
         </div>
       </div>
       <div className="p-4 overflow-auto flex-1 space-y-3" style={{ background: "var(--glass)" }}>
-        {/* Composer */}
+        {socialTab === "history" && (
+          <div className="aero-glass-light rounded-xl p-5 max-w-lg mx-auto">
+            <h2 className="text-xl font-bold mb-3">📜 The History of Puei</h2>
+            <p className="text-sm leading-relaxed opacity-90">
+              The <strong>Puei</strong> was created in <strong>2020</strong> by <em>Anaïs Albert</em> and <em>Ines Urziceanu</em> while playing outside.
+              It was then long forgotten in history…
+            </p>
+            <p className="text-sm leading-relaxed opacity-90 mt-3">
+              But after <strong>6 years</strong>, in <strong>2026</strong>, the triplets decided to revive the Puei by creating the official Puei account on BezouSMP and posting Puei content.
+              A few months later, the official <strong>PueiOS</strong> operating system was released.
+            </p>
+            <div className="mt-4 pt-3 border-t border-white/20 text-xs opacity-60 space-y-1">
+              <div>📅 2020 — Puei is born</div>
+              <div>💤 2020–2026 — The Forgotten Years</div>
+              <div>📣 2026 — Puei revival on BezouSMP</div>
+              <div>💻 2026 — PueiOS released</div>
+            </div>
+          </div>
+        )}
+        {socialTab === "feed" && (<>
         <div className="aero-glass-light rounded-xl p-3">
           <div className="flex items-start gap-2">
             <div className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center text-xl"
@@ -2548,10 +2627,25 @@ function PueiSocialApp({ user, users }: { user: string; users: User[] }) {
                   <div className="text-[10px] opacity-60">{new Date(p.at).toLocaleString()}</div>
                 </div>
                 {p.author === user && (
-                  <button onClick={() => deletePost(p.id)} className="text-xs opacity-50 hover:opacity-100 hover:text-red-500" title="Delete post">🗑️</button>
+                  <div className="flex gap-1">
+                    <button onClick={() => startEdit(p)} className="text-xs opacity-50 hover:opacity-100 hover:text-blue-400" title="Edit post">✏️</button>
+                    <button onClick={() => deletePost(p.id)} className="text-xs opacity-50 hover:opacity-100 hover:text-red-500" title="Delete post">🗑️</button>
+                  </div>
                 )}
               </div>
-              {p.text && <div className="text-sm whitespace-pre-wrap mb-2">{p.text}</div>}
+              {editingPostId === p.id ? (
+                <div className="mb-2">
+                  <textarea value={editText} onChange={(e) => setEditText(e.target.value)}
+                    className="w-full p-2 rounded text-sm outline-none resize-none"
+                    style={{ background: "white", color: "#111", minHeight: 60 }} />
+                  <div className="flex gap-2 mt-1">
+                    <button className="aero-button rounded px-3 py-1 text-xs" onClick={() => saveEdit(p.id)}>Save</button>
+                    <button className="aero-button rounded px-3 py-1 text-xs" onClick={() => setEditingPostId(null)}>Cancel</button>
+                  </div>
+                </div>
+              ) : (
+                p.text && <div className="text-sm whitespace-pre-wrap mb-2">{p.text}</div>
+              )}
               {p.media?.kind === "image" && <img src={p.media.src} className="max-h-80 rounded w-auto" alt="" />}
               {p.media?.kind === "video" && <video src={p.media.src} controls className="max-h-80 rounded w-full" />}
               <div className="flex gap-2 mt-2 text-xs">
@@ -2606,6 +2700,7 @@ function PueiSocialApp({ user, users }: { user: string; users: User[] }) {
             </div>
           );
         })}
+        </>)}
       </div>
     </div>
   );

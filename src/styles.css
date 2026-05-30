@@ -43,22 +43,25 @@
   --foreground: oklch(0.18 0.04 240);
   --accent: oklch(0.65 0.18 var(--accent-h));
   --accent-2: oklch(0.75 0.15 calc(var(--accent-h) + 20));
-  --glass: oklch(0.98 0.02 220 / 0.55);
-  --glass-strong: oklch(0.99 0.01 220 / 0.85);
-  --border: oklch(0.85 0.05 220 / 0.6);
-  --taskbar: linear-gradient(to bottom,
-    oklch(0.35 0.08 230 / 0.85) 0%,
-    oklch(0.18 0.06 240 / 0.92) 50%,
-    oklch(0.12 0.05 240 / 0.95) 100%);
-  --titlebar: linear-gradient(to bottom,
-    oklch(0.95 0.04 220 / 0.9),
-    oklch(0.82 0.08 220 / 0.85));
-  --titlebar-text: oklch(0.15 0.05 240);
+  /* Transparent enough for backdrop-blur to show through — true Aero glass */
+  --glass: rgba(210, 235, 255, 0.18);
+  --glass-strong: rgba(220, 238, 255, 0.38);
+  --border: rgba(140, 200, 255, 0.55);
+  --taskbar: linear-gradient(180deg,
+    rgba(18, 48, 110, 0.78) 0%,
+    rgba(8, 24, 72, 0.90) 50%,
+    rgba(4, 14, 50, 0.96) 100%);
+  /* Win7-style titlebar: mostly transparent blue glass */
+  --titlebar: linear-gradient(180deg,
+    rgba(200, 228, 255, 0.30) 0%,
+    rgba(170, 210, 255, 0.20) 40%,
+    rgba(140, 190, 245, 0.14) 100%);
+  --titlebar-text: rgba(20, 40, 80, 0.95);
   --muted: oklch(0.92 0.02 220);
   --muted-foreground: oklch(0.45 0.03 240);
 
-  --aero-glow: 0 0 24px oklch(var(--accent) / 0.45);
-  --aero-shadow: 0 8px 28px -6px rgba(0,0,0,0.35), 0 2px 8px rgba(0,0,0,0.2);
+  --aero-glow: 0 0 24px rgba(80, 160, 255, 0.5);
+  --aero-shadow: 0 12px 40px -8px rgba(0,0,80,0.45), 0 4px 12px rgba(0,0,0,0.25);
   --gradient-aero: linear-gradient(135deg,
     oklch(0.7 0.18 var(--accent-h) / 0.9),
     oklch(0.55 0.2 calc(var(--accent-h) + 25) / 0.9));
@@ -424,10 +427,27 @@
     radial-gradient(ellipse at 70% 80%, oklch(0.6 0.2 calc(var(--accent-h) + 30) / 0.5), transparent 50%),
     linear-gradient(135deg, oklch(0.25 0.1 240), oklch(0.45 0.15 var(--accent-h)));
 }
+/* Win7 Bliss-style wallpaper: vivid green hills + blue sky */
 .wallpaper-bliss {
   background:
-    radial-gradient(ellipse at 50% 100%, oklch(0.6 0.2 145), transparent 70%),
-    linear-gradient(to bottom, oklch(0.7 0.18 230), oklch(0.85 0.12 220) 60%, oklch(0.6 0.2 145));
+    /* clouds */
+    radial-gradient(ellipse 180px 60px at 25% 28%, rgba(255,255,255,0.85), transparent),
+    radial-gradient(ellipse 120px 45px at 60% 22%, rgba(255,255,255,0.7), transparent),
+    radial-gradient(ellipse 90px 35px at 78% 32%, rgba(255,255,255,0.6), transparent),
+    /* sky-to-horizon */
+    linear-gradient(to bottom,
+      #4a90d9 0%,
+      #6db3f2 35%,
+      #a8d8f8 55%,
+      #c8e8ff 62%),
+    /* green hills */
+    radial-gradient(ellipse 120% 50% at 50% 120%,
+      #3a8c2a 0%,
+      #4caa35 30%,
+      #5fc040 55%,
+      #70cc50 70%,
+      transparent 100%);
+  background-size: 100% 100%;
 }
 .wallpaper-aurora {
   background:
@@ -452,4 +472,24 @@
   border-radius: 6px;
   border: 2px solid transparent;
   background-clip: padding-box;
+}
+
+/* ── Responsive: small screens / mobile ── */
+@media (max-width: 640px) {
+  .taskbar-bg { height: 48px; }
+  .desktop-icon { width: 72px; }
+  .aero-start-orb { width: 36px; height: 36px; }
+  /* Make windows fullscreen on mobile */
+  [data-window] {
+    left: 0 !important;
+    top: 0 !important;
+    width: 100vw !important;
+    height: calc(100vh - 48px) !important;
+  }
+}
+
+/* ── Allow text selection inside app windows ── */
+.window-content, textarea, input, [contenteditable] {
+  user-select: text !important;
+  -webkit-user-select: text !important;
 }

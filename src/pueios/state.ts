@@ -241,11 +241,11 @@ export type Persisted = {
 };
 
 export const defaultTheme: Theme = {
-  accentH: 200,
+  accentH: 210,
   dark: false,
   transparency: true,
   animations: true,
-  wallpaper: "default",
+  wallpaper: "bliss",
   highContrast: false,
   highContrastColor: "#ffb300",
 };

@@ -80,6 +80,9 @@ export function PueiOS() {
   const [notifs, setNotifs] = useState<{ id: number; title: string; body: string }[]>([]);
   const [mascotSpeak, setMascotSpeak] = useState<string | null>(null);
   const [showMascot] = useState(true);
+  const [showVolume, setShowVolume] = useState(false);
+  const [showNetwork, setShowNetwork] = useState(false);
+  const [volume, setVolume] = useState(80);
   const [cursorPos, setCursorPos] = useState({ x: 0, y: 0 });
   const [locked, setLocked] = useState(false);
   const [loginUser, setLoginUser] = useState("");
@@ -271,7 +274,7 @@ export function PueiOS() {
     touchStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
     touchTimer.current = window.setTimeout(() => {
       if (touchStart.current) setCtxMenu({ x: touchStart.current.x, y: touchStart.current.y, items });
-    }, 600);
+    }, 8000);
   };
   const onTouchEnd = () => {
     if (touchTimer.current) { clearTimeout(touchTimer.current); touchTimer.current = null; }
@@ -615,7 +618,7 @@ export function PueiOS() {
         <div className="absolute top-4 left-4 text-xs opacity-60 flex items-center gap-2"><PueiLogoSvg size={20} /> PueiOS 2 Setup</div>
         <div className="absolute top-4 right-4 text-xs opacity-60">Build 2020.1138</div>
         {steps[installStep]}
-        <div className="fixed bottom-4 right-4 text-[10px] opacity-40">PueiOS 2 Ultimate · Pre-release watermark</div>
+        <div className="fixed bottom-4 right-4 text-[10px] opacity-40">pueios-2020-puei</div>
       </div>
     );
   }
@@ -632,7 +635,7 @@ export function PueiOS() {
           <div className="loading-bar-inner h-full" style={{ width: `${bootProgress}%`, transition: "width 0.12s" }} />
         </div>
         <div className="text-[10px] text-cyan-200/40 mt-3">Starting up…</div>
-        <div className="fixed bottom-4 right-4 text-[10px] text-cyan-200/30">For evaluation purposes only · Pre-release</div>
+        <div className="fixed bottom-4 right-4 text-[10px] text-cyan-200/30">pueios-2020-puei</div>
       </div>
     );
   }
@@ -782,8 +785,8 @@ export function PueiOS() {
           </div>
         ) : !creating ? (
           <>
-            <div className="grid gap-6 mb-8" style={{ gridTemplateColumns: `repeat(${Math.min(Math.max(users.length, 1), 4)}, minmax(0, 1fr))` }}>
-              {users.map((u) => (
+            <div className="grid gap-6 mb-8" style={{ gridTemplateColumns: `repeat(${Math.min(Math.max(users.filter(u => typeof u.password !== 'undefined').length, 1), 4)}, minmax(0, 1fr))` }}>
+              {users.filter(u => typeof u.password !== 'undefined').map((u) => (
                 <button key={u.name} onClick={() => { setLoginUser(u.name); setPwError(""); setPwInput(""); }}
                   className="flex flex-col items-center gap-2 p-4 rounded-xl"
                   style={{
@@ -892,7 +895,7 @@ export function PueiOS() {
             </div>
           </div>
         )}
-        <div className="fixed bottom-4 right-4 text-[10px] text-white/40">PueiOS 2 Ultimate · Pre-release watermark</div>
+        <div className="fixed bottom-4 right-4 text-[10px] text-white/40">pueios-2020-puei</div>
       </div>
     );
   }
@@ -917,7 +920,7 @@ export function PueiOS() {
     <div
       className={`fixed inset-0 ${typeof theme.wallpaper === "string" && theme.wallpaper.startsWith("custom:") ? "" : `wallpaper-${theme.wallpaper}`}`}
       style={{ overflow: "hidden", ...wallpaperStyle }}
-      onMouseDown={() => { setCtxMenu(null); setStartOpen(false); setShowCalendar(false); setSelectedIcon(null); }}
+      onMouseDown={() => { setCtxMenu(null); setStartOpen(false); setShowCalendar(false); setSelectedIcon(null); setShowVolume(false); setShowNetwork(false); }}
       onContextMenu={(e) => { e.preventDefault(); setCtxMenu({ x: e.clientX, y: e.clientY, items: desktopCtx() }); }}
       onTouchStart={(e) => onTouchStart(e, desktopCtx())}
       onTouchEnd={onTouchEnd}
@@ -1012,7 +1015,7 @@ export function PueiOS() {
       </div>
 
       {/* Mascot */}
-      {showMascot && (
+      {showMascot && windows.filter(w => !w.minimized).length === 0 && (
         <PueiMascot cursorPos={cursorPos} speak={mascotSpeak}
           onClick={() => {
             const tips = [
@@ -1099,15 +1102,22 @@ export function PueiOS() {
         {windows.map((w) => (
           <button key={w.id}
             className={`taskbar-item h-9 px-3 rounded flex items-center gap-2 text-xs ${w.z === Math.max(...windows.map((x)=>x.z)) && !w.minimized ? "active" : ""}`}
-            onClick={(e) => { e.stopPropagation(); if (w.minimized) focusWin(w.id); else minWin(w.id); }}>
+            onClick={(e) => { e.stopPropagation(); if (w.minimized) focusWin(w.id); else minWin(w.id); }}
+            onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); setCtxMenu({ x: e.clientX, y: e.clientY, items: [
+              { label: "Restore", action: () => focusWin(w.id) },
+              { label: "Minimize", action: () => minWin(w.id) },
+              { label: "Maximize", action: () => maxWin(w.id) },
+              { sep: true },
+              { label: "Close", action: () => closeWin(w.id) },
+            ]});}}>
             {appIcon(w.appId, 18)}
             <span className="max-w-[120px] truncate">{w.title}</span>
           </button>
         ))}
         <div className="flex-1" />
         <div className="flex items-center gap-2 px-2 text-white text-xs">
-          <span title="Network">📶</span>
-          <span title="Sound" onClick={() => blip("notify")} className="cursor-pointer">🔊</span>
+          <span title="Network" className="cursor-pointer" onClick={(e) => { e.stopPropagation(); setShowNetwork(!showNetwork); setShowVolume(false); }}>📶</span>
+          <span title="Sound" onClick={(e) => { e.stopPropagation(); setShowVolume(!showVolume); setShowNetwork(false); blip("notify"); }} className="cursor-pointer">🔊</span>
           <button className="aero-button rounded px-2 py-1 text-[10px]"
             onClick={(e) => { e.stopPropagation(); setShowCalendar(!showCalendar); setStartOpen(false); }}
             style={{ color: "var(--foreground)" }}>
@@ -1118,6 +1128,32 @@ export function PueiOS() {
         <button className="h-9 w-3 ml-1 border-l border-white/20" title="Show desktop"
           onClick={(e) => { e.stopPropagation(); setWindows(windows.map((w) => ({ ...w, minimized: true }))); }} />
       </div>
+
+      {/* Volume popup */}
+      {showVolume && (
+        <div className="fixed bottom-14 right-24 aero-glass rounded-xl p-4 z-[9000] w-52" onMouseDown={(e) => e.stopPropagation()}>
+          <div className="font-semibold text-sm mb-3">🔊 Volume</div>
+          <input type="range" min={0} max={100} value={volume}
+            onChange={(e) => { setVolume(Number(e.target.value)); }}
+            className="w-full" />
+          <div className="text-center text-xs opacity-70 mt-1">{volume}%</div>
+          {volume === 0 && <div className="text-center text-xs opacity-60 mt-1">Muted</div>}
+        </div>
+      )}
+
+      {/* Network popup */}
+      {showNetwork && (
+        <div className="fixed bottom-14 right-36 aero-glass rounded-xl p-4 z-[9000] w-56" onMouseDown={(e) => e.stopPropagation()}>
+          <div className="font-semibold text-sm mb-2">📶 PueiNet</div>
+          <div className="text-xs space-y-1">
+            <div className="flex justify-between"><span className="opacity-60">Status</span><span className="text-green-400 font-semibold">Connected</span></div>
+            <div className="flex justify-between"><span className="opacity-60">Network</span><span>PueiNet 5G</span></div>
+            <div className="flex justify-between"><span className="opacity-60">Ping</span><span>12 ms</span></div>
+            <div className="flex justify-between"><span className="opacity-60">Speed</span><span>↓ 980 Mbps</span></div>
+            <div className="flex justify-between"><span className="opacity-60">IP</span><span className="font-mono">10.0.2.puei</span></div>
+          </div>
+        </div>
+      )}
 
       {ctxMenu && <ContextMenu x={ctxMenu.x} y={ctxMenu.y} items={ctxMenu.items} onClose={() => setCtxMenu(null)} />}
     </div>
