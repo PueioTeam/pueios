@@ -763,6 +763,8 @@ export function PueiOS() {
       enterDesktop(name);
     };
     const createAccount = async () => {
+      const name = newAcc.name.trim();
+      if (!name) { setPwError("Enter an account name"); return; }
       if (users.some((u) => u.name === name)) { setPwError("Name already exists locally"); return; }
       const nu: User = { name, password: newAcc.password, avatar: newAcc.avatar || "🧑", color: newAcc.color || "200", pueiNumber: pueiNumberFor(name + ":" + Date.now()), friends: [] };
       // Reserve the name in the cloud so duplicate accounts can't exist across browsers.
