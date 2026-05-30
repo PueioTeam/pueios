@@ -1755,8 +1755,19 @@ function MessengerApp({ user, users, setUsers }: { user: string; users: User[]; 
   );
 
   const [allMsgs, setAllMsgs] = useState<ChatMessage[]>(() => loadChat());
-  // API messages keyed by the OTHER party's Puei Number
+  // API messages keyed by the OTHER party's Puei Number (incoming only)
   const [apiMsgs, setApiMsgs] = useState<Record<string, Array<{ id: string; from: string; fromNumber: string; text: string; at: number }>>>({});
+  // Sent messages persisted to localStorage (survives poll resets)
+  const sentKey = (partnerNum: string) => `pueios2-sent:${myPueiNumber}:${partnerNum}`;
+  const loadSent = (partnerNum: string): Array<{ id: string; from: string; fromNumber: string; text: string; at: number }> => {
+    try { return JSON.parse(localStorage.getItem(sentKey(partnerNum)) || "[]"); } catch { return []; }
+  };
+  const appendSent = (partnerNum: string, msg: { id: string; from: string; fromNumber: string; text: string; at: number }) => {
+    const existing = loadSent(partnerNum);
+    try { localStorage.setItem(sentKey(partnerNum), JSON.stringify([...existing, msg].slice(-500))); } catch {}
+    setSentMsgs((prev) => ({ ...prev, [partnerNum]: [...(prev[partnerNum] ?? []), msg] }));
+  };
+  const [sentMsgs, setSentMsgs] = useState<Record<string, Array<{ id: string; from: string; fromNumber: string; text: string; at: number }>>>({});
   const [text, setText] = useState("");
   const [view, setView] = useState<"chat" | "settings">("chat");
   const [addingContact, setAddingContact] = useState(false);
@@ -1781,6 +1792,18 @@ function MessengerApp({ user, users, setUsers }: { user: string; users: User[]; 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Load sent messages from localStorage for all known external contacts on mount
+  useEffect(() => {
+    if (!myPueiNumber) return;
+    const loaded: Record<string, Array<{ id: string; from: string; fromNumber: string; text: string; at: number }>> = {};
+    for (const c of externalContacts) {
+      const msgs = loadSent(c.pueiNumber);
+      if (msgs.length) loaded[c.pueiNumber] = msgs;
+    }
+    if (Object.keys(loaded).length) setSentMsgs(loaded);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [myPueiNumber]);
+
   // Poll /api/chat every 3 seconds for cross-device incoming messages
   useEffect(() => {
     if (!myPueiNumber || myPueiNumber === "—") return;
@@ -1804,7 +1827,7 @@ function MessengerApp({ user, users, setUsers }: { user: string; users: User[]; 
         setApiMsgs(grouped);
         // Auto-add any incoming sender as an external contact so they appear in the sidebar
         if (senderNumbers.size > 0) {
-          const knownLocalNumbers = new Set(users.map((u) => u.pueiNumber || pueiNumberFor(u.name + ":seed")));
+          const knownLocalNumbers = new Set(users.map((u) => u.pueiNumber).filter(Boolean));
           const currentExternal = (() => {
             try { return JSON.parse(localStorage.getItem("pueios-xcontacts") || "[]") as { pueiNumber: string }[]; }
             catch { return []; }
@@ -1957,7 +1980,14 @@ function MessengerApp({ user, users, setUsers }: { user: string; users: User[]; 
     ? allMsgs.filter((m) => (m.from === user && m.to === localPartner.name) || (m.from === localPartner.name && m.to === user))
     : [];
 
-  const externalConversation = externalPartner ? (apiMsgs[externalPartner.pueiNumber] ?? []) : [];
+  const externalConversation = externalPartner
+    ? [
+        ...(apiMsgs[externalPartner.pueiNumber] ?? []),
+        ...(sentMsgs[externalPartner.pueiNumber] ?? []),
+      ]
+        .filter((m, i, arr) => arr.findIndex((x) => x.id === m.id) === i) // deduplicate by id
+        .sort((a, b) => (a.at ?? 0) - (b.at ?? 0))
+    : [];
 
   const sendLocal = () => {
     if (!text.trim() || !localPartner) return;
@@ -1980,6 +2010,9 @@ function MessengerApp({ user, users, setUsers }: { user: string; users: User[]; 
     blip("click");
     const sentText = text;
     setText("");
+    const outMsg = { id: `out-${Date.now()}-${Math.random().toString(36).slice(2,6)}`, from: user, fromNumber: myPueiNumber, text: sentText, at: Date.now() };
+    // Persist sent message immediately so it survives poll resets
+    appendSent(externalPartner.pueiNumber, outMsg);
     try {
       const res = await fetch("/api/chat", {
         method: "POST",
@@ -1987,11 +2020,6 @@ function MessengerApp({ user, users, setUsers }: { user: string; users: User[]; 
         body: JSON.stringify({ from: user, fromNumber: myPueiNumber, toNumber: externalPartner.pueiNumber, text: sentText }),
       });
       if (!res.ok) throw new Error("send failed");
-      setApiMsgs((prev) => {
-        const key = externalPartner.pueiNumber;
-        const outMsg = { id: `out-${Date.now()}`, from: user, fromNumber: myPueiNumber, text: sentText, at: Date.now() };
-        return { ...prev, [key]: [...(prev[key] ?? []), outMsg] };
-      });
     } catch {
       blip("error");
     }
