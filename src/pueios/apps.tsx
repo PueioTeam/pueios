@@ -30,6 +30,7 @@ export type AppRendererProps = {
   systemVersion: SystemVersion;
   startUpgrade: (target: SystemVersion) => void;
   uninstallApp: (appId: AppId) => void;
+  addNativeIcon: (appId: AppId, label: string, icon: string) => void;
   onCreateShortcut: (label: string, fileId: string) => void;
   installWebApp: (label: string, url: string, iconUrl?: string) => void;
   openWebApp: (url: string, title: string) => void;
@@ -49,7 +50,7 @@ export function AppRenderer(p: AppRendererProps) {
     case "pueinet": return <PueiWebApp currentUser={p.currentUser} users={p.users} />;
     case "puei-messenger": return <MessengerApp user={p.currentUser} users={p.users} setUsers={p.setUsers} />;
     case "file-explorer": return <FileExplorerApp openApp={p.openApp} icons={p.icons} openFolder={p.openFolder} currentUser={p.currentUser} />;
-    case "app-store": return <AppStoreApp installWebApp={p.installWebApp} openApp={p.openApp} systemVersion={p.systemVersion} />;
+    case "app-store": return <AppStoreApp installWebApp={p.installWebApp} openApp={p.openApp} systemVersion={p.systemVersion} addNativeIcon={p.addNativeIcon} icons={p.icons} />;
     case "puei-social": return <PueiSocialApp user={p.currentUser} users={p.users} />;
     case "folder": return <FolderApp folderIconId={p.folderIconId!} icons={p.icons} openApp={p.openApp} openWebApp={p.openWebApp} />;
     case "web-app": return <WebAppFrame url={p.webUrl!} />;
@@ -2443,23 +2444,23 @@ function FileGrid({ files, emptyHint, onDelete, onDragStart, onDragEnd }: {
 }
 
 // ---------- App Store ----------
-function AppStoreApp({ installWebApp, openApp, systemVersion }: { installWebApp: (label: string, url: string, iconUrl?: string) => void; openApp: (id: AppId) => void; systemVersion: SystemVersion }) {
+function AppStoreApp({ installWebApp, openApp, systemVersion, addNativeIcon, icons }: { installWebApp: (label: string, url: string, iconUrl?: string) => void; openApp: (id: AppId) => void; systemVersion: SystemVersion; addNativeIcon: (appId: AppId, label: string, icon: string) => void; icons: DesktopIcon[] }) {
   const [tab, setTab] = useState<"official" | "installer">("official");
-  type StoreApp = { name: string; icon: string; desc: string; appId: AppId };
-  // Only Puei Team–built apps. AppStore is a closed ecosystem.
+  type StoreApp = { name: string; icon: string; desc: string; appId: AppId; preInstalled?: boolean };
   const official: StoreApp[] = [
-    { name: "PueiSocial",      icon: "📣", desc: "The official PueiOS social network.",     appId: "puei-social" },
-    { name: "Puei Messenger",  icon: "💬", desc: "Chat by PueiNumber.",                     appId: "puei-messenger" },
-    { name: "PueiWeb",         icon: "🌐", desc: "System browser + AI search engine.",      appId: "pueinet" },
-    { name: "Puei Paint 2",    icon: "🎨", desc: "Paint and save images as wallpapers.",    appId: "puei-paint" },
-    { name: "Installer",       icon: "📥", desc: "Install trusted web apps as shortcuts.",  appId: "app-store" },
-    { name: "Settings",        icon: "⚙️", desc: "Personalize, dark mode, accessibility.",  appId: "settings" },
-    { name: "Computer",        icon: "🗂️", desc: "File system explorer.",                   appId: "file-explorer" },
-    { name: "Notepad",         icon: "📝", desc: "Write and save text files.",              appId: "notepad" },
-    { name: "Calculator",      icon: "🧮", desc: "Glossy arithmetic.",                       appId: "calculator" },
-    { name: "Solitaire",       icon: "🃏", desc: "Classic Klondike Solitaire vs Puei Bot AI.", appId: "solitaire" },
-    { name: "Chess",           icon: "♟️", desc: "Chess vs adaptive Puei Bot AI.",            appId: "chess" },
+    { name: "PueiSocial",     icon: "📣", desc: "The official PueiOS social network.",          appId: "puei-social",    preInstalled: true },
+    { name: "Puei Messenger", icon: "💬", desc: "Chat by PueiNumber.",                          appId: "puei-messenger", preInstalled: true },
+    { name: "PueiWeb",        icon: "🌐", desc: "System browser + AI search engine.",           appId: "pueinet",        preInstalled: true },
+    { name: "Puei Paint 2",   icon: "🎨", desc: "Paint and save images as wallpapers.",         appId: "puei-paint",     preInstalled: true },
+    { name: "Settings",       icon: "⚙️", desc: "Personalize, dark mode, accessibility.",       appId: "settings",       preInstalled: true },
+    { name: "Computer",       icon: "🗂️", desc: "File system explorer.",                        appId: "file-explorer",  preInstalled: true },
+    { name: "Notepad",        icon: "📝", desc: "Write and save text files.",                   appId: "notepad",        preInstalled: true },
+    { name: "Calculator",     icon: "🧮", desc: "Glossy arithmetic.",                            appId: "calculator",     preInstalled: true },
+    { name: "Chess",          icon: "♟️", desc: "Chess vs Puei Bot AI — fully functional.",     appId: "chess",          preInstalled: false },
+    { name: "Solitaire (Lite)",icon:"🃏", desc: "Classic Klondike Solitaire.",                   appId: "solitaire",      preInstalled: false },
+    { name: "Installer",      icon: "📥", desc: "Install trusted web apps as desktop shortcuts.",appId: "app-store",      preInstalled: true },
   ];
+  const isOnDesktop = (appId: AppId) => icons.some((i) => i.appId === appId && !i.fileId && !i.webUrl);
   return (
     <div className="flex h-full">
       <div className="w-44 p-2 border-r text-sm overflow-auto" style={{ background: "var(--glass)" }}>
@@ -2470,29 +2471,42 @@ function AppStoreApp({ installWebApp, openApp, systemVersion }: { installWebApp:
             style={{ background: tab === k ? "var(--gradient-aero)" : "transparent", color: tab === k ? "white" : undefined }}>{l}</div>
         ))}
         <div className="text-[10px] opacity-60 px-2 mt-4 leading-snug">
-          PueiOS 2 is a closed ecosystem. Only Puei Team–built apps are allowed here. Unofficial apps (e.g. "PueiReddit") are not permitted.
+          PueiOS 2 is a closed ecosystem. Only Puei Team–built apps are allowed here.
         </div>
       </div>
       <div className="flex-1 p-5 overflow-auto">
         {tab === "installer" ? <InstallerPane installWebApp={installWebApp} /> : (
           <div>
             <h2 className="text-2xl font-bold mb-1">PueiOS 2 App Store</h2>
-            <p className="text-sm opacity-70 mb-4">Verified, first-party apps built by the Puei Team. Closed ecosystem — security and trust over openness.</p>
+            <p className="text-sm opacity-70 mb-4">Verified, first-party apps built by the Puei Team.</p>
             <div className="grid grid-cols-3 gap-3">
-              {official.map((a) => (
-                <div key={a.name} className="aero-glass-light rounded-lg p-3 flex flex-col">
-                  <div className="flex items-center gap-2">
-                    <div className="text-3xl">{a.icon}</div>
-                    <div>
-                      <div className="font-semibold">{a.name}</div>
-                      <div className="text-[10px] opacity-60">✓ Official · Puei Team</div>
+              {official.map((a) => {
+                const onDesktop = isOnDesktop(a.appId);
+                return (
+                  <div key={a.name} className="aero-glass-light rounded-lg p-3 flex flex-col">
+                    <div className="flex items-center gap-2">
+                      <div className="text-3xl">{a.icon}</div>
+                      <div>
+                        <div className="font-semibold">{a.name}</div>
+                        <div className="text-[10px] opacity-60">{a.preInstalled ? "✓ Pre-installed" : "⬇ Installable"} · Puei Team</div>
+                      </div>
+                    </div>
+                    <div className="text-xs opacity-70 mt-1 flex-1">{a.desc}</div>
+                    <div className="flex gap-1 mt-2">
+                      <button className="aero-button rounded px-2 py-1 text-xs flex-1"
+                        onClick={() => openApp(a.appId)}>Open</button>
+                      {!a.preInstalled && (
+                        <button
+                          className="aero-button rounded px-2 py-1 text-xs flex-1"
+                          style={{ background: onDesktop ? "rgba(80,200,120,0.25)" : undefined, color: onDesktop ? "#4ade80" : undefined }}
+                          onClick={() => { if (!onDesktop) { addNativeIcon(a.appId, a.name, a.icon); blip("notify"); } }}>
+                          {onDesktop ? "✓ Installed" : "⬇ Install"}
+                        </button>
+                      )}
                     </div>
                   </div>
-                  <div className="text-xs opacity-70 mt-1 h-8">{a.desc}</div>
-                  <button className="aero-button rounded px-3 py-1 text-xs mt-auto w-full"
-                    onClick={() => openApp(a.appId)}>Open</button>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}
@@ -2934,34 +2948,209 @@ function SolitaireApp() {
   );
 }
 
-// ---------- Chess (vs AI bot, minimal board) ----------
+// ---------- Chess (vs AI bot — real legal moves + minimax) ----------
 function ChessApp() {
-  const init = [
-    "♜♞♝♛♚♝♞♜",
-    "♟♟♟♟♟♟♟♟",
-    "        ",
-    "        ",
-    "        ",
-    "        ",
-    "♙♙♙♙♙♙♙♙",
-    "♖♘♗♕♔♗♘♖",
-  ];
-  const [turn, setTurn] = useState<"You" | "Bot">("You");
+  type Piece = { type: "K"|"Q"|"R"|"B"|"N"|"P"; color: "w"|"b" };
+  type Board = (Piece|null)[][];
+  type Pos = [number,number];
+
+  const initBoard = (): Board => {
+    const b: Board = Array.from({length:8},()=>Array(8).fill(null));
+    const order: Piece["type"][] = ["R","N","B","Q","K","B","N","R"];
+    for (let c=0;c<8;c++) {
+      b[0][c]={type:order[c],color:"b"};
+      b[1][c]={type:"P",color:"b"};
+      b[6][c]={type:"P",color:"w"};
+      b[7][c]={type:order[c],color:"w"};
+    }
+    return b;
+  };
+
+  const GLYPHS: Record<string,string> = {wK:"♔",wQ:"♕",wR:"♖",wB:"♗",wN:"♘",wP:"♙",bK:"♚",bQ:"♛",bR:"♜",bB:"♝",bN:"♞",bP:"♟"};
+
+  const inBounds = (r:number,c:number) => r>=0&&r<8&&c>=0&&c<8;
+
+  const slideMoves = (board:Board, r:number, c:number, dirs:[number,number][], color:"w"|"b"):Pos[] => {
+    const moves:Pos[]=[];
+    for (const [dr,dc] of dirs) {
+      let nr=r+dr,nc=c+dc;
+      while(inBounds(nr,nc)){
+        const t=board[nr][nc];
+        if(!t){moves.push([nr,nc]);}
+        else{if(t.color!==color)moves.push([nr,nc]);break;}
+        nr+=dr;nc+=dc;
+      }
+    }
+    return moves;
+  };
+
+  const pieceMoves = (board:Board, r:number, c:number, color:"w"|"b"):Pos[] => {
+    const p=board[r][c]; if(!p) return [];
+    const moves:Pos[]=[];
+    const opp=(col:"w"|"b")=>col==="w"?"b":"w";
+    if(p.type==="P"){
+      const dir=p.color==="w"?-1:1;
+      const startRow=p.color==="w"?6:1;
+      if(inBounds(r+dir,c)&&!board[r+dir][c]){
+        moves.push([r+dir,c]);
+        if(r===startRow&&!board[r+2*dir][c])moves.push([r+2*dir,c]);
+      }
+      for(const dc of[-1,1]){
+        if(inBounds(r+dir,c+dc)&&board[r+dir][c+dc]?.color===opp(color))moves.push([r+dir,c+dc]);
+      }
+    } else if(p.type==="N"){
+      for(const [dr,dc] of[[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]]){
+        const [nr,nc]=[r+dr,c+dc];
+        if(inBounds(nr,nc)&&board[nr][nc]?.color!==color)moves.push([nr,nc]);
+      }
+    } else if(p.type==="K"){
+      for(const [dr,dc] of[[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]]){
+        const [nr,nc]=[r+dr,c+dc];
+        if(inBounds(nr,nc)&&board[nr][nc]?.color!==color)moves.push([nr,nc]);
+      }
+    } else if(p.type==="R") moves.push(...slideMoves(board,r,c,[[-1,0],[1,0],[0,-1],[0,1]],color));
+    else if(p.type==="B") moves.push(...slideMoves(board,r,c,[[-1,-1],[-1,1],[1,-1],[1,1]],color));
+    else if(p.type==="Q") moves.push(...slideMoves(board,r,c,[[-1,0],[1,0],[0,-1],[0,1],[-1,-1],[-1,1],[1,-1],[1,1]],color));
+    return moves;
+  };
+
+  const applyMove = (board:Board, from:Pos, to:Pos): Board => {
+    const nb=board.map(row=>[...row]);
+    const p=nb[from[0]][from[1]];
+    nb[to[0]][to[1]]=p;
+    nb[from[0]][from[1]]=null;
+    // pawn promotion
+    if(p?.type==="P"&&(to[0]===0||to[0]===7)) nb[to[0]][to[1]]={type:"Q",color:p.color};
+    return nb;
+  };
+
+  const VALUE: Record<string,number> = {P:1,N:3,B:3,R:5,Q:9,K:100};
+  const evalBoard = (board:Board): number => {
+    let score=0;
+    for(const row of board) for(const p of row) if(p) score+=(p.color==="w"?1:-1)*VALUE[p.type];
+    return score;
+  };
+
+  const allMoves = (board:Board, color:"w"|"b") => {
+    const moves:[Pos,Pos][]=[];
+    for(let r=0;r<8;r++) for(let c=0;c<8;c++) {
+      if(board[r][c]?.color===color) for(const to of pieceMoves(board,r,c,color)) moves.push([[r,c],to]);
+    }
+    return moves;
+  };
+
+  const minimax = (board:Board, depth:number, alpha:number, beta:number, maximizing:boolean): number => {
+    if(depth===0) return evalBoard(board);
+    const color=maximizing?"w":"b";
+    const moves=allMoves(board,color);
+    if(!moves.length) return maximizing?-999:999;
+    if(maximizing){
+      let best=-Infinity;
+      for(const [from,to] of moves){
+        const val=minimax(applyMove(board,from,to),depth-1,alpha,beta,false);
+        best=Math.max(best,val); alpha=Math.max(alpha,val);
+        if(beta<=alpha) break;
+      }
+      return best;
+    } else {
+      let best=Infinity;
+      for(const [from,to] of moves){
+        const val=minimax(applyMove(board,from,to),depth-1,alpha,beta,true);
+        best=Math.min(best,val); beta=Math.min(beta,val);
+        if(beta<=alpha) break;
+      }
+      return best;
+    }
+  };
+
+  const bestBotMove = (board:Board):[Pos,Pos]|null => {
+    const moves=allMoves(board,"b");
+    if(!moves.length) return null;
+    let best=-Infinity; let bestMove=moves[0];
+    for(const [from,to] of moves){
+      const val=minimax(applyMove(board,from,to),2,-Infinity,Infinity,true);
+      const score=-val; // bot is black, minimizing
+      if(score>best){best=score;bestMove=[from,to];}
+    }
+    return bestMove;
+  };
+
+  const [board,setBoard]=useState<Board>(initBoard);
+  const [selected,setSelected]=useState<Pos|null>(null);
+  const [legalMoves,setLegalMoves]=useState<Pos[]>([]);
+  const [turn,setTurn]=useState<"w"|"b">("w");
+  const [status,setStatus]=useState("Your turn (white)");
+  const [thinking,setThinking]=useState(false);
+  const [lastMove,setLastMove]=useState<[Pos,Pos]|null>(null);
+
+  const botMove = (b:Board) => {
+    setThinking(true);
+    setTimeout(()=>{
+      const mv=bestBotMove(b);
+      if(mv){
+        const nb=applyMove(b,mv[0],mv[1]);
+        setBoard(nb); setLastMove(mv);
+        const wMoves=allMoves(nb,"w");
+        if(!wMoves.length){setStatus("Checkmate! Puei Bot wins 🤖");}
+        else{setStatus("Your turn (white)");}
+      } else {
+        setStatus("Puei Bot has no moves — stalemate!");
+      }
+      setTurn("w"); setThinking(false);
+    }, 300);
+  };
+
+  const handleClick = (r:number,c:number) => {
+    if(turn!=="w"||thinking) return;
+    const piece=board[r][c];
+    if(selected){
+      const isLegal=legalMoves.some(([lr,lc])=>lr===r&&lc===c);
+      if(isLegal){
+        const nb=applyMove(board,selected,[r,c]);
+        setBoard(nb); setLastMove([selected,[r,c]]);
+        setSelected(null); setLegalMoves([]);
+        const bMoves=allMoves(nb,"b");
+        if(!bMoves.length){setStatus("Checkmate! You win 🎉");return;}
+        setStatus("Puei Bot is thinking…"); setTurn("b");
+        botMove(nb);
+      } else if(piece?.color==="w"){
+        setSelected([r,c]); setLegalMoves(pieceMoves(board,r,c,"w"));
+      } else {
+        setSelected(null); setLegalMoves([]);
+      }
+    } else {
+      if(piece?.color==="w"){ setSelected([r,c]); setLegalMoves(pieceMoves(board,r,c,"w")); }
+    }
+  };
+
+  const isHighlighted=(r:number,c:number)=>legalMoves.some(([lr,lc])=>lr===r&&lc===c);
+  const isSelected=(r:number,c:number)=>selected?.[0]===r&&selected?.[1]===c;
+  const isLastMove=(r:number,c:number)=>lastMove&&([lastMove[0],lastMove[1]].some(([lr,lc])=>lr===r&&lc===c));
+
   return (
-    <div className="p-4 h-full text-center">
+    <div className="p-4 h-full flex flex-col items-center overflow-auto">
       <h2 className="text-lg font-bold mb-1">♟️ Chess · vs Puei Bot</h2>
-      <div className="text-xs opacity-70 mb-3">Turn: {turn}</div>
-      <div className="inline-grid grid-cols-8 border-2 border-black/40">
-        {init.flatMap((row, r) => Array.from(row).map((c, ci) => (
-          <div key={`${r}-${ci}`}
-            onClick={() => { setTurn(turn === "You" ? "Bot" : "You"); blip("click"); }}
-            className="w-10 h-10 flex items-center justify-center text-2xl cursor-pointer"
-            style={{ background: (r + ci) % 2 === 0 ? "#f0d9b5" : "#b58863", color: "#111" }}>
-            {c.trim()}
-          </div>
-        )))}
+      <div className="text-xs opacity-70 mb-3">{status}</div>
+      <div className="inline-grid grid-cols-8 border-2 border-black/40 select-none">
+        {board.map((row,r)=>row.map((piece,c)=>{
+          const base=(r+c)%2===0?"#f0d9b5":"#b58863";
+          const bg=isSelected(r,c)?"#f6f669":isHighlighted(r,c)?((r+c)%2===0?"#cdd16f":"#aaa23a"):isLastMove(r,c)?((r+c)%2===0?"#cdd26e":"#aaa23a"):base;
+          const key=piece?`${piece.color}${piece.type}`:"";
+          return (
+            <div key={`${r}-${c}`} onClick={()=>handleClick(r,c)}
+              className="w-10 h-10 flex items-center justify-center text-2xl cursor-pointer relative"
+              style={{background:bg,color:"#111"}}>
+              {piece && <span style={{textShadow:"0 1px 2px rgba(0,0,0,0.3)"}}>{GLYPHS[key]}</span>}
+              {isHighlighted(r,c)&&!piece&&<div className="w-3 h-3 rounded-full bg-black/25 absolute"/>}
+            </div>
+          );
+        }))}
       </div>
-      <div className="mt-3 text-xs opacity-60">Click a square to pass turn. AI bot moves automatically (simulated).</div>
+      <button className="aero-button rounded px-3 py-1 text-xs mt-4"
+        onClick={()=>{setBoard(initBoard());setSelected(null);setLegalMoves([]);setTurn("w");setStatus("Your turn (white)");setLastMove(null);}}>
+        🔄 New Game
+      </button>
+      <div className="mt-2 text-xs opacity-50">You are white. Click a piece then click a destination.</div>
     </div>
   );
 }
