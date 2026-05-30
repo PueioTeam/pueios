@@ -2144,8 +2144,6 @@ function FileExplorerApp({ openApp, icons, openFolder, currentUser }: { openApp:
   const imgFiles = files.filter((f) => f.type === "image" && !f.folder);
   const myFolders = icons.filter((i) => i.appId === "folder");
 
-  const openFile = (f: SavedFile) => openApp(f.type === "text" ? "notepad" : "puei-paint", f.id);
-
   const handleDrop = (folderId: string) => {
     if (!dragFileId) return;
     moveFile(dragFileId, folderId);
@@ -2167,7 +2165,9 @@ function FileExplorerApp({ openApp, icons, openFolder, currentUser }: { openApp:
             style={{ background: folder === k ? "rgba(255,255,255,0.4)" : undefined }}>{l}</div>
         ))}
         <div className="font-semibold mt-3 mb-2 opacity-70 text-xs">COMPUTER</div>
-        <div className="px-2 py-1 rounded opacity-70">💽 C:\ PueiDrive</div>
+        <div className="px-2 py-1 rounded hover:bg-white/30 cursor-pointer"
+          onClick={() => setFolder("home")}
+          style={{ background: folder === "home" ? "rgba(255,255,255,0.4)" : undefined }}>💽 C:\ PueiDrive</div>
         {dragFileId && (
           <div className="mt-3 text-[10px] opacity-60 px-2">
             📂 Drag to a folder below to move file
@@ -2205,14 +2205,12 @@ function FileExplorerApp({ openApp, icons, openFolder, currentUser }: { openApp:
         )}
         {folder === "documents" && (
           <FileGrid files={textFiles} emptyHint="No saved documents. Open Notepad and click Save to create one."
-            openFile={openFile}
             onDelete={(id) => { deleteFile(id); setFiles(myFiles()); }}
             onDragStart={(id) => setDragFileId(id)}
             onDragEnd={() => { setDragFileId(null); setDropTarget(null); }} />
         )}
         {folder === "pictures" && (
           <FileGrid files={imgFiles} emptyHint="No saved pictures. Open Puei Paint 2 and click Save to create one."
-            openFile={openFile}
             onDelete={(id) => { deleteFile(id); setFiles(myFiles()); }}
             onDragStart={(id) => setDragFileId(id)}
             onDragEnd={() => { setDragFileId(null); setDropTarget(null); }} />
@@ -2258,9 +2256,9 @@ function FileExplorerApp({ openApp, icons, openFolder, currentUser }: { openApp:
   );
 }
 
-function FileGrid({ files, emptyHint, openFile, onDelete, onDragStart, onDragEnd }: {
+function FileGrid({ files, emptyHint, onDelete, onDragStart, onDragEnd }: {
   files: SavedFile[]; emptyHint: string;
-  openFile: (f: SavedFile) => void; onDelete: (id: string) => void;
+  onDelete: (id: string) => void;
   onDragStart?: (id: string) => void; onDragEnd?: () => void;
 }) {
   const [ctxFile, setCtxFile] = useState<{ x: number; y: number; id: string } | null>(null);
@@ -2268,7 +2266,7 @@ function FileGrid({ files, emptyHint, openFile, onDelete, onDragStart, onDragEnd
   return (
     <div className="grid grid-cols-5 gap-3 relative">
       {files.map((f) => (
-        <div key={f.id} onDoubleClick={() => openFile(f)}
+        <div key={f.id}
           draggable
           onDragStart={(e) => { e.dataTransfer.effectAllowed = "move"; onDragStart?.(f.id); }}
           onDragEnd={() => onDragEnd?.()}
@@ -2284,11 +2282,6 @@ function FileGrid({ files, emptyHint, openFile, onDelete, onDragStart, onDragEnd
         <div className="fixed z-[9999] aero-glass rounded shadow-xl py-1 text-sm"
           style={{ left: ctxFile.x, top: ctxFile.y, minWidth: 140 }}
           onMouseLeave={() => setCtxFile(null)}>
-          <button className="w-full text-left px-4 py-1.5 hover:bg-white/30"
-            onClick={() => { const f = files.find(x => x.id === ctxFile.id); if (f) openFile(f); setCtxFile(null); }}>
-            Open
-          </button>
-          <div className="my-0.5 border-t border-white/20" />
           <button className="w-full text-left px-4 py-1.5 hover:bg-white/30 text-red-400"
             onClick={() => { onDelete(ctxFile.id); setCtxFile(null); }}>
             🗑️ Delete
@@ -2440,8 +2433,7 @@ function FolderApp({ folderIconId, icons, openApp, openWebApp }: {
         : <div className="grid grid-cols-5 gap-3">
             {savedFiles.map((f) => (
               <div key={f.id}
-                onDoubleClick={() => openApp(f.type === "text" ? "notepad" : "puei-paint", f.id)}
-                className="text-center p-2 rounded hover:bg-white/30 cursor-pointer">
+                className="text-center p-2 rounded hover:bg-white/30 cursor-default">
                 <div className="text-4xl">{f.type === "image" ? "🖼️" : "📄"}</div>
                 <div className="text-xs mt-1 truncate">{f.name}</div>
               </div>
