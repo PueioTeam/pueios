@@ -399,7 +399,7 @@ export function PueiOS() {
         const n = prompt("Rename to:", icon.label);
         if (n) setIcons(icons.map((i) => i.id === icon.id ? { ...i, label: n } : i));
       }},
-      { label: icon.fileId || icon.webUrl ? "🗑️ Delete shortcut" : "🗑️ Uninstall", action: () => {
+      { label: "🗑️ Delete shortcut", action: () => {
         setIcons((prev) => prev.filter((i) => i.id !== icon.id && i.folderId !== icon.id));
       }},
       ...(icon.appId === "folder" ? [{ label: "New shortcut here", action: () => {
