@@ -682,7 +682,7 @@ function PaintApp({ fileId, onCreateShortcut, currentUser }: { fileId?: string; 
           style={{ width: "100%", height: "100%", background: "white", touchAction: "none", cursor: locked ? "not-allowed" : "crosshair" }} />
         {locked && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <div className="bg-black/30 text-white text-sm px-4 py-2 rounded-lg">🔒 Saved — click Unlock to edit</div>
+            <div className="bg-black/30 text-white text-sm px-4 py-2 rounded-lg">🔒 Read-only</div>
           </div>
         )}
       </div>
