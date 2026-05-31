@@ -2252,12 +2252,14 @@ function FileExplorerApp({ openApp, icons, openFolder, currentUser }: { openApp:
         )}
         {folder === "documents" && (
           <FileGrid files={textFiles} emptyHint="No saved documents. Open Notepad and click Save to create one."
+            onOpen={(f) => openApp("notepad", f.id)}
             onDelete={(id) => { deleteFile(id); setFiles(myFiles()); }}
             onDragStart={(id) => setDragFileId(id)}
             onDragEnd={() => { setDragFileId(null); setDropTarget(null); }} />
         )}
         {folder === "pictures" && (
           <FileGrid files={imgFiles} emptyHint="No saved pictures. Open Puei Paint 2 and click Save to create one."
+            onOpen={(f) => openApp("puei-paint", f.id)}
             onDelete={(id) => { deleteFile(id); setFiles(myFiles()); }}
             onDragStart={(id) => setDragFileId(id)}
             onDragEnd={() => { setDragFileId(null); setDropTarget(null); }} />
@@ -2274,7 +2276,7 @@ function FileExplorerApp({ openApp, icons, openFolder, currentUser }: { openApp:
           </div>
         )}
         {folder === "puei-drive" && (
-          <PueiDrivePane files={files} currentUser={currentUser} />
+          <PueiDrivePane files={files} currentUser={currentUser} openApp={openApp} onDelete={(id) => { deleteFile(id); setFiles(myFiles()); }} />
         )}
         {folder === "folders" && !openFolderId && (
           myFolders.length === 0
@@ -2378,38 +2380,113 @@ function FolderFileGrid({ files, icons, onOpen, onDelete, onOpenIcon }: {
   );
 }
 
-function FileGrid({ files, emptyHint, onDelete, onDragStart, onDragEnd }: {
+function FileGrid({ files, emptyHint, onOpen, onDelete, onDragStart, onDragEnd }: {
   files: SavedFile[]; emptyHint: string;
+  onOpen?: (f: SavedFile) => void;
   onDelete: (id: string) => void;
   onDragStart?: (id: string) => void; onDragEnd?: () => void;
 }) {
-  const [ctxFile, setCtxFile] = useState<{ x: number; y: number; id: string } | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const selectedFile = files.find(f => f.id === selectedId) ?? null;
   if (files.length === 0) return <div className="text-sm opacity-70 p-6 text-center">{emptyHint}</div>;
   return (
-    <div className="grid grid-cols-5 gap-3 relative">
-      {files.map((f) => (
-        <div key={f.id}
-          draggable
-          onDragStart={(e) => { e.dataTransfer.effectAllowed = "move"; onDragStart?.(f.id); }}
-          onDragEnd={() => onDragEnd?.()}
-          onContextMenu={(e) => { e.preventDefault(); setCtxFile({ x: e.clientX, y: e.clientY, id: f.id }); }}
-          className="text-center p-2 rounded hover:bg-white/30 cursor-pointer select-none">
-          {f.type === "image"
-            ? <img src={f.content} alt={f.name} className="w-12 h-12 mx-auto object-cover rounded shadow" />
-            : <div className="text-4xl">📄</div>}
-          <div className="text-xs mt-1 truncate">{f.name}</div>
+    <div>
+      {/* Toolbar */}
+      <div className="flex items-center gap-2 mb-3 pb-2 border-b">
+        <button className="aero-button rounded px-3 py-1 text-xs"
+          disabled={!selectedFile} style={{ opacity: selectedFile ? 1 : 0.4 }}
+          onClick={() => { if (selectedFile && onOpen) onOpen(selectedFile); }}>📂 Open</button>
+        <button className="aero-button rounded px-3 py-1 text-xs text-red-400"
+          disabled={!selectedId} style={{ opacity: selectedId ? 1 : 0.4 }}
+          onClick={() => { if (selectedId) { onDelete(selectedId); setSelectedId(null); } }}>🗑️ Delete</button>
+        {selectedFile
+          ? <span className="text-xs opacity-50 ml-1">Selected: {selectedFile.name}</span>
+          : <span className="text-xs opacity-40 ml-1">Click a file to select it</span>}
+      </div>
+      <div className="grid grid-cols-5 gap-3">
+        {files.map((f) => (
+          <div key={f.id}
+            draggable
+            onDragStart={(e) => { e.dataTransfer.effectAllowed = "move"; onDragStart?.(f.id); }}
+            onDragEnd={() => onDragEnd?.()}
+            onClick={() => setSelectedId(f.id === selectedId ? null : f.id)}
+            onDoubleClick={() => onOpen?.(f)}
+            className="text-center p-2 rounded cursor-pointer select-none transition-all"
+            style={{
+              background: f.id === selectedId ? "rgba(80,160,255,0.35)" : "transparent",
+              outline: f.id === selectedId ? "2px solid rgba(80,160,255,0.7)" : "none",
+            }}>
+            {f.type === "image"
+              ? <img src={f.content} alt={f.name} className="w-12 h-12 mx-auto object-cover rounded shadow" />
+              : <div className="text-4xl">📄</div>}
+            <div className="text-xs mt-1 truncate">{f.name}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ---------- Puei Drive Pane ----------
+function PueiDrivePane({ files, currentUser, openApp, onDelete }: {
+  files: SavedFile[]; currentUser: string;
+  openApp: (id: AppId, fileId?: string) => void;
+  onDelete: (id: string) => void;
+}) {
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const myFiles = files.filter(f => !f.owner || f.owner === currentUser);
+  const totalSize = myFiles.reduce((acc, f) => acc + f.content.length, 0);
+  const usedKB = (totalSize / 1024).toFixed(1);
+  const selectedFile = myFiles.find(f => f.id === selectedId) ?? null;
+
+  return (
+    <div className="flex flex-col h-full">
+      {/* Drive header */}
+      <div className="flex items-center gap-4 mb-4 p-3 rounded-xl" style={{ background: "rgba(80,140,255,0.12)", border: "1px solid rgba(80,140,255,0.2)" }}>
+        <div className="text-4xl">☁️</div>
+        <div>
+          <div className="font-semibold">Puei Drive</div>
+          <div className="text-xs opacity-60">{myFiles.length} file{myFiles.length !== 1 ? "s" : ""} · {usedKB} KB used</div>
+          <div className="text-[10px] opacity-40 mt-0.5">Files sync automatically across your PueiOS sessions</div>
         </div>
-      ))}
-      {ctxFile && (
-        <div className="fixed z-[9999] aero-glass rounded shadow-xl py-1 text-sm"
-          style={{ left: ctxFile.x, top: ctxFile.y, minWidth: 140 }}
-          onMouseLeave={() => setCtxFile(null)}>
-          <button className="w-full text-left px-4 py-1.5 hover:bg-white/30 text-red-400"
-            onClick={() => { onDelete(ctxFile.id); setCtxFile(null); }}>
-            🗑️ Delete
-          </button>
-        </div>
-      )}
+      </div>
+      {/* Toolbar */}
+      <div className="flex items-center gap-2 mb-3 pb-2 border-b">
+        <button className="aero-button rounded px-3 py-1 text-xs"
+          disabled={!selectedFile} style={{ opacity: selectedFile ? 1 : 0.4 }}
+          onClick={() => { if (selectedFile) openApp(selectedFile.type === "image" ? "puei-paint" : "notepad", selectedFile.id); }}>
+          📂 Open
+        </button>
+        <button className="aero-button rounded px-3 py-1 text-xs text-red-400"
+          disabled={!selectedId} style={{ opacity: selectedId ? 1 : 0.4 }}
+          onClick={() => { if (selectedId) { onDelete(selectedId); setSelectedId(null); } }}>
+          🗑️ Delete
+        </button>
+        {selectedFile
+          ? <span className="text-xs opacity-50 ml-1">Selected: {selectedFile.name}</span>
+          : <span className="text-xs opacity-40 ml-1">Click a file to select it</span>}
+      </div>
+      {myFiles.length === 0
+        ? <div className="text-sm opacity-60 text-center p-8">No files yet. Save something from Notepad or Puei Paint 2 and it will appear here.</div>
+        : <div className="grid grid-cols-5 gap-3 overflow-auto">
+            {myFiles.map(f => (
+              <div key={f.id}
+                onClick={() => setSelectedId(f.id === selectedId ? null : f.id)}
+                onDoubleClick={() => openApp(f.type === "image" ? "puei-paint" : "notepad", f.id)}
+                className="text-center p-2 rounded cursor-pointer select-none transition-all"
+                style={{
+                  background: f.id === selectedId ? "rgba(80,160,255,0.35)" : "transparent",
+                  outline: f.id === selectedId ? "2px solid rgba(80,160,255,0.7)" : "none",
+                }}>
+                {f.type === "image"
+                  ? <img src={f.content} alt={f.name} className="w-12 h-12 mx-auto object-cover rounded shadow" />
+                  : <div className="text-4xl">📄</div>}
+                <div className="text-xs mt-1 truncate">{f.name}</div>
+                <div className="text-[9px] opacity-40">{(f.content.length / 1024).toFixed(1)} KB</div>
+              </div>
+            ))}
+          </div>
+      }
     </div>
   );
 }
