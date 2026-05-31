@@ -1550,7 +1550,7 @@ function PueiMailApp({ currentUser, users }: { currentUser: string; users: User[
             <div className="flex items-center gap-2">
               <span className="text-xs w-20 opacity-60">To:</span>
               <input value={draft.to} onChange={(e) => setDraft({ ...draft, to: e.target.value })}
-                placeholder="Name, username, Pueio Number, or email@pueimail.puei"
+                placeholder="Pueio Number (e.g. 123-456-789)"
                 className="flex-1 px-3 py-1.5 rounded text-sm outline-none"
                 style={{ background: "white", color: "#111", border: "1px solid var(--border)" }}
                 list="mail-contacts" />
