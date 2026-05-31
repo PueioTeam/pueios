@@ -1807,10 +1807,9 @@ function PueiCloudChatApp({ user, users, setUsers }: { user: string; users: User
         setApiMsgs(grouped);
         const senders = Object.keys(grouped);
         if (senders.length) {
-          const knownNums = new Set(users.map(u=>u.pueiNumber).filter(Boolean));
           const curr: {pueiNumber:string}[] = (() => { try { return JSON.parse(localStorage.getItem("pcc2-contacts")||"[]"); } catch { return []; } })();
           const existing = new Set(curr.map(c=>c.pueiNumber));
-          const toAdd = senders.filter(n=>!knownNums.has(n)&&!existing.has(n)).map(n=>({pueiNumber:n}));
+          const toAdd = senders.filter(n=>!existing.has(n)).map(n=>({pueiNumber:n}));
           if (toAdd.length) { saveExtContacts([...curr,...toAdd]); blip("notify"); }
         }
       } catch {}
@@ -1847,6 +1846,11 @@ function PueiCloudChatApp({ user, users, setUsers }: { user: string; users: User
 
   const send = async () => {
     if (!text.trim()) return;
+    if (!myPueiNumber || !/^\d{3}-\d{3}-\d{3}$/.test(myPueiNumber)) {
+      blip("error");
+      alert("Your Puei Number is not ready yet. Reopen PueiCloudChat and try again.");
+      return;
+    }
     const msg=text; setText(""); blip("click");
     if (activeKind==="local"&&localPartner) {
       appendChat({id:`m-${Date.now()}-${Math.random().toString(36).slice(2,6)}`,from:user,to:localPartner.name,text:msg,at:Date.now()});
@@ -1854,10 +1858,20 @@ function PueiCloudChatApp({ user, users, setUsers }: { user: string; users: User
       if (localPartner.pueiNumber)
         fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({from:user,fromNumber:myPueiNumber,toNumber:localPartner.pueiNumber,text:msg})}).catch(()=>{});
     } else if (activeKind==="external"&&extPartner) {
-      const out={id:`out-${Date.now()}-${Math.random().toString(36).slice(2,6)}`,from:user,fromNumber:myPueiNumber,text:msg,at:Date.now()};
-      appendSent(extPartner.pueiNumber,out);
-      try { await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({from:user,fromNumber:myPueiNumber,toNumber:extPartner.pueiNumber,text:msg})}); }
-      catch { blip("error"); }
+      try {
+        const res = await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({from:user,fromNumber:myPueiNumber,toNumber:extPartner.pueiNumber,text:msg})});
+        if (!res.ok) {
+          blip("error");
+          alert("Message could not be delivered. Please try again.");
+          return;
+        }
+        const out={id:`out-${Date.now()}-${Math.random().toString(36).slice(2,6)}`,from:user,fromNumber:myPueiNumber,text:msg,at:Date.now()};
+        appendSent(extPartner.pueiNumber,out);
+      }
+      catch {
+        blip("error");
+        alert("Message could not be delivered. Please check your connection and try again.");
+      }
     }
   };
 
