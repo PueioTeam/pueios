@@ -2651,23 +2651,14 @@ function FolderApp({ folderIconId, icons, openApp, openWebApp }: {
         ? <div className="text-sm opacity-70 text-center p-8">
             This folder is empty.<br/>Drag files from Documents or Pictures into this folder.
           </div>
-        : <div className="grid grid-cols-5 gap-3">
-            {savedFiles.map((f) => (
-              <div key={f.id}
-                className="text-center p-2 rounded hover:bg-white/30 cursor-default">
-                <div className="text-4xl">{f.type === "image" ? "🖼️" : "📄"}</div>
-                <div className="text-xs mt-1 truncate">{f.name}</div>
-              </div>
-            ))}
-            {children.map((c) => (
-              <div key={c.id}
-                onDoubleClick={() => c.appId === "web-app" ? openWebApp(c.webUrl!, c.label) : openApp(c.appId, c.fileId)}
-                className="text-center p-2 rounded hover:bg-white/30 cursor-pointer">
-                <div className="text-4xl">{c.appId === "web-app" ? "🔗" : "📄"}</div>
-                <div className="text-xs mt-1 truncate">{c.label}</div>
-              </div>
-            ))}
-          </div>}
+        : <FolderFileGrid
+            files={savedFiles}
+            icons={children}
+            onOpen={(f) => openApp(f.type === "image" ? "puei-paint" : "notepad", f.id)}
+            onDelete={(id) => { deleteFile(id); setSavedFiles(loadFiles().filter((f) => f.folder === folderIconId)); }}
+            onOpenIcon={(ic) => ic.appId === "web-app" ? openWebApp(ic.webUrl!, ic.label) : openApp(ic.appId, ic.fileId)}
+          />
+      }
     </div>
   );
 }
