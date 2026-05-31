@@ -48,7 +48,7 @@ export function AppRenderer(p: AppRendererProps) {
     case "calculator": return <CalculatorApp />;
     case "puei-paint": return <PaintApp fileId={p.fileId} onCreateShortcut={p.onCreateShortcut} currentUser={p.currentUser} />;
     case "pueinet": return <PueiWebApp currentUser={p.currentUser} users={p.users} />;
-    case "puei-messenger": return <MessengerApp user={p.currentUser} users={p.users} setUsers={p.setUsers} />;
+    case "puei-cloud-chat": return <PueiCloudChatApp user={p.currentUser} users={p.users} setUsers={p.setUsers} />;
     case "file-explorer": return <FileExplorerApp openApp={p.openApp} icons={p.icons} openFolder={p.openFolder} currentUser={p.currentUser} />;
     case "app-store": return <AppStoreApp installWebApp={p.installWebApp} openApp={p.openApp} systemVersion={p.systemVersion} addNativeIcon={p.addNativeIcon} icons={p.icons} />;
     case "puei-social": return <PueiSocialApp user={p.currentUser} users={p.users} />;
@@ -853,17 +853,17 @@ const KNOWLEDGE: Array<{ match: (q: string) => boolean; answer: (q: string) => s
   {
     match: (q) => q.includes("pueios") || q.includes("puei os"),
     answer: () =>
-      `PueiOS 2 is an alternate-universe operating system with a Windows 7 Aero-inspired glass UI, built as a web app. It features draggable windows with real glass blur effects, a cloud-synced account system (your profile, files, and settings follow you across every browser), Puei Messenger, PueiSocial, Puei Paint, a Calculator, Notepad, Solitaire, Chess, an App Store, and the PueiWeb browser.`,
+      `PueiOS 2 is an alternate-universe operating system with a Windows 7 Aero-inspired glass UI, built as a web app. It features draggable windows with real glass blur effects, a cloud-synced account system (your profile, files, and settings follow you across every browser), PueiCloudChat, PueiSocial, Puei Paint, a Calculator, Notepad, an App Store, and the PueiWeb browser.`,
   },
   {
     match: (q) => q.includes("pueio number") || q.includes("puei number"),
     answer: () =>
-      `A Pueio Number is a unique 6-digit identifier assigned to every PueiOS account. It works like a phone number for Puei Messenger — you can add friends by their Pueio Number and send them messages.`,
+      `A Pueio Number is a unique 6-digit identifier assigned to every PueiOS account. It works like a phone number for PueiCloudChat — you can add friends by their Pueio Number and send them messages.`,
   },
   {
-    match: (q) => q.includes("puei messenger"),
+    match: (q) => q.includes("puei messenger") || q.includes("pueicloudchat") || q.includes("cloud chat"),
     answer: () =>
-      `Puei Messenger is PueiOS 2's built-in chat app. Add friends using their Pueio Number, start conversations, and send messages. All messages sync across browsers when you're logged in.`,
+      `PueiCloudChat is PueiOS 2's built-in chat app. Add friends using their Pueio Number, start conversations, and send messages. All messages sync across browsers when you're logged in.`,
   },
   {
     match: (q) => q.includes("puei paint"),
@@ -1030,7 +1030,7 @@ function PueiCopilotPage() {
           <div className="grid grid-cols-2 gap-2">
             {[
               "What is PueiOS 2?", "How do Pueio Numbers work?",
-              "Tell me about Puei Messenger", "What apps are in the App Store?",
+              "Tell me about PueiCloudChat", "What apps are in the App Store?",
             ].map((q) => (
               <button key={q} className="aero-glass-light rounded-lg p-3 text-xs text-left hover:bg-white/30"
                 onClick={() => { setQuery(q); doSearch(q); }}>
@@ -1090,7 +1090,7 @@ function PueiWebApp({ currentUser, users }: { currentUser: string; users: User[]
             <li>Puei lore</li>
             <li>PueiOS 2 updates</li>
             <li>PueiWeb AI</li>
-            <li>Puei Messenger</li>
+            <li>PueiCloudChat</li>
             <li>Pueio Videos</li>
             <li>Custom themes</li>
             <li>Bugs</li>
@@ -1130,7 +1130,7 @@ function PueiWebApp({ currentUser, users }: { currentUser: string; users: User[]
           <div className="font-semibold mb-2 opacity-90">📰 Latest News — PueiOS 2+ Update:</div>
           <ul className="space-y-1 opacity-70 list-disc list-inside">
             <li>Faster cloud sync</li>
-            <li>Improved Messenger saving</li>
+            <li>Improved PueiCloudChat saving</li>
             <li>Better Recycle Bin recovery</li>
             <li>Customizable High Contrast colors</li>
             <li>New Puei Copilot responses</li>
@@ -1715,7 +1715,7 @@ function PueiMailApp({ currentUser, users }: { currentUser: string; users: User[
 }
 
 
-function MessengerApp({ user, users, setUsers }: { user: string; users: User[]; setUsers: (u: User[]) => void }) {
+function PueiCloudChatApp({ user, users, setUsers }: { user: string; users: User[]; setUsers: (u: User[]) => void }) {
   const localContacts = users.filter((u) => u.name !== user);
   const me = users.find((u) => u.name === user);
   const myPueiNumber = me?.pueiNumber ?? "";
@@ -1898,7 +1898,7 @@ function MessengerApp({ user, users, setUsers }: { user: string; users: User[]; 
   const SettingsView = () => {
     return (
       <div className="flex-1 p-6 overflow-auto">
-        <h2 className="text-xl font-semibold mb-2">Messenger Settings</h2>
+        <h2 className="text-xl font-semibold mb-2">PueiCloudChat Settings</h2>
         <p className="text-sm opacity-70 mb-5">Share your Puei Number with friends — they can add you on any device running PueiOS.</p>
         <div className="aero-glass-light rounded-xl p-4 max-w-md">
           <div className="text-xs opacity-60">Signed in as</div>
@@ -2260,7 +2260,7 @@ function FileExplorerApp({ openApp, icons, openFolder, currentUser }: { openApp:
     { name: "Calculator", appId: "calculator", icon: "🧮" },
     { name: "Settings", appId: "settings", icon: "⚙️" },
     { name: "PueiNet", appId: "pueinet", icon: "🌐" },
-    { name: "Puei Messenger", appId: "puei-messenger", icon: "💬" },
+    { name: "PueiCloudChat", appId: "puei-cloud-chat", icon: "💬" },
     { name: "App Store", appId: "app-store", icon: "🛍️" },
     { name: "PueiSocial", appId: "puei-social", icon: "📣" },
   ];
@@ -2415,42 +2415,53 @@ function FolderFileGrid({ files, icons, onOpen, onDelete, onOpenIcon }: {
   onDelete: (id: string) => void;
   onOpenIcon: (ic: DesktopIcon) => void;
 }) {
-  const [ctx, setCtx] = useState<{ x: number; y: number; fileId: string } | null>(null);
+  const [selectedFileId, setSelectedFileId] = useState<string | null>(null);
+  const selectedFile = files.find(f => f.id === selectedFileId) ?? null;
+
   return (
-    <div className="grid grid-cols-5 gap-3 relative">
-      {files.map((f) => (
-        <div key={f.id}
-          onDoubleClick={() => onOpen(f)}
-          onContextMenu={(e) => { e.preventDefault(); setCtx({ x: e.clientX, y: e.clientY, fileId: f.id }); }}
-          className="text-center p-2 rounded hover:bg-white/30 cursor-pointer select-none">
-          {f.type === "image"
-            ? <img src={f.content} alt={f.name} className="w-12 h-12 mx-auto object-cover rounded shadow" />
-            : <div className="text-4xl">📄</div>}
-          <div className="text-xs mt-1 truncate">{f.name}</div>
-        </div>
-      ))}
-      {icons.map((ic) => (
-        <div key={ic.id}
-          onDoubleClick={() => onOpenIcon(ic)}
-          className="text-center p-2 rounded hover:bg-white/30 cursor-pointer select-none">
-          <div className="text-4xl">{ic.appId === "web-app" ? "🔗" : "📄"}</div>
-          <div className="text-xs mt-1 truncate">{ic.label}</div>
-        </div>
-      ))}
-      {ctx && (
-        <div className="fixed z-[9999] aero-glass rounded shadow-xl py-1 text-sm"
-          style={{ left: ctx.x, top: ctx.y, minWidth: 140 }}
-          onMouseLeave={() => setCtx(null)}>
-          <button className="w-full text-left px-4 py-1.5 hover:bg-white/30"
-            onClick={() => { const f = files.find(fi => fi.id === ctx.fileId); if (f) onOpen(f); setCtx(null); }}>
-            📂 Open
-          </button>
-          <button className="w-full text-left px-4 py-1.5 hover:bg-white/30 text-red-400"
-            onClick={() => { onDelete(ctx.fileId); setCtx(null); }}>
-            🗑️ Delete
-          </button>
-        </div>
-      )}
+    <div>
+      {/* Toolbar */}
+      <div className="flex items-center gap-2 mb-3 pb-2 border-b">
+        <button
+          className="aero-button rounded px-3 py-1 text-xs"
+          disabled={!selectedFile}
+          style={{ opacity: selectedFile ? 1 : 0.4 }}
+          onClick={() => { if (selectedFile) { onOpen(selectedFile); } }}>
+          📂 Open
+        </button>
+        <button
+          className="aero-button rounded px-3 py-1 text-xs text-red-400"
+          disabled={!selectedFileId}
+          style={{ opacity: selectedFileId ? 1 : 0.4 }}
+          onClick={() => { if (selectedFileId) { onDelete(selectedFileId); setSelectedFileId(null); } }}>
+          🗑️ Delete
+        </button>
+        {selectedFile && <span className="text-xs opacity-50 ml-1">Selected: {selectedFile.name}</span>}
+        {!selectedFile && <span className="text-xs opacity-40 ml-1">Click a file to select it</span>}
+      </div>
+      <div className="grid grid-cols-5 gap-3">
+        {files.map((f) => (
+          <div key={f.id}
+            onClick={() => setSelectedFileId(f.id === selectedFileId ? null : f.id)}
+            onDoubleClick={() => onOpen(f)}
+            className="text-center p-2 rounded cursor-pointer select-none transition-all"
+            style={{ background: f.id === selectedFileId ? "rgba(80,160,255,0.35)" : "transparent",
+                     outline: f.id === selectedFileId ? "2px solid rgba(80,160,255,0.7)" : "none" }}>
+            {f.type === "image"
+              ? <img src={f.content} alt={f.name} className="w-12 h-12 mx-auto object-cover rounded shadow" />
+              : <div className="text-4xl">📄</div>}
+            <div className="text-xs mt-1 truncate">{f.name}</div>
+          </div>
+        ))}
+        {icons.map((ic) => (
+          <div key={ic.id}
+            onDoubleClick={() => onOpenIcon(ic)}
+            className="text-center p-2 rounded hover:bg-white/30 cursor-pointer select-none">
+            <div className="text-4xl">{ic.appId === "web-app" ? "🔗" : "📄"}</div>
+            <div className="text-xs mt-1 truncate">{ic.label}</div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -2497,7 +2508,7 @@ function AppStoreApp({ installWebApp, openApp, systemVersion, addNativeIcon, ico
   type StoreApp = { name: string; icon: string; desc: string; appId: AppId; preInstalled?: boolean };
   const official: StoreApp[] = [
     { name: "PueiSocial",     icon: "📣", desc: "The official PueiOS social network.",          appId: "puei-social",    preInstalled: true },
-    { name: "Puei Messenger", icon: "💬", desc: "Chat by PueiNumber.",                          appId: "puei-messenger", preInstalled: true },
+    { name: "PueiCloudChat", icon: "💬", desc: "Chat by PueiNumber — cross-device, real-time.",           appId: "puei-cloud-chat", preInstalled: true },
     { name: "PueiWeb",        icon: "🌐", desc: "System browser + AI search engine.",           appId: "pueinet",        preInstalled: true },
     { name: "Puei Paint 2",   icon: "🎨", desc: "Paint and save images as wallpapers.",         appId: "puei-paint",     preInstalled: true },
     { name: "Settings",       icon: "⚙️", desc: "Personalize, dark mode, accessibility.",       appId: "settings",       preInstalled: true },

@@ -18,7 +18,7 @@ type Phase = "install" | "boot" | "login" | "desktop" | "shutdown" | "recovery" 
 const APP_TITLES: Record<AppId, string> = {
   "puei-paint": "Puei Paint 2",
   "pueinet": "PueiWeb",
-  "puei-messenger": "Puei Messenger",
+  "puei-cloud-chat": "PueiCloudChat",
   "file-explorer": "Computer",
   "settings": "Settings",
   "about": "About PueiOS 2",
