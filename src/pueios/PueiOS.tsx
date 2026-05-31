@@ -84,6 +84,16 @@ export function PueiOS() {
   const [netInfo, setNetInfo] = useState<{ ping: number | null; speed: number | null; type: string; online: boolean }>({ ping: null, speed: null, type: "?", online: true });
   const [cursorPos, setCursorPos] = useState({ x: 0, y: 0 });
   const [locked, setLocked] = useState(false);
+  const dragRef = useRef<{ id: string; startX: number; startY: number; origLeft: number; origTop: number; moved: boolean } | null>(null);
+  const wasDragged = useRef(false);
+  const [draggingPos, setDraggingPos] = useState<{ id: string; left: number; top: number } | null>(null);
+  const DESKTOP_OX = 12, DESKTOP_OY = 12;
+  const resolveIconPos = (ic: DesktopIcon, idx: number) => {
+    if (ic.col !== undefined && ic.row !== undefined)
+      return { left: DESKTOP_OX + ic.col * GRID_W, top: DESKTOP_OY + ic.row * GRID_H };
+    const { col, row } = iconGridPos(idx);
+    return { left: DESKTOP_OX + col * GRID_W, top: DESKTOP_OY + row * GRID_H };
+  };
   const [loginUser, setLoginUser] = useState("");
   const [creating, setCreating] = useState(false);
   const [switching, setSwitching] = useState(false);
@@ -956,22 +966,71 @@ export function PueiOS() {
       onTouchEnd={onTouchEnd}
     >
       {/* Desktop icons */}
-      <div className="absolute top-3 left-3 grid" style={{ gridTemplateColumns: `repeat(12, ${GRID_W}px)`, gridAutoRows: `${GRID_H}px`, gap: 2 }}>
+      <div className="absolute inset-0" style={{ pointerEvents: "none" }}>
         {desktopIcons.map((ic, idx) => {
-          const { col, row } = iconGridPos(idx);
           const iconPx = theme.iconSize === "small" ? 32 : theme.iconSize === "large" ? 56 : 44;
           const dbl = () => {
             if (ic.appId === "folder") openApp("folder", { folderIconId: ic.id, title: ic.label });
             else if (ic.appId === "web-app") openApp("web-app", { webUrl: ic.webUrl, title: ic.label });
             else openApp(ic.appId, { fileId: ic.fileId });
           };
+          const isDragging = draggingPos?.id === ic.id;
+          const pos = isDragging ? { left: draggingPos!.left, top: draggingPos!.top } : resolveIconPos(ic, idx);
           return (
             <div
               key={ic.id}
               className={`desktop-icon ${selectedIcon === ic.id ? "selected" : ""}`}
-              style={{ gridColumn: col + 1, gridRow: row + 1, height: GRID_H }}
-              onClick={(e) => { e.stopPropagation(); setSelectedIcon(ic.id); }}
-              onDoubleClick={(e) => { e.stopPropagation(); dbl(); }}
+              style={{
+                position: "absolute",
+                left: pos.left,
+                top: pos.top,
+                width: GRID_W,
+                height: GRID_H,
+                pointerEvents: "all",
+                zIndex: isDragging ? 200 : undefined,
+                cursor: isDragging ? "grabbing" : "grab",
+                opacity: isDragging ? 0.85 : 1,
+                transform: isDragging ? "scale(1.06)" : undefined,
+                transition: isDragging ? "none" : "opacity 0.1s",
+              }}
+              onClick={(e) => {
+                if (wasDragged.current) { wasDragged.current = false; return; }
+                e.stopPropagation(); setSelectedIcon(ic.id);
+              }}
+              onDoubleClick={(e) => {
+                if (wasDragged.current) { wasDragged.current = false; return; }
+                e.stopPropagation(); dbl();
+              }}
+              onPointerDown={(e) => {
+                if (e.button !== 0 || e.pointerType === "touch") return;
+                e.stopPropagation();
+                setSelectedIcon(ic.id);
+                const p = resolveIconPos(ic, idx);
+                dragRef.current = { id: ic.id, startX: e.clientX, startY: e.clientY, origLeft: p.left, origTop: p.top, moved: false };
+                (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+              }}
+              onPointerMove={(e) => {
+                if (!dragRef.current || dragRef.current.id !== ic.id) return;
+                const dx = e.clientX - dragRef.current.startX;
+                const dy = e.clientY - dragRef.current.startY;
+                if (!dragRef.current.moved && Math.hypot(dx, dy) < 5) return;
+                dragRef.current.moved = true;
+                setDraggingPos({ id: ic.id, left: dragRef.current.origLeft + dx, top: dragRef.current.origTop + dy });
+              }}
+              onPointerUp={(e) => {
+                if (!dragRef.current || dragRef.current.id !== ic.id) return;
+                if (dragRef.current.moved) {
+                  const dx = e.clientX - dragRef.current.startX;
+                  const dy = e.clientY - dragRef.current.startY;
+                  const col = Math.max(0, Math.round((dragRef.current.origLeft + dx - DESKTOP_OX) / GRID_W));
+                  const row = Math.max(0, Math.round((dragRef.current.origTop + dy - DESKTOP_OY) / GRID_H));
+                  const id = dragRef.current.id;
+                  setIcons((prev) => prev.map((i) => i.id === id ? { ...i, col, row } : i));
+                  wasDragged.current = true;
+                }
+                dragRef.current = null;
+                setDraggingPos(null);
+              }}
               onContextMenu={(e) => {
                 e.preventDefault(); e.stopPropagation();
                 setSelectedIcon(ic.id);

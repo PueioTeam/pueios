@@ -86,6 +86,8 @@ export type DesktopIcon = {
   iconEmoji?: string;
   iconUrl?: string;
   folderId?: string;
+  col?: number;
+  row?: number;
 };
 
 export function pueiNumberFor(name: string): string {
