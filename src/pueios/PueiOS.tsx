@@ -101,8 +101,12 @@ export function PueiOS() {
   // Load persisted
   useEffect(() => {
     const s = loadState();
-    setThemeState(s.theme); setIcons(s.icons); setUsers(s.users);
+    setThemeState(s.theme); setUsers(s.users);
     setInstalled(s.installed); setSystemVersion(s.systemVersion);
+    // Migration: ensure PueiCloudChat icon exists for users who had an older version
+    const loadedIcons = s.icons?.length ? s.icons : defaultIcons;
+    const hasPCC = loadedIcons.some((i: any) => i.appId === "puei-cloud-chat" && !i.fileId && !i.webUrl);
+    setIcons(hasPCC ? loadedIcons : [...loadedIcons, { id: "i-msg", label: "PueiCloudChat", appId: "puei-cloud-chat" as const }]);
     if (!s.installed) { setPhase("install"); return; }
     if (s.lastUser && s.remember) { setLoginUser(s.lastUser); setRemember(true); }
     else if (s.users[0]) setLoginUser(s.users[0].name);
@@ -339,7 +343,7 @@ export function PueiOS() {
         if (n) setIcons(icons.map((i) => i.id === icon.id ? { ...i, label: n } : i));
       }},
       { label: icon.fileId || icon.webUrl ? "🗑️ Delete shortcut" : "🗑️ Uninstall", action: () => {
-        setIcons(icons.filter((i) => i.id !== icon.id && i.folderId !== icon.id));
+        setIcons((prev) => prev.filter((i) => i.id !== icon.id && i.folderId !== icon.id));
       }},
       ...(icon.appId === "folder" ? [{ label: "New shortcut here", action: () => {
         const u = prompt("Website URL to install into this folder:", "https://example.com");
@@ -1067,7 +1071,10 @@ export function PueiOS() {
             <div className="font-semibold">{currentUser}</div>
           </div>
           <div className="grid grid-cols-2 gap-1 p-2">
-            {(["file-explorer", "app-store", "puei-social", "pueinet", "puei-cloud-chat", "puei-paint", "notepad", "calculator", "settings", "about"] as AppId[]).map((id) => (
+            {[...new Set([
+              ...icons.filter(i => !i.fileId && !i.webUrl && i.appId !== "folder" && i.appId !== "web-app" && i.appId !== "recycle-bin").map(i => i.appId),
+              "settings" as const, "about" as const,
+            ])].map((id) => (
               <button key={id} onClick={() => { openApp(id); setStartOpen(false); }}
                 className="flex items-center gap-2 px-3 py-2 rounded hover:bg-white/40 text-sm text-left">
                 {appIcon(id, 26)}<span>{APP_TITLES[id]}</span>

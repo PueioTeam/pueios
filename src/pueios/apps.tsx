@@ -1715,516 +1715,429 @@ function PueiMailApp({ currentUser, users }: { currentUser: string; users: User[
 
 
 function PueiCloudChatApp({ user, users, setUsers }: { user: string; users: User[]; setUsers: (u: User[]) => void }) {
-  const localContacts = users.filter((u) => u.name !== user);
   const me = users.find((u) => u.name === user);
   const myPueiNumber = me?.pueiNumber ?? "";
 
-  // External contacts stored in localStorage (cross-device, identified by Puei Number only)
-  const [externalContacts, setExternalContacts] = useState<{ pueiNumber: string }[]>(() => {
-    try { return JSON.parse(localStorage.getItem("pueios-xcontacts") || "[]"); } catch { return []; }
+  // Contacts: local users + external by Puei Number
+  const localContacts = users.filter((u) => u.name !== user);
+  const [extContacts, setExtContacts] = useState<{pueiNumber: string}[]>(() => {
+    try { return JSON.parse(localStorage.getItem("pcc2-contacts") || "[]"); } catch { return []; }
   });
-
-  const saveExternalContacts = (list: { pueiNumber: string }[]) => {
-    setExternalContacts(list);
-    localStorage.setItem("pueios-xcontacts", JSON.stringify(list));
+  const saveExtContacts = (list: {pueiNumber: string}[]) => {
+    setExtContacts(list);
+    localStorage.setItem("pcc2-contacts", JSON.stringify(list));
   };
 
-  // Blocked contacts — per-user, identified by Puei Number (works for both local & external)
-  const BLOCK_KEY = `pueios-blocked-${user}`;
-  const [blockedNumbers, setBlockedNumbers] = useState<string[]>(() => {
-    try { return JSON.parse(localStorage.getItem(BLOCK_KEY) || "[]"); } catch { return []; }
-  });
-  const saveBlocked = (list: string[]) => {
-    setBlockedNumbers(list);
-    localStorage.setItem(BLOCK_KEY, JSON.stringify(list));
-  };
-  const numberOfLocal = (name: string) => {
-    const u = users.find((x) => x.name === name);
-    return u?.pueiNumber || pueiNumberFor(name + ":seed");
-  };
-  const isBlockedNumber = (num: string) => blockedNumbers.includes(num);
-  const isBlockedLocal = (name: string) => isBlockedNumber(numberOfLocal(name));
-  // Hidden contacts (deleted local conversations) — keep account intact but hide from sidebar until they message again
-  const HIDDEN_KEY = `pueios-hidden-${user}`;
-  const [hiddenLocals, setHiddenLocals] = useState<string[]>(() => {
-    try { return JSON.parse(localStorage.getItem(HIDDEN_KEY) || "[]"); } catch { return []; }
-  });
-  const saveHiddenLocals = (list: string[]) => {
-    setHiddenLocals(list);
-    localStorage.setItem(HIDDEN_KEY, JSON.stringify(list));
-  };
-
-  const [activeId, setActiveId] = useState<string | null>(
-    localContacts[0]?.name ?? externalContacts[0]?.pueiNumber ?? null
-  );
-  const [activeKind, setActiveKind] = useState<"local" | "external">(
-    localContacts.length > 0 ? "local" : "external"
-  );
-
+  // Messages
   const [allMsgs, setAllMsgs] = useState<ChatMessage[]>(() => loadChat());
-  // API messages keyed by the OTHER party's Puei Number (incoming only)
-  const [apiMsgs, setApiMsgs] = useState<Record<string, Array<{ id: string; from: string; fromNumber: string; text: string; at: number }>>>({});
-  // Sent messages persisted to localStorage (survives poll resets)
-  const sentKey = (partnerNum: string) => `pueios2-sent:${myPueiNumber}:${partnerNum}`;
-  const loadSent = (partnerNum: string): Array<{ id: string; from: string; fromNumber: string; text: string; at: number }> => {
-    try { return JSON.parse(localStorage.getItem(sentKey(partnerNum)) || "[]"); } catch { return []; }
+  const [apiMsgs, setApiMsgs] = useState<Record<string, {id:string;from:string;fromNumber:string;text:string;at:number}[]>>({});
+  const SENT_KEY = (num: string) => `pcc2-sent:${myPueiNumber}:${num}`;
+  const [sentMsgs, setSentMsgs] = useState<Record<string,{id:string;from:string;fromNumber:string;text:string;at:number}[]>>({});
+  const appendSent = (num: string, msg: {id:string;from:string;fromNumber:string;text:string;at:number}) => {
+    try { localStorage.setItem(SENT_KEY(num), JSON.stringify([...JSON.parse(localStorage.getItem(SENT_KEY(num))||"[]"), msg].slice(-500))); } catch {}
+    setSentMsgs(p => ({...p, [num]: [...(p[num]??[]), msg]}));
   };
-  const appendSent = (partnerNum: string, msg: { id: string; from: string; fromNumber: string; text: string; at: number }) => {
-    const existing = loadSent(partnerNum);
-    try { localStorage.setItem(sentKey(partnerNum), JSON.stringify([...existing, msg].slice(-500))); } catch {}
-    setSentMsgs((prev) => ({ ...prev, [partnerNum]: [...(prev[partnerNum] ?? []), msg] }));
-  };
-  const [sentMsgs, setSentMsgs] = useState<Record<string, Array<{ id: string; from: string; fromNumber: string; text: string; at: number }>>>({});
+
+  // Active conversation
+  const [activeId, setActiveId] = useState<string|null>(localContacts[0]?.name ?? null);
+  const [activeKind, setActiveKind] = useState<"local"|"external">("local");
   const [text, setText] = useState("");
-  const [view, setView] = useState<"chat" | "settings">("chat");
-  const [addingContact, setAddingContact] = useState(false);
-  const [contactInput, setContactInput] = useState("");
-  const [contactMsg, setContactMsg] = useState<{ text: string; ok: boolean } | null>(null);
+  const [showNewChat, setShowNewChat] = useState(false);
+  const [newInput, setNewInput] = useState("");
+  const [newMsg, setNewMsg] = useState<{ok:boolean;text:string}|null>(null);
+  const [showSettings, setShowSettings] = useState(false);
+  const [search, setSearch] = useState("");
+  const msgEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const fn = () => setAllMsgs(loadChat());
     window.addEventListener("pueios-chat", fn);
     window.addEventListener("storage", fn);
-    return () => {
-      window.removeEventListener("pueios-chat", fn);
-      window.removeEventListener("storage", fn);
-    };
+    return () => { window.removeEventListener("pueios-chat", fn); window.removeEventListener("storage", fn); };
   }, []);
 
-  // Backfill PueiNumber for the current user if missing
   useEffect(() => {
-    if (me && !me.pueiNumber) {
-      setUsers(users.map((u) => u.name === user ? { ...u, pueiNumber: pueiNumberFor(user + ":" + Date.now()) } : u));
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    msgEndRef.current?.scrollIntoView({behavior:"smooth"});
+  }, [allMsgs, apiMsgs, sentMsgs, activeId]);
+
+  // Ensure Puei Number
+  useEffect(() => {
+    if (me && !me.pueiNumber)
+      setUsers(users.map(u => u.name===user ? {...u, pueiNumber: pueiNumberFor(user+":"+Date.now())} : u));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Load sent messages from localStorage for all known external contacts on mount
+  // Load sent from localStorage
   useEffect(() => {
     if (!myPueiNumber) return;
-    const loaded: Record<string, Array<{ id: string; from: string; fromNumber: string; text: string; at: number }>> = {};
-    for (const c of externalContacts) {
-      const msgs = loadSent(c.pueiNumber);
-      if (msgs.length) loaded[c.pueiNumber] = msgs;
+    const loaded: typeof sentMsgs = {};
+    for (const c of extContacts) {
+      try { const msgs=JSON.parse(localStorage.getItem(SENT_KEY(c.pueiNumber))||"[]"); if(msgs.length) loaded[c.pueiNumber]=msgs; } catch {}
     }
     if (Object.keys(loaded).length) setSentMsgs(loaded);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [myPueiNumber]);
 
-  // Poll /api/chat every 3 seconds for cross-device incoming messages
+  // Poll API
   useEffect(() => {
-    if (!myPueiNumber || myPueiNumber === "—") return;
+    if (!myPueiNumber || myPueiNumber==="—") return;
     let cancelled = false;
     const poll = async () => {
       try {
         const res = await fetch(`/api/chat?pueiNumber=${encodeURIComponent(myPueiNumber)}`);
         if (!res.ok || cancelled) return;
-        const msgs = (await res.json()) as Array<{ id: string; from: string; fromNumber: string; text: string; at: number }>;
+        const msgs = (await res.json()) as {id:string;from:string;fromNumber:string;text:string;at:number}[];
         if (cancelled) return;
-        // Group by sender Puei Number, dropping messages from blocked numbers
-        const grouped: Record<string, typeof msgs> = {};
-        const senderNumbers = new Set<string>();
+        const grouped: typeof apiMsgs = {};
         for (const m of msgs) {
-          if (blockedNumbers.includes(m.fromNumber)) continue;
-          if (m.fromNumber === myPueiNumber) continue; // my own outgoing copies
-          if (!grouped[m.fromNumber]) grouped[m.fromNumber] = [];
+          if (m.fromNumber===myPueiNumber) continue;
+          if (!grouped[m.fromNumber]) grouped[m.fromNumber]=[];
           grouped[m.fromNumber].push(m);
-          senderNumbers.add(m.fromNumber);
         }
         setApiMsgs(grouped);
-        // Auto-add any incoming sender as an external contact so they appear in the sidebar
-        if (senderNumbers.size > 0) {
-          const knownLocalNumbers = new Set(users.map((u) => u.pueiNumber).filter(Boolean));
-          const currentExternal = (() => {
-            try { return JSON.parse(localStorage.getItem("pueios-xcontacts") || "[]") as { pueiNumber: string }[]; }
-            catch { return []; }
-          })();
-          const existing = new Set(currentExternal.map((c) => c.pueiNumber));
-          const toAdd: { pueiNumber: string }[] = [];
-          for (const num of senderNumbers) {
-            if (knownLocalNumbers.has(num)) continue; // already a local user
-            if (existing.has(num)) continue;
-            toAdd.push({ pueiNumber: num });
-          }
-          if (toAdd.length > 0) {
-            const next = [...currentExternal, ...toAdd];
-            localStorage.setItem("pueios-xcontacts", JSON.stringify(next));
-            setExternalContacts(next);
-            blip("notify");
-          }
+        const senders = Object.keys(grouped);
+        if (senders.length) {
+          const knownNums = new Set(users.map(u=>u.pueiNumber).filter(Boolean));
+          const curr: {pueiNumber:string}[] = (() => { try { return JSON.parse(localStorage.getItem("pcc2-contacts")||"[]"); } catch { return []; } })();
+          const existing = new Set(curr.map(c=>c.pueiNumber));
+          const toAdd = senders.filter(n=>!knownNums.has(n)&&!existing.has(n)).map(n=>({pueiNumber:n}));
+          if (toAdd.length) { saveExtContacts([...curr,...toAdd]); blip("notify"); }
         }
-      } catch {
-        // API not available — silent fail (local dev without backend)
-      }
+      } catch {}
     };
-    poll();
-    const interval = setInterval(poll, 3000);
-    return () => { cancelled = true; clearInterval(interval); };
-  }, [myPueiNumber, blockedNumbers, users]);
+    poll(); const iv=setInterval(poll,3000);
+    return () => { cancelled=true; clearInterval(iv); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [myPueiNumber, users]);
 
-  const doAddContact = () => {
-    let raw = contactInput.trim().replace(/[-\s]/g, "");
-    if (/^\d{9}$/.test(raw)) raw = `${raw.slice(0,3)}-${raw.slice(3,6)}-${raw.slice(6,9)}`;
-    const num = raw;
-    if (!/^\d{3}-\d{3}-\d{3}$/.test(num)) {
-      setContactMsg({ text: "Invalid format. Enter a 9-digit Pueio Number (e.g. 123-456-789).", ok: false });
-      blip("error"); return;
-    }
-    if (num === myPueiNumber) {
-      setContactMsg({ text: "That's your own Puei Number.", ok: false });
-      blip("error"); return;
-    }
-    // Check if it's a local user
-    const localUser = users.find((u) => u.name !== user && u.pueiNumber === num);
-    if (localUser) {
-      setActiveId(localUser.name); setActiveKind("local");
-      setContactMsg({ text: `Found on this device: ${localUser.name}`, ok: true });
-      setAddingContact(false); setContactInput(""); blip("click"); return;
-    }
-    // Check already in external contacts
-    if (externalContacts.find((c) => c.pueiNumber === num)) {
-      setActiveId(num); setActiveKind("external");
-      setContactMsg({ text: "Already in your contacts.", ok: true });
-      setAddingContact(false); setContactInput(""); blip("click"); return;
-    }
-    // Add as external contact
-    saveExternalContacts([...externalContacts, { pueiNumber: num }]);
-    setActiveId(num); setActiveKind("external");
-    setContactMsg({ text: `Added! Start chatting with ${num}.`, ok: true });
-    setAddingContact(false); setContactInput(""); blip("click");
+  const localPartner = activeKind==="local" ? localContacts.find(c=>c.name===activeId)??null : null;
+  const extPartner = activeKind==="external" ? extContacts.find(c=>c.pueiNumber===activeId)??null : null;
+
+  const localMsgs = localPartner
+    ? allMsgs.filter(m=>(m.from===user&&m.to===localPartner.name)||(m.from===localPartner.name&&m.to===user))
+    : [];
+  const extMsgs = extPartner
+    ? [...(apiMsgs[extPartner.pueiNumber]??[]),...(sentMsgs[extPartner.pueiNumber]??[])]
+        .filter((m,i,a)=>a.findIndex(x=>x.id===m.id)===i).sort((a,b)=>(a.at??0)-(b.at??0))
+    : [];
+
+  const lastLocal = (name:string) => { const ms=allMsgs.filter(m=>(m.from===user&&m.to===name)||(m.from===name&&m.to===user)); return ms[ms.length-1]; };
+  const lastExt = (num:string) => { const all=[...(apiMsgs[num]??[]),...(sentMsgs[num]??[])]; return all.sort((a,b)=>(a.at??0)-(b.at??0)).slice(-1)[0]; };
+
+  const doNewChat = () => {
+    let raw = newInput.trim().replace(/[-\s]/g,"");
+    if (/^\d{9}$/.test(raw)) raw=`${raw.slice(0,3)}-${raw.slice(3,6)}-${raw.slice(6,9)}`;
+    if (!/^\d{3}-\d{3}-\d{3}$/.test(raw)) { setNewMsg({ok:false,text:"Enter a 9-digit Puei Number (e.g. 123-456-789)"}); return; }
+    if (raw===myPueiNumber) { setNewMsg({ok:false,text:"That's your own number"}); return; }
+    const lu=users.find(u=>u.name!==user&&u.pueiNumber===raw);
+    if (lu) { setActiveId(lu.name); setActiveKind("local"); setShowNewChat(false); setNewInput(""); return; }
+    if (!extContacts.find(c=>c.pueiNumber===raw)) saveExtContacts([...extContacts,{pueiNumber:raw}]);
+    setActiveId(raw); setActiveKind("external"); setShowNewChat(false); setNewInput(""); blip("click");
   };
 
-  const SettingsView = () => {
-    return (
-      <div className="flex-1 p-6 overflow-auto">
-        <h2 className="text-xl font-semibold mb-2">PueiCloudChat Settings</h2>
-        <p className="text-sm opacity-70 mb-5">Share your Puei Number with friends — they can add you on any device running PueiOS.</p>
-        <div className="aero-glass-light rounded-xl p-4 max-w-md">
-          <div className="text-xs opacity-60">Signed in as</div>
-          <div className="text-base font-semibold mb-3">{user}</div>
-          <div className="text-xs opacity-60">Your PueiNumber</div>
-          <div className="flex items-center gap-2 mt-1">
-            <div className="font-mono text-2xl tracking-wider px-3 py-2 rounded"
-              style={{ background: "white", color: "#111", border: "1px solid var(--border)" }}>
-              {myPueiNumber}
-            </div>
-          </div>
-          <div className="text-[10px] opacity-50 mt-2">Anyone with this number can message you from iPad, Android, Windows, Mac, or any PueiOS device.</div>
+  const send = async () => {
+    if (!text.trim()) return;
+    const msg=text; setText(""); blip("click");
+    if (activeKind==="local"&&localPartner) {
+      appendChat({id:`m-${Date.now()}-${Math.random().toString(36).slice(2,6)}`,from:user,to:localPartner.name,text:msg,at:Date.now()});
+      setAllMsgs(loadChat());
+      if (localPartner.pueiNumber)
+        fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({from:user,fromNumber:myPueiNumber,toNumber:localPartner.pueiNumber,text:msg})}).catch(()=>{});
+    } else if (activeKind==="external"&&extPartner) {
+      const out={id:`out-${Date.now()}-${Math.random().toString(36).slice(2,6)}`,from:user,fromNumber:myPueiNumber,text:msg,at:Date.now()};
+      appendSent(extPartner.pueiNumber,out);
+      try { await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({from:user,fromNumber:myPueiNumber,toNumber:extPartner.pueiNumber,text:msg})}); }
+      catch { blip("error"); }
+    }
+  };
+
+  const filteredLocals = localContacts.filter(c=>c.name.toLowerCase().includes(search.toLowerCase()));
+  const filteredExts = extContacts.filter(c=>c.pueiNumber.includes(search));
+  const BLOCK_KEY = `pueios-blocked-${user}`;
+  const isBlocked = (num:string) => { try { return (JSON.parse(localStorage.getItem(BLOCK_KEY)||"[]") as string[]).includes(num); } catch { return false; } };
+  const blockNum = (num:string, name?:string) => {
+    if (!confirm(`Block ${name??num}? They won't be able to message you.`)) return;
+    const b:string[]=JSON.parse(localStorage.getItem(BLOCK_KEY)||"[]");
+    localStorage.setItem(BLOCK_KEY,JSON.stringify([...b,num]));
+    if (name) { deleteChatBetween(user,name); setAllMsgs(loadChat()); }
+    else { setApiMsgs(p=>{const n={...p};delete n[num];return n;}); saveExtContacts(extContacts.filter(c=>c.pueiNumber!==num)); }
+    setActiveId(null); blip("click");
+  };
+
+  const ME_BG = "linear-gradient(135deg,#6d28d9,#4f46e5)";
+  const THEM_BG = "rgba(255,255,255,0.1)";
+  const SIDEBAR_BG = "rgba(15,5,35,0.95)";
+  const MAIN_BG = "linear-gradient(160deg,#0f0523 0%,#1a0a3a 50%,#0d1a3a 100%)";
+
+  // Settings screen
+  if (showSettings) return (
+    <div className="flex flex-col h-full" style={{background:MAIN_BG,color:"white"}}>
+      <div className="flex items-center gap-2 px-4 py-3 border-b border-white/10">
+        <button onClick={()=>setShowSettings(false)} className="text-sm px-3 py-1 rounded-full hover:bg-white/10">← Back</button>
+        <span className="font-semibold">My Profile</span>
+      </div>
+      <div className="flex-1 p-6 flex flex-col items-center gap-5">
+        <div className="w-24 h-24 rounded-full flex items-center justify-center text-5xl overflow-hidden"
+          style={{background:`linear-gradient(135deg,oklch(0.7 0.18 ${me?.color??200}),oklch(0.45 0.2 ${me?.color??200}))`}}>
+          {me?.avatar?.startsWith("data:")
+            ? <img src={me.avatar} alt="" className="w-full h-full object-cover"/>
+            : (me?.avatar||"👤")}
         </div>
-        <div className="mt-5 max-w-md">
-          <div className="text-xs opacity-60 mb-2">Cross-device contacts</div>
-          {externalContacts.length === 0 && <div className="text-xs opacity-60">None yet. Use "+ Add Contact" and enter a Puei Number.</div>}
-          {externalContacts.map((c) => (
-            <div key={c.pueiNumber} className="flex items-center justify-between aero-glass-light rounded p-2 mb-1 text-sm">
-              <span className="font-mono">🌐 {c.pueiNumber}</span>
-              <button className="text-[10px] text-red-500 hover:opacity-80"
-                onClick={() => saveExternalContacts(externalContacts.filter((x) => x.pueiNumber !== c.pueiNumber))}>
-                Remove
-              </button>
-            </div>
-          ))}
+        <div className="text-2xl font-bold">{user}</div>
+        <div className="rounded-2xl p-5 w-full max-w-xs" style={{background:"rgba(255,255,255,0.07)"}}>
+          <div className="text-xs opacity-50 mb-1 uppercase tracking-widest">Your Puei Number</div>
+          <div className="font-mono text-2xl font-bold tracking-wider">{myPueiNumber||"—"}</div>
+          <div className="text-xs opacity-40 mt-2">Share this with people on other devices so they can message you</div>
         </div>
-        <div className="mt-5 max-w-md">
-          <div className="text-xs opacity-60 mb-2">Accounts on this device</div>
-          {localContacts.length === 0 && <div className="text-xs opacity-60">No other accounts on this device.</div>}
-          {localContacts.map((c) => (
-            <div key={c.name} className="flex items-center justify-between aero-glass-light rounded p-2 mb-1 text-sm">
-              <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded overflow-hidden flex items-center justify-center text-base"
-                  style={{ background: `linear-gradient(135deg, oklch(0.7 0.18 ${c.color}), oklch(0.45 0.2 ${c.color}))` }}>
-                  {c.avatar.startsWith("data:") ? <img src={c.avatar} alt="" className="w-full h-full object-cover" /> : c.avatar}
+        {(() => {
+          const blocked:string[]=JSON.parse(localStorage.getItem(BLOCK_KEY)||"[]");
+          if (!blocked.length) return null;
+          return (
+            <div className="rounded-2xl p-4 w-full max-w-xs" style={{background:"rgba(255,255,255,0.07)"}}>
+              <div className="text-xs opacity-50 mb-2 uppercase tracking-widest">Blocked ({blocked.length})</div>
+              {blocked.map(n=>(
+                <div key={n} className="flex items-center justify-between py-1">
+                  <span className="font-mono text-sm">{n}</span>
+                  <button className="text-xs text-purple-300 hover:text-white px-2 py-0.5 rounded-full"
+                    style={{background:"rgba(109,40,217,0.3)"}}
+                    onClick={()=>{const b=blocked.filter(x=>x!==n);localStorage.setItem(BLOCK_KEY,JSON.stringify(b));blip("click");}}>
+                    Unblock
+                  </button>
                 </div>
-                <span>{c.name}</span>
-              </div>
-              <span className="font-mono text-xs opacity-70">{c.pueiNumber || pueiNumberFor(c.name + ":seed")}</span>
+              ))}
             </div>
-          ))}
-        </div>
-        <div className="mt-5 max-w-md">
-          <div className="text-xs opacity-60 mb-2">Blocked numbers</div>
-          {blockedNumbers.length === 0 && <div className="text-xs opacity-60">No blocked contacts.</div>}
-          {blockedNumbers.map((n) => (
-            <div key={n} className="flex items-center justify-between aero-glass-light rounded p-2 mb-1 text-sm">
-              <span className="font-mono">🚫 {n}</span>
-              <button className="text-[10px] hover:opacity-80"
-                onClick={() => unblock(n)}>
-                Unblock
-              </button>
-            </div>
-          ))}
-        </div>
+          );
+        })()}
       </div>
-    );
-  };
-
-  const hasAnyContacts = localContacts.length > 0 || externalContacts.length > 0;
-
-  if (!hasAnyContacts && view === "chat") {
-    return (
-      <div className="flex h-full">
-        <div className="w-44 border-r p-2" style={{ background: "var(--glass)" }}>
-          <button className="aero-button rounded w-full text-xs py-1.5 mb-1" onClick={() => setView("chat")}>💬 Chats</button>
-          <button className="aero-button rounded w-full text-xs py-1.5" onClick={() => setView("settings")}>⚙️ Settings</button>
-        </div>
-        <div className="flex-1 p-6 text-sm text-center opacity-80 flex flex-col items-center justify-center">
-          <div className="text-4xl mb-2">💬</div>
-          <div className="font-semibold mb-1">No contacts yet</div>
-          <div className="max-w-xs">Click <strong>+ Add Contact</strong> in the sidebar and enter a friend's Puei Number. Works across iPad, Android, Windows, Mac — any device running PueiOS.</div>
-        </div>
-      </div>
-    );
-  }
-
-  const localPartner = activeKind === "local" ? localContacts.find((c) => c.name === activeId) : undefined;
-  const externalPartner = activeKind === "external" ? externalContacts.find((c) => c.pueiNumber === activeId) : undefined;
-
-  const localConversation = localPartner
-    ? allMsgs.filter((m) => (m.from === user && m.to === localPartner.name) || (m.from === localPartner.name && m.to === user))
-    : [];
-
-  const externalConversation = externalPartner
-    ? [
-        ...(apiMsgs[externalPartner.pueiNumber] ?? []),
-        ...(sentMsgs[externalPartner.pueiNumber] ?? []),
-      ]
-        .filter((m, i, arr) => arr.findIndex((x) => x.id === m.id) === i) // deduplicate by id
-        .sort((a, b) => (a.at ?? 0) - (b.at ?? 0))
-    : [];
-
-  const sendLocal = () => {
-    if (!text.trim() || !localPartner) return;
-    blip("click");
-    appendChat({ id: `m-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, from: user, to: localPartner.name, text, at: Date.now() });
-    setAllMsgs(loadChat());
-    // Also relay via API for cross-device visibility
-    const partnerNumber = localPartner.pueiNumber;
-    if (!partnerNumber) { return; } // can't relay without a known Puei Number
-    fetch("/api/chat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ from: user, fromNumber: myPueiNumber, toNumber: partnerNumber, text }),
-    }).catch(() => {});
-    setText("");
-  };
-
-  const sendExternal = async () => {
-    if (!text.trim() || !externalPartner) return;
-    blip("click");
-    const sentText = text;
-    setText("");
-    const outMsg = { id: `out-${Date.now()}-${Math.random().toString(36).slice(2,6)}`, from: user, fromNumber: myPueiNumber, text: sentText, at: Date.now() };
-    // Persist sent message immediately so it survives poll resets
-    appendSent(externalPartner.pueiNumber, outMsg);
-    try {
-      const res = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ from: user, fromNumber: myPueiNumber, toNumber: externalPartner.pueiNumber, text: sentText }),
-      });
-      if (!res.ok) throw new Error("send failed");
-    } catch {
-      blip("error");
-    }
-  };
-
-  const send = () => { if (activeKind === "local") sendLocal(); else sendExternal(); };
-
-  // Contact actions
-  const deleteLocalChat = (name: string) => {
-    if (!confirm(`Delete the entire conversation with ${name}? This only removes it from your side.`)) return;
-    blip("click");
-    deleteChatBetween(user, name);
-    setAllMsgs(loadChat());
-    saveHiddenLocals(Array.from(new Set([...hiddenLocals, name])));
-    if (activeKind === "local" && activeId === name) setActiveId(null);
-  };
-  const blockLocal = (name: string) => {
-    if (!confirm(`Block ${name}? You won't receive messages from them on any device.`)) return;
-    blip("click");
-    const num = numberOfLocal(name);
-    deleteChatBetween(user, name);
-    setAllMsgs(loadChat());
-    saveHiddenLocals(Array.from(new Set([...hiddenLocals, name])));
-    saveBlocked(Array.from(new Set([...blockedNumbers, num])));
-    if (activeKind === "local" && activeId === name) setActiveId(null);
-  };
-  const deleteExternalContact = (num: string) => {
-    if (!confirm(`Remove ${num} from your contacts and delete the conversation?`)) return;
-    blip("click");
-    saveExternalContacts(externalContacts.filter((c) => c.pueiNumber !== num));
-    setApiMsgs((prev) => { const n = { ...prev }; delete n[num]; return n; });
-    if (activeKind === "external" && activeId === num) setActiveId(null);
-  };
-  const blockExternal = (num: string) => {
-    if (!confirm(`Block ${num}? They won't be able to message you anymore.`)) return;
-    blip("click");
-    saveBlocked(Array.from(new Set([...blockedNumbers, num])));
-    saveExternalContacts(externalContacts.filter((c) => c.pueiNumber !== num));
-    setApiMsgs((prev) => { const n = { ...prev }; delete n[num]; return n; });
-    if (activeKind === "external" && activeId === num) setActiveId(null);
-  };
-  const unblock = (num: string) => {
-    blip("click");
-    saveBlocked(blockedNumbers.filter((n) => n !== num));
-  };
+    </div>
+  );
 
   return (
-    <div className="flex h-full">
-      <div className="w-48 border-r overflow-auto flex flex-col" style={{ background: "var(--glass)" }}>
-        <div className="px-2 py-2 flex gap-1">
-          <button className="aero-button rounded text-xs py-1 px-2 flex-1"
-            style={{ background: view === "chat" ? "var(--gradient-aero)" : undefined, color: view === "chat" ? "white" : undefined }}
-            onClick={() => setView("chat")}>💬 Chats</button>
-          <button className="aero-button rounded text-xs py-1 px-2 flex-1"
-            style={{ background: view === "settings" ? "var(--gradient-aero)" : undefined, color: view === "settings" ? "white" : undefined }}
-            onClick={() => setView("settings")}>⚙️</button>
+    <div className="flex h-full" style={{color:"white"}}>
+      {/* Sidebar */}
+      <div className="w-56 flex flex-col border-r border-white/10 flex-shrink-0" style={{background:SIDEBAR_BG}}>
+        {/* Header */}
+        <div className="px-3 pt-3 pb-2 flex items-center justify-between">
+          <span className="font-bold text-sm flex items-center gap-1.5">
+            <span className="text-base">💬</span> PueiCloudChat
+          </span>
+          <button onClick={()=>{setShowSettings(true);blip("click");}}
+            className="w-7 h-7 rounded-full flex items-center justify-center text-sm opacity-50 hover:opacity-100 transition-opacity"
+            style={{background:"rgba(255,255,255,0.08)"}}>⚙️</button>
         </div>
-        <div className="px-3 py-1 text-xs opacity-70 font-semibold">Signed in as {user}</div>
-        <div className="px-3 pb-1 text-[10px] opacity-60 font-mono">#{myPueiNumber}</div>
+        {/* Search */}
         <div className="px-2 pb-2">
-          <button className="aero-button rounded w-full text-xs py-1"
-            onClick={() => { setAddingContact(!addingContact); setContactInput(""); setContactMsg(null); blip("click"); }}>
-            {addingContact ? "✕ Cancel" : "+ Add Contact"}
-          </button>
-          {addingContact && (
-            <div className="mt-1 p-2 rounded aero-glass-light flex flex-col gap-1">
-              <div className="text-[10px] opacity-70 mb-0.5">Enter their Puei Number</div>
-              <input
-                autoFocus
-                value={contactInput}
-                onChange={(e) => setContactInput(e.target.value.toUpperCase())}
-                placeholder="XXX-XXX-XXX"
-                maxLength={11}
-                className="w-full px-2 py-1 rounded text-xs font-mono outline-none"
-                style={{ background: "white", border: "1px solid var(--border)", color: "#111" }}
-                onKeyDown={(e) => e.key === "Enter" && doAddContact()}
-              />
-              <button className="aero-button rounded text-xs py-0.5" onClick={doAddContact}>Add Contact</button>
-              {contactMsg && <div className={`text-[10px] mt-0.5 ${contactMsg.ok ? "text-green-600" : "text-red-500"}`}>{contactMsg.text}</div>}
-            </div>
+          <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search…"
+            className="w-full px-3 py-1.5 rounded-full text-xs outline-none"
+            style={{background:"rgba(255,255,255,0.08)",color:"white",border:"1px solid rgba(255,255,255,0.08)"}}/>
+        </div>
+        {/* Contact list */}
+        <div className="flex-1 overflow-auto">
+          {filteredLocals.length>0&&<div className="px-3 py-1 text-[9px] font-semibold opacity-30 uppercase tracking-widest">On this device</div>}
+          {filteredLocals.map(c=>{
+            const last=lastLocal(c.name);
+            const isActive=activeKind==="local"&&activeId===c.name;
+            return (
+              <div key={c.name} onClick={()=>{setActiveId(c.name);setActiveKind("local");blip("hover");}}
+                className="flex items-center gap-2.5 px-3 py-2.5 cursor-pointer transition-all relative"
+                style={{background:isActive?"rgba(109,40,217,0.35)":"transparent",
+                        borderLeft:isActive?"3px solid #8b5cf6":"3px solid transparent"}}>
+                <div className="w-9 h-9 rounded-full flex-shrink-0 flex items-center justify-center text-lg overflow-hidden"
+                  style={{background:`linear-gradient(135deg,oklch(0.7 0.18 ${c.color??200}),oklch(0.45 0.2 ${c.color??200}))`}}>
+                  {c.avatar?.startsWith("data:")?<img src={c.avatar} alt="" className="w-full h-full object-cover"/>:(c.avatar||"👤")}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-medium truncate">{c.name}</div>
+                  <div className="text-[11px] opacity-40 truncate">{last?last.text:"Start chatting"}</div>
+                </div>
+              </div>
+            );
+          })}
+          {filteredExts.length>0&&<div className="px-3 pt-2 pb-1 text-[9px] font-semibold opacity-30 uppercase tracking-widest">Cross-device</div>}
+          {filteredExts.map(c=>{
+            const last=lastExt(c.pueiNumber);
+            const isActive=activeKind==="external"&&activeId===c.pueiNumber;
+            return (
+              <div key={c.pueiNumber} onClick={()=>{setActiveId(c.pueiNumber);setActiveKind("external");blip("hover");}}
+                className="flex items-center gap-2.5 px-3 py-2.5 cursor-pointer transition-all"
+                style={{background:isActive?"rgba(109,40,217,0.35)":"transparent",
+                        borderLeft:isActive?"3px solid #8b5cf6":"3px solid transparent"}}>
+                <div className="w-9 h-9 rounded-full flex-shrink-0 flex items-center justify-center text-sm"
+                  style={{background:"rgba(79,70,229,0.3)"}}>🌐</div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-xs font-mono truncate">{c.pueiNumber}</div>
+                  <div className="text-[11px] opacity-40 truncate">{last?last.text:"Say hi"}</div>
+                </div>
+              </div>
+            );
+          })}
+          {filteredLocals.length===0&&filteredExts.length===0&&(
+            <div className="text-xs opacity-30 text-center p-6">No contacts</div>
           )}
         </div>
-        {view === "chat" && (
+        {/* New chat */}
+        <div className="p-2 border-t border-white/10">
+          {showNewChat?(
+            <div className="flex flex-col gap-1.5">
+              <div className="text-[10px] opacity-50">Enter cross-device Puei Number:</div>
+              <input autoFocus value={newInput} onChange={e=>setNewInput(e.target.value)}
+                placeholder="XXX-XXX-XXX"
+                className="w-full px-2.5 py-1.5 rounded-xl text-xs font-mono outline-none"
+                style={{background:"rgba(255,255,255,0.08)",color:"white",border:"1px solid rgba(139,92,246,0.4)"}}
+                onKeyDown={e=>e.key==="Enter"&&doNewChat()}/>
+              {newMsg&&<div className={`text-[10px] ${newMsg.ok?"text-green-400":"text-red-400"}`}>{newMsg.text}</div>}
+              <div className="flex gap-1">
+                <button onClick={doNewChat} className="flex-1 rounded-xl py-1.5 text-xs font-semibold"
+                  style={{background:"linear-gradient(135deg,#6d28d9,#4f46e5)"}}>Start Chat</button>
+                <button onClick={()=>{setShowNewChat(false);setNewInput("");setNewMsg(null);}}
+                  className="px-3 rounded-xl text-xs opacity-50 hover:opacity-80"
+                  style={{background:"rgba(255,255,255,0.08)"}}>✕</button>
+              </div>
+            </div>
+          ):(
+            <button onClick={()=>{setShowNewChat(true);blip("click");}}
+              className="w-full rounded-xl py-2 text-xs font-semibold flex items-center justify-center gap-1 hover:opacity-90"
+              style={{background:"linear-gradient(135deg,#6d28d9,#4f46e5)"}}>
+              + New Chat
+            </button>
+          )}
+          <div className="text-center mt-1.5 text-[9px] opacity-20 font-mono">#{myPueiNumber||"—"}</div>
+        </div>
+      </div>
+
+      {/* Main chat area */}
+      <div className="flex-1 flex flex-col min-w-0" style={{background:MAIN_BG}}>
+        {!activeId?(
+          <div className="flex-1 flex flex-col items-center justify-center gap-3 opacity-20">
+            <div className="text-6xl">💬</div>
+            <div className="text-sm">Select a conversation or start a new one</div>
+          </div>
+        ):(
           <>
-            {(() => {
-              const visibleLocals = localContacts.filter((c) => {
-                if (isBlockedLocal(c.name)) return false;
-                if (!hiddenLocals.includes(c.name)) return true;
-                // Show again if they messaged after being hidden (any message from them)
-                return allMsgs.some((m) => m.from === c.name && m.to === user);
-              });
-              const visibleExternals = externalContacts.filter((c) => !isBlockedNumber(c.pueiNumber));
-              return (
+            {/* Chat header */}
+            <div className="flex items-center gap-3 px-5 py-3 border-b border-white/10 flex-shrink-0"
+              style={{background:"rgba(255,255,255,0.04)"}}>
+              {localPartner&&(
                 <>
-                  {visibleLocals.length > 0 && <div className="px-3 pb-1 text-[10px] opacity-40 uppercase tracking-wide">This device</div>}
-                  {visibleLocals.map((c) => {
-              const last = [...allMsgs].reverse().find((m) => (m.from === user && m.to === c.name) || (m.from === c.name && m.to === user));
-              const isActive = activeKind === "local" && activeId === c.name;
-              return (
-                <div key={c.name} onClick={() => { setActiveId(c.name); setActiveKind("local"); setView("chat"); }}
-                  className="px-3 py-2 cursor-pointer text-sm flex items-center gap-2"
-                  style={{ background: isActive ? "var(--gradient-aero)" : "transparent", color: isActive ? "white" : undefined }}>
-                  <div className="w-7 h-7 rounded overflow-hidden flex items-center justify-center text-base"
-                    style={{ background: `linear-gradient(135deg, oklch(0.7 0.18 ${c.color}), oklch(0.45 0.2 ${c.color}))` }}>
-                    {c.avatar.startsWith("data:") ? <img src={c.avatar} alt="" className="w-full h-full object-cover" /> : c.avatar}
+                  <div className="w-9 h-9 rounded-full flex items-center justify-center text-lg overflow-hidden"
+                    style={{background:`linear-gradient(135deg,oklch(0.7 0.18 ${localPartner.color??200}),oklch(0.45 0.2 ${localPartner.color??200}))`}}>
+                    {localPartner.avatar?.startsWith("data:")?<img src={localPartner.avatar} alt="" className="w-full h-full object-cover"/>:(localPartner.avatar||"👤")}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="truncate">{c.name}</div>
-                    <div className="text-xs opacity-70 truncate">{last ? last.text : "Say hi 👋"}</div>
+                    <div className="font-semibold">{localPartner.name}</div>
+                    <div className="text-[10px] opacity-40 font-mono">#{localPartner.pueiNumber||"—"}</div>
                   </div>
-                </div>
-              );
-            })}
-                  {visibleExternals.length > 0 && <div className="px-3 pb-1 pt-1 text-[10px] opacity-40 uppercase tracking-wide">Cross-device</div>}
-                  {visibleExternals.map((c) => {
-              const msgs = apiMsgs[c.pueiNumber] ?? [];
-              const last = msgs[msgs.length - 1];
-              const isActive = activeKind === "external" && activeId === c.pueiNumber;
-              return (
-                <div key={c.pueiNumber} onClick={() => { setActiveId(c.pueiNumber); setActiveKind("external"); setView("chat"); }}
-                  className="px-3 py-2 cursor-pointer text-sm flex items-center gap-2"
-                  style={{ background: isActive ? "var(--gradient-aero)" : "transparent", color: isActive ? "white" : undefined }}>
-                  <div className="w-7 h-7 rounded-full flex items-center justify-center aero-glass-light text-base">🌐</div>
-                  <div className="flex-1 min-w-0">
-                    <div className="truncate font-mono text-xs">{c.pueiNumber}</div>
-                    <div className="text-xs opacity-70 truncate">{last ? last.text : "Say hi 👋"}</div>
-                  </div>
-                </div>
-              );
-            })}
+                  <button className="text-xs opacity-40 hover:opacity-100 hover:text-red-400 transition-all px-2 py-1 rounded-lg"
+                    onClick={()=>{if(confirm(`Delete conversation with ${localPartner.name}?`)){deleteChatBetween(user,localPartner.name);setAllMsgs(loadChat());blip("click");}}}>
+                    🗑️
+                  </button>
+                  <button className="text-xs opacity-40 hover:opacity-100 hover:text-red-400 transition-all px-2 py-1 rounded-lg"
+                    onClick={()=>{const num=localPartner.pueiNumber||pueiNumberFor(localPartner.name+":seed");blockNum(num,localPartner.name);}}>
+                    🚫
+                  </button>
                 </>
-              );
-            })()}
+              )}
+              {extPartner&&(
+                <>
+                  <div className="w-9 h-9 rounded-full flex items-center justify-center"
+                    style={{background:"rgba(79,70,229,0.4)"}}>🌐</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-mono">{extPartner.pueiNumber}</div>
+                    <div className="text-[10px] opacity-40">Cross-device contact</div>
+                  </div>
+                  <button className="text-xs opacity-40 hover:opacity-100 hover:text-red-400 transition-all px-2 py-1 rounded-lg"
+                    onClick={()=>{if(confirm(`Remove ${extPartner.pueiNumber}?`)){saveExtContacts(extContacts.filter(c=>c.pueiNumber!==extPartner.pueiNumber));setApiMsgs(p=>{const n={...p};delete n[extPartner.pueiNumber];return n;});setActiveId(null);blip("click");}}}>
+                    🗑️
+                  </button>
+                  <button className="text-xs opacity-40 hover:opacity-100 hover:text-red-400 transition-all px-2 py-1 rounded-lg"
+                    onClick={()=>blockNum(extPartner.pueiNumber)}>
+                    🚫
+                  </button>
+                </>
+              )}
+            </div>
+            {/* Messages */}
+            <div className="flex-1 overflow-auto px-5 py-4 flex flex-col gap-2">
+              {activeKind==="local"&&localMsgs.length===0&&(
+                <div className="flex-1 flex items-center justify-center">
+                  <div className="text-center opacity-20">
+                    <div className="text-4xl mb-2">👋</div>
+                    <div className="text-sm">Say hello to {localPartner?.name}!</div>
+                  </div>
+                </div>
+              )}
+              {activeKind==="local"&&localMsgs.map(m=>{
+                const mine=m.from===user;
+                return (
+                  <div key={m.id} className={`flex ${mine?"justify-end":"justify-start"} items-end gap-2`}>
+                    {!mine&&localPartner&&(
+                      <div className="w-6 h-6 rounded-full flex-shrink-0 flex items-center justify-center text-sm overflow-hidden"
+                        style={{background:`linear-gradient(135deg,oklch(0.7 0.18 ${localPartner.color??200}),oklch(0.45 0.2 ${localPartner.color??200}))`}}>
+                        {localPartner.avatar?.startsWith("data:")?<img src={localPartner.avatar} alt="" className="w-full h-full object-cover"/>:(localPartner.avatar||"👤")}
+                      </div>
+                    )}
+                    <div className="max-w-[70%] flex flex-col" style={{alignItems:mine?"flex-end":"flex-start"}}>
+                      <div className="px-3.5 py-2.5 text-sm" style={{
+                        background:mine?ME_BG:THEM_BG,
+                        color:"white",
+                        borderRadius:mine?"18px 18px 4px 18px":"18px 18px 18px 4px",
+                      }}>
+                        {m.text}
+                      </div>
+                      <div className="text-[9px] opacity-30 mt-0.5 px-1">
+                        {m.at?new Date(m.at).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"}):""}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+              {activeKind==="external"&&extMsgs.length===0&&(
+                <div className="flex-1 flex items-center justify-center">
+                  <div className="text-center opacity-20">
+                    <div className="text-4xl mb-2">🌐</div>
+                    <div className="text-sm">Start a cross-device conversation!</div>
+                  </div>
+                </div>
+              )}
+              {activeKind==="external"&&extMsgs.map(m=>{
+                const mine=m.fromNumber===myPueiNumber;
+                return (
+                  <div key={m.id} className={`flex ${mine?"justify-end":"justify-start"}`}>
+                    <div className="max-w-[70%] flex flex-col" style={{alignItems:mine?"flex-end":"flex-start"}}>
+                      <div className="px-3.5 py-2.5 text-sm" style={{
+                        background:mine?ME_BG:THEM_BG,
+                        color:"white",
+                        borderRadius:mine?"18px 18px 4px 18px":"18px 18px 18px 4px",
+                      }}>
+                        {m.text}
+                      </div>
+                      <div className="text-[9px] opacity-30 mt-0.5 px-1">
+                        {m.at?new Date(m.at).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"}):""}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+              <div ref={msgEndRef}/>
+            </div>
+            {/* Input */}
+            <div className="px-4 py-3 border-t border-white/10 flex-shrink-0" style={{background:"rgba(0,0,0,0.2)"}}>
+              <div className="flex gap-2 items-center">
+                <input value={text} onChange={e=>setText(e.target.value)}
+                  onKeyDown={e=>e.key==="Enter"&&!e.shiftKey&&send()}
+                  className="flex-1 px-4 py-2.5 rounded-2xl text-sm outline-none"
+                  style={{background:"rgba(255,255,255,0.07)",color:"white",border:"1px solid rgba(255,255,255,0.1)"}}
+                  placeholder={localPartner?`Message ${localPartner.name}…`:extPartner?`Message ${extPartner.pueiNumber}…`:"Message…"}/>
+                <button onClick={send} disabled={!text.trim()}
+                  className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 transition-opacity text-xl"
+                  style={{background:text.trim()?"linear-gradient(135deg,#6d28d9,#4f46e5)":"rgba(255,255,255,0.1)",opacity:text.trim()?1:0.5}}>
+                  ↑
+                </button>
+              </div>
+            </div>
           </>
         )}
       </div>
-      {view === "settings" ? <SettingsView /> : (
-        <div className="flex-1 flex flex-col">
-          <div className="aero-titlebar px-3 py-1.5 text-sm font-semibold flex items-center justify-between gap-2">
-            {localPartner && (
-              <>
-                <span className="truncate">{localPartner.avatar.startsWith("data:") ? "🙂" : localPartner.avatar} {localPartner.name}</span>
-                <span className="text-[10px] opacity-60 font-mono ml-auto">#{localPartner.pueiNumber || pueiNumberFor(localPartner.name + ":seed")}</span>
-                <button className="aero-button rounded px-2 py-0.5 text-[10px]" title="Delete conversation"
-                  onClick={() => deleteLocalChat(localPartner.name)}>🗑️ Delete</button>
-                <button className="aero-button rounded px-2 py-0.5 text-[10px]" title="Block contact"
-                  onClick={() => blockLocal(localPartner.name)}>🚫 Block</button>
-              </>
-            )}
-            {externalPartner && (
-              <>
-                <span>🌐 {externalPartner.pueiNumber}</span>
-                <span className="text-[10px] opacity-60 bg-blue-100 text-blue-700 rounded px-1 ml-auto">cross-device</span>
-                <button className="aero-button rounded px-2 py-0.5 text-[10px]" title="Remove contact"
-                  onClick={() => deleteExternalContact(externalPartner.pueiNumber)}>🗑️ Delete</button>
-                <button className="aero-button rounded px-2 py-0.5 text-[10px]" title="Block contact"
-                  onClick={() => blockExternal(externalPartner.pueiNumber)}>🚫 Block</button>
-              </>
-            )}
-          </div>
-          <div className="flex-1 p-3 overflow-auto space-y-2 text-sm">
-            {activeKind === "local" && (
-              <>
-                {localConversation.length === 0 && <div className="text-xs opacity-60 text-center">No messages yet.</div>}
-                {localConversation.map((m) => (
-                  <div key={m.id} className={m.from === user ? "text-right" : "text-left"}>
-                    <div className="inline-block px-3 py-1.5 rounded-2xl max-w-xs"
-                      style={{ background: m.from === user ? "var(--gradient-aero)" : "var(--glass)", color: m.from === user ? "white" : undefined, border: "1px solid var(--border)" }}>
-                      {m.text}
-                    </div>
-                  </div>
-                ))}
-              </>
-            )}
-            {activeKind === "external" && (
-              <>
-                {externalConversation.length === 0 && (
-                  <div className="text-xs opacity-60 text-center">No messages yet. Messages are delivered in real time across devices.</div>
-                )}
-                {externalConversation.map((m) => {
-                  const isMine = m.fromNumber === myPueiNumber;
-                  return (
-                    <div key={m.id} className={isMine ? "text-right" : "text-left"}>
-                      <div className="inline-block px-3 py-1.5 rounded-2xl max-w-xs"
-                        style={{ background: isMine ? "var(--gradient-aero)" : "var(--glass)", color: isMine ? "white" : undefined, border: "1px solid var(--border)" }}>
-                        {m.text}
-                      </div>
-                    </div>
-                  );
-                })}
-              </>
-            )}
-          </div>
-          <div className="p-2 flex gap-2 border-t">
-            <input value={text} onChange={(e) => setText(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && send()}
-              className="flex-1 px-3 py-1.5 rounded-md outline-none text-sm"
-              style={{ background: "white", border: "1px solid var(--border)" }}
-              placeholder={localPartner ? `Message ${localPartner.name}…` : externalPartner ? `Message ${externalPartner.pueiNumber}…` : "Select a contact…"} />
-            <button className="aero-button rounded-md px-3" onClick={send} disabled={!localPartner && !externalPartner}>Send</button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
@@ -3068,10 +2981,37 @@ function ChessApp() {
     return moves;
   };
 
+  // Check detection — filters moves that leave own king in check
+  const findKing = (board:Board, color:"w"|"b"):Pos|null => {
+    for(let r=0;r<8;r++) for(let c=0;c<8;c++)
+      if(board[r][c]?.type==="K"&&board[r][c]?.color===color) return [r,c];
+    return null;
+  };
+  const isInCheck = (board:Board, color:"w"|"b"):boolean => {
+    const king=findKing(board,color);
+    if(!king) return false;
+    const opp=color==="w"?"b":"w";
+    for(let r=0;r<8;r++) for(let c=0;c<8;c++)
+      if(board[r][c]?.color===opp&&pieceMoves(board,r,c,opp).some(([mr,mc])=>mr===king[0]&&mc===king[1]))
+        return true;
+    return false;
+  };
+  const legalMovesFor = (board:Board, r:number, c:number):Pos[] => {
+    const piece=board[r][c];
+    if(!piece) return [];
+    return pieceMoves(board,r,c,piece.color).filter(([tr,tc])=>!isInCheck(applyMove(board,[r,c],[tr,tc]),piece.color));
+  };
+  const allLegalMoves = (board:Board, color:"w"|"b"):[Pos,Pos][] => {
+    const moves:[Pos,Pos][]=[];
+    for(let r=0;r<8;r++) for(let c=0;c<8;c++)
+      if(board[r][c]?.color===color) for(const to of legalMovesFor(board,r,c)) moves.push([[r,c],to]);
+    return moves;
+  };
+
   const minimax = (board:Board, depth:number, alpha:number, beta:number, maximizing:boolean): number => {
     if(depth===0) return evalBoard(board);
     const color=maximizing?"w":"b";
-    const moves=allMoves(board,color);
+    const moves=allLegalMoves(board,color);
     if(!moves.length) return maximizing?-999:999;
     if(maximizing){
       let best=-Infinity;
@@ -3093,7 +3033,7 @@ function ChessApp() {
   };
 
   const bestBotMove = (board:Board):[Pos,Pos]|null => {
-    const moves=allMoves(board,"b");
+    const moves=allLegalMoves(board,"b");
     if(!moves.length) return null;
     let best=-Infinity; let bestMove=moves[0];
     for(const [from,to] of moves){
@@ -3119,11 +3059,14 @@ function ChessApp() {
       if(mv){
         const nb=applyMove(b,mv[0],mv[1]);
         setBoard(nb); setLastMove(mv);
-        const wMoves=allMoves(nb,"w");
-        if(!wMoves.length){setStatus("Checkmate! Puei Bot wins 🤖");}
-        else{setStatus("Your turn (white)");}
+        const wMoves=allLegalMoves(nb,"w");
+        if(!wMoves.length){
+          setStatus(isInCheck(nb,"w")?"Checkmate! Puei Bot wins 🤖":"Stalemate — draw!");
+        } else {
+          setStatus(isInCheck(nb,"w")?"⚠️ Check! Get your king to safety.":"Your turn (white)");
+        }
       } else {
-        setStatus("Puei Bot has no moves — stalemate!");
+        setStatus(isInCheck(b,"b")?"Checkmate! You win 🎉":"Stalemate — draw!");
       }
       setTurn("w"); setThinking(false);
     }, 300);
@@ -3138,48 +3081,90 @@ function ChessApp() {
         const nb=applyMove(board,selected,[r,c]);
         setBoard(nb); setLastMove([selected,[r,c]]);
         setSelected(null); setLegalMoves([]);
-        const bMoves=allMoves(nb,"b");
-        if(!bMoves.length){setStatus("Checkmate! You win 🎉");return;}
+        const bMoves=allLegalMoves(nb,"b");
+        if(!bMoves.length){setStatus(isInCheck(nb,"b")?"Checkmate! You win 🎉":"Stalemate — draw!");return;}
         setStatus("Puei Bot is thinking…"); setTurn("b");
         botMove(nb);
       } else if(piece?.color==="w"){
-        setSelected([r,c]); setLegalMoves(pieceMoves(board,r,c,"w"));
+        setSelected([r,c]); setLegalMoves(legalMovesFor(board,r,c));
       } else {
         setSelected(null); setLegalMoves([]);
       }
     } else {
-      if(piece?.color==="w"){ setSelected([r,c]); setLegalMoves(pieceMoves(board,r,c,"w")); }
+      if(piece?.color==="w"){ setSelected([r,c]); setLegalMoves(legalMovesFor(board,r,c)); }
     }
   };
 
   const isHighlighted=(r:number,c:number)=>legalMoves.some(([lr,lc])=>lr===r&&lc===c);
   const isSelected=(r:number,c:number)=>selected?.[0]===r&&selected?.[1]===c;
   const isLastMove=(r:number,c:number)=>lastMove&&([lastMove[0],lastMove[1]].some(([lr,lc])=>lr===r&&lc===c));
+  const whiteInCheck=turn==="w"&&!thinking&&isInCheck(board,"w");
+  const whiteKingPos=findKing(board,"w");
 
   return (
-    <div className="p-4 h-full flex flex-col items-center overflow-auto">
-      <h2 className="text-lg font-bold mb-1">♟️ Chess · vs Puei Bot</h2>
-      <div className="text-xs opacity-70 mb-3">{status}</div>
-      <div className="inline-grid grid-cols-8 border-2 border-black/40 select-none">
-        {board.map((row,r)=>row.map((piece,c)=>{
-          const base=(r+c)%2===0?"#f0d9b5":"#b58863";
-          const bg=isSelected(r,c)?"#f6f669":isHighlighted(r,c)?((r+c)%2===0?"#cdd16f":"#aaa23a"):isLastMove(r,c)?((r+c)%2===0?"#cdd26e":"#aaa23a"):base;
-          const key=piece?`${piece.color}${piece.type}`:"";
-          return (
-            <div key={`${r}-${c}`} onClick={()=>handleClick(r,c)}
-              className="w-10 h-10 flex items-center justify-center text-2xl cursor-pointer relative"
-              style={{background:bg,color:"#111"}}>
-              {piece && <span style={{textShadow:"0 1px 2px rgba(0,0,0,0.3)"}}>{GLYPHS[key]}</span>}
-              {isHighlighted(r,c)&&!piece&&<div className="w-3 h-3 rounded-full bg-black/25 absolute"/>}
-            </div>
-          );
-        }))}
+    <div className="h-full flex flex-col items-center justify-center overflow-auto select-none"
+      style={{background:"linear-gradient(135deg,#1a0a00 0%,#2d1a08 100%)"}}>
+      {/* Status bar */}
+      <div className={`text-sm font-semibold mb-3 px-4 py-1.5 rounded-full ${whiteInCheck?"bg-red-500/80 text-white animate-pulse":"bg-black/30 text-white/80"}`}>
+        {thinking ? <span className="opacity-70">♟ Puei Bot is thinking…</span> : status}
       </div>
-      <button className="aero-button rounded px-3 py-1 text-xs mt-4"
-        onClick={()=>{setBoard(initBoard());setSelected(null);setLegalMoves([]);setTurn("w");setStatus("Your turn (white)");setLastMove(null);}}>
-        🔄 New Game
-      </button>
-      <div className="mt-2 text-xs opacity-50">You are white. Click a piece then click a destination.</div>
+      {/* Board container */}
+      <div className="flex">
+        {/* Row labels */}
+        <div className="flex flex-col justify-around mr-1">
+          {[8,7,6,5,4,3,2,1].map(n=><div key={n} className="h-11 flex items-center text-[10px] text-white/40 font-mono w-3">{n}</div>)}
+        </div>
+        <div>
+          <div className="inline-grid grid-cols-8 rounded-sm overflow-hidden"
+            style={{boxShadow:"0 8px 40px rgba(0,0,0,0.8), inset 0 0 0 2px rgba(255,255,255,0.1)"}}>
+            {board.map((row,r)=>row.map((piece,c)=>{
+              const isLight=(r+c)%2===0;
+              const base=isLight?"#e8c99a":"#9c6a38";
+              const selBg="#f9f52b";
+              const hlLight="#d4e857"; const hlDark="#90a830";
+              const lastLight="#f0e44a"; const lastDark="#c8b830";
+              const inCheckSq=whiteInCheck&&whiteKingPos&&whiteKingPos[0]===r&&whiteKingPos[1]===c;
+              const bg=inCheckSq?"#ff4444":isSelected(r,c)?selBg:isHighlighted(r,c)?(isLight?hlLight:hlDark):isLastMove(r,c)?(isLight?lastLight:lastDark):base;
+              const key=piece?`${piece.color}${piece.type}`:"";
+              return (
+                <div key={`${r}-${c}`} onClick={()=>handleClick(r,c)}
+                  className="w-11 h-11 flex items-center justify-center cursor-pointer relative transition-colors"
+                  style={{background:bg}}>
+                  {piece && (
+                    <span className="text-[28px] leading-none"
+                      style={{
+                        filter:piece.color==="w"?"drop-shadow(0 2px 3px rgba(0,0,0,0.8))":"drop-shadow(0 2px 3px rgba(255,255,255,0.2))",
+                        color:piece.color==="w"?"#fff":"#111",
+                      }}>
+                      {GLYPHS[key]}
+                    </span>
+                  )}
+                  {isHighlighted(r,c)&&!piece&&(
+                    <div className="w-4 h-4 rounded-full absolute"
+                      style={{background:"rgba(0,0,0,0.3)",boxShadow:"0 0 0 1px rgba(0,0,0,0.1)"}}/>
+                  )}
+                  {isHighlighted(r,c)&&piece&&(
+                    <div className="absolute inset-0 rounded-sm border-4 border-yellow-400/60"/>
+                  )}
+                </div>
+              );
+            }))}
+          </div>
+          {/* Column labels */}
+          <div className="flex mt-1">
+            {["a","b","c","d","e","f","g","h"].map(l=><div key={l} className="w-11 text-center text-[10px] text-white/40 font-mono">{l}</div>)}
+          </div>
+        </div>
+      </div>
+      {/* Controls */}
+      <div className="flex gap-3 mt-4 items-center">
+        <button className="px-4 py-1.5 rounded-full text-xs text-white font-semibold"
+          style={{background:"rgba(255,255,255,0.15)"}}
+          onClick={()=>{setBoard(initBoard());setSelected(null);setLegalMoves([]);setTurn("w");setStatus("Your turn (white)");setLastMove(null);}}>
+          🔄 New Game
+        </button>
+        <div className="text-[10px] text-white/30">You = White · Bot = Black</div>
+      </div>
     </div>
   );
 }
