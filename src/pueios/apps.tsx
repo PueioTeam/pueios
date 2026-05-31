@@ -2555,14 +2555,14 @@ function AppStoreApp({ installWebApp, openApp, systemVersion, addNativeIcon, ico
                         <button
                           className="aero-button rounded px-2 py-1 text-xs flex-1"
                           style={{ background: onDesktop ? "rgba(80,200,120,0.25)" : undefined, color: onDesktop ? "#4ade80" : undefined }}
-                          onClick={() => { if (!onDesktop) { addNativeIcon(a.appId, a.name, a.icon); blip("notify"); } }}>
+                          onClick={() => { addNativeIcon(a.appId, a.name, a.icon); blip("notify"); }}>
                           {onDesktop ? "✓ Installed" : "⬇ Install"}
                         </button>
                       ) : (
                         <button
                           className="aero-button rounded px-2 py-1 text-xs flex-1"
                           style={{ background: onDesktop ? "rgba(80,200,120,0.25)" : undefined, color: onDesktop ? "#4ade80" : undefined }}
-                          onClick={() => { if (!onDesktop) { addNativeIcon(a.appId, a.name, a.icon); blip("notify"); } }}>
+                          onClick={() => { addNativeIcon(a.appId, a.name, a.icon); blip("notify"); }}>
                           {onDesktop ? "✓ On desktop" : "+ Add to desktop"}
                         </button>
                       )}
