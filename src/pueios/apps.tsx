@@ -2541,12 +2541,19 @@ function AppStoreApp({ installWebApp, openApp, systemVersion, addNativeIcon, ico
                     <div className="flex gap-1 mt-2">
                       <button className="aero-button rounded px-2 py-1 text-xs flex-1"
                         onClick={() => openApp(a.appId)}>Open</button>
-                      {!a.preInstalled && (
+                      {!a.preInstalled ? (
                         <button
                           className="aero-button rounded px-2 py-1 text-xs flex-1"
                           style={{ background: onDesktop ? "rgba(80,200,120,0.25)" : undefined, color: onDesktop ? "#4ade80" : undefined }}
                           onClick={() => { if (!onDesktop) { addNativeIcon(a.appId, a.name, a.icon); blip("notify"); } }}>
                           {onDesktop ? "✓ Installed" : "⬇ Install"}
+                        </button>
+                      ) : (
+                        <button
+                          className="aero-button rounded px-2 py-1 text-xs flex-1"
+                          style={{ background: onDesktop ? "rgba(80,200,120,0.25)" : undefined, color: onDesktop ? "#4ade80" : undefined }}
+                          onClick={() => { if (!onDesktop) { addNativeIcon(a.appId, a.name, a.icon); blip("notify"); } }}>
+                          {onDesktop ? "✓ On desktop" : "+ Add to desktop"}
                         </button>
                       )}
                     </div>
