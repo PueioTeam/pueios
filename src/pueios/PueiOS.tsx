@@ -103,10 +103,15 @@ export function PueiOS() {
     const s = loadState();
     setThemeState(s.theme); setUsers(s.users);
     setInstalled(s.installed); setSystemVersion(s.systemVersion);
-    // Migration: ensure PueiCloudChat icon exists for users who had an older version
-    const loadedIcons = s.icons?.length ? s.icons : defaultIcons;
-    const hasPCC = loadedIcons.some((i: any) => i.appId === "puei-cloud-chat" && !i.fileId && !i.webUrl);
-    setIcons(hasPCC ? loadedIcons : [...loadedIcons, { id: "i-msg", label: "PueiCloudChat", appId: "puei-cloud-chat" as const }]);
+    // Migration: clean up stale icons and ensure PueiCloudChat always exists
+    let loadedIcons: DesktopIcon[] = s.icons?.length ? s.icons : defaultIcons;
+    // Remove any stale puei-messenger icons
+    loadedIcons = loadedIcons.filter((i: any) => i.appId !== "puei-messenger" && i.appId !== "solitaire");
+    // Add PueiCloudChat if missing
+    if (!loadedIcons.some((i: any) => i.appId === "puei-cloud-chat" && !i.fileId && !i.webUrl)) {
+      loadedIcons = [...loadedIcons, { id: "i-msg", label: "PueiCloudChat", appId: "puei-cloud-chat" as const }];
+    }
+    setIcons(loadedIcons);
     if (!s.installed) { setPhase("install"); return; }
     if (s.lastUser && s.remember) { setLoginUser(s.lastUser); setRemember(true); }
     else if (s.users[0]) setLoginUser(s.users[0].name);
