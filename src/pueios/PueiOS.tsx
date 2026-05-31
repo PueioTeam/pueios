@@ -29,7 +29,6 @@ const APP_TITLES: Record<AppId, string> = {
   "folder": "Folder",
   "web-app": "Web App",
   "recycle-bin": "Recycle Bin",
-  "solitaire": "Solitaire",
   "chess": "Chess",
 };
 const APP_SIZES: Partial<Record<AppId, { w: number; h: number }>> = {
@@ -37,7 +36,7 @@ const APP_SIZES: Partial<Record<AppId, { w: number; h: number }>> = {
   "notepad": { w: 520, h: 420 },
   "about": { w: 480, h: 440 },
   "settings": { w: 820, h: 560 },
-  "puei-messenger": { w: 720, h: 500 },
+  "puei-cloud-chat": { w: 720, h: 500 },
   "pueinet": { w: 820, h: 560 },
   "puei-paint": { w: 820, h: 560 },
   "file-explorer": { w: 760, h: 500 },
@@ -46,7 +45,6 @@ const APP_SIZES: Partial<Record<AppId, { w: number; h: number }>> = {
   "folder": { w: 520, h: 400 },
   "web-app": { w: 900, h: 600 },
   "recycle-bin": { w: 640, h: 460 },
-  "solitaire": { w: 640, h: 480 },
   "chess": { w: 560, h: 600 },
 };
 
@@ -340,8 +338,7 @@ export function PueiOS() {
         const n = prompt("Rename to:", icon.label);
         if (n) setIcons(icons.map((i) => i.id === icon.id ? { ...i, label: n } : i));
       }},
-      { label: "Delete", action: () => {
-        // also delete children if folder
+      { label: icon.fileId || icon.webUrl ? "🗑️ Delete shortcut" : "🗑️ Uninstall", action: () => {
         setIcons(icons.filter((i) => i.id !== icon.id && i.folderId !== icon.id));
       }},
       ...(icon.appId === "folder" ? [{ label: "New shortcut here", action: () => {
@@ -1070,7 +1067,7 @@ export function PueiOS() {
             <div className="font-semibold">{currentUser}</div>
           </div>
           <div className="grid grid-cols-2 gap-1 p-2">
-            {(["file-explorer", "app-store", "puei-social", "pueinet", "puei-messenger", "puei-paint", "notepad", "calculator", "settings", "about"] as AppId[]).map((id) => (
+            {(["file-explorer", "app-store", "puei-social", "pueinet", "puei-cloud-chat", "puei-paint", "notepad", "calculator", "settings", "about"] as AppId[]).map((id) => (
               <button key={id} onClick={() => { openApp(id); setStartOpen(false); }}
                 className="flex items-center gap-2 px-3 py-2 rounded hover:bg-white/40 text-sm text-left">
                 {appIcon(id, 26)}<span>{APP_TITLES[id]}</span>
@@ -1116,7 +1113,7 @@ export function PueiOS() {
           onClick={(e) => { e.stopPropagation(); blip("click"); setStartOpen(!startOpen); setShowCalendar(false); }}>
           <PueiLogoSvg size={26} bigEyes />
         </button>
-        {(["file-explorer", "app-store", "puei-social", "pueinet", "puei-messenger"] as AppId[]).map((id) => (
+        {(["file-explorer", "app-store", "puei-social", "pueinet", "puei-cloud-chat"] as AppId[]).map((id) => (
           <button key={id} onClick={(e) => { e.stopPropagation(); openApp(id); }}
             onMouseEnter={() => blip("hover")}
             title={APP_TITLES[id]}

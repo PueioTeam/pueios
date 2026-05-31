@@ -55,7 +55,6 @@ export function AppRenderer(p: AppRendererProps) {
     case "folder": return <FolderApp folderIconId={p.folderIconId!} icons={p.icons} openApp={p.openApp} openWebApp={p.openWebApp} />;
     case "web-app": return <WebAppFrame url={p.webUrl!} />;
     case "recycle-bin": return <RecycleBinApp />;
-    case "solitaire": return <SolitaireApp />;
     case "chess": return <ChessApp />;
   }
 }
@@ -2516,7 +2515,6 @@ function AppStoreApp({ installWebApp, openApp, systemVersion, addNativeIcon, ico
     { name: "Notepad",        icon: "📝", desc: "Write and save text files.",                   appId: "notepad",        preInstalled: true },
     { name: "Calculator",     icon: "🧮", desc: "Glossy arithmetic.",                            appId: "calculator",     preInstalled: true },
     { name: "Chess",          icon: "♟️", desc: "Chess vs Puei Bot AI — fully functional.",     appId: "chess",          preInstalled: false },
-    { name: "Solitaire (Lite)",icon:"🃏", desc: "Classic Klondike Solitaire.",                   appId: "solitaire",      preInstalled: false },
     { name: "Installer",      icon: "📥", desc: "Install trusted web apps as desktop shortcuts.",appId: "app-store",      preInstalled: true },
   ];
   const isOnDesktop = (appId: AppId) => icons.some((i) => i.appId === appId && !i.fileId && !i.webUrl);
@@ -2984,25 +2982,6 @@ function RecycleBinApp() {
           ))}
         </div>
       )}
-    </div>
-  );
-}
-
-// ---------- Solitaire (vs AI bot, minimal) ----------
-function SolitaireApp() {
-  const [moves, setMoves] = useState(0);
-  return (
-    <div className="p-6 h-full text-center">
-      <h2 className="text-xl font-bold mb-2">🃏 Solitaire</h2>
-      <p className="text-xs opacity-70 mb-4">Klondike · Single-player or vs Puei Bot</p>
-      <div className="grid grid-cols-7 gap-2 max-w-2xl mx-auto">
-        {Array.from({ length: 7 }).map((_, i) => (
-          <div key={i} className="aero-glass-light rounded h-32 flex items-center justify-center text-xs opacity-70 cursor-pointer"
-            onClick={() => { setMoves(m => m + 1); blip("click"); }}>Pile {i + 1}</div>
-        ))}
-      </div>
-      <div className="mt-4 text-sm opacity-80">Moves: {moves}</div>
-      <div className="mt-2 text-xs opacity-60">vs 🤖 Puei Bot · Difficulty: Easy</div>
     </div>
   );
 }

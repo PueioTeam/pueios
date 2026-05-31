@@ -122,7 +122,6 @@ export type AppId =
   | "folder"
   | "web-app"
   | "recycle-bin"
-  | "solitaire"
   | "chess";
 
 export type WindowState = {
