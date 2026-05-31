@@ -543,7 +543,7 @@ export function PueiOS() {
                   // Limited access mode — continue without password
                   const name = newAcc.name.trim();
                   if (!name) { setInstallErr("Pick a name"); return; }
-                  const nu: User = { name, password: "", avatar: "🧑", color: "200", pueiNumber: pueiNumberFor(name + ":" + Date.now()), friends: [], noPassword: true, limitedMode: true };
+                  const nu: User = { name, password: "", avatar: "🧑", color: "200", pueiNumber: pueiNumberFor(name), friends: [], noPassword: true, limitedMode: true };
                   setUsers([nu]); setLoginUser(name); setInstalled(true); setInstallStep(5);
                   setTimeout(() => { setPhase("boot"); setBootProgress(0); setInstallStep(0); setInstallMode(null); setPwOption("have"); }, 1400);
                 }}>No — limited access</button>
@@ -582,7 +582,7 @@ export function PueiOS() {
                 setInstallErr("No PueiOS account with that name. Use Create instead."); return;
               }
               // Network error → offline fallback: create a local-only account.
-              const nu: User = { name, password: newAcc.password, avatar: "🧑", color: "200", pueiNumber: pueiNumberFor(name + ":" + Date.now()), friends: [] };
+              const nu: User = { name, password: newAcc.password, avatar: "🧑", color: "200", pueiNumber: pueiNumberFor(name), friends: [] };
               setUsers([nu]); setLoginUser(name); setInstalled(true); setInstallErr("");
               setInstallStep(5); blip("notify");
               setTimeout(() => { setPhase("boot"); setBootProgress(0); setInstallStep(0); setInstallMode(null); setPwOption("have"); }, 1400);

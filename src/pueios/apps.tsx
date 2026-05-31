@@ -1769,10 +1769,11 @@ function PueiCloudChatApp({ user, users, setUsers }: { user: string; users: User
     msgEndRef.current?.scrollIntoView({behavior:"smooth"});
   }, [allMsgs, apiMsgs, sentMsgs, activeId]);
 
-  // Ensure Puei Number
+  // Ensure Puei Number is always the deterministic one based on username
   useEffect(() => {
-    if (me && !me.pueiNumber)
-      setUsers(users.map(u => u.name===user ? {...u, pueiNumber: pueiNumberFor(user+":"+Date.now())} : u));
+    const correct = pueiNumberFor(user);
+    if (me && me.pueiNumber !== correct)
+      setUsers(users.map(u => u.name===user ? {...u, pueiNumber: correct} : u));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
