@@ -545,12 +545,11 @@ function NotepadApp({ fileId, onCreateShortcut, currentUser }: { fileId?: string
         <input value={name} onChange={(e) => setName(e.target.value)} disabled={docLocked}
           className="px-2 py-0.5 rounded text-xs" style={{ background: "white", color: "#111", width: 180 }} />
         {!docLocked && <button className="aero-button rounded px-2 py-0.5" onClick={save}>💾 Save</button>}
-        {docLocked && <button className="aero-button rounded px-2 py-0.5" onClick={() => { setDocLocked(false); setStatus("Unlocked"); setTimeout(() => setStatus(""), 1200); }}>🔓 Unlock</button>}
+        {docLocked && <span className="opacity-60 text-xs">🔒 Read-only</span>}
         <button className="aero-button rounded px-2 py-0.5" onClick={open}>📂 Open</button>
         {!docLocked && <button className="aero-button rounded px-2 py-0.5" onClick={() => { const id = save(); onCreateShortcut(name, id); }}>📌 Save & shortcut</button>}
         <button className="aero-button rounded px-2 py-0.5" onClick={() => { setText("Welcome to Puei Notepad.\n\nType anything..."); setName("Untitled.txt"); setSavedId(undefined); setDocLocked(false); }}>📄 New</button>
         <span className="opacity-70">{status}</span>
-        {docLocked && <span className="opacity-60 text-[10px]">🔒 Read-only — click Unlock to edit</span>}
       </div>
       <textarea value={text} onChange={(e) => { if (!docLocked) setText(e.target.value); }}
         readOnly={docLocked}
@@ -656,7 +655,7 @@ function PaintApp({ fileId, onCreateShortcut, currentUser }: { fileId?: string; 
       <div className="aero-titlebar flex flex-wrap gap-2 px-2 py-1 items-center text-xs">
         <input value={name} onChange={(e) => setName(e.target.value)} disabled={locked} className="px-2 py-0.5 rounded" style={{ background: locked ? "rgba(255,255,255,0.4)" : "white", color: "#111", width: 140 }} />
         {locked ? (
-          <button className="aero-button px-2 py-0.5 rounded" onClick={() => setLocked(false)}>🔓 Unlock</button>
+          <span className="opacity-60 text-xs">🔒 Read-only</span>
         ) : (
           <>
             <button className="aero-button px-2 py-0.5 rounded" onClick={save}>💾 Save</button>
@@ -675,7 +674,7 @@ function PaintApp({ fileId, onCreateShortcut, currentUser }: { fileId?: string; 
         )}
         <button className="aero-button px-2 py-0.5 rounded" onClick={() => { setName("Untitled.png"); setSavedId(undefined); setLocked(false); const c = cv.current!; const ctx = c.getContext("2d")!; ctx.fillStyle = "white"; ctx.fillRect(0, 0, c.width, c.height); }}>📄 New</button>
         <button className="aero-button px-2 py-0.5 rounded" onClick={open}>📂 Open</button>
-        <span className="opacity-70 ml-auto">{status}{locked ? " · 🔒 Read-only" : " · Saved images can be set as wallpaper in Settings."}</span>
+        <span className="opacity-70 ml-auto">{status}{!locked && " · Saved images can be set as wallpaper in Settings."}</span>
       </div>
       <div className="relative flex-1">
         <canvas ref={cv} width={800} height={500}
