@@ -84,15 +84,57 @@ export function PueiOS() {
   const [netInfo, setNetInfo] = useState<{ ping: number | null; speed: number | null; type: string; online: boolean }>({ ping: null, speed: null, type: "?", online: true });
   const [cursorPos, setCursorPos] = useState({ x: 0, y: 0 });
   const [locked, setLocked] = useState(false);
-  const dragRef = useRef<{ id: string; startX: number; startY: number; origLeft: number; origTop: number; moved: boolean } | null>(null);
+  const dragRef = useRef<{ id: string; startX: number; startY: number; origLeft: number; origTop: number; el: HTMLElement } | null>(null);
   const wasDragged = useRef(false);
-  const [draggingPos, setDraggingPos] = useState<{ id: string; left: number; top: number } | null>(null);
   const DESKTOP_OX = 12, DESKTOP_OY = 12;
   const resolveIconPos = (ic: DesktopIcon, idx: number) => {
     if (ic.col !== undefined && ic.row !== undefined)
       return { left: DESKTOP_OX + ic.col * GRID_W, top: DESKTOP_OY + ic.row * GRID_H };
     const { col, row } = iconGridPos(idx);
     return { left: DESKTOP_OX + col * GRID_W, top: DESKTOP_OY + row * GRID_H };
+  };
+  // Window-level mouse drag handlers — attached once drag starts
+  const startIconDrag = (e: React.MouseEvent, ic: DesktopIcon, idx: number) => {
+    if (e.button !== 0) return;
+    e.stopPropagation();
+    e.preventDefault();
+    const p = resolveIconPos(ic, idx);
+    const el = e.currentTarget as HTMLElement;
+    dragRef.current = { id: ic.id, startX: e.clientX, startY: e.clientY, origLeft: p.left, origTop: p.top, el };
+    el.style.zIndex = "500";
+    el.style.opacity = "0.85";
+    el.style.transform = "scale(1.06)";
+    el.style.transition = "none";
+    el.style.cursor = "grabbing";
+    const onMove = (ev: MouseEvent) => {
+      if (!dragRef.current) return;
+      const dx = ev.clientX - dragRef.current.startX;
+      const dy = ev.clientY - dragRef.current.startY;
+      if (Math.hypot(dx, dy) > 4) wasDragged.current = true;
+      dragRef.current.el.style.left = (dragRef.current.origLeft + dx) + "px";
+      dragRef.current.el.style.top = (dragRef.current.origTop + dy) + "px";
+    };
+    const onUp = (ev: MouseEvent) => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+      if (!dragRef.current) return;
+      const { el: de, origLeft, origTop, id } = dragRef.current;
+      de.style.zIndex = "";
+      de.style.opacity = "";
+      de.style.transform = "";
+      de.style.transition = "";
+      de.style.cursor = "";
+      if (wasDragged.current) {
+        const dx = ev.clientX - dragRef.current.startX;
+        const dy = ev.clientY - dragRef.current.startY;
+        const col = Math.max(0, Math.round((origLeft + dx - DESKTOP_OX) / GRID_W));
+        const row = Math.max(0, Math.round((origTop + dy - DESKTOP_OY) / GRID_H));
+        setIcons((prev) => prev.map((i) => i.id === id ? { ...i, col, row } : i));
+      }
+      dragRef.current = null;
+    };
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
   };
   const [loginUser, setLoginUser] = useState("");
   const [creating, setCreating] = useState(false);
@@ -974,8 +1016,7 @@ export function PueiOS() {
             else if (ic.appId === "web-app") openApp("web-app", { webUrl: ic.webUrl, title: ic.label });
             else openApp(ic.appId, { fileId: ic.fileId });
           };
-          const isDragging = draggingPos?.id === ic.id;
-          const pos = isDragging ? { left: draggingPos!.left, top: draggingPos!.top } : resolveIconPos(ic, idx);
+          const pos = resolveIconPos(ic, idx);
           return (
             <div
               key={ic.id}
@@ -987,11 +1028,7 @@ export function PueiOS() {
                 width: GRID_W,
                 height: GRID_H,
                 pointerEvents: "all",
-                zIndex: isDragging ? 200 : undefined,
-                cursor: isDragging ? "grabbing" : "grab",
-                opacity: isDragging ? 0.85 : 1,
-                transform: isDragging ? "scale(1.06)" : undefined,
-                transition: isDragging ? "none" : "opacity 0.1s",
+                cursor: "grab",
               }}
               onClick={(e) => {
                 if (wasDragged.current) { wasDragged.current = false; return; }
@@ -1001,36 +1038,7 @@ export function PueiOS() {
                 if (wasDragged.current) { wasDragged.current = false; return; }
                 e.stopPropagation(); dbl();
               }}
-              onPointerDown={(e) => {
-                if (e.button !== 0 || e.pointerType === "touch") return;
-                e.stopPropagation();
-                setSelectedIcon(ic.id);
-                const p = resolveIconPos(ic, idx);
-                dragRef.current = { id: ic.id, startX: e.clientX, startY: e.clientY, origLeft: p.left, origTop: p.top, moved: false };
-                (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
-              }}
-              onPointerMove={(e) => {
-                if (!dragRef.current || dragRef.current.id !== ic.id) return;
-                const dx = e.clientX - dragRef.current.startX;
-                const dy = e.clientY - dragRef.current.startY;
-                if (!dragRef.current.moved && Math.hypot(dx, dy) < 5) return;
-                dragRef.current.moved = true;
-                setDraggingPos({ id: ic.id, left: dragRef.current.origLeft + dx, top: dragRef.current.origTop + dy });
-              }}
-              onPointerUp={(e) => {
-                if (!dragRef.current || dragRef.current.id !== ic.id) return;
-                if (dragRef.current.moved) {
-                  const dx = e.clientX - dragRef.current.startX;
-                  const dy = e.clientY - dragRef.current.startY;
-                  const col = Math.max(0, Math.round((dragRef.current.origLeft + dx - DESKTOP_OX) / GRID_W));
-                  const row = Math.max(0, Math.round((dragRef.current.origTop + dy - DESKTOP_OY) / GRID_H));
-                  const id = dragRef.current.id;
-                  setIcons((prev) => prev.map((i) => i.id === id ? { ...i, col, row } : i));
-                  wasDragged.current = true;
-                }
-                dragRef.current = null;
-                setDraggingPos(null);
-              }}
+              onMouseDown={(e) => startIconDrag(e, ic, idx)}
               onContextMenu={(e) => {
                 e.preventDefault(); e.stopPropagation();
                 setSelectedIcon(ic.id);
