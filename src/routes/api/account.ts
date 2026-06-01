@@ -14,11 +14,34 @@ interface DirectoryProfile {
   color: string;
 }
 
+interface SnapshotUser {
+  pueiNumber?: string;
+  name?: string;
+  avatar?: string;
+  color?: string;
+}
+
 const UPSTASH_URL = "https://free-elephant-40203.upstash.io";
 const UPSTASH_TOKEN = "AZ0LAAIgcDEzNzg3YmJmODc5Mjg0ODdmYTg3YjM4YjA4NjE0MmE0Yg";
 
 const key = (name: string) => `account:${name.toLowerCase().trim()}`;
 const dirKey = (pueiNumber: string) => `directory:${pueiNumber.trim()}`;
+
+function normalizePueiNumber(raw: string): string {
+  const cleaned = raw.trim().replace(/[\s-]/g, "");
+  if (/^\d{9}$/.test(cleaned)) {
+    return `${cleaned.slice(0, 3)}-${cleaned.slice(3, 6)}-${cleaned.slice(6, 9)}`;
+  }
+  return raw.trim();
+}
+
+function deterministicPueiNumberFor(name: string): string {
+  let h = 5381;
+  for (let i = 0; i < name.length; i++) h = ((h << 5) + h + name.charCodeAt(i)) | 0;
+  const n = Math.abs(h) % 900000000 + 100000000;
+  const s = String(n);
+  return `${s.slice(0, 3)}-${s.slice(3, 6)}-${s.slice(6, 9)}`;
+}
 
 async function upstash(command: string, ...args: string[]): Promise<unknown> {
   const r = await fetch(UPSTASH_URL, {
@@ -41,23 +64,50 @@ async function saveAccount(rec: AccountRecord) {
 }
 
 async function fetchDirectoryProfile(pueiNumber: string): Promise<DirectoryProfile | null> {
-  const raw = await upstash("GET", dirKey(pueiNumber)) as string | null;
+  const raw = await upstash("GET", dirKey(normalizePueiNumber(pueiNumber))) as string | null;
   return raw ? (JSON.parse(raw) as DirectoryProfile) : null;
 }
 
 async function saveDirectoryProfile(profile: DirectoryProfile) {
-  await upstash("SET", dirKey(profile.pueiNumber), JSON.stringify(profile));
+  const normalized = normalizePueiNumber(profile.pueiNumber);
+  const record = { ...profile, pueiNumber: normalized };
+  await upstash("SET", dirKey(normalized), JSON.stringify(record));
+  // Backward compatibility alias: older accounts may have shared the deterministic number.
+  const deterministic = deterministicPueiNumberFor(record.name);
+  if (deterministic !== normalized) {
+    await upstash("SET", dirKey(deterministic), JSON.stringify(record));
+  }
 }
 
 function extractProfile(nameFallback: string, snapshot: unknown): DirectoryProfile | null {
-  const user = (snapshot as { user?: { pueiNumber?: string; name?: string; avatar?: string; color?: string } } | null)?.user;
-  if (!user?.pueiNumber) return null;
+  const user = (snapshot as { user?: SnapshotUser } | null)?.user;
+  const name = String(user?.name ?? nameFallback).trim();
+  const pueiNumber = user?.pueiNumber ? normalizePueiNumber(String(user.pueiNumber)) : deterministicPueiNumberFor(name);
+  if (!/^\d{3}-\d{3}-\d{3}$/.test(pueiNumber)) return null;
   return {
-    pueiNumber: String(user.pueiNumber).trim(),
-    name: String(user.name ?? nameFallback).trim(),
-    avatar: String(user.avatar ?? "👤"),
-    color: String(user.color ?? "200"),
+    pueiNumber,
+    name,
+    avatar: String(user?.avatar ?? "👤"),
+    color: String(user?.color ?? "200"),
   };
+}
+
+async function findProfileByPueiFromAccounts(pueiNumber: string): Promise<DirectoryProfile | null> {
+  const wanted = normalizePueiNumber(pueiNumber);
+  const keys = (await upstash("KEYS", "account:*") as string[] | null) ?? [];
+  for (const accountKey of keys) {
+    const raw = await upstash("GET", accountKey) as string | null;
+    if (!raw) continue;
+    const rec = JSON.parse(raw) as AccountRecord;
+    const profile = extractProfile(rec.name, rec.snapshot);
+    if (!profile) continue;
+    const aliases = new Set<string>([profile.pueiNumber, deterministicPueiNumberFor(profile.name)]);
+    if (aliases.has(wanted)) {
+      await saveDirectoryProfile(profile);
+      return { ...profile, pueiNumber: wanted };
+    }
+  }
+  return null;
 }
 
 const json = (d: unknown, s = 200) =>
@@ -75,9 +125,12 @@ export const Route = createFileRoute("/api/account")({
         const pueiNumber = url.searchParams.get("pueiNumber");
         if (pueiNumber) {
           try {
-            const profile = await fetchDirectoryProfile(pueiNumber);
+            const wanted = normalizePueiNumber(pueiNumber);
+            let profile = await fetchDirectoryProfile(wanted);
+            if (!profile) profile = await findProfileByPueiFromAccounts(wanted);
             if (!profile) return json({ error: "Not found" }, 404);
-            return json(profile);
+            // Keep the queried number as contact key in the client.
+            return json({ ...profile, pueiNumber: wanted });
           } catch {
             return json({ error: "Storage unavailable" }, 503);
           }
