@@ -503,33 +503,6 @@
     linear-gradient(180deg, #06194d 0%, #143d86 54%, #072252 100%);
 }
 
-.wallpaper-aero-blue,
-.wallpaper-aero-pink,
-.wallpaper-aero-neon,
-.wallpaper-aero-dusk {
-  position: relative;
-}
-
-.wallpaper-aero-blue::before,
-.wallpaper-aero-pink::before,
-.wallpaper-aero-neon::before,
-.wallpaper-aero-dusk::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background:
-    linear-gradient(165deg,
-      transparent 50%,
-      rgba(130, 214, 255, 0.46) 62%,
-      transparent 80%),
-    linear-gradient(8deg,
-      transparent 58%,
-      rgba(110, 222, 255, 0.42) 68%,
-      rgba(58, 173, 255, 0.4) 72%,
-      transparent 84%);
-}
-
 /* Keep desktop wallpaper visible in high-contrast mode while preserving contrasty windows. */
 .high-contrast .wallpaper-default,
 .high-contrast .wallpaper-bliss,
