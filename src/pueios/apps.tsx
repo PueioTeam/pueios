@@ -721,6 +721,7 @@ function PaintApp({ fileId, onCreateShortcut, currentUser }: { fileId?: string; 
   const initial = fileId ? getFile(fileId) : undefined;
   const cv = useRef<HTMLCanvasElement>(null);
   const draw = useRef(false);
+  const [tool, setTool] = useState<"brush" | "bucket">("brush");
   const [color, setColor] = useState("#1ea8ff");
   const [size, setSize] = useState(4);
   const [name, setName] = useState(initial?.name ?? "Untitled.png");
@@ -736,12 +737,73 @@ function PaintApp({ fileId, onCreateShortcut, currentUser }: { fileId?: string; 
       img.src = initial.content;
     }
   }, []);
+
+  const hexToRgb = (hex: string): [number, number, number] => {
+    const clean = hex.replace("#", "");
+    const full = clean.length === 3
+      ? clean.split("").map((x) => x + x).join("")
+      : clean.padEnd(6, "0").slice(0, 6);
+    const n = Number.parseInt(full, 16);
+    return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  };
+
+  const floodFill = (sx: number, sy: number) => {
+    const c = cv.current!;
+    const ctx = c.getContext("2d")!;
+    const img = ctx.getImageData(0, 0, c.width, c.height);
+    const data = img.data;
+    const w = img.width;
+    const h = img.height;
+
+    const startX = Math.max(0, Math.min(w - 1, Math.floor(sx)));
+    const startY = Math.max(0, Math.min(h - 1, Math.floor(sy)));
+    const startIdx = (startY * w + startX) * 4;
+    const tr = data[startIdx];
+    const tg = data[startIdx + 1];
+    const tb = data[startIdx + 2];
+    const ta = data[startIdx + 3];
+    const [fr, fg, fb] = hexToRgb(color);
+    const fa = 255;
+
+    if (tr === fr && tg === fg && tb === fb && ta === fa) return;
+
+    const match = (i: number) => data[i] === tr && data[i + 1] === tg && data[i + 2] === tb && data[i + 3] === ta;
+    const stack: number[] = [startX, startY];
+
+    while (stack.length) {
+      const y = stack.pop()!;
+      const x = stack.pop()!;
+      if (x < 0 || y < 0 || x >= w || y >= h) continue;
+      const i = (y * w + x) * 4;
+      if (!match(i)) continue;
+
+      data[i] = fr;
+      data[i + 1] = fg;
+      data[i + 2] = fb;
+      data[i + 3] = fa;
+
+      stack.push(x + 1, y);
+      stack.push(x - 1, y);
+      stack.push(x, y + 1);
+      stack.push(x, y - 1);
+    }
+
+    ctx.putImageData(img, 0, 0);
+  };
+
   const start = (e: React.PointerEvent) => {
     if (locked) return;
-    draw.current = true;
     const c = cv.current!; const r = c.getBoundingClientRect();
-    const ctx = c.getContext("2d")!; ctx.beginPath();
-    ctx.moveTo((e.clientX - r.left) * (c.width / r.width), (e.clientY - r.top) * (c.height / r.height));
+    const x = (e.clientX - r.left) * (c.width / r.width);
+    const y = (e.clientY - r.top) * (c.height / r.height);
+    if (tool === "bucket") {
+      floodFill(x, y);
+      return;
+    }
+    draw.current = true;
+    const ctx = c.getContext("2d")!;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
   };
   const move = (e: React.PointerEvent) => {
     if (!draw.current || locked) return;
@@ -785,6 +847,15 @@ function PaintApp({ fileId, onCreateShortcut, currentUser }: { fileId?: string; 
               const c = cv.current!; const ctx = c.getContext("2d")!;
               ctx.fillStyle = "white"; ctx.fillRect(0, 0, c.width, c.height);
             }}>Clear</button>
+            <button className="aero-button px-2 py-0.5 rounded" onClick={() => setTool("brush")}
+              style={{ background: tool === "brush" ? "var(--gradient-aero)" : undefined, color: tool === "brush" ? "white" : undefined }}>
+              🖌 Brush
+            </button>
+            <button className="aero-button px-2 py-0.5 rounded" onClick={() => setTool("bucket")}
+              style={{ background: tool === "bucket" ? "var(--gradient-aero)" : undefined, color: tool === "bucket" ? "white" : undefined }}>
+              🪣 Bucket
+            </button>
+            <label className="opacity-80">Color</label>
             <input type="color" value={color} onChange={(e) => setColor(e.target.value)} />
             <input type="range" min={1} max={32} value={size} onChange={(e) => setSize(Number(e.target.value))} />
             <span>size: {size}</span>
@@ -800,7 +871,7 @@ function PaintApp({ fileId, onCreateShortcut, currentUser }: { fileId?: string; 
       <div className="relative flex-1">
         <canvas ref={cv} width={800} height={500}
           onPointerDown={start} onPointerMove={move} onPointerUp={end} onPointerLeave={end}
-          style={{ width: "100%", height: "100%", background: "white", touchAction: "none", cursor: locked ? "not-allowed" : "crosshair" }} />
+          style={{ width: "100%", height: "100%", background: "white", touchAction: "none", cursor: locked ? "not-allowed" : tool === "bucket" ? "copy" : "crosshair" }} />
         {locked && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             <div className="bg-black/30 text-white text-sm px-4 py-2 rounded-lg">🔒 Read-only</div>
