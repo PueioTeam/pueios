@@ -142,6 +142,60 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, curren
     ["upgrade", "⬆️ Upgrade"],
     ["about", "ℹ️ About"],
   ];
+  const plusReleaseUrl = "https://github.com/PueioTeam/pueios/releases/tag/pueios2plus";
+  const plusLatestUrl = "https://github.com/PueioTeam/pueios/releases/latest";
+  const plusIncludes = [
+    "advanced cloud synchronization",
+    "improved PueiCloud Chat",
+    "faster file restoration",
+    "enhanced Puei Copilot AI",
+    "customizable High Contrast themes",
+    "expanded personalization settings",
+    "advanced multitasking",
+    "upgraded file management",
+    "smoother animations",
+    "improved desktop rendering",
+    "enhanced security systems",
+    "cross-browser account restoration",
+    "faster PueiWeb performance",
+  ];
+  const plusSync = [
+    "files",
+    "profile pictures",
+    "Messenger chats",
+    "settings",
+    "apps",
+    "desktop layouts",
+    "themes",
+    "uploaded videos and images",
+  ];
+  const plusSetup = [
+    "extended Windows-style setup",
+    "animated installation stages",
+    "account recovery during setup",
+    "cloud restore options",
+    "upgrade preservation systems",
+  ];
+  const plusCopilot = [
+    "gathering information from multiple sources",
+    "summarizing web content",
+    "suggesting apps",
+    "helping manage files",
+    "assisting with system tasks",
+  ];
+  const plusKeeps = [
+    "dark mode",
+    "Recycle Bin",
+    "drag & drop support",
+    "Base44 app support",
+    "Pueio Numbers",
+    "Puei Mail",
+    "PueiSocial",
+    "Pueio Videos",
+    "PueiWeb",
+    "Installer",
+    "Pueio Control",
+  ];
   return (
     <div className="flex h-full">
       <div className="w-48 p-2 border-r" style={{ background: "var(--background)" }}>
@@ -427,18 +481,71 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, curren
             {SYSTEM_ORDER.filter((v) => compareVersion(v, systemVersion) > 0).length === 0 ? (
               <div className="aero-glass-light rounded-xl p-4 text-sm text-center opacity-70">✅ You are on the latest version of PueiOS.</div>
             ) : SYSTEM_ORDER.filter((v) => compareVersion(v, systemVersion) > 0).map((v) => (
-              <div key={v} className="aero-glass-light rounded-xl p-4 flex items-center justify-between gap-4">
-                <div>
-                  <div className="font-semibold text-base">{v}</div>
-                  <div className="text-xs opacity-70 mt-0.5">
-                    {v === "PueiOS 2+" && "New features: improved glass UI, enhanced Copilot, new app layouts, performance improvements."}
-                    {v === "PueiOS 3" && "Major release: redesigned shell, new AI assistant, expanded app ecosystem, PueiNet 3.0."}
+              <div key={v} className="aero-glass-light rounded-xl p-4 space-y-3">
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <div className="font-semibold text-base">{v}</div>
+                    <div className="text-xs opacity-70 mt-0.5">
+                      {v === "PueiOS 2+" && "Pueios2 Plus is the advanced edition with stronger sync, richer customization, and improved AI systems."}
+                      {v === "PueiOS 3" && "Major release: redesigned shell, new AI assistant, expanded app ecosystem, PueiNet 3.0."}
+                    </div>
                   </div>
+                  <button className="aero-button rounded-lg px-4 py-2 text-sm flex-shrink-0"
+                    onClick={() => { blip("notify"); startUpgrade(v); }}>
+                    Upgrade →
+                  </button>
                 </div>
-                <button className="aero-button rounded-lg px-4 py-2 text-sm flex-shrink-0"
-                  onClick={() => { blip("notify"); startUpgrade(v); }}>
-                  Upgrade →
-                </button>
+
+                {v === "PueiOS 2+" && (
+                  <div className="text-xs space-y-3 opacity-90">
+                    <div className="flex flex-wrap gap-2">
+                      <a href={plusReleaseUrl} target="_blank" rel="noreferrer" className="aero-button rounded px-3 py-1">pueiOS2 plus</a>
+                      <a href={plusLatestUrl} target="_blank" rel="noreferrer" className="aero-button rounded px-3 py-1">Latest</a>
+                    </div>
+                    <p>
+                      Pueios2 Plus is the advanced edition of Pueios2 designed for users who want more customization,
+                      stronger cloud features, enhanced AI systems, and a more powerful desktop experience.
+                    </p>
+                    <p>
+                      Built on the core Pueios2 architecture, Pueios2 Plus expands the operating system with premium features,
+                      deeper personalization, smarter synchronization, and improved performance systems while keeping the same familiar Pueios environment.
+                    </p>
+                    <div>
+                      <div className="font-semibold mb-1">Pueios2 Plus includes:</div>
+                      <ul className="list-disc pl-5 space-y-0.5">
+                        {plusIncludes.map((x) => <li key={x}>{x}</li>)}
+                      </ul>
+                    </div>
+                    <div>
+                      <div className="font-semibold mb-1">Fully synchronized across browsers/devices:</div>
+                      <ul className="list-disc pl-5 space-y-0.5">
+                        {plusSync.map((x) => <li key={x}>{x}</li>)}
+                      </ul>
+                    </div>
+                    <div>
+                      <div className="font-semibold mb-1">Improved installation experience:</div>
+                      <ul className="list-disc pl-5 space-y-0.5">
+                        {plusSetup.map((x) => <li key={x}>{x}</li>)}
+                      </ul>
+                    </div>
+                    <div>
+                      <div className="font-semibold mb-1">Advanced Puei Copilot can:</div>
+                      <ul className="list-disc pl-5 space-y-0.5">
+                        {plusCopilot.map((x) => <li key={x}>{x}</li>)}
+                      </ul>
+                    </div>
+                    <div>
+                      <div className="font-semibold mb-1">Still includes core Pueios features:</div>
+                      <ul className="list-disc pl-5 space-y-0.5">
+                        {plusKeeps.map((x) => <li key={x}>{x}</li>)}
+                      </ul>
+                    </div>
+                    <p className="opacity-80">
+                      Pueios2 Plus is designed for advanced puei users who want a more complete, connected,
+                      and customizable operating system experience.
+                    </p>
+                  </div>
+                )}
               </div>
             ))}
           </div>
