@@ -9,6 +9,7 @@ export type Theme = {
   accentH: number;
   dark: boolean;
   transparency: boolean;
+  fullWindowTransparency: boolean;
   animations: boolean;
   wallpaper: WallpaperId;
   highContrast: boolean;
@@ -228,6 +229,25 @@ const FILES_KEY = "pueios2-files-v1";
 const CHAT_KEY = "pueios2-chat-v1";
 const SOCIAL_KEY = "pueios2-social-v1";
 const RECYCLE_KEY = "pueios2-recycle-v1";
+const DELETED_FILE_IDS_KEY = "pueios2-deleted-file-ids-v1";
+
+export function loadDeletedFileIds(): string[] {
+  if (typeof window === "undefined") return [];
+  try { return JSON.parse(localStorage.getItem(DELETED_FILE_IDS_KEY) || "[]"); } catch { return []; }
+}
+export function markFileDeletedForever(id: string) {
+  if (typeof window === "undefined") return;
+  const all = new Set(loadDeletedFileIds());
+  all.add(id);
+  try { localStorage.setItem(DELETED_FILE_IDS_KEY, JSON.stringify(Array.from(all))); } catch {}
+}
+export function unmarkFileDeletedForever(id: string) {
+  if (typeof window === "undefined") return;
+  const all = new Set(loadDeletedFileIds());
+  if (!all.has(id)) return;
+  all.delete(id);
+  try { localStorage.setItem(DELETED_FILE_IDS_KEY, JSON.stringify(Array.from(all))); } catch {}
+}
 
 export type ChatMessage = {
   id: string;
@@ -251,6 +271,7 @@ export const defaultTheme: Theme = {
   accentH: 210,
   dark: false,
   transparency: true,
+  fullWindowTransparency: false,
   animations: true,
   wallpaper: "bliss",
   highContrast: false,
@@ -323,6 +344,8 @@ export function upsertFile(f: SavedFile) {
   const all = loadFiles();
   const i = all.findIndex((x) => x.id === f.id);
   if (i >= 0) all[i] = f; else all.push(f);
+  // Reusing/restoring a file ID should clear any stale tombstone.
+  unmarkFileDeletedForever(f.id);
   saveFiles(all);
   return f;
 }
@@ -362,12 +385,18 @@ export function restoreFromRecycle(id: string) {
   if (!item) return;
   saveRecycle(bin.filter((x) => x.id !== id));
   const { deletedAt, originalFolder, ...file } = item;
+  unmarkFileDeletedForever(id);
   upsertFile({ ...file, folder: originalFolder });
 }
 export function permanentDelete(id: string) {
   saveRecycle(loadRecycle().filter((x) => x.id !== id));
+  markFileDeletedForever(id);
 }
-export function emptyRecycle() { saveRecycle([]); }
+export function emptyRecycle() {
+  const ids = loadRecycle().map((x) => x.id);
+  saveRecycle([]);
+  ids.forEach((id) => markFileDeletedForever(id));
+}
 
 // ---- Chat
 export function loadChat(): ChatMessage[] {

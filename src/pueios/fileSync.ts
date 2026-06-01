@@ -1,4 +1,4 @@
-import { type SavedFile, loadFiles, saveFiles } from "./state";
+import { type SavedFile, loadDeletedFileIds, loadFiles, saveFiles } from "./state";
 
 /** Merge server files into localStorage, server wins on conflict (by updatedAt) */
 export async function pullAndMergeFiles(username: string): Promise<void> {
@@ -9,8 +9,10 @@ export async function pullAndMergeFiles(username: string): Promise<void> {
     if (!serverFiles.length) return;
 
     const local = loadFiles();
+    const deleted = new Set(loadDeletedFileIds());
     const merged = [...local];
     for (const sf of serverFiles) {
+      if (deleted.has(sf.id)) continue;
       const idx = merged.findIndex((f) => f.id === sf.id);
       if (idx >= 0) {
         // server wins if newer
