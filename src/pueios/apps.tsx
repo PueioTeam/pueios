@@ -179,6 +179,16 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, curren
               <label className="flex items-center gap-2 text-sm">
                 <input
                   type="checkbox"
+                  checked={!!theme.fullWindowTransparency}
+                  disabled={!theme.transparency}
+                  onChange={(e) => setTheme({ ...theme, fullWindowTransparency: e.target.checked })}
+                />
+                Full window transparency
+                <span className="text-xs opacity-60">(default is title bar only)</span>
+              </label>
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
                   checked={!!theme.win7Aero}
                   onChange={(e) => setTheme({ ...theme, win7Aero: e.target.checked })}
                 />
@@ -235,6 +245,7 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, curren
                       win7Aero: true,
                       dark: false,
                       transparency: true,
+                      fullWindowTransparency: false,
                       wallpaper: "bliss",
                       glassOpacity: 38,
                       glassBlur: 22,
@@ -364,7 +375,7 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, curren
             <p className="text-sm opacity-80 mb-3">Customizable accessibility system. Select a base color — PueiOS 2 generates a full high-contrast theme around it and applies it globally to every system surface and app. No mixed states allowed.</p>
             <label className="flex items-center gap-3 aero-glass-light rounded p-3 max-w-lg mb-5">
               <input type="checkbox" checked={!!theme.highContrast}
-                onChange={(e) => setTheme({ ...theme, highContrast: e.target.checked, transparency: e.target.checked ? false : theme.transparency, animations: e.target.checked ? false : theme.animations })} />
+                onChange={(e) => setTheme({ ...theme, highContrast: e.target.checked, transparency: e.target.checked ? false : theme.transparency, fullWindowTransparency: e.target.checked ? false : theme.fullWindowTransparency, animations: e.target.checked ? false : theme.animations })} />
               <div>
                 <div className="font-semibold">Enable High Contrast Mode</div>
                 <div className="text-xs opacity-70">Applies globally to the whole system. Select a color below to customize the contrast theme.</div>
@@ -2916,7 +2927,9 @@ function PueiDrivePane({ files, currentUser, users, openApp, onDelete }: {
                     {deviceUsers.map((u) => (
                       <div key={u.name} className="rounded-xl p-3" style={{ background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.2)" }}>
                         <div className="flex items-center gap-2 mb-2">
-                          <img src={u.avatar} alt={u.name} className="w-10 h-10 rounded-full border" style={{ borderColor: u.color || "rgba(255,255,255,0.4)" }} />
+                          {typeof u.avatar === "string" && /^(data:image\/|https?:\/\/)/i.test(u.avatar)
+                            ? <img src={u.avatar} alt={u.name} className="w-10 h-10 rounded-full border object-cover" style={{ borderColor: u.color || "rgba(255,255,255,0.4)" }} />
+                            : <div className="w-10 h-10 rounded-full border flex items-center justify-center text-xl" style={{ borderColor: u.color || "rgba(255,255,255,0.4)", background: "rgba(255,255,255,0.15)" }}>{u.avatar || "🧑"}</div>}
                           <div>
                             <div className="text-sm font-semibold leading-tight">{u.name}</div>
                             <div className="text-[10px] opacity-60">{u.name === currentUser ? "Signed in" : "Local account"}</div>
