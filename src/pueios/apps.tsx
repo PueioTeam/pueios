@@ -1726,15 +1726,58 @@ function PueiMailApp({ currentUser, users }: { currentUser: string; users: User[
 function PueiCloudChatApp({ user, users, setUsers }: { user: string; users: User[]; setUsers: (u: User[]) => void }) {
   const me = users.find((u) => u.name === user);
   const myPueiNumber = me?.pueiNumber ?? "";
+  type ExtContact = { pueiNumber: string; name?: string; avatar?: string; color?: string };
+
+  const normalizePueiNumber = (raw: string) => {
+    const cleaned = raw.trim().replace(/[\s-]/g, "");
+    if (/^\d{9}$/.test(cleaned)) {
+      return `${cleaned.slice(0, 3)}-${cleaned.slice(3, 6)}-${cleaned.slice(6, 9)}`;
+    }
+    return raw.trim();
+  };
+
+  const hydrateExtContact = (contact: ExtContact): ExtContact => {
+    const hit = lookupPueiNumber(contact.pueiNumber);
+    return {
+      ...contact,
+      name: contact.name || hit?.name,
+      avatar: contact.avatar || hit?.avatar,
+      color: contact.color || hit?.color,
+    };
+  };
+
+  const parseExtContacts = (raw: unknown): ExtContact[] => {
+    if (!Array.isArray(raw)) return [];
+    const map = new Map<string, ExtContact>();
+    for (const entry of raw) {
+      if (!entry || typeof entry !== "object") continue;
+      const item = entry as Record<string, unknown>;
+      if (typeof item.pueiNumber !== "string") continue;
+      const pueiNumber = normalizePueiNumber(item.pueiNumber);
+      if (!/^\d{3}-\d{3}-\d{3}$/.test(pueiNumber)) continue;
+      const prev = map.get(pueiNumber);
+      map.set(
+        pueiNumber,
+        hydrateExtContact({
+          pueiNumber,
+          name: (typeof item.name === "string" ? item.name : undefined) || prev?.name,
+          avatar: (typeof item.avatar === "string" ? item.avatar : undefined) || prev?.avatar,
+          color: (typeof item.color === "string" ? item.color : undefined) || prev?.color,
+        }),
+      );
+    }
+    return Array.from(map.values());
+  };
 
   // Contacts: local users + external by Puei Number
   const localContacts = users.filter((u) => u.name !== user);
-  const [extContacts, setExtContacts] = useState<{pueiNumber: string}[]>(() => {
-    try { return JSON.parse(localStorage.getItem("pcc2-contacts") || "[]"); } catch { return []; }
+  const [extContacts, setExtContacts] = useState<ExtContact[]>(() => {
+    try { return parseExtContacts(JSON.parse(localStorage.getItem("pcc2-contacts") || "[]")); } catch { return []; }
   });
-  const saveExtContacts = (list: {pueiNumber: string}[]) => {
-    setExtContacts(list);
-    localStorage.setItem("pcc2-contacts", JSON.stringify(list));
+  const saveExtContacts = (list: ExtContact[]) => {
+    const normalized = parseExtContacts(list);
+    setExtContacts(normalized);
+    localStorage.setItem("pcc2-contacts", JSON.stringify(normalized));
   };
 
   // Messages
@@ -1807,10 +1850,30 @@ function PueiCloudChatApp({ user, users, setUsers }: { user: string; users: User
         setApiMsgs(grouped);
         const senders = Object.keys(grouped);
         if (senders.length) {
-          const curr: {pueiNumber:string}[] = (() => { try { return JSON.parse(localStorage.getItem("pcc2-contacts")||"[]"); } catch { return []; } })();
-          const existing = new Set(curr.map(c=>c.pueiNumber));
-          const toAdd = senders.filter(n=>!existing.has(n)).map(n=>({pueiNumber:n}));
-          if (toAdd.length) { saveExtContacts([...curr,...toAdd]); blip("notify"); }
+          const curr = (() => {
+            try { return parseExtContacts(JSON.parse(localStorage.getItem("pcc2-contacts") || "[]")); }
+            catch { return [] as ExtContact[]; }
+          })();
+          const byNum = new Map(curr.map((c) => [c.pueiNumber, c]));
+          let created = 0;
+          let changed = false;
+          for (const sender of senders) {
+            const last = grouped[sender]?.[grouped[sender].length - 1];
+            const prev = byNum.get(sender);
+            const next = hydrateExtContact({
+              pueiNumber: sender,
+              name: prev?.name || last?.from,
+              avatar: prev?.avatar,
+              color: prev?.color,
+            });
+            if (!prev) created += 1;
+            if (!prev || prev.name !== next.name || prev.avatar !== next.avatar || prev.color !== next.color) {
+              byNum.set(sender, next);
+              changed = true;
+            }
+          }
+          if (changed) saveExtContacts(Array.from(byNum.values()));
+          if (created > 0) blip("notify");
         }
       } catch {}
     };
@@ -1840,7 +1903,10 @@ function PueiCloudChatApp({ user, users, setUsers }: { user: string; users: User
     if (raw===myPueiNumber) { setNewMsg({ok:false,text:"That's your own number"}); return; }
     const lu=users.find(u=>u.name!==user&&u.pueiNumber===raw);
     if (lu) { setActiveId(lu.name); setActiveKind("local"); setShowNewChat(false); setNewInput(""); return; }
-    if (!extContacts.find(c=>c.pueiNumber===raw)) saveExtContacts([...extContacts,{pueiNumber:raw}]);
+    if (!extContacts.find(c=>c.pueiNumber===raw)) {
+      const hit = lookupPueiNumber(raw);
+      saveExtContacts([...extContacts, { pueiNumber: raw, name: hit?.name, avatar: hit?.avatar, color: hit?.color }]);
+    }
     setActiveId(raw); setActiveKind("external"); setShowNewChat(false); setNewInput(""); blip("click");
   };
 
@@ -1876,7 +1942,9 @@ function PueiCloudChatApp({ user, users, setUsers }: { user: string; users: User
   };
 
   const filteredLocals = localContacts.filter(c=>c.name.toLowerCase().includes(search.toLowerCase()));
-  const filteredExts = extContacts.filter(c=>c.pueiNumber.includes(search));
+  const filteredExts = extContacts.filter((c) =>
+    c.pueiNumber.includes(search) || (c.name ?? "").toLowerCase().includes(search.toLowerCase()),
+  );
   const BLOCK_KEY = `pueios-blocked-${user}`;
   const isBlocked = (num:string) => { try { return (JSON.parse(localStorage.getItem(BLOCK_KEY)||"[]") as string[]).includes(num); } catch { return false; } };
   const blockNum = (num:string, name?:string) => {
@@ -1986,10 +2054,13 @@ function PueiCloudChatApp({ user, users, setUsers }: { user: string; users: User
                 className="flex items-center gap-2.5 px-3 py-2.5 cursor-pointer transition-all"
                 style={{background:isActive?"rgba(109,40,217,0.35)":"transparent",
                         borderLeft:isActive?"3px solid #8b5cf6":"3px solid transparent"}}>
-                <div className="w-9 h-9 rounded-full flex-shrink-0 flex items-center justify-center text-sm"
-                  style={{background:"rgba(79,70,229,0.3)"}}>🌐</div>
+                <div className="w-9 h-9 rounded-full flex-shrink-0 flex items-center justify-center text-sm overflow-hidden"
+                  style={{background:c.color?`linear-gradient(135deg,oklch(0.7 0.18 ${c.color}),oklch(0.45 0.2 ${c.color}))`:"rgba(79,70,229,0.3)"}}>
+                  {c.avatar?.startsWith("data:") ? <img src={c.avatar} alt="" className="w-full h-full object-cover" /> : (c.avatar || "🌐")}
+                </div>
                 <div className="flex-1 min-w-0">
-                  <div className="text-xs font-mono truncate">{c.pueiNumber}</div>
+                  <div className="text-xs truncate">{c.name || c.pueiNumber}</div>
+                  <div className="text-[10px] opacity-40 font-mono truncate">#{c.pueiNumber}</div>
                   <div className="text-[11px] opacity-40 truncate">{last?last.text:"Say hi"}</div>
                 </div>
               </div>
@@ -2063,11 +2134,13 @@ function PueiCloudChatApp({ user, users, setUsers }: { user: string; users: User
               )}
               {extPartner&&(
                 <>
-                  <div className="w-9 h-9 rounded-full flex items-center justify-center"
-                    style={{background:"rgba(79,70,229,0.4)"}}>🌐</div>
+                  <div className="w-9 h-9 rounded-full flex items-center justify-center overflow-hidden"
+                    style={{background:extPartner.color?`linear-gradient(135deg,oklch(0.7 0.18 ${extPartner.color}),oklch(0.45 0.2 ${extPartner.color}))`:"rgba(79,70,229,0.4)"}}>
+                    {extPartner.avatar?.startsWith("data:") ? <img src={extPartner.avatar} alt="" className="w-full h-full object-cover" /> : (extPartner.avatar || "🌐")}
+                  </div>
                   <div className="flex-1 min-w-0">
-                    <div className="font-mono">{extPartner.pueiNumber}</div>
-                    <div className="text-[10px] opacity-40">Cross-device contact</div>
+                    <div className="font-semibold truncate">{extPartner.name || extPartner.pueiNumber}</div>
+                    <div className="text-[10px] opacity-40 font-mono">#{extPartner.pueiNumber}</div>
                   </div>
                   <button className="text-xs opacity-40 hover:opacity-100 hover:text-red-400 transition-all px-2 py-1 rounded-lg"
                     onClick={()=>{if(confirm(`Remove ${extPartner.pueiNumber}?`)){saveExtContacts(extContacts.filter(c=>c.pueiNumber!==extPartner.pueiNumber));setApiMsgs(p=>{const n={...p};delete n[extPartner.pueiNumber];return n;});setActiveId(null);blip("click");}}}>
@@ -2126,7 +2199,13 @@ function PueiCloudChatApp({ user, users, setUsers }: { user: string; users: User
               {activeKind==="external"&&extMsgs.map(m=>{
                 const mine=m.fromNumber===myPueiNumber;
                 return (
-                  <div key={m.id} className={`flex ${mine?"justify-end":"justify-start"}`}>
+                  <div key={m.id} className={`flex ${mine?"justify-end":"justify-start"} items-end gap-2`}>
+                    {!mine&&extPartner&&(
+                      <div className="w-6 h-6 rounded-full flex-shrink-0 flex items-center justify-center text-xs overflow-hidden"
+                        style={{background:extPartner.color?`linear-gradient(135deg,oklch(0.7 0.18 ${extPartner.color}),oklch(0.45 0.2 ${extPartner.color}))`:"rgba(79,70,229,0.35)"}}>
+                        {extPartner.avatar?.startsWith("data:") ? <img src={extPartner.avatar} alt="" className="w-full h-full object-cover" /> : (extPartner.avatar || "🌐")}
+                      </div>
+                    )}
                     <div className="max-w-[70%] flex flex-col" style={{alignItems:mine?"flex-end":"flex-start"}}>
                       <div className="px-3.5 py-2.5 text-sm" style={{
                         background:mine?ME_BG:THEM_BG,
@@ -2151,7 +2230,7 @@ function PueiCloudChatApp({ user, users, setUsers }: { user: string; users: User
                   onKeyDown={e=>e.key==="Enter"&&!e.shiftKey&&send()}
                   className="flex-1 px-4 py-2.5 rounded-2xl text-sm outline-none"
                   style={{background:"rgba(255,255,255,0.07)",color:"white",border:"1px solid rgba(255,255,255,0.1)"}}
-                  placeholder={localPartner?`Message ${localPartner.name}…`:extPartner?`Message ${extPartner.pueiNumber}…`:"Message…"}/>
+                  placeholder={localPartner?`Message ${localPartner.name}…`:extPartner?`Message ${extPartner.name || extPartner.pueiNumber}…`:"Message…"}/>
                 <button onClick={send} disabled={!text.trim()}
                   className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 transition-opacity text-xl"
                   style={{background:text.trim()?"linear-gradient(135deg,#6d28d9,#4f46e5)":"rgba(255,255,255,0.1)",opacity:text.trim()?1:0.5}}>
