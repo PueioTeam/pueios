@@ -7,10 +7,18 @@ interface AccountRecord {
   updatedAt: number;
 }
 
+interface DirectoryProfile {
+  pueiNumber: string;
+  name: string;
+  avatar: string;
+  color: string;
+}
+
 const UPSTASH_URL = "https://free-elephant-40203.upstash.io";
 const UPSTASH_TOKEN = "AZ0LAAIgcDEzNzg3YmJmODc5Mjg0ODdmYTg3YjM4YjA4NjE0MmE0Yg";
 
 const key = (name: string) => `account:${name.toLowerCase().trim()}`;
+const dirKey = (pueiNumber: string) => `directory:${pueiNumber.trim()}`;
 
 async function upstash(command: string, ...args: string[]): Promise<unknown> {
   const r = await fetch(UPSTASH_URL, {
@@ -32,6 +40,26 @@ async function saveAccount(rec: AccountRecord) {
   await upstash("SET", key(rec.name), JSON.stringify(rec));
 }
 
+async function fetchDirectoryProfile(pueiNumber: string): Promise<DirectoryProfile | null> {
+  const raw = await upstash("GET", dirKey(pueiNumber)) as string | null;
+  return raw ? (JSON.parse(raw) as DirectoryProfile) : null;
+}
+
+async function saveDirectoryProfile(profile: DirectoryProfile) {
+  await upstash("SET", dirKey(profile.pueiNumber), JSON.stringify(profile));
+}
+
+function extractProfile(nameFallback: string, snapshot: unknown): DirectoryProfile | null {
+  const user = (snapshot as { user?: { pueiNumber?: string; name?: string; avatar?: string; color?: string } } | null)?.user;
+  if (!user?.pueiNumber) return null;
+  return {
+    pueiNumber: String(user.pueiNumber).trim(),
+    name: String(user.name ?? nameFallback).trim(),
+    avatar: String(user.avatar ?? "👤"),
+    color: String(user.color ?? "200"),
+  };
+}
+
 const json = (d: unknown, s = 200) =>
   new Response(JSON.stringify(d), {
     status: s,
@@ -44,6 +72,16 @@ export const Route = createFileRoute("/api/account")({
       // GET ?name=&password= → { exists, snapshot? }
       GET: async ({ request }) => {
         const url = new URL(request.url);
+        const pueiNumber = url.searchParams.get("pueiNumber");
+        if (pueiNumber) {
+          try {
+            const profile = await fetchDirectoryProfile(pueiNumber);
+            if (!profile) return json({ error: "Not found" }, 404);
+            return json(profile);
+          } catch {
+            return json({ error: "Storage unavailable" }, 503);
+          }
+        }
         const name = url.searchParams.get("name");
         const password = url.searchParams.get("password") ?? "";
         if (!name) return json({ error: "Missing name" }, 400);
@@ -63,12 +101,15 @@ export const Route = createFileRoute("/api/account")({
         catch { return json({ error: "Storage unavailable" }, 503); }
         if (existing) return json({ error: "Account already exists" }, 409);
         try {
-          await saveAccount({
+          const record: AccountRecord = {
             name: body.name.trim(),
             password: body.password ?? "",
             snapshot: body.snapshot ?? null,
             updatedAt: Date.now(),
-          });
+          };
+          await saveAccount(record);
+          const profile = extractProfile(record.name, body.snapshot);
+          if (profile) await saveDirectoryProfile(profile);
         } catch { return json({ error: "Storage unavailable" }, 503); }
         return json({ ok: true });
       },
@@ -82,12 +123,15 @@ export const Route = createFileRoute("/api/account")({
         if (!existing) {
           // first-time push (account created locally before cloud existed) — accept
           try {
-            await saveAccount({
+            const record: AccountRecord = {
               name: body.name.trim(),
               password: body.newPassword ?? body.password ?? "",
               snapshot: body.snapshot ?? null,
               updatedAt: Date.now(),
-            });
+            };
+            await saveAccount(record);
+            const profile = extractProfile(record.name, body.snapshot);
+            if (profile) await saveDirectoryProfile(profile);
           } catch { return json({ error: "Storage unavailable" }, 503); }
           return json({ ok: true, created: true });
         }
@@ -95,12 +139,15 @@ export const Route = createFileRoute("/api/account")({
           return json({ error: "Wrong password" }, 401);
         }
         try {
-          await saveAccount({
+          const record: AccountRecord = {
             name: existing.name,
             password: body.newPassword ?? existing.password,
             snapshot: body.snapshot ?? null,
             updatedAt: Date.now(),
-          });
+          };
+          await saveAccount(record);
+          const profile = extractProfile(record.name, body.snapshot ?? existing.snapshot);
+          if (profile) await saveDirectoryProfile(profile);
         } catch { return json({ error: "Storage unavailable" }, 503); }
         return json({ ok: true });
       },

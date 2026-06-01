@@ -1746,6 +1746,23 @@ function PueiCloudChatApp({ user, users, setUsers }: { user: string; users: User
     };
   };
 
+  const fetchRemoteProfile = async (pueiNumber: string): Promise<ExtContact | null> => {
+    try {
+      const res = await fetch(`/api/account?pueiNumber=${encodeURIComponent(pueiNumber)}`);
+      if (!res.ok) return null;
+      const data = (await res.json()) as { pueiNumber?: string; name?: string; avatar?: string; color?: string };
+      if (!data?.pueiNumber) return null;
+      return hydrateExtContact({
+        pueiNumber: normalizePueiNumber(data.pueiNumber),
+        name: typeof data.name === "string" ? data.name : undefined,
+        avatar: typeof data.avatar === "string" ? data.avatar : undefined,
+        color: typeof data.color === "string" ? data.color : undefined,
+      });
+    } catch {
+      return null;
+    }
+  };
+
   const parseExtContacts = (raw: unknown): ExtContact[] => {
     if (!Array.isArray(raw)) return [];
     const map = new Map<string, ExtContact>();
@@ -1831,6 +1848,24 @@ function PueiCloudChatApp({ user, users, setUsers }: { user: string; users: User
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [myPueiNumber]);
 
+  // Hydrate missing external profile metadata from the server directory.
+  useEffect(() => {
+    const missing = extContacts.filter((c) => !c.name || !c.avatar || !c.color);
+    if (!missing.length) return;
+    let cancelled = false;
+    (async () => {
+      const updates = new Map<string, ExtContact>();
+      for (const contact of missing) {
+        const remote = await fetchRemoteProfile(contact.pueiNumber);
+        if (remote) updates.set(contact.pueiNumber, remote);
+      }
+      if (cancelled || !updates.size) return;
+      saveExtContacts(extContacts.map((c) => updates.get(c.pueiNumber) ?? c));
+    })();
+    return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [extContacts]);
+
   // Poll API
   useEffect(() => {
     if (!myPueiNumber || myPueiNumber==="—") return;
@@ -1896,7 +1931,7 @@ function PueiCloudChatApp({ user, users, setUsers }: { user: string; users: User
   const lastLocal = (name:string) => { const ms=allMsgs.filter(m=>(m.from===user&&m.to===name)||(m.from===name&&m.to===user)); return ms[ms.length-1]; };
   const lastExt = (num:string) => { const all=[...(apiMsgs[num]??[]),...(sentMsgs[num]??[])]; return all.sort((a,b)=>(a.at??0)-(b.at??0)).slice(-1)[0]; };
 
-  const doNewChat = () => {
+  const doNewChat = async () => {
     let raw = newInput.trim().replace(/[-\s]/g,"");
     if (/^\d{9}$/.test(raw)) raw=`${raw.slice(0,3)}-${raw.slice(3,6)}-${raw.slice(6,9)}`;
     if (!/^\d{3}-\d{3}-\d{3}$/.test(raw)) { setNewMsg({ok:false,text:"Enter a 9-digit Puei Number (e.g. 123-456-789)"}); return; }
@@ -1905,7 +1940,12 @@ function PueiCloudChatApp({ user, users, setUsers }: { user: string; users: User
     if (lu) { setActiveId(lu.name); setActiveKind("local"); setShowNewChat(false); setNewInput(""); return; }
     if (!extContacts.find(c=>c.pueiNumber===raw)) {
       const hit = lookupPueiNumber(raw);
-      saveExtContacts([...extContacts, { pueiNumber: raw, name: hit?.name, avatar: hit?.avatar, color: hit?.color }]);
+      let next: ExtContact = { pueiNumber: raw, name: hit?.name, avatar: hit?.avatar, color: hit?.color };
+      if (!next.name || !next.avatar || !next.color) {
+        const remote = await fetchRemoteProfile(raw);
+        if (remote) next = remote;
+      }
+      saveExtContacts([...extContacts, next]);
     }
     setActiveId(raw); setActiveKind("external"); setShowNewChat(false); setNewInput(""); blip("click");
   };
