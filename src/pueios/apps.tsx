@@ -144,7 +144,7 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, curren
   ];
   return (
     <div className="flex h-full">
-      <div className="w-48 p-2 border-r" style={{ background: "var(--glass)" }}>
+      <div className="w-48 p-2 border-r" style={{ background: "var(--background)" }}>
         {tabs.map(([k, l]) => (
           <div key={k} onClick={() => { setTab(k); blip("click"); }}
             className="px-3 py-2 rounded-md cursor-pointer text-sm mb-1"
