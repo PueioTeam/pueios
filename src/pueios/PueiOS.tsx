@@ -75,7 +75,7 @@ export function PueiOS() {
   const [selectedIcon, setSelectedIcon] = useState<string | null>(null);
   const [now, setNow] = useState(new Date());
   const [showCalendar, setShowCalendar] = useState(false);
-  const [notifs, setNotifs] = useState<{ id: number; title: string; body: string }[]>([]);
+  const [notifs, setNotifs] = useState<{ id: number; title: string; body: string; kind?: "default" | "update" }[]>([]);
   const [mascotSpeak, setMascotSpeak] = useState<string | null>(null);
   const [showMascot] = useState(true);
   const [showVolume, setShowVolume] = useState(false);
@@ -85,6 +85,7 @@ export function PueiOS() {
   const [netInfo, setNetInfo] = useState<{ ping: number | null; speed: number | null; type: string; online: boolean }>({ ping: null, speed: null, type: "?", online: true });
   const [cursorPos, setCursorPos] = useState({ x: 0, y: 0 });
   const [locked, setLocked] = useState(false);
+  const pendingUpdateNotif = useRef(false);
   const dragRef = useRef<{ id: string; startX: number; startY: number; origLeft: number; origTop: number; el: HTMLElement } | null>(null);
   const wasDragged = useRef(false);
   const DESKTOP_OX = 12, DESKTOP_OY = 12;
@@ -353,6 +354,10 @@ export function PueiOS() {
         setTimeout(() => setMascotSpeak(null), 5000);
       }, 800);
     }
+    if (phase === "desktop" && pendingUpdateNotif.current) {
+      pendingUpdateNotif.current = false;
+      pushNotif("New updates installed", `Congratulations! ${upgradeTarget} is now installed and ready.`, "update");
+    }
   }, [phase, currentUser]);
 
   // Cloud sync: pull all files for this user on sign-in (cross-device/browser)
@@ -396,10 +401,10 @@ export function PueiOS() {
   const setTheme = (t: Theme) => setThemeState(t);
   const setWallpaper = (w: WallpaperId) => setThemeState({ ...theme, wallpaper: w });
 
-  const pushNotif = (title: string, body: string) => {
+  const pushNotif = (title: string, body: string, kind: "default" | "update" = "default") => {
     blip("notify");
     const id = Date.now() + Math.random();
-    setNotifs((n) => [...n, { id, title, body }]);
+    setNotifs((n) => [...n, { id, title, body, kind }]);
     setTimeout(() => setNotifs((n) => n.filter((x) => x.id !== id)), 4500);
   };
 
@@ -869,6 +874,7 @@ export function PueiOS() {
     } else {
       setTimeout(() => {
         setSystemVersion(upgradeTarget);
+        pendingUpdateNotif.current = true;
         setPhase("boot"); setBootProgress(0); setUpgradeProgress(0);
         blip("notify");
       }, 1500);
@@ -1191,6 +1197,7 @@ export function PueiOS() {
         return (
           <AppWindow key={w.id} win={w} focused={focused}
             peek={aeroPeek}
+            fullWindowTransparency={!!theme.transparency && !!theme.fullWindowTransparency}
             onFocus={() => focusWin(w.id)}
             onClose={() => closeWin(w.id)}
             onMinimize={() => minWin(w.id)}
@@ -1227,8 +1234,31 @@ export function PueiOS() {
       <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[9500] space-y-2">
         {notifs.map((n) => (
           <div key={n.id} className="aero-glass rounded-lg px-4 py-2 min-w-[260px] text-sm" style={{ animation: "fade-scale 0.2s ease-out" }}>
-            <div className="font-semibold">{n.title}</div>
-            <div className="text-xs opacity-80">{n.body}</div>
+            <div className="flex items-start gap-3">
+              {n.kind === "update" ? (
+                <svg width="30" height="30" viewBox="0 0 64 64" aria-hidden="true" className="shrink-0 mt-0.5">
+                  <defs>
+                    <linearGradient id="updShieldBg" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#8ad54f" />
+                      <stop offset="55%" stopColor="#37a232" />
+                      <stop offset="100%" stopColor="#237b2a" />
+                    </linearGradient>
+                    <linearGradient id="updShieldRim" x1="0" y1="0" x2="1" y2="1">
+                      <stop offset="0%" stopColor="#d9f7c9" />
+                      <stop offset="100%" stopColor="#79c95e" />
+                    </linearGradient>
+                  </defs>
+                  <path d="M32 4 L54 12 V28 C54 43 44 55 32 60 C20 55 10 43 10 28 V12 Z" fill="url(#updShieldBg)" stroke="url(#updShieldRim)" strokeWidth="3" />
+                  <path d="M22 31 L29 39 L43 22" fill="none" stroke="#ffffff" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              ) : (
+                <div className="w-6 h-6 rounded-full bg-white/25 shrink-0 mt-0.5" />
+              )}
+              <div>
+                <div className="font-semibold" style={{ color: n.kind === "update" ? "#103f9a" : undefined }}>{n.title}</div>
+                <div className="text-xs opacity-80">{n.body}</div>
+              </div>
+            </div>
           </div>
         ))}
       </div>

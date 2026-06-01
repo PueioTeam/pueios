@@ -58,10 +58,12 @@ export function ContextMenu({
 }
 
 export function AppWindow({
-  win, focused, onFocus, onClose, onMinimize, onMaximize, onMove, onResize, children,
+  win, focused, peek, fullWindowTransparency, onFocus, onClose, onMinimize, onMaximize, onMove, onResize, children,
 }: {
   win: WindowState;
   focused: boolean;
+  peek?: boolean;
+  fullWindowTransparency?: boolean;
   onFocus: () => void;
   onClose: () => void;
   onMinimize: () => void;
@@ -117,11 +119,12 @@ export function AppWindow({
 
   return (
     <div
-      className="aero-glass window-shadow fixed flex flex-col overflow-hidden"
+      className={`${fullWindowTransparency ? "aero-glass" : ""} window-shadow fixed flex flex-col overflow-hidden`}
       style={{
         ...style,
         zIndex: 100 + win.z,
-        opacity: focused ? 1 : 0.93,
+        background: fullWindowTransparency ? undefined : "var(--background)",
+        opacity: peek ? 0.16 : (focused ? 1 : 0.93),
         borderRadius: 8,
         border: focused
           ? "1px solid rgba(130,190,255,0.7)"
@@ -129,7 +132,9 @@ export function AppWindow({
         boxShadow: focused
           ? "0 8px 40px rgba(0,30,120,0.45), 0 2px 8px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.75), 0 0 0 1px rgba(80,140,220,0.25)"
           : "0 4px 20px rgba(0,20,80,0.35), 0 1px 4px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.5)",
-        transition: drag.current || resz.current ? "none" : "opacity 0.15s, box-shadow 0.2s",
+        transition: drag.current || resz.current ? "none" : "opacity 0.15s, box-shadow 0.2s, transform 0.12s",
+        transform: peek ? "translateY(2px) scale(0.995)" : "none",
+        pointerEvents: peek ? "none" : "auto",
       }}
       onMouseDown={onFocus}
     >
@@ -207,7 +212,7 @@ export function AppWindow({
           >✕</button>
         </div>
       </div>
-      <div className="flex-1 overflow-auto" style={{ background: "var(--glass-strong)" }}>
+      <div className="flex-1 overflow-auto" style={{ background: fullWindowTransparency ? "var(--glass-strong)" : "var(--background)" }}>
         {children}
       </div>
       {!win.maximized && (
