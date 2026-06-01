@@ -80,6 +80,7 @@ export function PueiOS() {
   const [showMascot] = useState(true);
   const [showVolume, setShowVolume] = useState(false);
   const [showNetwork, setShowNetwork] = useState(false);
+  const [aeroPeek, setAeroPeek] = useState(false);
   const [volume, setVolume] = useState(() => { try { const v = localStorage.getItem("pueios2-volume"); return v !== null ? Number(v) : 80; } catch { return 80; } });
   const [netInfo, setNetInfo] = useState<{ ping: number | null; speed: number | null; type: string; online: boolean }>({ ping: null, speed: null, type: "?", online: true });
   const [cursorPos, setCursorPos] = useState({ x: 0, y: 0 });
@@ -136,6 +137,54 @@ export function PueiOS() {
     window.addEventListener("mousemove", onMove);
     window.addEventListener("mouseup", onUp);
   };
+  const startIconTouchDrag = (e: React.TouchEvent, ic: DesktopIcon, idx: number) => {
+    if (e.touches.length !== 1) return;
+    const t = e.touches[0];
+    const p = resolveIconPos(ic, idx);
+    const el = e.currentTarget as HTMLElement;
+    dragRef.current = { id: ic.id, startX: t.clientX, startY: t.clientY, origLeft: p.left, origTop: p.top, el };
+    el.style.zIndex = "500";
+    el.style.opacity = "0.85";
+    el.style.transform = "scale(1.06)";
+    el.style.transition = "none";
+    const onMove = (ev: TouchEvent) => {
+      if (!dragRef.current || ev.touches.length !== 1) return;
+      const touch = ev.touches[0];
+      const dx = touch.clientX - dragRef.current.startX;
+      const dy = touch.clientY - dragRef.current.startY;
+      if (Math.hypot(dx, dy) > 6) {
+        wasDragged.current = true;
+        if (touchTimer.current) {
+          clearTimeout(touchTimer.current);
+          touchTimer.current = null;
+        }
+      }
+      dragRef.current.el.style.left = (dragRef.current.origLeft + dx) + "px";
+      dragRef.current.el.style.top = (dragRef.current.origTop + dy) + "px";
+      ev.preventDefault();
+    };
+    const onEnd = (ev: TouchEvent) => {
+      window.removeEventListener("touchmove", onMove);
+      window.removeEventListener("touchend", onEnd);
+      if (!dragRef.current) return;
+      const { el: de, origLeft, origTop, id } = dragRef.current;
+      de.style.zIndex = "";
+      de.style.opacity = "";
+      de.style.transform = "";
+      de.style.transition = "";
+      const changedTouch = ev.changedTouches[0];
+      if (wasDragged.current && changedTouch) {
+        const dx = changedTouch.clientX - dragRef.current.startX;
+        const dy = changedTouch.clientY - dragRef.current.startY;
+        const col = Math.max(0, Math.round((origLeft + dx - DESKTOP_OX) / GRID_W));
+        const row = Math.max(0, Math.round((origTop + dy - DESKTOP_OY) / GRID_H));
+        setIcons((prev) => prev.map((i) => i.id === id ? { ...i, col, row } : i));
+      }
+      dragRef.current = null;
+    };
+    window.addEventListener("touchmove", onMove, { passive: false });
+    window.addEventListener("touchend", onEnd);
+  };
   const [loginUser, setLoginUser] = useState("");
   const [creating, setCreating] = useState(false);
   const [switching, setSwitching] = useState(false);
@@ -191,6 +240,11 @@ export function PueiOS() {
     root.style.setProperty("--accent-h", String(theme.accentH));
     root.classList.toggle("dark", theme.dark);
     root.classList.toggle("high-contrast", !!theme.highContrast);
+    root.classList.toggle("win7-aero", !!theme.win7Aero);
+    root.style.setProperty("--aero-glass-opacity", String(Math.max(10, Math.min(95, theme.glassOpacity ?? 38))));
+    root.style.setProperty("--aero-blur", `${Math.max(8, Math.min(40, theme.glassBlur ?? 22))}px`);
+    root.style.setProperty("--aero-saturation", `${Math.max(100, Math.min(260, theme.glassSaturation ?? 180))}%`);
+    root.style.setProperty("--aero-glow-alpha", String(Math.max(10, Math.min(100, theme.aeroGlow ?? 50)) / 100));
     if (theme.highContrast) {
       root.style.setProperty("--glass", "#000");
       root.style.setProperty("--glass-strong", "#000");
@@ -340,6 +394,18 @@ export function PueiOS() {
   const moveWin = (id: string, x: number, y: number) => setWindows((ws) => ws.map((w) => {
     if (w.id !== id) return w;
     if (y <= 0) return { ...w, maximized: true, prev: { x: w.x, y: w.y, w: w.w, h: w.h } };
+    const snapLeft = x <= 4;
+    const snapRight = x + w.w >= window.innerWidth - 4;
+    if (snapLeft || snapRight) {
+      return {
+        ...w,
+        maximized: false,
+        x: snapLeft ? 0 : Math.floor(window.innerWidth / 2),
+        y: 0,
+        w: Math.floor(window.innerWidth / 2),
+        h: Math.max(240, window.innerHeight - 48),
+      };
+    }
     return { ...w, x, y };
   }));
   const resizeWin = (id: string, w: number, h: number) =>
@@ -1044,7 +1110,12 @@ export function PueiOS() {
                 setSelectedIcon(ic.id);
                 setCtxMenu({ x: e.clientX, y: e.clientY, items: iconCtx(ic) });
               }}
-              onTouchStart={(e) => { e.stopPropagation(); setSelectedIcon(ic.id); onTouchStart(e, iconCtx(ic)); }}
+              onTouchStart={(e) => {
+                e.stopPropagation();
+                setSelectedIcon(ic.id);
+                startIconTouchDrag(e, ic, idx);
+                onTouchStart(e, iconCtx(ic));
+              }}
               onTouchEnd={onTouchEnd}
             >
               <div className="flex justify-center mb-1">{appIcon(ic.appId, iconPx, ic.iconEmoji, ic.iconUrl)}</div>
@@ -1071,6 +1142,7 @@ export function PueiOS() {
         const focused = w.z === Math.max(...windows.map((x) => x.z));
         return (
           <AppWindow key={w.id} win={w} focused={focused}
+            peek={aeroPeek}
             onFocus={() => focusWin(w.id)}
             onClose={() => closeWin(w.id)}
             onMinimize={() => minWin(w.id)}
@@ -1228,6 +1300,8 @@ export function PueiOS() {
           </button>
         </div>
         <button className="h-9 w-3 ml-1 border-l border-white/20" title="Show desktop"
+          onMouseEnter={() => setAeroPeek(true)}
+          onMouseLeave={() => setAeroPeek(false)}
           onClick={(e) => { e.stopPropagation(); setWindows(windows.map((w) => ({ ...w, minimized: true }))); }} />
       </div>
 

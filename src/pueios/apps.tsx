@@ -59,6 +59,49 @@ export function AppRenderer(p: AppRendererProps) {
   }
 }
 
+const SYS_FOLDER_PICTURES = "__pictures__";
+const SYS_FOLDER_DOWNLOADS = "__downloads__";
+
+function destinationFolderLabel(folder?: string): string {
+  if (!folder || folder === "") return "Desktop";
+  if (folder === SYS_FOLDER_PICTURES) return "Pictures";
+  if (folder === SYS_FOLDER_DOWNLOADS) return "Downloads";
+  return "Folder";
+}
+
+function chooseImageDestination(defaultChoice: "pictures" | "downloads" | "desktop" = "pictures"): string | undefined | null {
+  const raw = prompt("Save wallpaper to: pictures / downloads / desktop", defaultChoice);
+  if (raw === null) return null;
+  const v = raw.trim().toLowerCase();
+  if (!v || v === "pictures" || v === "picture") return SYS_FOLDER_PICTURES;
+  if (v === "downloads" || v === "download") return SYS_FOLDER_DOWNLOADS;
+  if (v === "desktop") return undefined;
+  alert("Unknown folder. Use: pictures, downloads, or desktop.");
+  return null;
+}
+
+function saveDownloadedImage(owner: string, name: string, dataUrl: string, folder?: string) {
+  const saved: SavedFile = {
+    id: `img-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`,
+    name,
+    type: "image",
+    content: dataUrl,
+    updatedAt: Date.now(),
+    owner,
+    folder,
+  };
+  upsertFile(saved);
+  recordDownload(owner, {
+    id: `dl-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`,
+    name,
+    kind: "image",
+    size: Math.round((dataUrl.length * 3) / 4),
+    at: Date.now(),
+    destination: destinationFolderLabel(folder),
+  });
+  return saved;
+}
+
 
 function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, currentUser, users, setUsers, systemVersion, startUpgrade, uninstallApp, icons, signOut, lockScreen, deleteAccount }: any) {
   const [tab, setTab] = useState("personalize");
@@ -134,8 +177,75 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, curren
                 <input type="checkbox" checked={theme.transparency} onChange={(e) => setTheme({ ...theme, transparency: e.target.checked })} /> Aero transparency
               </label>
               <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={!!theme.win7Aero}
+                  onChange={(e) => setTheme({ ...theme, win7Aero: e.target.checked })}
+                />
+                Windows 7 Aero style
+              </label>
+              <label className="flex items-center gap-2 text-sm">
                 <input type="checkbox" checked={theme.animations} onChange={(e) => setTheme({ ...theme, animations: e.target.checked })} /> Animations & motion
               </label>
+            </div>
+            <div className="mt-6 p-4 rounded-lg aero-glass-light max-w-xl">
+              <div className="font-semibold text-sm mb-3">Windows 7 Aero Configuration</div>
+              <div className="space-y-3">
+                <label className="block text-xs opacity-70">Glass opacity ({theme.glassOpacity ?? 38}%)</label>
+                <input
+                  type="range"
+                  min={10}
+                  max={95}
+                  value={theme.glassOpacity ?? 38}
+                  onChange={(e) => setTheme({ ...theme, glassOpacity: Number(e.target.value) })}
+                  className="w-full"
+                />
+                <label className="block text-xs opacity-70">Blur intensity ({theme.glassBlur ?? 22}px)</label>
+                <input
+                  type="range"
+                  min={8}
+                  max={40}
+                  value={theme.glassBlur ?? 22}
+                  onChange={(e) => setTheme({ ...theme, glassBlur: Number(e.target.value) })}
+                  className="w-full"
+                />
+                <label className="block text-xs opacity-70">Color saturation ({theme.glassSaturation ?? 180}%)</label>
+                <input
+                  type="range"
+                  min={100}
+                  max={260}
+                  value={theme.glassSaturation ?? 180}
+                  onChange={(e) => setTheme({ ...theme, glassSaturation: Number(e.target.value) })}
+                  className="w-full"
+                />
+                <label className="block text-xs opacity-70">Aero glow ({theme.aeroGlow ?? 50}%)</label>
+                <input
+                  type="range"
+                  min={10}
+                  max={100}
+                  value={theme.aeroGlow ?? 50}
+                  onChange={(e) => setTheme({ ...theme, aeroGlow: Number(e.target.value) })}
+                  className="w-full"
+                />
+                <div className="flex gap-2 pt-1">
+                  <button
+                    className="aero-button rounded px-3 py-1 text-xs"
+                    onClick={() => setTheme({
+                      ...theme,
+                      win7Aero: true,
+                      dark: false,
+                      transparency: true,
+                      wallpaper: "bliss",
+                      glassOpacity: 38,
+                      glassBlur: 22,
+                      glassSaturation: 180,
+                      aeroGlow: 50,
+                    })}
+                  >
+                    Apply Windows 7 preset
+                  </button>
+                </div>
+              </div>
             </div>
             <div className="mt-6">
               <div className="text-sm font-semibold mb-3">🖼️ Icon size</div>
@@ -157,7 +267,7 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, curren
             <h2 className="text-xl font-semibold mb-4">Wallpaper</h2>
             <div className="text-xs opacity-70 mb-2">Built-in</div>
             <div className="grid grid-cols-2 gap-3">
-              {(["default", "bliss", "aurora", "sunset"] as WallpaperId[]).map((w) => (
+              {(["default", "bliss", "aurora", "sunset", "aero-blue", "aero-pink", "aero-neon", "aero-dusk"] as WallpaperId[]).map((w) => (
                 <button key={w} onClick={() => setWallpaper(w)}
                   className={`wallpaper-${w} h-28 rounded-lg border-2 capitalize text-white font-semibold`}
                   style={{ borderColor: wallpaper === w ? "white" : "transparent", boxShadow: wallpaper === w ? "0 0 0 3px var(--accent)" : undefined }}>
@@ -1052,6 +1162,51 @@ function PueiWebApp({ currentUser, users }: { currentUser: string; users: User[]
   const [tabs, setTabs] = useState([{ id: 1, title: "Home", url: "puei://home" }]);
   const [active, setActive] = useState(1);
 
+  const makeWaveWallpaper = (name: string, left: string, right: string, glow: string, stars = false) => {
+    const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1920 1080'>
+      <defs>
+        <linearGradient id='bg' x1='0' y1='0' x2='1' y2='1'>
+          <stop offset='0%' stop-color='#02164f'/>
+          <stop offset='58%' stop-color='#04318f'/>
+          <stop offset='100%' stop-color='#010c3c'/>
+        </linearGradient>
+        <linearGradient id='waveA' x1='0' y1='0' x2='1' y2='0'>
+          <stop offset='0%' stop-color='${left}'/>
+          <stop offset='100%' stop-color='${right}'/>
+        </linearGradient>
+        <radialGradient id='halo' cx='50%' cy='68%' r='45%'>
+          <stop offset='0%' stop-color='${glow}' stop-opacity='0.95'/>
+          <stop offset='100%' stop-color='${glow}' stop-opacity='0'/>
+        </radialGradient>
+      </defs>
+      <rect width='1920' height='1080' fill='url(#bg)'/>
+      <ellipse cx='960' cy='730' rx='760' ry='290' fill='url(#halo)'/>
+      <path d='M-20 680 C 260 520, 560 860, 960 760 C 1360 660, 1620 840, 1940 720 L 1940 1080 L -20 1080 Z' fill='url(#waveA)' opacity='0.36'/>
+      <path d='M-20 640 C 240 480, 560 780, 960 720 C 1380 660, 1680 760, 1940 650' fill='none' stroke='${left}' stroke-width='4' opacity='0.7'/>
+      <path d='M-20 700 C 340 620, 720 860, 1120 760 C 1540 640, 1720 700, 1940 690' fill='none' stroke='${right}' stroke-width='3.5' opacity='0.62'/>
+      ${stars ? "<circle cx='1420' cy='330' r='5' fill='#7fd3ff'/><circle cx='1360' cy='370' r='4' fill='#7fd3ff'/><circle cx='1290' cy='420' r='3.5' fill='#7fd3ff'/><circle cx='1510' cy='470' r='3' fill='#7fd3ff'/>" : ""}
+    </svg>`;
+    return {
+      name,
+      dataUrl: `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`,
+    };
+  };
+
+  const wallpaperPack = [
+    makeWaveWallpaper("Puei Wave Blue", "#65d9ff", "#0ba9ff", "#8bdcff", true),
+    makeWaveWallpaper("Puei Wave Aurora", "#6ce1ff", "#ff86d8", "#b8dfff", true),
+    makeWaveWallpaper("Puei Wave Neon", "#38ceff", "#ff4db6", "#8cd6ff", true),
+    makeWaveWallpaper("Puei Dusk Lake", "#5ad0ff", "#ffb06f", "#89bcff", false),
+  ];
+
+  const downloadWallpaper = (w: { name: string; dataUrl: string }) => {
+    const folder = chooseImageDestination("pictures");
+    if (folder === null) return;
+    saveDownloadedImage(currentUser, `${w.name}.png`, w.dataUrl, folder);
+    blip("notify");
+    alert(`Saved ${w.name} to ${destinationFolderLabel(folder)}.`);
+  };
+
   const navigate = (target: string) => {
     let u = target.trim();
     if (!u.startsWith("puei://") && !/^https?:\/\//i.test(u)) u = "https://" + u;
@@ -1069,6 +1224,7 @@ function PueiWebApp({ currentUser, users }: { currentUser: string; users: User[]
             ["puei://search", "✦ Puei Copilot"],
             ["puei://forum", "💬 PueiForum"],
             ["puei://mail", "✉️ PueiMail"],
+            ["puei://wallpapers", "🖼️ Puei Wallpapers"],
             ["puei://about", "ℹ️ About"],
           ].map(([u, l]) => (
             <button key={u} onClick={() => navigate(u)} className="aero-button rounded-lg p-4">{l}</button>
@@ -1141,6 +1297,26 @@ function PueiWebApp({ currentUser, users }: { currentUser: string; users: User[]
       </div>
     ),
     "puei://mail": null, // handled below as PueiMailApp
+    "puei://wallpapers": (
+      <div className="p-6">
+        <div className="mb-4">
+          <h2 className="text-2xl font-bold">🖼️ Puei Wallpapers</h2>
+          <p className="text-xs opacity-70 mt-1">Generated Aero-style wallpaper pack. Click Download to save into Pictures, Downloads, or Desktop.</p>
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          {wallpaperPack.map((w) => (
+            <div key={w.name} className="aero-glass-light rounded-xl p-3">
+              <img src={w.dataUrl} alt={w.name} className="w-full h-36 object-cover rounded-lg" />
+              <div className="mt-2 text-sm font-semibold">{w.name}</div>
+              <button className="aero-button rounded-md px-3 py-1 text-xs mt-2"
+                onClick={() => downloadWallpaper(w)}>
+                ⬇ Download
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+    ),
     "puei://about": <div className="p-6"><h2 className="text-2xl font-bold">About PueiNet</h2><p className="text-sm opacity-70 mt-2">A browser for an alternate 2020. Only https://&lt;app&gt;.base44.app external URLs are trusted.</p></div>,
   };
 
@@ -1224,10 +1400,17 @@ function readFileAsAttachment(file: File): Promise<MailAttachment> {
   });
 }
 
-function downloadAttachment(att: MailAttachment) {
+function downloadAttachment(att: MailAttachment, owner: string) {
+  if (att.kind === "image") {
+    const folder = chooseImageDestination("downloads");
+    if (folder === null) return { cancelled: true, destination: "Cancelled" };
+    saveDownloadedImage(owner, att.name, att.dataUrl, folder);
+    return { cancelled: false, destination: destinationFolderLabel(folder) };
+  }
   const a = document.createElement("a");
   a.href = att.dataUrl; a.download = att.name;
   document.body.appendChild(a); a.click(); a.remove();
+  return { cancelled: false, destination: "Browser download" };
 }
 
 function PueiMailApp({ currentUser, users }: { currentUser: string; users: User[] }) {
@@ -1508,7 +1691,20 @@ function PueiMailApp({ currentUser, users }: { currentUser: string; users: User[
             allAttachments.length === 0 ? <div className="p-4 text-xs opacity-50 text-center">No attachments saved.</div>
             : allAttachments.map((a) => (
               <div key={a.id} className="px-3 py-2 border-b text-xs cursor-pointer hover:bg-white/20"
-                onClick={() => { downloadAttachment(a); recordDownload(currentUser, { id: `dl-${Date.now()}`, name: a.name, kind: a.kind, size: a.size, at: Date.now(), mailId: a.mailId }); }}>
+                onClick={() => {
+                  const r = downloadAttachment(a, currentUser);
+                  if (!r.cancelled && a.mailId && a.kind !== "image") {
+                    recordDownload(currentUser, {
+                      id: `dl-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`,
+                      name: a.name,
+                      kind: a.kind,
+                      size: a.size,
+                      at: Date.now(),
+                      mailId: a.mailId,
+                      destination: r.destination,
+                    });
+                  }
+                }}>
                 <div className="font-semibold truncate">{a.kind === "image" ? "🖼️" : a.kind === "video" ? "🎬" : "📎"} {a.name}</div>
                 <div className="opacity-60 truncate">{a.from} · {a.subject}</div>
               </div>
@@ -1519,6 +1715,7 @@ function PueiMailApp({ currentUser, users }: { currentUser: string; users: User[
               <div key={d.id} className="px-3 py-2 border-b text-xs">
                 <div className="font-semibold truncate">{d.name}</div>
                 <div className="opacity-60">{new Date(d.at).toLocaleString()} · {Math.round(d.size / 1024)} KB</div>
+                {d.destination && <div className="opacity-45">Saved to: {d.destination}</div>}
               </div>
             ))
           ) : folderMsgs.length === 0 ? (
@@ -1799,10 +1996,11 @@ function PueiCloudChatApp({ user, users, setUsers }: { user: string; users: User
 
   // Messages
   const [allMsgs, setAllMsgs] = useState<ChatMessage[]>(() => loadChat());
-  const [apiMsgs, setApiMsgs] = useState<Record<string, {id:string;from:string;fromNumber:string;text:string;at:number}[]>>({});
+  type ApiChatMessage = {id:string;from:string;fromNumber:string;toNumber?:string;text:string;at:number};
+  const [apiMsgs, setApiMsgs] = useState<Record<string, ApiChatMessage[]>>({});
   const SENT_KEY = (num: string) => `pcc2-sent:${myPueiNumber}:${num}`;
-  const [sentMsgs, setSentMsgs] = useState<Record<string,{id:string;from:string;fromNumber:string;text:string;at:number}[]>>({});
-  const appendSent = (num: string, msg: {id:string;from:string;fromNumber:string;text:string;at:number}) => {
+  const [sentMsgs, setSentMsgs] = useState<Record<string,ApiChatMessage[]>>({});
+  const appendSent = (num: string, msg: ApiChatMessage) => {
     try { localStorage.setItem(SENT_KEY(num), JSON.stringify([...JSON.parse(localStorage.getItem(SENT_KEY(num))||"[]"), msg].slice(-500))); } catch {}
     setSentMsgs(p => ({...p, [num]: [...(p[num]??[]), msg]}));
   };
@@ -1842,11 +2040,14 @@ function PueiCloudChatApp({ user, users, setUsers }: { user: string; users: User
     if (!myPueiNumber) return;
     const loaded: typeof sentMsgs = {};
     for (const c of extContacts) {
-      try { const msgs=JSON.parse(localStorage.getItem(SENT_KEY(c.pueiNumber))||"[]"); if(msgs.length) loaded[c.pueiNumber]=msgs; } catch {}
+      try {
+        const msgs = JSON.parse(localStorage.getItem(SENT_KEY(c.pueiNumber)) || "[]") as ApiChatMessage[];
+        if (msgs.length) loaded[c.pueiNumber] = msgs;
+      } catch {}
     }
     if (Object.keys(loaded).length) setSentMsgs(loaded);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [myPueiNumber]);
+  }, [myPueiNumber, extContacts]);
 
   // Hydrate missing external profile metadata from the server directory.
   useEffect(() => {
@@ -1874,13 +2075,20 @@ function PueiCloudChatApp({ user, users, setUsers }: { user: string; users: User
       try {
         const res = await fetch(`/api/chat?pueiNumber=${encodeURIComponent(myPueiNumber)}`);
         if (!res.ok || cancelled) return;
-        const msgs = (await res.json()) as {id:string;from:string;fromNumber:string;text:string;at:number}[];
+        const msgs = (await res.json()) as ApiChatMessage[];
         if (cancelled) return;
         const grouped: typeof apiMsgs = {};
         for (const m of msgs) {
-          if (m.fromNumber===myPueiNumber) continue;
-          if (!grouped[m.fromNumber]) grouped[m.fromNumber]=[];
-          grouped[m.fromNumber].push(m);
+          const sender = normalizePueiNumber(m.fromNumber || "");
+          const recipient = normalizePueiNumber(m.toNumber || "");
+          const peer = sender === myPueiNumber ? recipient : sender;
+          if (!/^\d{3}-\d{3}-\d{3}$/.test(peer) || peer === myPueiNumber) continue;
+          if (!grouped[peer]) grouped[peer] = [];
+          grouped[peer].push({
+            ...m,
+            fromNumber: sender,
+            toNumber: recipient,
+          });
         }
         setApiMsgs(grouped);
         const senders = Object.keys(grouped);
@@ -1893,6 +2101,7 @@ function PueiCloudChatApp({ user, users, setUsers }: { user: string; users: User
           let created = 0;
           let changed = false;
           for (const sender of senders) {
+            if (users.some((u) => u.name !== user && u.pueiNumber === sender)) continue;
             const last = grouped[sender]?.[grouped[sender].length - 1];
             const prev = byNum.get(sender);
             const next = hydrateExtContact({
@@ -1930,6 +2139,18 @@ function PueiCloudChatApp({ user, users, setUsers }: { user: string; users: User
 
   const lastLocal = (name:string) => { const ms=allMsgs.filter(m=>(m.from===user&&m.to===name)||(m.from===name&&m.to===user)); return ms[ms.length-1]; };
   const lastExt = (num:string) => { const all=[...(apiMsgs[num]??[]),...(sentMsgs[num]??[])]; return all.sort((a,b)=>(a.at??0)-(b.at??0)).slice(-1)[0]; };
+
+  const editExtName = (pueiNumber: string) => {
+    const current = extContacts.find((c) => c.pueiNumber === pueiNumber);
+    if (!current) return;
+    const next = prompt("Set contact name (leave empty to show number)", current.name ?? "");
+    if (next === null) return;
+    const trimmed = next.trim();
+    saveExtContacts(extContacts.map((c) =>
+      c.pueiNumber === pueiNumber ? { ...c, name: trimmed || undefined } : c,
+    ));
+    blip("click");
+  };
 
   const doNewChat = async () => {
     let raw = newInput.trim().replace(/[-\s]/g,"");
@@ -1971,7 +2192,15 @@ function PueiCloudChatApp({ user, users, setUsers }: { user: string; users: User
           alert("Message could not be delivered. Please try again.");
           return;
         }
-        const out={id:`out-${Date.now()}-${Math.random().toString(36).slice(2,6)}`,from:user,fromNumber:myPueiNumber,text:msg,at:Date.now()};
+        const body = (await res.json()) as { id?: string };
+        const out: ApiChatMessage = {
+          id:body.id || `out-${Date.now()}-${Math.random().toString(36).slice(2,6)}`,
+          from:user,
+          fromNumber:myPueiNumber,
+          toNumber:extPartner.pueiNumber,
+          text:msg,
+          at:Date.now(),
+        };
         appendSent(extPartner.pueiNumber,out);
       }
       catch {
@@ -2182,6 +2411,11 @@ function PueiCloudChatApp({ user, users, setUsers }: { user: string; users: User
                     <div className="font-semibold truncate">{extPartner.name || extPartner.pueiNumber}</div>
                     <div className="text-[10px] opacity-40 font-mono">#{extPartner.pueiNumber}</div>
                   </div>
+                  <button className="text-xs opacity-40 hover:opacity-100 transition-all px-2 py-1 rounded-lg"
+                    title="Edit contact name"
+                    onClick={()=>editExtName(extPartner.pueiNumber)}>
+                    ✏️
+                  </button>
                   <button className="text-xs opacity-40 hover:opacity-100 hover:text-red-400 transition-all px-2 py-1 rounded-lg"
                     onClick={()=>{if(confirm(`Remove ${extPartner.pueiNumber}?`)){saveExtContacts(extContacts.filter(c=>c.pueiNumber!==extPartner.pueiNumber));setApiMsgs(p=>{const n={...p};delete n[extPartner.pueiNumber];return n;});setActiveId(null);blip("click");}}}>
                     🗑️
@@ -2288,7 +2522,7 @@ function PueiCloudChatApp({ user, users, setUsers }: { user: string; users: User
 function FileExplorerApp({ openApp, icons, openFolder, currentUser }: { openApp: (id: AppId, fileId?: string) => void; icons: DesktopIcon[]; openFolder: (id: string, title: string) => void; currentUser: string }) {
   const myFiles = () => loadFiles().filter((f) => !f.owner || f.owner === currentUser);
   const [files, setFiles] = useState<SavedFile[]>(() => myFiles());
-  const [folder, setFolder] = useState<"home" | "documents" | "pictures" | "apps" | "folders" | "puei-drive">("home");
+  const [folder, setFolder] = useState<"home" | "documents" | "pictures" | "downloads" | "apps" | "folders" | "puei-drive">("home");
   const [openFolderId, setOpenFolderId] = useState<string | null>(null);
   const [dragFileId, setDragFileId] = useState<string | null>(null);
   const [dropTarget, setDropTarget] = useState<string | null>(null);
@@ -2306,6 +2540,7 @@ function FileExplorerApp({ openApp, icons, openFolder, currentUser }: { openApp:
   const folders = [
     { id: "documents" as const, name: "Documents", icon: "📁" },
     { id: "pictures" as const, name: "Pictures", icon: "🖼️" },
+    { id: "downloads" as const, name: "Downloads", icon: "⬇️" },
     { id: "apps" as const, name: "Apps", icon: "🧩" },
     { id: "folders" as const, name: "My Folders", icon: "🗃️" },
   ];
@@ -2320,8 +2555,9 @@ function FileExplorerApp({ openApp, icons, openFolder, currentUser }: { openApp:
     { name: "PueiSocial", appId: "puei-social", icon: "📣" },
   ];
 
-  const textFiles = files.filter((f) => f.type === "text" && !f.folder);
-  const imgFiles = files.filter((f) => f.type === "image" && !f.folder);
+  const textFiles = files.filter((f) => f.type === "text" && (!f.folder || f.folder === "__documents__"));
+  const imgFiles = files.filter((f) => f.type === "image" && (!f.folder || f.folder === SYS_FOLDER_PICTURES));
+  const downloadFiles = files.filter((f) => f.folder === SYS_FOLDER_DOWNLOADS);
   const myFolders = icons.filter((i) => i.appId === "folder");
 
   const handleDrop = (folderId: string) => {
@@ -2338,7 +2574,7 @@ function FileExplorerApp({ openApp, icons, openFolder, currentUser }: { openApp:
         <div className="font-semibold mb-2 opacity-70 text-xs">FAVORITES</div>
         {[
           ["home","🏠 Home"],["documents","📁 Documents"],["pictures","🖼️ Pictures"],
-          ["folders","🗃️ My Folders"],["apps","🧩 Apps"],
+          ["downloads","⬇️ Downloads"],["folders","🗃️ My Folders"],["apps","🧩 Apps"],
         ].map(([k, l]) => (
           <div key={k} onClick={() => { setFolder(k as any); setOpenFolderId(null); }}
             className="px-2 py-1 rounded hover:bg-white/30 cursor-pointer"
@@ -2402,6 +2638,13 @@ function FileExplorerApp({ openApp, icons, openFolder, currentUser }: { openApp:
         )}
         {folder === "pictures" && (
           <FileGrid files={imgFiles} emptyHint="No saved pictures. Open Puei Paint 2 and click Save to create one."
+            onOpen={(f) => openApp("puei-paint", f.id)}
+            onDelete={(id) => { deleteFile(id); setFiles(myFiles()); }}
+            onDragStart={(id) => setDragFileId(id)}
+            onDragEnd={() => { setDragFileId(null); setDropTarget(null); }} />
+        )}
+        {folder === "downloads" && (
+          <FileGrid files={downloadFiles} emptyHint="No downloads yet. Download from Puei Wallpapers or mail attachments."
             onOpen={(f) => openApp("puei-paint", f.id)}
             onDelete={(id) => { deleteFile(id); setFiles(myFiles()); }}
             onDragStart={(id) => setDragFileId(id)}
@@ -2577,10 +2820,16 @@ function PueiDrivePane({ files, currentUser, openApp, onDelete }: {
   onDelete: (id: string) => void;
 }) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [showRootEntries, setShowRootEntries] = useState(true);
   const myFiles = files.filter(f => !f.owner || f.owner === currentUser);
   const totalSize = myFiles.reduce((acc, f) => acc + f.content.length, 0);
   const usedKB = (totalSize / 1024).toFixed(1);
   const selectedFile = myFiles.find(f => f.id === selectedId) ?? null;
+  const rootEntries = [
+    "C:\\Dev", "C:\\Media", "C:\\Projects", "C:\\Users", "C:\\Windows",
+    "C:\\System", "C:\\Games", "C:\\Logs", "C:\\Program Files", "C:\\Temp",
+    "C:\\Recovery", "C:\\puei.config.ini",
+  ];
 
   return (
     <div className="flex flex-col h-full">
@@ -2592,7 +2841,25 @@ function PueiDrivePane({ files, currentUser, openApp, onDelete }: {
           <div className="text-xs opacity-60">{myFiles.length} file{myFiles.length !== 1 ? "s" : ""} · {usedKB} KB used</div>
           <div className="text-[10px] opacity-40 mt-0.5">Files sync automatically across your PueiOS sessions</div>
         </div>
+        <button className="aero-button rounded px-2 py-1 text-xs ml-auto"
+          onClick={() => setShowRootEntries((v) => !v)}>
+          {showRootEntries ? "Hide C:\\" : "Show C:\\"}
+        </button>
       </div>
+
+      {showRootEntries && (
+        <div className="mb-4 p-3 rounded-xl" style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)" }}>
+          <div className="text-xs font-semibold opacity-70 mb-2">C:\\ virtual root</div>
+          <div className="grid grid-cols-3 gap-2">
+            {rootEntries.map((entry) => (
+              <div key={entry} className="text-xs px-2 py-1 rounded" style={{ background: "rgba(255,255,255,0.12)" }}>
+                {entry}
+              </div>
+            ))}
+          </div>
+          <div className="text-[10px] opacity-45 mt-2">Simulated example entries for the Puei Drive root.</div>
+        </div>
+      )}
       {/* Toolbar */}
       <div className="flex items-center gap-2 mb-3 pb-2 border-b">
         <button className="aero-button rounded px-3 py-1 text-xs"

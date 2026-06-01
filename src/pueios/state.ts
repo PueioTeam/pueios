@@ -14,6 +14,11 @@ export type Theme = {
   highContrast: boolean;
   highContrastColor: string; // hex
   iconSize: "small" | "medium" | "large";
+  win7Aero: boolean;
+  glassOpacity: number;
+  glassBlur: number;
+  glassSaturation: number;
+  aeroGlow: number;
 };
 
 // Trusted domains for the Installer (closed-ecosystem rule)
@@ -251,6 +256,11 @@ export const defaultTheme: Theme = {
   highContrast: false,
   highContrastColor: "#ffb300",
   iconSize: "medium",
+  win7Aero: true,
+  glassOpacity: 38,
+  glassBlur: 22,
+  glassSaturation: 180,
+  aeroGlow: 50,
 };
 
 export const defaultIcons: DesktopIcon[] = [
@@ -482,7 +492,7 @@ export function saveMailFolders(owner: string, folders: string[]) {
   try { localStorage.setItem(`pueios2-mailfolders-${owner}`, JSON.stringify(folders)); } catch {}
 }
 
-export type DownloadEntry = { id: string; name: string; kind: string; size: number; at: number; mailId?: string };
+export type DownloadEntry = { id: string; name: string; kind: string; size: number; at: number; mailId?: string; destination?: string };
 export function loadDownloads(owner: string): DownloadEntry[] {
   if (typeof window === "undefined") return [];
   try { return JSON.parse(localStorage.getItem(`pueios2-downloads-${owner}`) || "[]"); } catch { return []; }
