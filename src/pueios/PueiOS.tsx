@@ -88,11 +88,28 @@ export function PueiOS() {
   const dragRef = useRef<{ id: string; startX: number; startY: number; origLeft: number; origTop: number; el: HTMLElement } | null>(null);
   const wasDragged = useRef(false);
   const DESKTOP_OX = 12, DESKTOP_OY = 12;
+  const getDesktopGridBounds = () => {
+    if (typeof window === "undefined") return { maxCol: 0, maxRow: 0 };
+    const TASKBAR_H = 48;
+    const maxCol = Math.max(0, Math.floor((window.innerWidth - DESKTOP_OX - 8 - GRID_W) / GRID_W));
+    const maxRow = Math.max(0, Math.floor((window.innerHeight - TASKBAR_H - DESKTOP_OY - 8 - GRID_H) / GRID_H));
+    return { maxCol, maxRow };
+  };
+  const clampGridPos = (col: number, row: number) => {
+    const { maxCol, maxRow } = getDesktopGridBounds();
+    return {
+      col: Math.max(0, Math.min(maxCol, col)),
+      row: Math.max(0, Math.min(maxRow, row)),
+    };
+  };
   const resolveIconPos = (ic: DesktopIcon, idx: number) => {
-    if (ic.col !== undefined && ic.row !== undefined)
-      return { left: DESKTOP_OX + ic.col * GRID_W, top: DESKTOP_OY + ic.row * GRID_H };
-    const { col, row } = iconGridPos(idx);
-    return { left: DESKTOP_OX + col * GRID_W, top: DESKTOP_OY + row * GRID_H };
+    if (ic.col !== undefined && ic.row !== undefined) {
+      const p = clampGridPos(ic.col, ic.row);
+      return { left: DESKTOP_OX + p.col * GRID_W, top: DESKTOP_OY + p.row * GRID_H };
+    }
+    const def = iconGridPos(idx);
+    const p = clampGridPos(def.col, def.row);
+    return { left: DESKTOP_OX + p.col * GRID_W, top: DESKTOP_OY + p.row * GRID_H };
   };
   // Window-level mouse drag handlers — attached once drag starts
   const startIconDrag = (e: React.MouseEvent, ic: DesktopIcon, idx: number) => {
@@ -128,8 +145,12 @@ export function PueiOS() {
       if (wasDragged.current) {
         const dx = ev.clientX - dragRef.current.startX;
         const dy = ev.clientY - dragRef.current.startY;
-        const col = Math.max(0, Math.round((origLeft + dx - DESKTOP_OX) / GRID_W));
-        const row = Math.max(0, Math.round((origTop + dy - DESKTOP_OY) / GRID_H));
+        const p = clampGridPos(
+          Math.round((origLeft + dx - DESKTOP_OX) / GRID_W),
+          Math.round((origTop + dy - DESKTOP_OY) / GRID_H),
+        );
+        const col = p.col;
+        const row = p.row;
         setIcons((prev) => prev.map((i) => i.id === id ? { ...i, col, row } : i));
       }
       dragRef.current = null;
@@ -176,8 +197,12 @@ export function PueiOS() {
       if (wasDragged.current && changedTouch) {
         const dx = changedTouch.clientX - dragRef.current.startX;
         const dy = changedTouch.clientY - dragRef.current.startY;
-        const col = Math.max(0, Math.round((origLeft + dx - DESKTOP_OX) / GRID_W));
-        const row = Math.max(0, Math.round((origTop + dy - DESKTOP_OY) / GRID_H));
+        const p = clampGridPos(
+          Math.round((origLeft + dx - DESKTOP_OX) / GRID_W),
+          Math.round((origTop + dy - DESKTOP_OY) / GRID_H),
+        );
+        const col = p.col;
+        const row = p.row;
         setIcons((prev) => prev.map((i) => i.id === id ? { ...i, col, row } : i));
       }
       dragRef.current = null;
