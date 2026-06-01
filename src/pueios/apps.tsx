@@ -2522,7 +2522,7 @@ function PueiCloudChatApp({ user, users, setUsers }: { user: string; users: User
 function FileExplorerApp({ openApp, icons, openFolder, currentUser }: { openApp: (id: AppId, fileId?: string) => void; icons: DesktopIcon[]; openFolder: (id: string, title: string) => void; currentUser: string }) {
   const myFiles = () => loadFiles().filter((f) => !f.owner || f.owner === currentUser);
   const [files, setFiles] = useState<SavedFile[]>(() => myFiles());
-  const [folder, setFolder] = useState<"home" | "documents" | "pictures" | "downloads" | "apps" | "folders" | "puei-drive">("home");
+  const [folder, setFolder] = useState<"home" | "documents" | "pictures" | "downloads" | "apps" | "folders" | "puei-drive" | "recycle-bin">("home");
   const [openFolderId, setOpenFolderId] = useState<string | null>(null);
   const [dragFileId, setDragFileId] = useState<string | null>(null);
   const [dropTarget, setDropTarget] = useState<string | null>(null);
@@ -2587,6 +2587,9 @@ function FileExplorerApp({ openApp, icons, openFolder, currentUser }: { openApp:
         <div className="px-2 py-1 rounded hover:bg-white/30 cursor-pointer flex items-center gap-1"
           onClick={() => setFolder("puei-drive")}
           style={{ background: folder === "puei-drive" ? "rgba(255,255,255,0.4)" : undefined }}>☁️ Puei Drive</div>
+        <div className="px-2 py-1 rounded hover:bg-white/30 cursor-pointer"
+          onClick={() => { setFolder("recycle-bin"); setOpenFolderId(null); }}
+          style={{ background: folder === "recycle-bin" ? "rgba(255,255,255,0.4)" : undefined }}>🗑️ Recycle Bin</div>
         {dragFileId && (
           <div className="mt-3 text-[10px] opacity-60 px-2">
             📂 Drag to a folder below to move file
@@ -2616,7 +2619,7 @@ function FileExplorerApp({ openApp, icons, openFolder, currentUser }: { openApp:
           )}
           {openFolderId ? (
             <> › {myFolders.find(f => f.id === openFolderId)?.label ?? openFolderId}</>
-          ) : folder === "puei-drive" ? "☁️ Puei Drive" : `Computer › PueiDrive › Users › You › ${folder}`}
+          ) : folder === "puei-drive" ? "☁️ Puei Drive" : folder === "recycle-bin" ? "🗑️ Recycle Bin" : `Computer › PueiDrive › Users › You › ${folder}`}
         </div>
         {folder === "home" && (
           <div className="grid grid-cols-5 gap-3">
@@ -2664,6 +2667,7 @@ function FileExplorerApp({ openApp, icons, openFolder, currentUser }: { openApp:
         {folder === "puei-drive" && (
           <PueiDrivePane files={files} currentUser={currentUser} openApp={openApp} onDelete={(id) => { deleteFile(id); setFiles(myFiles()); }} />
         )}
+        {folder === "recycle-bin" && <RecycleBinApp />}
         {folder === "folders" && !openFolderId && (
           myFolders.length === 0
             ? <div className="text-sm opacity-70 p-6 text-center">No folders yet. Right-click the desktop → New Folder.</div>
@@ -2821,10 +2825,16 @@ function PueiDrivePane({ files, currentUser, openApp, onDelete }: {
 }) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showRootEntries, setShowRootEntries] = useState(true);
+  const [driveSection, setDriveSection] = useState<"all" | "media" | "users">("all");
   const myFiles = files.filter(f => !f.owner || f.owner === currentUser);
   const totalSize = myFiles.reduce((acc, f) => acc + f.content.length, 0);
   const usedKB = (totalSize / 1024).toFixed(1);
-  const selectedFile = myFiles.find(f => f.id === selectedId) ?? null;
+  const shownFiles = driveSection === "media"
+    ? myFiles.filter(f => f.type === "image")
+    : driveSection === "users"
+    ? myFiles.filter(f => f.type === "text")
+    : myFiles;
+  const selectedFile = shownFiles.find(f => f.id === selectedId) ?? null;
   const rootEntries = [
     "C:\\Dev", "C:\\Media", "C:\\Projects", "C:\\Users", "C:\\Windows",
     "C:\\System", "C:\\Games", "C:\\Logs", "C:\\Program Files", "C:\\Temp",
@@ -2851,11 +2861,22 @@ function PueiDrivePane({ files, currentUser, openApp, onDelete }: {
         <div className="mb-4 p-3 rounded-xl" style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)" }}>
           <div className="text-xs font-semibold opacity-70 mb-2">C:\\ virtual root</div>
           <div className="grid grid-cols-3 gap-2">
-            {rootEntries.map((entry) => (
-              <div key={entry} className="text-xs px-2 py-1 rounded" style={{ background: "rgba(255,255,255,0.12)" }}>
-                {entry}
-              </div>
-            ))}
+            {rootEntries.map((entry) => {
+              const sectionMap: Record<string, "media" | "users"> = {
+                "C:\\Media":   "media",
+                "C:\\Users":  "users",
+              };
+              const section = sectionMap[entry];
+              return (
+                <div key={entry}
+                  onClick={() => { if (section) { setDriveSection(section); setShowRootEntries(false); } }}
+                  className={`text-xs px-2 py-1 rounded transition-colors ${section ? "cursor-pointer hover:bg-white/30" : "opacity-60"}`}
+                  style={{ background: "rgba(255,255,255,0.12)" }}
+                  title={section ? `Browse ${entry}` : "Virtual folder"}>
+                  {entry}
+                </div>
+              );
+            })}
           </div>
           <div className="text-[10px] opacity-45 mt-2">Simulated example entries for the Puei Drive root.</div>
         </div>
@@ -2878,15 +2899,25 @@ function PueiDrivePane({ files, currentUser, openApp, onDelete }: {
       </div>
       {myFiles.length === 0
         ? <div className="text-sm opacity-60 text-center p-8">No files yet. Save something from Notepad or Puei Paint 2 and it will appear here.</div>
-        : <div className="grid grid-cols-5 gap-3 overflow-auto">
-            {myFiles.map(f => (
-              <div key={f.id}
-                onClick={() => setSelectedId(f.id === selectedId ? null : f.id)}
-                onDoubleClick={() => openApp(f.type === "image" ? "puei-paint" : "notepad", f.id)}
-                className="text-center p-2 rounded cursor-pointer select-none transition-all"
-                style={{
-                  background: f.id === selectedId ? "rgba(80,160,255,0.35)" : "transparent",
-                  outline: f.id === selectedId ? "2px solid rgba(80,160,255,0.7)" : "none",
+        : <>
+          {driveSection !== "all" && (
+            <div className="flex items-center gap-2 mb-3 text-xs opacity-70">
+              <button className="hover:underline" onClick={() => { setDriveSection("all"); setShowRootEntries(true); }}>☁️ Puei Drive</button>
+              {" › "}
+              {driveSection === "media" ? "C:\\Media" : "C:\\Users"}
+            </div>
+          )}
+          {shownFiles.length === 0
+            ? <div className="text-sm opacity-60 text-center p-8">{driveSection === "media" ? "No media files saved yet." : "No text files saved yet."}</div>
+            : <div className="grid grid-cols-5 gap-3 overflow-auto">
+                {shownFiles.map(f => (
+                  <div key={f.id}
+                    onClick={() => setSelectedId(f.id === selectedId ? null : f.id)}
+                    onDoubleClick={() => openApp(f.type === "image" ? "puei-paint" : "notepad", f.id)}
+                    className="text-center p-2 rounded cursor-pointer select-none transition-all"
+                    style={{
+                      background: f.id === selectedId ? "rgba(80,160,255,0.35)" : "transparent",
+                      outline: f.id === selectedId ? "2px solid rgba(80,160,255,0.7)" : "none",
                 }}>
                 {f.type === "image"
                   ? <img src={f.content} alt={f.name} className="w-12 h-12 mx-auto object-cover rounded shadow" />
@@ -2895,7 +2926,8 @@ function PueiDrivePane({ files, currentUser, openApp, onDelete }: {
                 <div className="text-[9px] opacity-40">{(f.content.length / 1024).toFixed(1)} KB</div>
               </div>
             ))}
-          </div>
+          </div>}
+        </>
       }
     </div>
   );

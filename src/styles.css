@@ -503,17 +503,7 @@
     linear-gradient(180deg, #06194d 0%, #143d86 54%, #072252 100%);
 }
 
-/* Keep desktop wallpaper visible in high-contrast mode while preserving contrasty windows. */
-.high-contrast .wallpaper-default,
-.high-contrast .wallpaper-bliss,
-.high-contrast .wallpaper-aurora,
-.high-contrast .wallpaper-sunset,
-.high-contrast .wallpaper-aero-blue,
-.high-contrast .wallpaper-aero-pink,
-.high-contrast .wallpaper-aero-neon,
-.high-contrast .wallpaper-aero-dusk {
-  filter: saturate(0.92) contrast(1.08) brightness(0.82);
-}
+
 
 .window-shadow {
   box-shadow: 0 20px 60px -10px rgba(0,0,0,0.5), 0 6px 20px rgba(0,0,0,0.3);
