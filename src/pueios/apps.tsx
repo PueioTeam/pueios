@@ -2668,7 +2668,7 @@ function FileExplorerApp({ openApp, icons, openFolder, currentUser, users }: { o
           style={{ background: folder === "home" ? "rgba(255,255,255,0.4)" : undefined }}>💽 C:\ PueiDrive</div>
         <div className="px-2 py-1 rounded hover:bg-white/30 cursor-pointer flex items-center gap-1"
           onClick={() => setFolder("puei-drive")}
-          style={{ background: folder === "puei-drive" ? "rgba(255,255,255,0.4)" : undefined }}>☁️ Puei Drive</div>
+          style={{ background: folder === "puei-drive" ? "rgba(255,255,255,0.4)" : undefined }}>☁️ Puei Disk</div>
         <div className="px-2 py-1 rounded hover:bg-white/30 cursor-pointer"
           onClick={() => { setFolder("recycle-bin"); setOpenFolderId(null); }}
           style={{ background: folder === "recycle-bin" ? "rgba(255,255,255,0.4)" : undefined }}>🗑️ Recycle Bin</div>
@@ -2701,7 +2701,7 @@ function FileExplorerApp({ openApp, icons, openFolder, currentUser, users }: { o
           )}
           {openFolderId ? (
             <> › {myFolders.find(f => f.id === openFolderId)?.label ?? openFolderId}</>
-          ) : folder === "puei-drive" ? "☁️ Puei Drive" : folder === "recycle-bin" ? "🗑️ Recycle Bin" : `Computer › PueiDrive › Users › You › ${folder}`}
+          ) : folder === "puei-drive" ? "☁️ Puei Disk" : folder === "recycle-bin" ? "🗑️ Recycle Bin" : `Computer › PueiDrive › Users › You › ${folder}`}
         </div>
         {folder === "home" && (
           <div className="grid grid-cols-5 gap-3">
@@ -2906,16 +2906,78 @@ function PueiDrivePane({ files, currentUser, users, openApp, onDelete }: {
   openApp: (id: AppId, fileId?: string) => void;
   onDelete: (id: string) => void;
 }) {
+  type DriveSection =
+    | "all"
+    | "dev"
+    | "media"
+    | "projects"
+    | "users"
+    | "windows"
+    | "system"
+    | "games"
+    | "logs"
+    | "program-files"
+    | "temp"
+    | "recovery"
+    | "config";
+
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showRootEntries, setShowRootEntries] = useState(true);
-  const [driveSection, setDriveSection] = useState<"all" | "media" | "users">("all");
+  const [driveSection, setDriveSection] = useState<DriveSection>("all");
   const myFiles = files.filter(f => !f.owner || f.owner === currentUser);
   const totalSize = myFiles.reduce((acc, f) => acc + f.content.length, 0);
   const usedKB = (totalSize / 1024).toFixed(1);
-  const shownFiles = driveSection === "media"
-    ? myFiles.filter(f => f.type === "image")
-    : myFiles;
   const deviceUsers = users;
+  const sectionMap: Record<string, DriveSection> = {
+    "C:\\Dev": "dev",
+    "C:\\Media": "media",
+    "C:\\Projects": "projects",
+    "C:\\Users": "users",
+    "C:\\Windows": "windows",
+    "C:\\System": "system",
+    "C:\\Games": "games",
+    "C:\\Logs": "logs",
+    "C:\\Program Files": "program-files",
+    "C:\\Temp": "temp",
+    "C:\\Recovery": "recovery",
+    "C:\\puei.config.ini": "config",
+  };
+  const sectionLabel: Record<DriveSection, string> = {
+    all: "C:\\",
+    dev: "C:\\Dev",
+    media: "C:\\Media",
+    projects: "C:\\Projects",
+    users: "C:\\Users",
+    windows: "C:\\Windows",
+    system: "C:\\System",
+    games: "C:\\Games",
+    logs: "C:\\Logs",
+    "program-files": "C:\\Program Files",
+    temp: "C:\\Temp",
+    recovery: "C:\\Recovery",
+    config: "C:\\puei.config.ini",
+  };
+  const shownFiles = (() => {
+    switch (driveSection) {
+      case "media":
+        return myFiles.filter((f) => f.type === "image");
+      case "dev":
+      case "projects":
+        return myFiles.filter((f) => f.type === "text");
+      case "logs":
+        return myFiles.filter((f) => /log|trace|debug/i.test(f.name));
+      case "temp":
+        return [...myFiles].sort((a, b) => b.updatedAt - a.updatedAt).slice(0, 24);
+      case "games": {
+        const gameish = myFiles.filter((f) => /game|chess/i.test(f.name));
+        return gameish.length ? gameish : myFiles;
+      }
+      default:
+        return myFiles;
+    }
+  })();
+  const isFileSection = ["all", "dev", "media", "projects", "logs", "temp", "games"].includes(driveSection);
+  const isVirtualSection = ["windows", "system", "program-files", "recovery", "config"].includes(driveSection);
   const selectedFile = shownFiles.find(f => f.id === selectedId) ?? null;
   const rootEntries = [
     "C:\\Dev", "C:\\Media", "C:\\Projects", "C:\\Users", "C:\\Windows",
@@ -2923,13 +2985,17 @@ function PueiDrivePane({ files, currentUser, users, openApp, onDelete }: {
     "C:\\Recovery", "C:\\puei.config.ini",
   ];
 
+  useEffect(() => {
+    setSelectedId(null);
+  }, [driveSection]);
+
   return (
     <div className="flex flex-col h-full">
       {/* Drive header */}
       <div className="flex items-center gap-4 mb-4 p-3 rounded-xl" style={{ background: "rgba(80,140,255,0.12)", border: "1px solid rgba(80,140,255,0.2)" }}>
         <div className="text-4xl">☁️</div>
         <div>
-          <div className="font-semibold">Puei Drive</div>
+          <div className="font-semibold">Puei Disk</div>
           <div className="text-xs opacity-60">{myFiles.length} file{myFiles.length !== 1 ? "s" : ""} · {usedKB} KB used</div>
           <div className="text-[10px] opacity-40 mt-0.5">Files sync automatically across your PueiOS sessions</div>
         </div>
@@ -2944,26 +3010,22 @@ function PueiDrivePane({ files, currentUser, users, openApp, onDelete }: {
           <div className="text-xs font-semibold opacity-70 mb-2">C:\\ virtual root</div>
           <div className="grid grid-cols-3 gap-2">
             {rootEntries.map((entry) => {
-              const sectionMap: Record<string, "media" | "users"> = {
-                "C:\\Media":   "media",
-                "C:\\Users":  "users",
-              };
               const section = sectionMap[entry];
               return (
                 <div key={entry}
-                  onClick={() => { if (section) { setDriveSection(section); setShowRootEntries(false); } }}
-                  className={`text-xs px-2 py-1 rounded transition-colors ${section ? "cursor-pointer hover:bg-white/30" : "opacity-60"}`}
+                  onClick={() => { setDriveSection(section); setShowRootEntries(false); }}
+                  className="text-xs px-2 py-1 rounded transition-colors cursor-pointer hover:bg-white/30"
                   style={{ background: "rgba(255,255,255,0.12)" }}
-                  title={section ? `Browse ${entry}` : "Virtual folder"}>
+                  title={`Browse ${entry}`}>
                   {entry}
                 </div>
               );
             })}
           </div>
-          <div className="text-[10px] opacity-45 mt-2">Simulated example entries for the Puei Drive root.</div>
+          <div className="text-[10px] opacity-45 mt-2">All entries are browsable. Some are virtual system folders.</div>
         </div>
       )}
-      {driveSection !== "users" && (
+      {isFileSection && (
         <div className="flex items-center gap-2 mb-3 pb-2 border-b">
           <button className="aero-button rounded px-3 py-1 text-xs"
             disabled={!selectedFile} style={{ opacity: selectedFile ? 1 : 0.4 }}
@@ -2980,14 +3042,14 @@ function PueiDrivePane({ files, currentUser, users, openApp, onDelete }: {
             : <span className="text-xs opacity-40 ml-1">Click a file to select it</span>}
         </div>
       )}
-      {driveSection !== "users" && myFiles.length === 0
+      {isFileSection && myFiles.length === 0
         ? <div className="text-sm opacity-60 text-center p-8">No files yet. Save something from Notepad or Puei Paint 2 and it will appear here.</div>
         : <>
           {driveSection !== "all" && (
             <div className="flex items-center gap-2 mb-3 text-xs opacity-70">
-              <button className="hover:underline" onClick={() => { setDriveSection("all"); setShowRootEntries(true); }}>☁️ Puei Drive</button>
+              <button className="hover:underline" onClick={() => { setDriveSection("all"); setShowRootEntries(true); }}>☁️ Puei Disk</button>
               {" › "}
-              {driveSection === "media" ? "C:\\Media" : "C:\\Users"}
+              {sectionLabel[driveSection]}
             </div>
           )}
           {driveSection === "users"
@@ -3011,6 +3073,19 @@ function PueiDrivePane({ files, currentUser, users, openApp, onDelete }: {
                     ))}
                   </div>}
             </>
+            : isVirtualSection
+            ? <div className="rounded-xl p-4 space-y-3" style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.2)" }}>
+                <div className="font-semibold">{sectionLabel[driveSection]} (virtual)</div>
+                <div className="text-sm opacity-70">
+                  This is a virtual system location in Puei Disk. You can browse it and open related tools below.
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <button className="aero-button rounded px-3 py-1 text-xs" onClick={() => openApp("settings")}>⚙️ Open Settings</button>
+                  <button className="aero-button rounded px-3 py-1 text-xs" onClick={() => openApp("about")}>ℹ️ System Info</button>
+                  <button className="aero-button rounded px-3 py-1 text-xs" onClick={() => openApp("app-store")}>🧩 Program Manager</button>
+                  <button className="aero-button rounded px-3 py-1 text-xs" onClick={() => openApp("recycle-bin")}>🗑️ Recovery</button>
+                </div>
+              </div>
             : shownFiles.length === 0
             ? <div className="text-sm opacity-60 text-center p-8">{driveSection === "media" ? "No media files saved yet." : "No text files saved yet."}</div>
             : <div className="grid grid-cols-5 gap-3 overflow-auto">
