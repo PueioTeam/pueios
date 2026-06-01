@@ -49,7 +49,7 @@ export function AppRenderer(p: AppRendererProps) {
     case "puei-paint": return <PaintApp fileId={p.fileId} onCreateShortcut={p.onCreateShortcut} currentUser={p.currentUser} />;
     case "pueinet": return <PueiWebApp currentUser={p.currentUser} users={p.users} />;
     case "puei-cloud-chat": return <PueiCloudChatApp user={p.currentUser} users={p.users} setUsers={p.setUsers} />;
-    case "file-explorer": return <FileExplorerApp openApp={p.openApp} icons={p.icons} openFolder={p.openFolder} currentUser={p.currentUser} />;
+    case "file-explorer": return <FileExplorerApp openApp={p.openApp} icons={p.icons} openFolder={p.openFolder} currentUser={p.currentUser} users={p.users} />;
     case "app-store": return <AppStoreApp installWebApp={p.installWebApp} openApp={p.openApp} systemVersion={p.systemVersion} addNativeIcon={p.addNativeIcon} icons={p.icons} />;
     case "puei-social": return <PueiSocialApp user={p.currentUser} users={p.users} />;
     case "folder": return <FolderApp folderIconId={p.folderIconId!} icons={p.icons} openApp={p.openApp} openWebApp={p.openWebApp} />;
@@ -2519,7 +2519,7 @@ function PueiCloudChatApp({ user, users, setUsers }: { user: string; users: User
   );
 }
 
-function FileExplorerApp({ openApp, icons, openFolder, currentUser }: { openApp: (id: AppId, fileId?: string) => void; icons: DesktopIcon[]; openFolder: (id: string, title: string) => void; currentUser: string }) {
+function FileExplorerApp({ openApp, icons, openFolder, currentUser, users }: { openApp: (id: AppId, fileId?: string) => void; icons: DesktopIcon[]; openFolder: (id: string, title: string) => void; currentUser: string; users: User[] }) {
   const myFiles = () => loadFiles().filter((f) => !f.owner || f.owner === currentUser);
   const [files, setFiles] = useState<SavedFile[]>(() => myFiles());
   const [folder, setFolder] = useState<"home" | "documents" | "pictures" | "downloads" | "apps" | "folders" | "puei-drive" | "recycle-bin">("home");
@@ -2665,7 +2665,7 @@ function FileExplorerApp({ openApp, icons, openFolder, currentUser }: { openApp:
           </div>
         )}
         {folder === "puei-drive" && (
-          <PueiDrivePane files={files} currentUser={currentUser} openApp={openApp} onDelete={(id) => { deleteFile(id); setFiles(myFiles()); }} />
+          <PueiDrivePane files={files} currentUser={currentUser} users={users} openApp={openApp} onDelete={(id) => { deleteFile(id); setFiles(myFiles()); }} />
         )}
         {folder === "recycle-bin" && <RecycleBinApp />}
         {folder === "folders" && !openFolderId && (
@@ -2818,8 +2818,9 @@ function FileGrid({ files, emptyHint, onOpen, onDelete, onDragStart, onDragEnd }
 }
 
 // ---------- Puei Drive Pane ----------
-function PueiDrivePane({ files, currentUser, openApp, onDelete }: {
+function PueiDrivePane({ files, currentUser, users, openApp, onDelete }: {
   files: SavedFile[]; currentUser: string;
+  users: User[];
   openApp: (id: AppId, fileId?: string) => void;
   onDelete: (id: string) => void;
 }) {
@@ -2831,9 +2832,8 @@ function PueiDrivePane({ files, currentUser, openApp, onDelete }: {
   const usedKB = (totalSize / 1024).toFixed(1);
   const shownFiles = driveSection === "media"
     ? myFiles.filter(f => f.type === "image")
-    : driveSection === "users"
-    ? myFiles.filter(f => f.type === "text")
     : myFiles;
+  const deviceUsers = users;
   const selectedFile = shownFiles.find(f => f.id === selectedId) ?? null;
   const rootEntries = [
     "C:\\Dev", "C:\\Media", "C:\\Projects", "C:\\Users", "C:\\Windows",
@@ -2881,23 +2881,24 @@ function PueiDrivePane({ files, currentUser, openApp, onDelete }: {
           <div className="text-[10px] opacity-45 mt-2">Simulated example entries for the Puei Drive root.</div>
         </div>
       )}
-      {/* Toolbar */}
-      <div className="flex items-center gap-2 mb-3 pb-2 border-b">
-        <button className="aero-button rounded px-3 py-1 text-xs"
-          disabled={!selectedFile} style={{ opacity: selectedFile ? 1 : 0.4 }}
-          onClick={() => { if (selectedFile) openApp(selectedFile.type === "image" ? "puei-paint" : "notepad", selectedFile.id); }}>
-          📂 Open
-        </button>
-        <button className="aero-button rounded px-3 py-1 text-xs text-red-400"
-          disabled={!selectedId} style={{ opacity: selectedId ? 1 : 0.4 }}
-          onClick={() => { if (selectedId) { onDelete(selectedId); setSelectedId(null); } }}>
-          🗑️ Delete
-        </button>
-        {selectedFile
-          ? <span className="text-xs opacity-50 ml-1">Selected: {selectedFile.name}</span>
-          : <span className="text-xs opacity-40 ml-1">Click a file to select it</span>}
-      </div>
-      {myFiles.length === 0
+      {driveSection !== "users" && (
+        <div className="flex items-center gap-2 mb-3 pb-2 border-b">
+          <button className="aero-button rounded px-3 py-1 text-xs"
+            disabled={!selectedFile} style={{ opacity: selectedFile ? 1 : 0.4 }}
+            onClick={() => { if (selectedFile) openApp(selectedFile.type === "image" ? "puei-paint" : "notepad", selectedFile.id); }}>
+            📂 Open
+          </button>
+          <button className="aero-button rounded px-3 py-1 text-xs text-red-400"
+            disabled={!selectedId} style={{ opacity: selectedId ? 1 : 0.4 }}
+            onClick={() => { if (selectedId) { onDelete(selectedId); setSelectedId(null); } }}>
+            🗑️ Delete
+          </button>
+          {selectedFile
+            ? <span className="text-xs opacity-50 ml-1">Selected: {selectedFile.name}</span>
+            : <span className="text-xs opacity-40 ml-1">Click a file to select it</span>}
+        </div>
+      )}
+      {driveSection !== "users" && myFiles.length === 0
         ? <div className="text-sm opacity-60 text-center p-8">No files yet. Save something from Notepad or Puei Paint 2 and it will appear here.</div>
         : <>
           {driveSection !== "all" && (
@@ -2907,7 +2908,26 @@ function PueiDrivePane({ files, currentUser, openApp, onDelete }: {
               {driveSection === "media" ? "C:\\Media" : "C:\\Users"}
             </div>
           )}
-          {shownFiles.length === 0
+          {driveSection === "users"
+            ? <>
+              {deviceUsers.length === 0
+                ? <div className="text-sm opacity-60 text-center p-8">No Puei accounts found on this device.</div>
+                : <div className="grid grid-cols-4 gap-3 overflow-auto">
+                    {deviceUsers.map((u) => (
+                      <div key={u.name} className="rounded-xl p-3" style={{ background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.2)" }}>
+                        <div className="flex items-center gap-2 mb-2">
+                          <img src={u.avatar} alt={u.name} className="w-10 h-10 rounded-full border" style={{ borderColor: u.color || "rgba(255,255,255,0.4)" }} />
+                          <div>
+                            <div className="text-sm font-semibold leading-tight">{u.name}</div>
+                            <div className="text-[10px] opacity-60">{u.name === currentUser ? "Signed in" : "Local account"}</div>
+                          </div>
+                        </div>
+                        <div className="text-[11px] opacity-70">Puei Number: {u.pueiNumber ?? "Not set"}</div>
+                      </div>
+                    ))}
+                  </div>}
+            </>
+            : shownFiles.length === 0
             ? <div className="text-sm opacity-60 text-center p-8">{driveSection === "media" ? "No media files saved yet." : "No text files saved yet."}</div>
             : <div className="grid grid-cols-5 gap-3 overflow-auto">
                 {shownFiles.map(f => (
