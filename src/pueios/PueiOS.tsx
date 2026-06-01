@@ -102,6 +102,15 @@ export function PueiOS() {
       row: Math.max(0, Math.min(maxRow, row)),
     };
   };
+  const clampPixelPos = (left: number, top: number) => {
+    const { maxCol, maxRow } = getDesktopGridBounds();
+    const maxLeft = DESKTOP_OX + maxCol * GRID_W;
+    const maxTop = DESKTOP_OY + maxRow * GRID_H;
+    return {
+      left: Math.max(DESKTOP_OX, Math.min(maxLeft, left)),
+      top: Math.max(DESKTOP_OY, Math.min(maxTop, top)),
+    };
+  };
   const resolveIconPos = (ic: DesktopIcon, idx: number) => {
     if (ic.col !== undefined && ic.row !== undefined) {
       const p = clampGridPos(ic.col, ic.row);
@@ -114,6 +123,7 @@ export function PueiOS() {
   // Window-level mouse drag handlers — attached once drag starts
   const startIconDrag = (e: React.MouseEvent, ic: DesktopIcon, idx: number) => {
     if (e.button !== 0) return;
+    wasDragged.current = false;
     e.stopPropagation();
     e.preventDefault();
     const p = resolveIconPos(ic, idx);
@@ -129,8 +139,9 @@ export function PueiOS() {
       const dx = ev.clientX - dragRef.current.startX;
       const dy = ev.clientY - dragRef.current.startY;
       if (Math.hypot(dx, dy) > 4) wasDragged.current = true;
-      dragRef.current.el.style.left = (dragRef.current.origLeft + dx) + "px";
-      dragRef.current.el.style.top = (dragRef.current.origTop + dy) + "px";
+      const p = clampPixelPos(dragRef.current.origLeft + dx, dragRef.current.origTop + dy);
+      dragRef.current.el.style.left = p.left + "px";
+      dragRef.current.el.style.top = p.top + "px";
     };
     const onUp = (ev: MouseEvent) => {
       window.removeEventListener("mousemove", onMove);
@@ -152,6 +163,10 @@ export function PueiOS() {
         const col = p.col;
         const row = p.row;
         setIcons((prev) => prev.map((i) => i.id === id ? { ...i, col, row } : i));
+      } else {
+        const p = clampPixelPos(origLeft, origTop);
+        de.style.left = p.left + "px";
+        de.style.top = p.top + "px";
       }
       dragRef.current = null;
     };
@@ -160,6 +175,7 @@ export function PueiOS() {
   };
   const startIconTouchDrag = (e: React.TouchEvent, ic: DesktopIcon, idx: number) => {
     if (e.touches.length !== 1) return;
+    wasDragged.current = false;
     const t = e.touches[0];
     const p = resolveIconPos(ic, idx);
     const el = e.currentTarget as HTMLElement;
@@ -180,13 +196,15 @@ export function PueiOS() {
           touchTimer.current = null;
         }
       }
-      dragRef.current.el.style.left = (dragRef.current.origLeft + dx) + "px";
-      dragRef.current.el.style.top = (dragRef.current.origTop + dy) + "px";
+      const p = clampPixelPos(dragRef.current.origLeft + dx, dragRef.current.origTop + dy);
+      dragRef.current.el.style.left = p.left + "px";
+      dragRef.current.el.style.top = p.top + "px";
       ev.preventDefault();
     };
     const onEnd = (ev: TouchEvent) => {
       window.removeEventListener("touchmove", onMove);
       window.removeEventListener("touchend", onEnd);
+      window.removeEventListener("touchcancel", onEnd);
       if (!dragRef.current) return;
       const { el: de, origLeft, origTop, id } = dragRef.current;
       de.style.zIndex = "";
@@ -204,11 +222,16 @@ export function PueiOS() {
         const col = p.col;
         const row = p.row;
         setIcons((prev) => prev.map((i) => i.id === id ? { ...i, col, row } : i));
+      } else {
+        const p = clampPixelPos(origLeft, origTop);
+        de.style.left = p.left + "px";
+        de.style.top = p.top + "px";
       }
       dragRef.current = null;
     };
     window.addEventListener("touchmove", onMove, { passive: false });
     window.addEventListener("touchend", onEnd);
+    window.addEventListener("touchcancel", onEnd);
   };
   const [loginUser, setLoginUser] = useState("");
   const [creating, setCreating] = useState(false);
