@@ -1439,6 +1439,7 @@ function PueiWebApp({ currentUser, users }: { currentUser: string; users: User[]
         <p className="opacity-70 mt-2">The retro-futuristic web, circa 2020.</p>
         <div className="mt-6 grid grid-cols-3 gap-3 max-w-2xl mx-auto">
           {[
+            ["puei://board", "📌 PueiBoard"],
             ["puei://search", "✦ Puei Copilot"],
             ["puei://forum", "💬 PueiForum"],
             ["puei://mail", "✉️ PueiMail"],
@@ -1512,6 +1513,11 @@ function PueiWebApp({ currentUser, users }: { currentUser: string; users: User[]
           <div className="text-xs opacity-50 mb-1">🔥 Trending</div>
           <div className="opacity-80">"My puei deleted my desktop shortcuts again 💀"</div>
         </div>
+      </div>
+    ),
+    "puei://board": (
+      <div className="h-full overflow-auto">
+        <PueiBoardApp user={currentUser} users={users} />
       </div>
     ),
     "puei://mail": null, // handled below as PueiMailApp
