@@ -2170,7 +2170,7 @@ function PueiMailApp({ currentUser, users }: { currentUser: string; users: User[
                           onClick={() => window.open(a.dataUrl, "_blank")}>🔍 Open</button>
                       )}
                       <button className="aero-button rounded px-2 py-1 text-xs"
-                        onClick={() => { downloadAttachment(a); recordDownload(currentUser, { id: `dl-${Date.now()}`, name: a.name, kind: a.kind, size: a.size, at: Date.now(), mailId: selected.id }); }}>
+                        onClick={() => { downloadAttachment(a, currentUser); recordDownload(currentUser, { id: `dl-${Date.now()}`, name: a.name, kind: a.kind, size: a.size, at: Date.now(), destination: destinationFolderLabel(SYS_FOLDER_DOWNLOADS) }); }}>
                         ⬇️ Download
                       </button>
                     </div>
@@ -2190,7 +2190,7 @@ function PueiMailApp({ currentUser, users }: { currentUser: string; users: User[
                 <div className="text-xs truncate mt-1">{a.name}</div>
                 <div className="text-[10px] opacity-60 truncate">{a.from}</div>
                 <button className="aero-button rounded w-full mt-1 text-[10px] py-0.5"
-                  onClick={() => { downloadAttachment(a); recordDownload(currentUser, { id: `dl-${Date.now()}`, name: a.name, kind: a.kind, size: a.size, at: Date.now(), mailId: a.mailId }); }}>
+                  onClick={() => { downloadAttachment(a, currentUser); recordDownload(currentUser, { id: `dl-${Date.now()}`, name: a.name, kind: a.kind, size: a.size, at: Date.now(), destination: destinationFolderLabel(SYS_FOLDER_DOWNLOADS) }); }}>
                   Download
                 </button>
               </div>
@@ -3385,6 +3385,7 @@ function AppStoreApp({ installWebApp, openApp, openWebApp, systemVersion, addNat
     { name: "PueiBoard",     icon: "📌", desc: "Pinterest-style boards where Pueis post Gallery images.", appId: "puei-board", preInstalled: true },
     { name: "PueiWeb",        icon: "🌐", desc: "System browser + AI search engine.",           appId: "pueinet",        preInstalled: true },
     { name: "Google Chrome",  icon: "🌐", desc: "Install Google Chrome as a fast browser shortcut from App Store.", webUrl: "https://www.google.com/", desktopLabel: "Google Chrome", preInstalled: false },
+    { name: "Bezos MP", icon: googleFaviconFor("https://bezosmp.lovable.app", 64), desc: "Music and media player by Bezos MP.", webUrl: "https://bezosmp.lovable.app", desktopLabel: "Bezos MP", preInstalled: false },
     { name: "Puei Paint 2",   icon: "🎨", desc: "Paint and save images as wallpapers.",         appId: "puei-paint",     preInstalled: true },
     { name: "Settings",       icon: "⚙️", desc: "Personalize, dark mode, accessibility.",       appId: "settings",       preInstalled: true },
     { name: "Computer",       icon: "🗂️", desc: "File system explorer.",                        appId: "file-explorer",  preInstalled: true },
@@ -3453,7 +3454,9 @@ function AppStoreApp({ installWebApp, openApp, openWebApp, systemVersion, addNat
                 return (
                   <div key={a.name} className="aero-glass-light rounded-lg p-3 flex flex-col">
                     <div className="flex items-center gap-2">
-                      <div className="text-3xl">{a.icon}</div>
+                      <div className="text-3xl w-10 h-10 flex items-center justify-center shrink-0">
+                        {a.icon.startsWith("http") ? <img src={a.icon} alt="" className="w-8 h-8 object-contain" /> : a.icon}
+                      </div>
                       <div>
                         <div className="font-semibold">{a.name}</div>
                         <div className="text-[10px] opacity-60">{a.preInstalled ? "✓ Pre-installed" : "⬇ Installable"} · Puei Team</div>
