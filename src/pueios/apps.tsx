@@ -3454,7 +3454,9 @@ function AppStoreApp({ installWebApp, openApp, openWebApp, systemVersion, addNat
                 return (
                   <div key={a.name} className="aero-glass-light rounded-lg p-3 flex flex-col">
                     <div className="flex items-center gap-2">
-                      <div className="text-3xl">{a.icon}</div>
+                      <div className="text-3xl w-10 h-10 flex items-center justify-center shrink-0">
+                        {a.icon.startsWith("http") ? <img src={a.icon} alt="" className="w-8 h-8 object-contain" /> : a.icon}
+                      </div>
                       <div>
                         <div className="font-semibold">{a.name}</div>
                         <div className="text-[10px] opacity-60">{a.preInstalled ? "✓ Pre-installed" : "⬇ Installable"} · Puei Team</div>
