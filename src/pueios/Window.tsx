@@ -235,6 +235,7 @@ export function appIcon(appId: AppId, size = 32, override?: string, iconUrl?: st
   const s = size;
   const map: Record<AppId, string> = {
     "puei-paint": "🎨",
+    "puei-board": "📌",
     "pueinet": "🌐",
     "puei-cloud-chat": "💬",
     "file-explorer": "🗂️",

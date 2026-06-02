@@ -118,6 +118,7 @@ export function googleFaviconFor(url: string, size = 64): string {
 
 export type AppId =
   | "puei-paint"
+  | "puei-board"
   | "pueinet"
   | "puei-cloud-chat"
   | "file-explorer"
@@ -288,6 +289,7 @@ export const defaultIcons: DesktopIcon[] = [
   { id: "i-fe", label: "Computer", appId: "file-explorer" },
   { id: "i-store", label: "App Store", appId: "app-store" },
   { id: "i-social", label: "PueiSocial", appId: "puei-social" },
+  { id: "i-board", label: "PueiBoard", appId: "puei-board" },
   { id: "i-paint", label: "Puei Paint 2", appId: "puei-paint" },
   { id: "i-net", label: "PueiWeb", appId: "pueinet" },
   { id: "i-msg", label: "PueiCloudChat", appId: "puei-cloud-chat" },

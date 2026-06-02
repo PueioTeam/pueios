@@ -48,6 +48,7 @@ export function AppRenderer(p: AppRendererProps) {
     case "notepad": return <NotepadApp fileId={p.fileId} onCreateShortcut={p.onCreateShortcut} currentUser={p.currentUser} />;
     case "calculator": return <CalculatorApp />;
     case "puei-paint": return <PaintApp fileId={p.fileId} onCreateShortcut={p.onCreateShortcut} currentUser={p.currentUser} />;
+    case "puei-board": return <PueiBoardApp user={p.currentUser} users={p.users} />;
     case "pueinet": return <PueiWebApp currentUser={p.currentUser} users={p.users} />;
     case "puei-cloud-chat": return <PueiCloudChatApp user={p.currentUser} users={p.users} setUsers={p.setUsers} />;
     case "file-explorer": return <FileExplorerApp openApp={p.openApp} icons={p.icons} openFolder={p.openFolder} currentUser={p.currentUser} users={p.users} />;
@@ -62,6 +63,30 @@ export function AppRenderer(p: AppRendererProps) {
 
 const SYS_FOLDER_PICTURES = "__pictures__";
 const SYS_FOLDER_DOWNLOADS = "__downloads__";
+const PUEI_BOARD_KEY = "pueios2-board-v1";
+
+type PueiBoardPost = {
+  id: string;
+  author: string;
+  authorAvatar: string;
+  caption: string;
+  imageSrc: string;
+  imageName: string;
+  at: number;
+};
+
+function loadPueiBoard(): PueiBoardPost[] {
+  if (typeof window === "undefined") return [];
+  try { return JSON.parse(localStorage.getItem(PUEI_BOARD_KEY) || "[]"); } catch { return []; }
+}
+
+function savePueiBoard(posts: PueiBoardPost[]) {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(PUEI_BOARD_KEY, JSON.stringify(posts));
+    window.dispatchEvent(new CustomEvent("pueios-board"));
+  } catch {}
+}
 
 function destinationFolderLabel(folder?: string): string {
   if (!folder || folder === "") return "Desktop";
@@ -2736,6 +2761,7 @@ function FileExplorerApp({ openApp, icons, openFolder, currentUser, users }: { o
   ];
   const apps: { name: string; appId: AppId; icon: string }[] = [
     { name: "Puei Paint 2", appId: "puei-paint", icon: "🎨" },
+    { name: "PueiBoard", appId: "puei-board", icon: "📌" },
     { name: "Notepad", appId: "notepad", icon: "📝" },
     { name: "Calculator", appId: "calculator", icon: "🧮" },
     { name: "Settings", appId: "settings", icon: "⚙️" },
@@ -3227,6 +3253,7 @@ function AppStoreApp({ installWebApp, openApp, systemVersion, addNativeIcon, uni
   const official: StoreApp[] = [
     { name: "PueiSocial",     icon: "📣", desc: "The official PueiOS social network.",          appId: "puei-social",    preInstalled: true },
     { name: "PueiCloudChat", icon: "💬", desc: "Chat by PueiNumber — cross-device, real-time.",           appId: "puei-cloud-chat", preInstalled: true },
+    { name: "PueiBoard",     icon: "📌", desc: "Pinterest-style boards where Pueis post Gallery images.", appId: "puei-board", preInstalled: true },
     { name: "PueiWeb",        icon: "🌐", desc: "System browser + AI search engine.",           appId: "pueinet",        preInstalled: true },
     { name: "Opera Browser",  icon: "🅾️", desc: "Install Opera as a fast browser shortcut from App Store.", webUrl: "https://www.opera.com", desktopLabel: "Opera Browser", preInstalled: false },
     { name: "Puei Paint 2",   icon: "🎨", desc: "Paint and save images as wallpapers.",         appId: "puei-paint",     preInstalled: true },
@@ -3376,6 +3403,159 @@ function InstallerPane({ installWebApp }: { installWebApp: (label: string, url: 
         <div className="text-[10px] opacity-60 leading-snug">
           Icons are fetched automatically from the website's favicon (Google service). Each app gets its own real logo.
         </div>
+      </div>
+    </div>
+  );
+}
+
+function PueiBoardApp({ user, users }: { user: string; users: User[] }) {
+  const [posts, setPosts] = useState<PueiBoardPost[]>(() => loadPueiBoard());
+  const [caption, setCaption] = useState("");
+  const [selectedImageId, setSelectedImageId] = useState<string>("");
+  const [mineOnly, setMineOnly] = useState(false);
+  const [galleryImages, setGalleryImages] = useState<SavedFile[]>(() =>
+    loadFiles().filter((f) => f.type === "image" && (!f.owner || f.owner === user))
+  );
+
+  useEffect(() => {
+    const refreshBoard = () => setPosts(loadPueiBoard());
+    const refreshFiles = () => setGalleryImages(loadFiles().filter((f) => f.type === "image" && (!f.owner || f.owner === user)));
+    window.addEventListener("pueios-board", refreshBoard);
+    window.addEventListener("storage", refreshBoard);
+    window.addEventListener("pueios-files-changed", refreshFiles);
+    return () => {
+      window.removeEventListener("pueios-board", refreshBoard);
+      window.removeEventListener("storage", refreshBoard);
+      window.removeEventListener("pueios-files-changed", refreshFiles);
+    };
+  }, [user]);
+
+  useEffect(() => {
+    if (!selectedImageId && galleryImages.length) setSelectedImageId(galleryImages[0].id);
+    if (selectedImageId && !galleryImages.some((f) => f.id === selectedImageId)) setSelectedImageId("");
+  }, [galleryImages, selectedImageId]);
+
+  const me = users.find((u) => u.name === user);
+  const selectedImage = galleryImages.find((f) => f.id === selectedImageId);
+  const visiblePosts = (mineOnly ? posts.filter((p) => p.author === user) : posts).sort((a, b) => b.at - a.at);
+
+  const post = () => {
+    if (!selectedImage) return;
+    const next: PueiBoardPost[] = [{
+      id: `board-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`,
+      author: user,
+      authorAvatar: me?.avatar || "🧑",
+      caption: caption.trim(),
+      imageSrc: selectedImage.content,
+      imageName: selectedImage.name,
+      at: Date.now(),
+    }, ...posts];
+    setPosts(next);
+    savePueiBoard(next);
+    setCaption("");
+    blip("notify");
+  };
+
+  const removePost = (postId: string) => {
+    const target = posts.find((p) => p.id === postId);
+    if (!target || target.author !== user) return;
+    if (!confirm("Delete this board post?")) return;
+    const next = posts.filter((p) => p.id !== postId);
+    setPosts(next);
+    savePueiBoard(next);
+    blip("click");
+  };
+
+  return (
+    <div className="flex h-full" style={{ background: "var(--glass)" }}>
+      <div className="w-72 border-r p-3 overflow-auto" style={{ background: "var(--glass)" }}>
+        <div className="font-bold text-lg mb-2">📌 PueiBoard</div>
+        <div className="text-xs opacity-70 mb-3">Post pictures from your Gallery to a shared inspiration board.</div>
+
+        <label className="text-xs opacity-70">Choose image from Gallery</label>
+        <select
+          className="w-full mt-1 px-2 py-1.5 rounded text-sm"
+          style={{ background: "white", color: "#111", border: "1px solid var(--border)" }}
+          value={selectedImageId}
+          onChange={(e) => setSelectedImageId(e.target.value)}
+        >
+          {!galleryImages.length ? <option value="">No images found in Gallery</option> : null}
+          {galleryImages.map((img) => (
+            <option key={img.id} value={img.id}>{img.name}</option>
+          ))}
+        </select>
+
+        {selectedImage && (
+          <img src={selectedImage.content} alt={selectedImage.name} className="w-full h-36 object-cover rounded mt-2 border border-white/30" />
+        )}
+
+        <label className="text-xs opacity-70 mt-3 block">Caption (optional)</label>
+        <textarea
+          value={caption}
+          onChange={(e) => setCaption(e.target.value)}
+          placeholder="Add a caption for your post..."
+          className="w-full mt-1 px-2 py-2 rounded text-sm outline-none resize-none"
+          style={{ background: "white", color: "#111", minHeight: 70, border: "1px solid var(--border)" }}
+        />
+
+        <button
+          className="aero-button rounded px-3 py-2 w-full mt-2 text-sm"
+          disabled={!selectedImage}
+          style={{ opacity: selectedImage ? 1 : 0.6 }}
+          onClick={post}
+        >
+          Post to PueiBoard
+        </button>
+
+        <div className="text-[10px] opacity-60 mt-2">
+          Tip: Save images in Paint or download them to Pictures, then post here.
+        </div>
+      </div>
+
+      <div className="flex-1 p-4 overflow-auto">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-xl font-semibold">Board Feed</h2>
+          <button
+            className="aero-button rounded px-3 py-1 text-xs"
+            style={mineOnly ? { background: "var(--gradient-aero)", color: "white" } : undefined}
+            onClick={() => setMineOnly((v) => !v)}
+          >
+            {mineOnly ? "Showing: My posts" : "Showing: Everyone"}
+          </button>
+        </div>
+
+        {visiblePosts.length === 0 ? (
+          <div className="h-full flex items-center justify-center text-sm opacity-60">No posts yet. Share your first image from Gallery.</div>
+        ) : (
+          <div className="columns-1 sm:columns-2 lg:columns-3 gap-3 [column-fill:_balance]">
+            {visiblePosts.map((p) => (
+              <div key={p.id} className="aero-glass-light rounded-xl mb-3 break-inside-avoid overflow-hidden">
+                <img src={p.imageSrc} alt={p.imageName} className="w-full object-cover" />
+                <div className="p-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="text-xs opacity-80 flex items-center gap-1.5 min-w-0">
+                      <span className="w-6 h-6 rounded-full overflow-hidden inline-flex items-center justify-center"
+                        style={{ background: "rgba(255,255,255,0.45)" }}>
+                        {p.authorAvatar.startsWith("data:")
+                          ? <img src={p.authorAvatar} alt="" className="w-full h-full object-cover" />
+                          : p.authorAvatar}
+                      </span>
+                      <span className="truncate">{p.author}</span>
+                    </div>
+                    <div className="text-[10px] opacity-60">{new Date(p.at).toLocaleDateString()}</div>
+                  </div>
+                  {p.caption && <div className="text-sm mt-1 whitespace-pre-wrap">{p.caption}</div>}
+                  <div className="text-[10px] opacity-55 mt-1 truncate">Source: {p.imageName}</div>
+                  {p.author === user && (
+                    <button className="aero-button rounded px-2 py-1 text-[10px] mt-2" style={{ color: "#fecaca" }} onClick={() => removePost(p.id)}>
+                      Delete post
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

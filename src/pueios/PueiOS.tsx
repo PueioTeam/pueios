@@ -17,6 +17,7 @@ type Phase = "install" | "boot" | "login" | "desktop" | "shutdown" | "recovery" 
 
 const APP_TITLES: Record<AppId, string> = {
   "puei-paint": "Puei Paint 2",
+  "puei-board": "PueiBoard",
   "pueinet": "PueiWeb",
   "puei-cloud-chat": "PueiCloudChat",
   "file-explorer": "Computer",
@@ -36,6 +37,7 @@ const APP_SIZES: Partial<Record<AppId, { w: number; h: number }>> = {
   "notepad": { w: 520, h: 420 },
   "about": { w: 480, h: 440 },
   "settings": { w: 820, h: 560 },
+  "puei-board": { w: 860, h: 620 },
   "puei-cloud-chat": { w: 720, h: 500 },
   "pueinet": { w: 820, h: 560 },
   "puei-paint": { w: 820, h: 560 },
