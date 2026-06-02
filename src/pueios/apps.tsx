@@ -49,7 +49,7 @@ export function AppRenderer(p: AppRendererProps) {
     case "calculator": return <CalculatorApp />;
     case "puei-paint": return <PaintApp fileId={p.fileId} onCreateShortcut={p.onCreateShortcut} currentUser={p.currentUser} />;
     case "puei-board": return <PueiBoardApp user={p.currentUser} users={p.users} />;
-    case "pueinet": return <PueiWebApp currentUser={p.currentUser} users={p.users} />;
+    case "pueinet": return <PueiWebApp currentUser={p.currentUser} users={p.users} icons={p.icons} />;
     case "puei-cloud-chat": return <PueiCloudChatApp user={p.currentUser} users={p.users} setUsers={p.setUsers} />;
     case "file-explorer": return <FileExplorerApp openApp={p.openApp} icons={p.icons} openFolder={p.openFolder} currentUser={p.currentUser} users={p.users} />;
     case "app-store": return <AppStoreApp installWebApp={p.installWebApp} openApp={p.openApp} systemVersion={p.systemVersion} addNativeIcon={p.addNativeIcon} uninstallApp={p.uninstallApp} uninstallWebApp={p.uninstallWebApp} icons={p.icons} />;
@@ -1374,7 +1374,7 @@ function PueiCopilotPage() {
 }
 
 // ---------- PueiWeb ----------
-function PueiWebApp({ currentUser, users }: { currentUser: string; users: User[] }) {
+function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users: User[]; icons: DesktopIcon[] }) {
   const [urlBar, setUrlBar] = useState("puei://home");
   const [navUrl, setNavUrl] = useState("puei://home");
   const [tabs, setTabs] = useState([{ id: 1, title: "Home", url: "puei://home" }]);
@@ -1382,6 +1382,7 @@ function PueiWebApp({ currentUser, users }: { currentUser: string; users: User[]
   const updatesDoneKey = `pueios2plus-updates-done-${currentUser}`;
   const [updatesProgress, setUpdatesProgress] = useState(0);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [updatesCancelled, setUpdatesCancelled] = useState(false);
   const [updatesDone, setUpdatesDone] = useState(() => {
     try { return localStorage.getItem(updatesDoneKey) === "1"; } catch { return false; }
   });
@@ -1416,13 +1417,15 @@ function PueiWebApp({ currentUser, users }: { currentUser: string; users: User[]
   const isoFile = loadFiles().find((f) =>
     f.type === "text" &&
     (!f.owner || f.owner === currentUser) &&
+    f.folder === SYS_FOLDER_DOWNLOADS &&
     ["pueios2-plus.iso", "pueios2plus.iso"].includes(f.name.trim().toLowerCase())
   );
+  const updaterInstalled = icons.some((i) => i.appId === "web-app" && i.webUrl === "puei://updates" && i.label.trim().toLowerCase() === "puei updater");
 
   const downloadPlusIso = () => {
     if (isoFile) {
       blip("click");
-      alert("Pueios2 Plus ISO is already downloaded.");
+      alert("Pueios2 Plus ISO is already downloaded in Files.");
       return;
     }
     upsertFile({
@@ -1441,13 +1444,28 @@ function PueiWebApp({ currentUser, users }: { currentUser: string; users: User[]
   const installUpdatesFromIso = () => {
     if (!isoFile) {
       blip("error");
-      alert("Download pueios2-plus.iso first.");
+      alert("Download pueios2-plus.iso to Files/Downloads first.");
+      return;
+    }
+    if (!updaterInstalled) {
+      blip("error");
+      alert("Install Puei Updater from App Store first.");
       return;
     }
     if (!confirm("Install Pueios2 Plus updates from ISO now?")) return;
+    setUpdatesCancelled(false);
     setUpdatesProgress(0);
     setIsUpdating(true);
     blip("start");
+  };
+
+  const cancelUpdatesFromIso = () => {
+    if (!isUpdating) return;
+    if (!confirm("Stop ISO installation now?")) return;
+    setIsUpdating(false);
+    setUpdatesProgress(0);
+    setUpdatesCancelled(true);
+    blip("click");
   };
 
   const deleteIsoAfterUpdate = () => {
@@ -1602,16 +1620,21 @@ function PueiWebApp({ currentUser, users }: { currentUser: string; users: User[]
     "puei://updates": (
       <div className="p-6 space-y-4">
         <h2 className="text-2xl font-bold">⬆️ Puei Updates</h2>
-        <p className="text-sm opacity-75">To install Pueios2 Plus updates, you must install the official ISO first.</p>
+        <p className="text-sm opacity-75">Update flow: 1) Download ISO into Files, 2) Install Puei Updater from App Store, 3) Run the update.</p>
 
         <div className="aero-glass-light rounded-xl p-4 space-y-3 max-w-xl">
           <div className="text-sm">
-            ISO status: {isoFile ? <span className="font-semibold text-green-500">Installed ({isoFile.name})</span> : <span className="font-semibold text-amber-500">Not installed</span>}
+            ISO status: {isoFile ? <span className="font-semibold text-green-500">Downloaded ({isoFile.name})</span> : <span className="font-semibold text-amber-500">Not downloaded</span>}
+          </div>
+          <div className="text-sm">
+            Puei Updater status: {updaterInstalled ? <span className="font-semibold text-green-500">Installed</span> : <span className="font-semibold text-amber-500">Not installed from App Store</span>}
           </div>
           <div className="flex gap-2 flex-wrap">
-            <button className="aero-button rounded px-3 py-1.5 text-xs" onClick={downloadPlusIso}>📀 Install pueios2-plus.iso</button>
-            <button className="aero-button rounded px-3 py-1.5 text-xs" disabled={!isoFile || isUpdating}
-              style={{ opacity: (!isoFile || isUpdating) ? 0.5 : 1 }} onClick={installUpdatesFromIso}>⚙️ Install updates</button>
+            <button className="aero-button rounded px-3 py-1.5 text-xs" onClick={downloadPlusIso}>⬇ Download pueios2-plus.iso to Files</button>
+            <button className="aero-button rounded px-3 py-1.5 text-xs" disabled={!isoFile || !updaterInstalled || isUpdating}
+              style={{ opacity: (!isoFile || !updaterInstalled || isUpdating) ? 0.5 : 1 }} onClick={installUpdatesFromIso}>⚙️ Install updates</button>
+            <button className="aero-button rounded px-3 py-1.5 text-xs" disabled={!isUpdating}
+              style={{ opacity: isUpdating ? 1 : 0.5, color: "#fca5a5" }} onClick={cancelUpdatesFromIso}>⏹ Stop installation</button>
             <button className="aero-button rounded px-3 py-1.5 text-xs" disabled={!isoFile}
               style={{ opacity: isoFile ? 1 : 0.5 }} onClick={deleteIsoAfterUpdate}>🗑️ Delete ISO</button>
           </div>
@@ -1623,6 +1646,12 @@ function PueiWebApp({ currentUser, users }: { currentUser: string; users: User[]
                 <div className="loading-bar-inner h-full" style={{ width: `${updatesProgress}%`, transition: "width 0.6s" }} />
               </div>
               <div className="text-[10px] opacity-60 mt-1">{Math.floor(updatesProgress)}%</div>
+            </div>
+          )}
+
+          {updatesCancelled && !isUpdating && (
+            <div className="text-xs rounded px-2 py-2" style={{ background: "rgba(250,204,21,0.2)" }}>
+              ⏹ Installation stopped. You can restart when ready.
             </div>
           )}
 
@@ -3396,8 +3425,11 @@ function PueiDrivePane({ files, icons, currentUser, users, openApp, onDelete }: 
 // ---------- App Store ----------
 function AppStoreApp({ installWebApp, openApp, systemVersion, addNativeIcon, uninstallApp, uninstallWebApp, icons }: { installWebApp: (label: string, url: string, iconUrl?: string) => void; openApp: (id: AppId) => void; systemVersion: SystemVersion; addNativeIcon: (appId: AppId, label: string, icon: string) => void; uninstallApp: (appId: AppId) => void; uninstallWebApp: (url: string) => void; icons: DesktopIcon[] }) {
   const [tab, setTab] = useState<"official" | "installer">("official");
+  const [installing, setInstalling] = useState<Record<string, number>>({});
+  const installTimers = useRef<Record<string, number>>({});
   type StoreApp = { name: string; icon: string; desc: string; appId?: AppId; preInstalled?: boolean; webUrl?: string; desktopLabel?: string };
   const official: StoreApp[] = [
+    { name: "Puei Updater",   icon: "⬆️", desc: "Required for installing ISO system updates.",           webUrl: "puei://updates", desktopLabel: "Puei Updater", preInstalled: false },
     { name: "PueiSocial",     icon: "📣", desc: "The official PueiOS social network.",          appId: "puei-social",    preInstalled: true },
     { name: "PueiCloudChat", icon: "💬", desc: "Chat by PueiNumber — cross-device, real-time.",           appId: "puei-cloud-chat", preInstalled: true },
     { name: "PueiBoard",     icon: "📌", desc: "Pinterest-style boards where Pueis post Gallery images.", appId: "puei-board", preInstalled: true },
@@ -3415,6 +3447,34 @@ function AppStoreApp({ installWebApp, openApp, systemVersion, addNativeIcon, uni
     if (a.webUrl) return icons.some((i) => i.appId === "web-app" && i.webUrl === a.webUrl);
     if (!a.appId) return false;
     return icons.some((i) => i.appId === a.appId && !i.fileId && !i.webUrl);
+  };
+  const appInstallKey = (a: StoreApp) => a.webUrl ? `web:${a.webUrl}` : `app:${a.appId || a.name}`;
+  useEffect(() => {
+    return () => {
+      Object.values(installTimers.current).forEach((id) => window.clearInterval(id));
+      installTimers.current = {};
+    };
+  }, []);
+
+  const beginInstall = (key: string, onDone: () => void) => {
+    if (installTimers.current[key]) return;
+    const started = Date.now();
+    const duration = 10000 + Math.floor(Math.random() * 5000);
+    setInstalling((prev) => ({ ...prev, [key]: 0 }));
+    const timer = window.setInterval(() => {
+      const pct = Math.min(100, ((Date.now() - started) / duration) * 100);
+      setInstalling((prev) => prev[key] === undefined ? prev : { ...prev, [key]: pct });
+      if (pct >= 100) {
+        window.clearInterval(timer);
+        delete installTimers.current[key];
+        setInstalling((prev) => {
+          const { [key]: _, ...rest } = prev;
+          return rest;
+        });
+        onDone();
+      }
+    }, 250);
+    installTimers.current[key] = timer;
   };
   return (
     <div className="flex h-full">
@@ -3437,6 +3497,9 @@ function AppStoreApp({ installWebApp, openApp, systemVersion, addNativeIcon, uni
             <div className="grid grid-cols-3 gap-3">
               {official.map((a) => {
                 const onDesktop = isOnDesktop(a);
+                const installKey = appInstallKey(a);
+                const installPct = installing[installKey];
+                const isInstalling = installPct !== undefined;
                 return (
                   <div key={a.name} className="aero-glass-light rounded-lg p-3 flex flex-col">
                     <div className="flex items-center gap-2">
@@ -3454,22 +3517,35 @@ function AppStoreApp({ installWebApp, openApp, systemVersion, addNativeIcon, uni
                         <button
                           className="aero-button rounded px-2 py-1 text-xs w-full"
                           style={{ background: onDesktop ? "rgba(80,200,120,0.25)" : undefined, color: onDesktop ? "#4ade80" : undefined }}
+                          disabled={isInstalling || onDesktop}
+                          title={isInstalling ? "Installation in progress" : undefined}
                           onClick={() => {
-                            if (a.webUrl) {
-                              installWebApp(a.desktopLabel || a.name, a.webUrl, googleFaviconFor(a.webUrl, 64));
-                            } else if (a.appId) {
-                              addNativeIcon(a.appId, a.name, a.icon);
-                            }
-                            blip("notify");
+                            if (isInstalling || onDesktop) return;
+                            beginInstall(installKey, () => {
+                              if (a.webUrl) {
+                                installWebApp(a.desktopLabel || a.name, a.webUrl, a.webUrl.startsWith("puei://") ? undefined : googleFaviconFor(a.webUrl, 64));
+                              } else if (a.appId) {
+                                addNativeIcon(a.appId, a.name, a.icon);
+                              }
+                              blip("notify");
+                            });
                           }}>
-                          {onDesktop ? "✓ Installed" : "⬇ Install"}
+                          {isInstalling ? `Installing ${Math.floor(installPct)}%` : onDesktop ? "✓ Installed" : "⬇ Install"}
                         </button>
                       ) : (
                         <button
                           className="aero-button rounded px-2 py-1 text-xs w-full"
                           style={{ background: onDesktop ? "rgba(80,200,120,0.25)" : undefined, color: onDesktop ? "#4ade80" : undefined }}
-                          onClick={() => { if (a.appId) { addNativeIcon(a.appId, a.name, a.icon); blip("notify"); } }}>
-                          {onDesktop ? "✓ On desktop" : "+ Add to desktop"}
+                          disabled={isInstalling || onDesktop}
+                          title={isInstalling ? "Installation in progress" : undefined}
+                          onClick={() => {
+                            if (isInstalling || onDesktop || !a.appId) return;
+                            beginInstall(installKey, () => {
+                              addNativeIcon(a.appId!, a.name, a.icon);
+                              blip("notify");
+                            });
+                          }}>
+                          {isInstalling ? `Installing ${Math.floor(installPct)}%` : onDesktop ? "✓ On desktop" : "+ Add to desktop"}
                         </button>
                       )}
                       {onDesktop && (
@@ -3485,6 +3561,14 @@ function AppStoreApp({ installWebApp, openApp, systemVersion, addNativeIcon, uni
                         </button>
                       )}
                     </div>
+                    {isInstalling && (
+                      <div className="mt-2">
+                        <div className="w-full h-1.5 rounded-full bg-cyan-900/35 overflow-hidden">
+                          <div className="loading-bar-inner h-full" style={{ width: `${installPct}%`, transition: "width 0.25s linear" }} />
+                        </div>
+                        <div className="text-[10px] opacity-60 mt-1">Estimated 10–15 seconds</div>
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -3501,7 +3585,35 @@ function InstallerPane({ installWebApp }: { installWebApp: (label: string, url: 
   const [url, setUrl] = useState("https://yourapp.lovable.app");
   const [name, setName] = useState("");
   const [msg, setMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
+  const [installing, setInstalling] = useState(false);
+  const [installProgress, setInstallProgress] = useState(0);
+  const installTimer = useRef<number | null>(null);
+  useEffect(() => {
+    return () => {
+      if (installTimer.current) window.clearInterval(installTimer.current);
+    };
+  }, []);
+
+  const startInstallerInstall = (onDone: () => void) => {
+    if (installTimer.current) return;
+    const started = Date.now();
+    const duration = 10000 + Math.floor(Math.random() * 5000);
+    setInstalling(true);
+    setInstallProgress(0);
+    installTimer.current = window.setInterval(() => {
+      const pct = Math.min(100, ((Date.now() - started) / duration) * 100);
+      setInstallProgress(pct);
+      if (pct >= 100) {
+        if (installTimer.current) window.clearInterval(installTimer.current);
+        installTimer.current = null;
+        setInstalling(false);
+        onDone();
+      }
+    }, 250);
+  };
+
   const install = () => {
+    if (installing) return;
     const res = classifyTrustedUrl(url);
     if (!res.ok || !res.url || !res.kind) {
       blip("error");
@@ -3513,10 +3625,13 @@ function InstallerPane({ installWebApp }: { installWebApp: (label: string, url: 
       try { label = new URL(res.url).hostname.split(".")[0]; } catch { label = "Web App"; }
     }
     const icon = googleFaviconFor(res.url, 64);
-    installWebApp(label, res.url, icon);
-    setMsg({ kind: "ok", text: `Installed "${label}" (${res.kind === "lovable" ? "Lovable" : "Base44"} app) on your desktop ✓` });
-    blip("notify");
-    setUrl(""); setName("");
+    setMsg({ kind: "ok", text: `Installing "${label}"... please wait (10-15 seconds).` });
+    startInstallerInstall(() => {
+      installWebApp(label, res.url!, icon);
+      setMsg({ kind: "ok", text: `Installed "${label}" (${res.kind === "lovable" ? "Lovable" : "Base44"} app) on your desktop ✓` });
+      blip("notify");
+      setUrl(""); setName("");
+    });
   };
   return (
     <div>
@@ -3540,7 +3655,18 @@ function InstallerPane({ installWebApp }: { installWebApp: (label: string, url: 
             placeholder="Auto from domain"
             className="w-full px-3 py-2 rounded text-sm outline-none" style={{ background: "white", color: "#111" }} />
         </div>
-        <button className="aero-button rounded px-4 py-2 w-full" onClick={install}>Install on desktop</button>
+        <button className="aero-button rounded px-4 py-2 w-full" onClick={install} disabled={installing}
+          style={{ opacity: installing ? 0.7 : 1 }}>
+          {installing ? `Installing ${Math.floor(installProgress)}%` : "Install on desktop"}
+        </button>
+        {installing && (
+          <div>
+            <div className="w-full h-2 rounded-full bg-cyan-900/35 overflow-hidden">
+              <div className="loading-bar-inner h-full" style={{ width: `${installProgress}%`, transition: "width 0.25s linear" }} />
+            </div>
+            <div className="text-[10px] opacity-60 mt-1">Estimated 10–15 seconds</div>
+          </div>
+        )}
         {msg && (
           <div className="text-xs rounded px-2 py-1.5"
             style={{ background: msg.kind === "ok" ? "rgba(80,200,160,0.2)" : "rgba(255,80,80,0.18)", color: msg.kind === "ok" ? undefined : "#a00" }}>
