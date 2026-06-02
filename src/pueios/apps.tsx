@@ -2190,7 +2190,7 @@ function PueiMailApp({ currentUser, users }: { currentUser: string; users: User[
                 <div className="text-xs truncate mt-1">{a.name}</div>
                 <div className="text-[10px] opacity-60 truncate">{a.from}</div>
                 <button className="aero-button rounded w-full mt-1 text-[10px] py-0.5"
-                  onClick={() => { downloadAttachment(a); recordDownload(currentUser, { id: `dl-${Date.now()}`, name: a.name, kind: a.kind, size: a.size, at: Date.now(), mailId: a.mailId }); }}>
+                  onClick={() => { downloadAttachment(a, currentUser); recordDownload(currentUser, { id: `dl-${Date.now()}`, name: a.name, kind: a.kind, size: a.size, at: Date.now(), destination: destinationFolderLabel(SYS_FOLDER_DOWNLOADS) }); }}>
                   Download
                 </button>
               </div>
