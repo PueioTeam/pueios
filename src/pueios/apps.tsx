@@ -2170,7 +2170,7 @@ function PueiMailApp({ currentUser, users }: { currentUser: string; users: User[
                           onClick={() => window.open(a.dataUrl, "_blank")}>🔍 Open</button>
                       )}
                       <button className="aero-button rounded px-2 py-1 text-xs"
-                        onClick={() => { downloadAttachment(a); recordDownload(currentUser, { id: `dl-${Date.now()}`, name: a.name, kind: a.kind, size: a.size, at: Date.now(), mailId: selected.id }); }}>
+                        onClick={() => { downloadAttachment(a, currentUser); recordDownload(currentUser, { id: `dl-${Date.now()}`, name: a.name, kind: a.kind, size: a.size, at: Date.now(), destination: destinationFolderLabel(SYS_FOLDER_DOWNLOADS) }); }}>
                         ⬇️ Download
                       </button>
                     </div>
