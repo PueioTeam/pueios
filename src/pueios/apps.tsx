@@ -3447,12 +3447,12 @@ function AppStoreApp({ installWebApp, openApp, systemVersion, addNativeIcon, uni
                       </div>
                     </div>
                     <div className="text-xs opacity-70 mt-1 flex-1">{a.desc}</div>
-                    <div className="flex gap-1 mt-2">
-                      <button className="aero-button rounded px-2 py-1 text-xs flex-1"
+                    <div className="grid grid-cols-2 gap-1 mt-2">
+                      <button className="aero-button rounded px-2 py-1 text-xs w-full"
                         onClick={() => openApp(a.appId ?? "pueinet")}>Open</button>
                       {!a.preInstalled ? (
                         <button
-                          className="aero-button rounded px-2 py-1 text-xs flex-1"
+                          className="aero-button rounded px-2 py-1 text-xs w-full"
                           style={{ background: onDesktop ? "rgba(80,200,120,0.25)" : undefined, color: onDesktop ? "#4ade80" : undefined }}
                           onClick={() => {
                             if (a.webUrl) {
@@ -3466,7 +3466,7 @@ function AppStoreApp({ installWebApp, openApp, systemVersion, addNativeIcon, uni
                         </button>
                       ) : (
                         <button
-                          className="aero-button rounded px-2 py-1 text-xs flex-1"
+                          className="aero-button rounded px-2 py-1 text-xs w-full"
                           style={{ background: onDesktop ? "rgba(80,200,120,0.25)" : undefined, color: onDesktop ? "#4ade80" : undefined }}
                           onClick={() => { if (a.appId) { addNativeIcon(a.appId, a.name, a.icon); blip("notify"); } }}>
                           {onDesktop ? "✓ On desktop" : "+ Add to desktop"}
@@ -3474,7 +3474,7 @@ function AppStoreApp({ installWebApp, openApp, systemVersion, addNativeIcon, uni
                       )}
                       {onDesktop && (
                         <button
-                          className="aero-button rounded px-2 py-1 text-xs"
+                          className="aero-button rounded px-2 py-1 text-xs col-span-2 w-full"
                           style={{ color: "#fca5a5" }}
                           onClick={() => {
                             if (a.webUrl) uninstallWebApp(a.webUrl);
