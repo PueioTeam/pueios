@@ -66,6 +66,7 @@ export function PueiOS() {
   const [pwOption, setPwOption] = useState<"have" | "none" | "create-now">("have");
   const [upgradeTarget, setUpgradeTarget] = useState<SystemVersion>("PueiOS 2+");
   const [upgradeProgress, setUpgradeProgress] = useState(0);
+  const [upgradeStartedAt, setUpgradeStartedAt] = useState<number | null>(null);
   const [currentUser, setCurrentUser] = useState<string>("");
   const [pwInput, setPwInput] = useState("");
   const [pwError, setPwError] = useState("");
@@ -88,6 +89,15 @@ export function PueiOS() {
   const [cursorPos, setCursorPos] = useState({ x: 0, y: 0 });
   const [locked, setLocked] = useState(false);
   const pendingUpdateNotif = useRef(false);
+  const upgradeFinishQueued = useRef(false);
+    const startSystemUpgrade = (target: SystemVersion) => {
+      setUpgradeTarget(target);
+      setUpgradeProgress(0);
+      setUpgradeStartedAt(Date.now());
+      upgradeFinishQueued.current = false;
+      setPhase("upgrade");
+    };
+
   const dragRef = useRef<{ id: string; startX: number; startY: number; origLeft: number; origTop: number; el: HTMLElement } | null>(null);
   const wasDragged = useRef(false);
   const DESKTOP_OX = 12, DESKTOP_OY = 12;
@@ -351,7 +361,7 @@ export function PueiOS() {
     if (phase === "desktop" && !welcomedRef.current) {
       welcomedRef.current = true;
       setTimeout(() => {
-        pushNotif("Welcome to PueiOS 2", `Signed in as ${currentUser}. Try right-clicking the desktop or the App Store!`);
+        pushNotif(`Welcome to ${systemVersion}`, `Signed in as ${currentUser}. Try right-clicking the desktop or the App Store!`);
         setMascotSpeak("Hi! I'm Puei. Click me for quick tips ✦");
         setTimeout(() => setMascotSpeak(null), 5000);
       }, 800);
@@ -360,7 +370,52 @@ export function PueiOS() {
       pendingUpdateNotif.current = false;
       pushNotif("New updates installed", `Congratulations! ${upgradeTarget} is now installed and ready.`, "update");
     }
-  }, [phase, currentUser]);
+  }, [phase, currentUser, systemVersion, upgradeTarget]);
+
+  useEffect(() => {
+    if (phase !== "upgrade") return;
+    const started = upgradeStartedAt ?? Date.now();
+    if (upgradeStartedAt === null) setUpgradeStartedAt(started);
+    const durationMs = upgradeTarget === "PueiOS 2+" ? 95000 : 125000;
+    const timer = window.setInterval(() => {
+      const elapsed = Date.now() - started;
+      const progress01 = Math.min(1, elapsed / durationMs);
+      const eased = Math.pow(progress01, 0.88);
+      const next = Math.min(100, eased * 100);
+      setUpgradeProgress((prev) => Math.max(prev, next));
+    }, 250);
+    return () => clearInterval(timer);
+  }, [phase, upgradeStartedAt, upgradeTarget]);
+
+  useEffect(() => {
+    if (phase !== "upgrade" || upgradeProgress < 100 || upgradeFinishQueued.current) return;
+    upgradeFinishQueued.current = true;
+    const done = window.setTimeout(() => {
+      setSystemVersion(upgradeTarget);
+      pendingUpdateNotif.current = true;
+      if (upgradeTarget === "PueiOS 2+") {
+        setThemeState((prev) => ({
+          ...prev,
+          accentH: 232,
+          transparency: true,
+          fullWindowTransparency: true,
+          win7Aero: true,
+          glassOpacity: 48,
+          glassSaturation: 195,
+          aeroGlow: 68,
+        }));
+        setIcons((cur) => cur.some((i) => i.appId === "puei-board" && !i.fileId && !i.webUrl)
+          ? cur
+          : [...cur, { id: "native-puei-board", label: "PueiBoard", appId: "puei-board", iconEmoji: "📌" }]);
+      }
+      setPhase("boot");
+      setBootProgress(0);
+      setUpgradeProgress(0);
+      setUpgradeStartedAt(null);
+      blip("notify");
+    }, 2600);
+    return () => clearTimeout(done);
+  }, [phase, upgradeProgress, upgradeTarget]);
 
   // Cloud sync: pull all files for this user on sign-in (cross-device/browser)
   useEffect(() => {
@@ -839,7 +894,7 @@ export function PueiOS() {
       <div className="fixed inset-0 flex flex-col items-center justify-center"
         style={{ background: "radial-gradient(circle at 50% 40%, #0a1a2a, #000)" }}>
         <div className="boot-logo"><PueiLogoSvg size={120} glow /></div>
-        <div className="text-3xl font-light text-white mt-4 tracking-widest">PueiOS 2</div>
+        <div className="text-3xl font-light text-white mt-4 tracking-widest">{systemVersion}</div>
         <div className="text-xs text-cyan-300/60 mt-1">Ultimate Edition · Build 2020.1138</div>
         <div className="mt-10 w-80 h-1.5 rounded-full bg-cyan-900/50 overflow-hidden">
           <div className="loading-bar-inner h-full" style={{ width: `${bootProgress}%`, transition: "width 0.12s" }} />
@@ -882,17 +937,15 @@ export function PueiOS() {
   }
 
   if (phase === "upgrade") {
-    if (upgradeProgress < 100) {
-      setTimeout(() => setUpgradeProgress((p) => Math.min(100, p + 0.6 + Math.random() * 1.2)), 220);
-    } else {
-      setTimeout(() => {
-        setSystemVersion(upgradeTarget);
-        pendingUpdateNotif.current = true;
-        setPhase("boot"); setBootProgress(0); setUpgradeProgress(0);
-        blip("notify");
-      }, 1500);
-    }
-    const stages = ["Preparing upgrade…", "Backing up files & settings…", "Migrating accounts & PueiNumbers…", "Installing new system files…", "Preserving conversations & media…", "Finalizing upgrade…"];
+    const stages = [
+      "Checking compatibility…",
+      "Preparing upgrade files…",
+      "Backing up apps, files, and settings…",
+      "Installing new system components…",
+      "Migrating user accounts and Pueio Numbers…",
+      "Applying feature updates and drivers…",
+      "Finalizing and cleaning up…",
+    ];
     const stageIdx = Math.min(stages.length - 1, Math.floor(upgradeProgress / (100 / stages.length)));
     return (
       <div className="fixed inset-0 flex items-center justify-center text-white"
@@ -900,13 +953,13 @@ export function PueiOS() {
         <div className="text-center w-[28rem]">
           <div className="boot-logo inline-block mb-3"><PueiLogoSvg size={80} glow /></div>
           <h2 className="text-2xl font-light mb-1">Upgrading to {upgradeTarget}</h2>
-          <p className="text-xs opacity-70 mb-4">Your apps, files, settings, conversations and Pueio Number are preserved.</p>
+          <p className="text-xs opacity-70 mb-4">Your apps, files, settings, conversations and Pueio Number are preserved. This can take several minutes.</p>
           <div className="text-sm opacity-80 mb-2">{stages[stageIdx]}</div>
           <div className="w-full h-2 rounded-full bg-cyan-900/50 overflow-hidden">
             <div className="loading-bar-inner h-full" style={{ width: `${upgradeProgress}%`, transition: "width 0.2s" }} />
           </div>
           <div className="text-[10px] opacity-60 mt-2">{Math.floor(upgradeProgress)}% · {systemVersion} → {upgradeTarget}</div>
-          <div className="text-[10px] opacity-40 mt-6">Do not turn off your device.</div>
+          <div className="text-[10px] opacity-40 mt-6">Do not turn off your device. System may restart automatically.</div>
         </div>
       </div>
     );
@@ -971,7 +1024,7 @@ export function PueiOS() {
       <div className="fixed inset-0 flex flex-col items-center justify-center"
         style={{ background: "linear-gradient(135deg, oklch(0.3 0.1 220), oklch(0.15 0.08 250))" }}>
         <div className="absolute top-6 left-6 text-white/70 text-sm flex items-center gap-2">
-          <PueiLogoSvg size={28} /> {locked ? "Locked" : "Welcome to PueiOS 2"}
+          <PueiLogoSvg size={28} /> {locked ? "Locked" : `Welcome to ${systemVersion}`}
         </div>
         <div className="absolute top-6 right-6 text-white/70 text-sm">{now.toLocaleString()}</div>
 
@@ -1223,7 +1276,7 @@ export function PueiOS() {
               currentUser={currentUser} fileId={w.fileId} users={users}
               webUrl={w.webUrl} folderIconId={w.folderIconId} icons={icons}
               systemVersion={systemVersion}
-              startUpgrade={(target) => { setUpgradeTarget(target); setUpgradeProgress(0); setPhase("upgrade"); }}
+              startUpgrade={(target) => startSystemUpgrade(target)}
               uninstallApp={(appId) => setIcons((cur) => cur.filter((i) => !(i.appId === appId && !i.fileId && !i.webUrl)))}
               uninstallWebApp={(url) => setIcons((cur) => cur.filter((i) => !(i.appId === "web-app" && i.webUrl === url)))}
               addNativeIcon={(appId, label, icon) => setIcons((cur) => cur.some((i) => i.appId === appId && !i.fileId && !i.webUrl) ? cur : [...cur, { id: `native-${appId}`, label, appId, iconEmoji: icon }])}
@@ -1320,10 +1373,8 @@ export function PueiOS() {
             {hasPueiOSPlusUpgrade && (
               <button onClick={() => {
                 if (!confirm("Start upgrade to PueiOS 2+ now?")) return;
-                setUpgradeTarget("PueiOS 2+");
-                setUpgradeProgress(0);
                 setStartOpen(false);
-                setPhase("upgrade");
+                startSystemUpgrade("PueiOS 2+");
               }}
                 className="flex items-center gap-2 px-3 py-2 rounded text-sm text-left"
                 style={{ background: "linear-gradient(135deg, rgba(90,160,255,0.22), rgba(30,90,220,0.30))", border: "1px solid rgba(60,120,240,0.35)" }}>
@@ -1387,10 +1438,8 @@ export function PueiOS() {
             onClick={(e) => {
               e.stopPropagation();
               if (!confirm("Start upgrade to PueiOS 2+ now?")) return;
-              setUpgradeTarget("PueiOS 2+");
-              setUpgradeProgress(0);
               setStartOpen(false);
-              setPhase("upgrade");
+              startSystemUpgrade("PueiOS 2+");
             }}>
             <span>⬆️</span>
             <span className="font-semibold">PueiOS 2+</span>
