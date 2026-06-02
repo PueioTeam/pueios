@@ -3258,7 +3258,7 @@ function AppStoreApp({ installWebApp, openApp, systemVersion, addNativeIcon, uni
     { name: "PueiCloudChat", icon: "💬", desc: "Chat by PueiNumber — cross-device, real-time.",           appId: "puei-cloud-chat", preInstalled: true },
     { name: "PueiBoard",     icon: "📌", desc: "Pinterest-style boards where Pueis post Gallery images.", appId: "puei-board", preInstalled: true },
     { name: "PueiWeb",        icon: "🌐", desc: "System browser + AI search engine.",           appId: "pueinet",        preInstalled: true },
-    { name: "Opera Browser",  icon: "🅾️", desc: "Install Opera as a fast browser shortcut from App Store.", webUrl: "https://www.opera.com", desktopLabel: "Opera Browser", preInstalled: false },
+    { name: "Chromium",       icon: "🌐", desc: "Install Chromium as a fast browser shortcut from App Store.", webUrl: "https://www.chromium.org", desktopLabel: "Chromium Browser", preInstalled: false },
     { name: "Puei Paint 2",   icon: "🎨", desc: "Paint and save images as wallpapers.",         appId: "puei-paint",     preInstalled: true },
     { name: "Settings",       icon: "⚙️", desc: "Personalize, dark mode, accessibility.",       appId: "settings",       preInstalled: true },
     { name: "Computer",       icon: "🗂️", desc: "File system explorer.",                        appId: "file-explorer",  preInstalled: true },
