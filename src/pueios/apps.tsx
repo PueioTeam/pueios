@@ -3218,6 +3218,7 @@ function PueiDrivePane({ files, icons, currentUser, users, openApp, onDelete }: 
   const [driveSection, setDriveSection] = useState<DriveSection>("all");
   const myFiles = files.filter(f => !f.owner || f.owner === currentUser);
   const customFolders = icons.filter((i) => i.appId === "folder");
+  const customFolderIds = new Set(customFolders.map((f) => f.id));
   const totalSize = myFiles.reduce((acc, f) => acc + f.content.length, 0);
   const usedKB = (totalSize / 1024).toFixed(1);
   const deviceUsers = users;
@@ -3255,9 +3256,9 @@ function PueiDrivePane({ files, icons, currentUser, users, openApp, onDelete }: 
   const shownFiles = (() => {
     switch (driveSection) {
       case "custom-folders":
-        return myFiles.filter((f) => !!f.folder && customFolders.some((folder) => folder.id === f.folder));
+        return [];
       case "media":
-        return myFiles.filter((f) => f.type === "image");
+        return myFiles.filter((f) => f.type === "image" && (!f.folder || f.folder === SYS_FOLDER_PICTURES));
       case "dev":
       case "projects":
         return myFiles.filter((f) => f.type === "text");
@@ -3266,14 +3267,15 @@ function PueiDrivePane({ files, icons, currentUser, users, openApp, onDelete }: 
       case "temp":
         return [...myFiles].sort((a, b) => b.updatedAt - a.updatedAt).slice(0, 24);
       case "games": {
-        const gameish = myFiles.filter((f) => /game|chess/i.test(f.name));
-        return gameish.length ? gameish : myFiles;
+        const visibleFiles = myFiles.filter((f) => !f.folder || !customFolderIds.has(f.folder));
+        const gameish = visibleFiles.filter((f) => /game|chess/i.test(f.name));
+        return gameish.length ? gameish : visibleFiles;
       }
       default:
-        return myFiles;
+        return myFiles.filter((f) => !f.folder || !customFolderIds.has(f.folder));
     }
   })();
-  const isFileSection = ["all", "custom-folders", "dev", "media", "projects", "logs", "temp", "games"].includes(driveSection);
+  const isFileSection = ["all", "dev", "media", "projects", "logs", "temp", "games"].includes(driveSection);
   const isVirtualSection = ["windows", "system", "program-files", "recovery", "config"].includes(driveSection);
   const selectedFile = shownFiles.find(f => f.id === selectedId) ?? null;
   const fileLocation = (file: SavedFile) => {
@@ -3384,6 +3386,21 @@ function PueiDrivePane({ files, icons, currentUser, users, openApp, onDelete }: 
                     ))}
                   </div>}
             </>
+            : driveSection === "custom-folders"
+            ? <div className="grid grid-cols-4 gap-3 overflow-auto">
+                {customFolders.length === 0
+                  ? <div className="col-span-4 text-sm opacity-60 text-center p-8">No custom folders created yet.</div>
+                  : customFolders.map((folder) => {
+                      const folderFiles = myFiles.filter((f) => f.folder === folder.id);
+                      return (
+                        <div key={folder.id} className="rounded-xl p-3" style={{ background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.2)" }}>
+                          <div className="text-3xl">📁</div>
+                          <div className="text-sm font-semibold mt-1 truncate">{folder.label}</div>
+                          <div className="text-[11px] opacity-65 mt-1">{folderFiles.length} file{folderFiles.length !== 1 ? "s" : ""}</div>
+                        </div>
+                      );
+                    })}
+              </div>
             : isVirtualSection
             ? <div className="rounded-xl p-4 space-y-3" style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.2)" }}>
                 <div className="font-semibold">{sectionLabel[driveSection]} (virtual)</div>
