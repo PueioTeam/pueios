@@ -1379,6 +1379,84 @@ function PueiWebApp({ currentUser, users }: { currentUser: string; users: User[]
   const [navUrl, setNavUrl] = useState("puei://home");
   const [tabs, setTabs] = useState([{ id: 1, title: "Home", url: "puei://home" }]);
   const [active, setActive] = useState(1);
+  const updatesDoneKey = `pueios2plus-updates-done-${currentUser}`;
+  const [updatesProgress, setUpdatesProgress] = useState(0);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [updatesDone, setUpdatesDone] = useState(() => {
+    try { return localStorage.getItem(updatesDoneKey) === "1"; } catch { return false; }
+  });
+  const [isoRefresh, setIsoRefresh] = useState(0);
+
+  useEffect(() => {
+    const fn = () => setIsoRefresh((v) => v + 1);
+    window.addEventListener("pueios-files-changed", fn);
+    window.addEventListener("storage", fn);
+    return () => {
+      window.removeEventListener("pueios-files-changed", fn);
+      window.removeEventListener("storage", fn);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isUpdating) return;
+    const t = window.setInterval(() => {
+      setUpdatesProgress((p) => Math.min(100, p + 0.8 + Math.random() * 1.6));
+    }, 700);
+    return () => window.clearInterval(t);
+  }, [isUpdating]);
+
+  useEffect(() => {
+    if (!isUpdating || updatesProgress < 100) return;
+    setIsUpdating(false);
+    setUpdatesDone(true);
+    try { localStorage.setItem(updatesDoneKey, "1"); } catch {}
+    blip("notify");
+  }, [isUpdating, updatesProgress, updatesDoneKey]);
+
+  const isoFile = loadFiles().find((f) =>
+    f.type === "text" &&
+    (!f.owner || f.owner === currentUser) &&
+    ["pueios2-plus.iso", "pueios2plus.iso"].includes(f.name.trim().toLowerCase())
+  );
+
+  const downloadPlusIso = () => {
+    if (isoFile) {
+      blip("click");
+      alert("Pueios2 Plus ISO is already downloaded.");
+      return;
+    }
+    upsertFile({
+      id: `iso-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`,
+      name: "pueios2-plus.iso",
+      type: "text",
+      content: "PueiOS2 Plus installation ISO image placeholder. Keep this file to run updates from puei://updates.",
+      updatedAt: Date.now(),
+      owner: currentUser,
+      folder: SYS_FOLDER_DOWNLOADS,
+    });
+    setIsoRefresh((v) => v + 1);
+    blip("notify");
+  };
+
+  const installUpdatesFromIso = () => {
+    if (!isoFile) {
+      blip("error");
+      alert("Download pueios2-plus.iso first.");
+      return;
+    }
+    if (!confirm("Install Pueios2 Plus updates from ISO now?")) return;
+    setUpdatesProgress(0);
+    setIsUpdating(true);
+    blip("start");
+  };
+
+  const deleteIsoAfterUpdate = () => {
+    if (!isoFile) return;
+    if (!confirm("Delete pueios2-plus.iso? Updates will remain installed.")) return;
+    deleteFile(isoFile.id);
+    setIsoRefresh((v) => v + 1);
+    blip("click");
+  };
 
   const makeWaveWallpaper = (name: string, left: string, right: string, glow: string, stars = false) => {
     const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1920 1080'>
@@ -1440,6 +1518,7 @@ function PueiWebApp({ currentUser, users }: { currentUser: string; users: User[]
         <div className="mt-6 grid grid-cols-3 gap-3 max-w-2xl mx-auto">
           {[
             ["puei://board", "📌 PueiBoard"],
+            ["puei://updates", "⬆️ Puei Updates"],
             ["puei://search", "✦ Puei Copilot"],
             ["puei://forum", "💬 PueiForum"],
             ["puei://mail", "✉️ PueiMail"],
@@ -1518,6 +1597,41 @@ function PueiWebApp({ currentUser, users }: { currentUser: string; users: User[]
     "puei://board": (
       <div className="h-full overflow-auto">
         <PueiBoardApp user={currentUser} users={users} />
+      </div>
+    ),
+    "puei://updates": (
+      <div className="p-6 space-y-4">
+        <h2 className="text-2xl font-bold">⬆️ Puei Updates</h2>
+        <p className="text-sm opacity-75">To install Pueios2 Plus updates, you must install the official ISO first.</p>
+
+        <div className="aero-glass-light rounded-xl p-4 space-y-3 max-w-xl">
+          <div className="text-sm">
+            ISO status: {isoFile ? <span className="font-semibold text-green-500">Installed ({isoFile.name})</span> : <span className="font-semibold text-amber-500">Not installed</span>}
+          </div>
+          <div className="flex gap-2 flex-wrap">
+            <button className="aero-button rounded px-3 py-1.5 text-xs" onClick={downloadPlusIso}>📀 Install pueios2-plus.iso</button>
+            <button className="aero-button rounded px-3 py-1.5 text-xs" disabled={!isoFile || isUpdating}
+              style={{ opacity: (!isoFile || isUpdating) ? 0.5 : 1 }} onClick={installUpdatesFromIso}>⚙️ Install updates</button>
+            <button className="aero-button rounded px-3 py-1.5 text-xs" disabled={!isoFile}
+              style={{ opacity: isoFile ? 1 : 0.5 }} onClick={deleteIsoAfterUpdate}>🗑️ Delete ISO</button>
+          </div>
+
+          {isUpdating && (
+            <div>
+              <div className="text-xs opacity-70 mb-1">Installing updates from ISO…</div>
+              <div className="w-full h-2 rounded-full bg-cyan-900/40 overflow-hidden">
+                <div className="loading-bar-inner h-full" style={{ width: `${updatesProgress}%`, transition: "width 0.6s" }} />
+              </div>
+              <div className="text-[10px] opacity-60 mt-1">{Math.floor(updatesProgress)}%</div>
+            </div>
+          )}
+
+          {updatesDone && (
+            <div className="text-xs rounded px-2 py-2" style={{ background: "rgba(80,200,120,0.2)" }}>
+              ✅ Updates completed. You can delete the ISO and nothing will happen.
+            </div>
+          )}
+        </div>
       </div>
     ),
     "puei://mail": null, // handled below as PueiMailApp
