@@ -160,16 +160,16 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, curren
   const [pcNumCopied, setPcNumCopied] = useState(false);
 
   const tabs = [
-    ["personalize", "≡ƒÄ¿ Personalize"],
-    ["wallpaper", "≡ƒû╝∩╕Å Wallpaper"],
-    ["account", "≡ƒæñ Account"],
-    ["pueio-control", "≡ƒöÉ Pueio Control"],
-    ["sound", "≡ƒöè Sound"],
-    ["touch", "≡ƒæå Touchscreen"],
-    ["accessibility", "ΓÖ┐ Accessibility"],
-    ["highcontrast", "ΓÜí High Contrast"],
-    ["upgrade", "Γ¼å∩╕Å Upgrade"],
-    ["about", "Γä╣∩╕Å About"],
+    ["personalize", "🎨 Personalize"],
+    ["wallpaper", "🖼️ Wallpaper"],
+    ["account", "👤 Account"],
+    ["pueio-control", "🔐 Pueio Control"],
+    ["sound", "🔊 Sound"],
+    ["touch", "👆 Touchscreen"],
+    ["accessibility", "♿ Accessibility"],
+    ["highcontrast", "⚡ High Contrast"],
+    ["upgrade", "⬆️ Upgrade"],
+    ["about", "ℹ️ About"],
   ];
   const plusReleaseUrl = "https://github.com/PueioTeam/pueios/releases/tag/pueios2plus";
   const plusLatestUrl = "https://github.com/PueioTeam/pueios/releases/latest";
@@ -242,7 +242,7 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, curren
         {tab === "personalize" && (
           <div>
             <h2 className="text-xl font-semibold mb-4">Personalize PueiOS 2</h2>
-            <label className="block mb-3 text-sm">Accent hue ({theme.accentH}┬░)</label>
+            <label className="block mb-3 text-sm">Accent hue ({theme.accentH}°)</label>
             <input type="range" min={0} max={360} value={theme.accentH}
               onChange={(e) => setTheme({ ...theme, accentH: Number(e.target.value) })} className="w-full" />
             <div className="flex gap-2 mt-4 flex-wrap">
@@ -254,7 +254,7 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, curren
             </div>
             <div className="mt-6 space-y-3">
               <label className="flex items-center gap-2 text-sm">
-                <input type="checkbox" checked={theme.dark} onChange={(e) => setTheme({ ...theme, dark: e.target.checked })} /> Dark mode <span className="text-xs opacity-60">(global ΓÇö applies to every system surface)</span>
+                <input type="checkbox" checked={theme.dark} onChange={(e) => setTheme({ ...theme, dark: e.target.checked })} /> Dark mode <span className="text-xs opacity-60">(global — applies to every system surface)</span>
               </label>
               <label className="flex items-center gap-2 text-sm">
                 <input type="checkbox" checked={theme.transparency} onChange={(e) => setTheme({ ...theme, transparency: e.target.checked })} /> Aero transparency
@@ -342,13 +342,13 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, curren
               </div>
             </div>
             <div className="mt-6">
-              <div className="text-sm font-semibold mb-3">≡ƒû╝∩╕Å Icon size</div>
+              <div className="text-sm font-semibold mb-3">🖼️ Icon size</div>
               <div className="flex gap-3">
                 {([["small","Small","48px"],["medium","Medium","64px"],["large","Large","80px"]] as const).map(([val, label, px]) => (
                   <button key={val} onClick={() => setTheme({ ...theme, iconSize: val })}
                     className="flex flex-col items-center gap-1 px-4 py-3 rounded-lg border-2 transition-all"
                     style={{ borderColor: (theme.iconSize ?? "medium") === val ? "var(--accent)" : "rgba(255,255,255,0.3)", background: (theme.iconSize ?? "medium") === val ? "rgba(255,255,255,0.3)" : "rgba(255,255,255,0.1)" }}>
-                    <span style={{ fontSize: px }}>≡ƒùé∩╕Å</span>
+                    <span style={{ fontSize: px }}>🗂️</span>
                     <span className="text-xs font-semibold">{label}</span>
                   </button>
                 ))}
@@ -410,7 +410,7 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, curren
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {["≡ƒºæ","≡ƒæ⌐","≡ƒºö","≡ƒæ╡","≡ƒºæΓÇì≡ƒÆ╗","≡ƒª╕","≡ƒºÖ","≡ƒÉ▒","≡ƒñû","≡ƒæ╜","≡ƒÄ⌐","≡ƒîƒ"].map((a) => (
+                  {["🧑","👩","🧔","👵","🧑‍💻","🦸","🧙","🐱","🤖","👽","🎩","🌟"].map((a) => (
                     <button key={a} onClick={() => updateMe({ avatar: a })}
                       className="w-9 h-9 rounded text-xl flex items-center justify-center"
                       style={{ background: me.avatar === a ? "var(--gradient-aero)" : "rgba(255,255,255,0.5)" }}>{a}</button>
@@ -439,7 +439,7 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, curren
             <div className="space-y-2">
               {["start", "click", "hover", "notify", "error", "shutdown"].map((s) => (
                 <button key={s} className="aero-button rounded-md px-4 py-2 mr-2 capitalize"
-                  onClick={() => blip(s as any)}>Γû╢ Test {s}</button>
+                  onClick={() => blip(s as any)}>▶ Test {s}</button>
               ))}
             </div>
           </div>
@@ -454,8 +454,8 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, curren
         )}
         {tab === "highcontrast" && (
           <div>
-            <h2 className="text-xl font-semibold mb-2">ΓÜí High Contrast Mode</h2>
-            <p className="text-sm opacity-80 mb-3">Customizable accessibility system. Select a base color ΓÇö PueiOS 2 generates a full high-contrast theme around it and applies it globally to every system surface and app. No mixed states allowed.</p>
+            <h2 className="text-xl font-semibold mb-2">⚡ High Contrast Mode</h2>
+            <p className="text-sm opacity-80 mb-3">Customizable accessibility system. Select a base color — PueiOS 2 generates a full high-contrast theme around it and applies it globally to every system surface and app. No mixed states allowed.</p>
             <label className="flex items-center gap-3 aero-glass-light rounded p-3 max-w-lg mb-5">
               <input type="checkbox" checked={!!theme.highContrast}
                 onChange={(e) => setTheme({ ...theme, highContrast: e.target.checked, transparency: e.target.checked ? false : theme.transparency, fullWindowTransparency: e.target.checked ? false : theme.fullWindowTransparency, animations: e.target.checked ? false : theme.animations })} />
@@ -496,19 +496,19 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, curren
               </div>
               <div className="rounded p-3 text-sm font-semibold flex items-center gap-3"
                 style={{ background: "#000", color: theme.highContrastColor || "#ffb300", border: `2px solid ${theme.highContrastColor || "#ffb300"}` }}>
-                <span>Γ£ª</span>
-                <span>Preview: High Contrast UI with selected color ┬╖ Applied globally across all apps</span>
+                <span>✦</span>
+                <span>Preview: High Contrast UI with selected color · Applied globally across all apps</span>
               </div>
             </div>
           </div>
         )}
         {tab === "upgrade" && (
           <div className="space-y-4 max-w-lg">
-            <h2 className="text-xl font-semibold">Γ¼å∩╕Å System Upgrade</h2>
-            <p className="text-sm opacity-70">Upgrade PueiOS to a newer version. Your files, accounts, messages, and settings are preserved ΓÇö just like upgrading from Windows XP to Vista to 7.</p>
+            <h2 className="text-xl font-semibold">⬆️ System Upgrade</h2>
+            <p className="text-sm opacity-70">Upgrade PueiOS to a newer version. Your files, accounts, messages, and settings are preserved — just like upgrading from Windows XP to Vista to 7.</p>
             <div className="text-xs opacity-60 mb-2">Current version: <strong>{systemVersion}</strong></div>
             {SYSTEM_ORDER.filter((v) => compareVersion(v, systemVersion) > 0).length === 0 ? (
-              <div className="aero-glass-light rounded-xl p-4 text-sm text-center opacity-70">Γ£à You are on the latest version of PueiOS.</div>
+              <div className="aero-glass-light rounded-xl p-4 text-sm text-center opacity-70">✅ You are on the latest version of PueiOS.</div>
             ) : SYSTEM_ORDER.filter((v) => compareVersion(v, systemVersion) > 0).map((v) => (
               <div key={v} className="aero-glass-light rounded-xl p-4 space-y-3">
                 <div className="flex items-center justify-between gap-4">
@@ -521,7 +521,7 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, curren
                   </div>
                   <button className="aero-button rounded-lg px-4 py-2 text-sm flex-shrink-0"
                     onClick={() => { blip("notify"); startUpgrade(v); }}>
-                    Upgrade ΓåÆ
+                    Upgrade →
                   </button>
                 </div>
 
@@ -580,11 +580,11 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, curren
           </div>
         )}
         {tab === "about" && (
-          <div><button className="aero-button rounded-md px-4 py-2" onClick={() => openApp("about")}>Open About PueiOS 2 ΓåÆ</button></div>
+          <div><button className="aero-button rounded-md px-4 py-2" onClick={() => openApp("about")}>Open About PueiOS 2 →</button></div>
         )}
         {tab === "pueio-control" && (
           <div className="space-y-6 max-w-lg">
-            <h2 className="text-xl font-semibold">≡ƒöÉ Pueio Control</h2>
+            <h2 className="text-xl font-semibold">🔐 Pueio Control</h2>
 
             {!me ? (
               <div className="text-sm opacity-70">Not signed in.</div>
@@ -601,11 +601,11 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, curren
                 <div className="flex-1 min-w-0">
                   <div className="font-semibold text-base">{me.name}</div>
                   <div className="text-xs opacity-60 mt-0.5">
-                    {me.limitedMode ? "ΓÜá∩╕Å Limited Access Mode" : "Γ£à Full Access"}
+                    {me.limitedMode ? "⚠️ Limited Access Mode" : "✅ Full Access"}
                   </div>
                   <div className="flex items-center gap-2 mt-1">
                     <code className="text-xs font-mono opacity-80 bg-black/10 rounded px-1.5 py-0.5">
-                      {me.pueiNumber || "ΓÇö"}
+                      {me.pueiNumber || "—"}
                     </code>
                     <button className="text-[10px] px-1.5 py-0.5 rounded transition-all" onClick={() => {
                       if (me.pueiNumber) {
@@ -613,7 +613,7 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, curren
                         blip("notify"); setPcNumCopied(true); setTimeout(() => setPcNumCopied(false), 1500);
                       }
                     }} style={{ background: pcNumCopied ? "rgba(100,220,100,0.25)" : "rgba(255,255,255,0.15)", color: pcNumCopied ? "#4ade80" : undefined }}>
-                      {pcNumCopied ? "Γ£ô Copied!" : "≡ƒôï Copy"}
+                      {pcNumCopied ? "✓ Copied!" : "📋 Copy"}
                     </button>
                   </div>
                 </div>
@@ -624,7 +624,7 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, curren
                 {(!me.password || me.noPassword) ? (
                   <>
                     <div className="font-semibold text-sm flex items-center gap-2">
-                      ≡ƒöô No password set
+                      🔓 No password set
                       {me.limitedMode && <span className="text-[10px] bg-yellow-500/20 rounded px-1.5 py-0.5 text-yellow-700 dark:text-yellow-300">Limited Access</span>}
                     </div>
                     <div className="text-xs opacity-70">Create a password to enable full access and protect your account.</div>
@@ -643,7 +643,7 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, curren
                           await changePasswordRemote(me.name, me.password ?? "", pcNewPw, updatedUser);
                           updateMe({ password: pcNewPw, noPassword: false, limitedMode: false });
                           setPcNewPw(""); setPcConfirm("");
-                          setPcMsg({ kind: "ok", text: "Γ£ô Password created! Full access enabled." });
+                          setPcMsg({ kind: "ok", text: "✓ Password created! Full access enabled." });
                           blip("notify");
                         }}}
                         className="w-full px-3 py-2 rounded text-sm outline-none mt-1" style={{ background: "white", color: "#111" }} />
@@ -658,13 +658,13 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, curren
                       await changePasswordRemote(me.name, me.password ?? "", pcNewPw, updatedUser);
                       updateMe({ password: pcNewPw, noPassword: false, limitedMode: false });
                       setPcNewPw(""); setPcConfirm("");
-                      setPcMsg({ kind: "ok", text: "Γ£ô Password created! Full access enabled." });
+                      setPcMsg({ kind: "ok", text: "✓ Password created! Full access enabled." });
                       blip("notify");
                     }}>Create password</button>
                   </>
                 ) : (
                   <>
-                    <div className="font-semibold text-sm">≡ƒöÆ Change password</div>
+                    <div className="font-semibold text-sm">🔒 Change password</div>
                     <div>
                       <label className="text-xs opacity-70">Current password</label>
                       <input type="password" value={pcCurPw} onChange={(e) => setPcCurPw(e.target.value)}
@@ -682,12 +682,12 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, curren
                           if (pcCurPw !== me.password) { setPcMsg({ kind: "err", text: "Current password is incorrect." }); return; }
                           if (!pcNewPw) { setPcMsg({ kind: "err", text: "Enter a new password." }); return; }
                           if (pcNewPw !== pcConfirm) { setPcMsg({ kind: "err", text: "Passwords do not match." }); return; }
-                          setPcMsg({ kind: "ok", text: "SavingΓÇª" });
+                          setPcMsg({ kind: "ok", text: "Saving…" });
                           const ok = await changePasswordRemote(me.name, pcCurPw, pcNewPw, { ...me, password: pcNewPw });
                           if (!ok) { setPcMsg({ kind: "err", text: "Could not reach server. Try again." }); return; }
                           updateMe({ password: pcNewPw });
                           setPcCurPw(""); setPcNewPw(""); setPcConfirm("");
-                          setPcMsg({ kind: "ok", text: "Γ£ô Password changed." });
+                          setPcMsg({ kind: "ok", text: "✓ Password changed." });
                           blip("notify");
                         }}}
                         className="w-full px-3 py-2 rounded text-sm outline-none mt-1" style={{ background: "white", color: "#111" }} />
@@ -699,12 +699,12 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, curren
                       if (pcCurPw !== me.password) { setPcMsg({ kind: "err", text: "Current password is incorrect." }); return; }
                       if (!pcNewPw) { setPcMsg({ kind: "err", text: "Enter a new password." }); return; }
                       if (pcNewPw !== pcConfirm) { setPcMsg({ kind: "err", text: "Passwords do not match." }); return; }
-                      setPcMsg({ kind: "ok", text: "SavingΓÇª" });
+                      setPcMsg({ kind: "ok", text: "Saving…" });
                       const ok = await changePasswordRemote(me.name, pcCurPw, pcNewPw, { ...me, password: pcNewPw });
                       if (!ok) { setPcMsg({ kind: "err", text: "Could not reach server. Try again." }); return; }
                       updateMe({ password: pcNewPw });
                       setPcCurPw(""); setPcNewPw(""); setPcConfirm("");
-                      setPcMsg({ kind: "ok", text: "Γ£ô Password changed." });
+                      setPcMsg({ kind: "ok", text: "✓ Password changed." });
                       blip("notify");
                     }}>Change password</button>
                     <button className="text-xs opacity-60 underline hover:opacity-100" onClick={async () => {
@@ -726,11 +726,11 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, curren
                 <div className="font-semibold text-sm mb-3">Session</div>
                 <button className="aero-button rounded-lg px-4 py-2 text-sm w-full text-left flex items-center gap-2"
                   onClick={() => { blip("click"); lockScreen(); }}>
-                  ≡ƒöÆ Lock screen
+                  🔒 Lock screen
                 </button>
                 <button className="aero-button rounded-lg px-4 py-2 text-sm w-full text-left flex items-center gap-2"
                   onClick={() => { blip("shutdown"); signOut(); }}>
-                  ≡ƒöä Sign out
+                  🔄 Sign out
                 </button>
               </div>
 
@@ -744,7 +744,7 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, curren
                       deleteAccount(me.name);
                     }
                   }}>
-                  ≡ƒùæ∩╕Å Delete this account
+                  🗑️ Delete this account
                 </button>
               </div>
 
@@ -783,14 +783,14 @@ function NotepadApp({ fileId, onCreateShortcut, currentUser }: { fileId?: string
   const save = () => {
     const id = savedId || `f-${Date.now().toString(36)}`;
     upsertFile({ id, name, type: "text", content: text, updatedAt: Date.now(), owner: currentUser });
-    setSavedId(id); setStatus("Saved Γ£ô"); setDocLocked(true); blip("notify");
+    setSavedId(id); setStatus("Saved ✓"); setDocLocked(true); blip("notify");
     setTimeout(() => setStatus(""), 1500);
     return id;
   };
   const open = () => {
     const all = loadFiles().filter((f) => f.type === "text" && (!f.owner || f.owner === currentUser));
     if (all.length === 0) { alert("No saved documents yet."); return; }
-    const pick = prompt("Open file ΓÇö type a name from:\n" + all.map((f) => f.name).join("\n"), all[0].name);
+    const pick = prompt("Open file — type a name from:\n" + all.map((f) => f.name).join("\n"), all[0].name);
     if (!pick) return;
     const f = all.find((x) => x.name === pick);
     if (!f) { alert("Not found"); return; }
@@ -801,11 +801,11 @@ function NotepadApp({ fileId, onCreateShortcut, currentUser }: { fileId?: string
       <div className="aero-titlebar text-xs px-2 py-1 flex items-center gap-2 flex-shrink-0">
         <input value={name} onChange={(e) => setName(e.target.value)} disabled={docLocked}
           className="px-2 py-0.5 rounded text-xs" style={{ background: "white", color: "#111", width: 180 }} />
-        {!docLocked && <button className="aero-button rounded px-2 py-0.5" onClick={save}>≡ƒÆ╛ Save</button>}
-        {docLocked && <span className="opacity-60 text-xs">≡ƒöÆ Read-only</span>}
-        <button className="aero-button rounded px-2 py-0.5" onClick={open}>≡ƒôé Open</button>
-        {!docLocked && <button className="aero-button rounded px-2 py-0.5" onClick={() => { const id = save(); onCreateShortcut(name, id); }}>≡ƒôî Save & shortcut</button>}
-        <button className="aero-button rounded px-2 py-0.5" onClick={() => { setText("Welcome to Puei Notepad.\n\nType anything..."); setName("Untitled.txt"); setSavedId(undefined); setDocLocked(false); }}>≡ƒôä New</button>
+        {!docLocked && <button className="aero-button rounded px-2 py-0.5" onClick={save}>💾 Save</button>}
+        {docLocked && <span className="opacity-60 text-xs">🔒 Read-only</span>}
+        <button className="aero-button rounded px-2 py-0.5" onClick={open}>📂 Open</button>
+        {!docLocked && <button className="aero-button rounded px-2 py-0.5" onClick={() => { const id = save(); onCreateShortcut(name, id); }}>📌 Save & shortcut</button>}
+        <button className="aero-button rounded px-2 py-0.5" onClick={() => { setText("Welcome to Puei Notepad.\n\nType anything..."); setName("Untitled.txt"); setSavedId(undefined); setDocLocked(false); }}>📄 New</button>
         <span className="opacity-70">{status}</span>
       </div>
       <textarea value={text} onChange={(e) => { if (!docLocked) setText(e.target.value); }}
@@ -829,18 +829,18 @@ function CalculatorApp() {
     if (k === "=") {
       if (op && acc !== null) {
         const b = parseFloat(d);
-        const r = op === "+" ? acc + b : op === "-" ? acc - b : op === "├ù" ? acc * b : acc / b;
+        const r = op === "+" ? acc + b : op === "-" ? acc - b : op === "×" ? acc * b : acc / b;
         setD(String(r)); setAcc(null); setOp(null); setFresh(true);
       }
       return;
     }
     setAcc(acc === null ? parseFloat(d) : (() => {
       const b = parseFloat(d);
-      return op === "+" ? acc + b : op === "-" ? acc - b : op === "├ù" ? acc * b : op === "├╖" ? acc / b : b;
+      return op === "+" ? acc + b : op === "-" ? acc - b : op === "×" ? acc * b : op === "÷" ? acc / b : b;
     })());
     setOp(k); setFresh(true);
   };
-  const keys = ["C", "├╖", "├ù", "-", "7", "8", "9", "+", "4", "5", "6", "=", "1", "2", "3", "0", "."];
+  const keys = ["C", "÷", "×", "-", "7", "8", "9", "+", "4", "5", "6", "=", "1", "2", "3", "0", "."];
   return (
     <div className="p-3">
       <div className="aero-glass-light rounded text-right p-3 text-2xl font-mono mb-2 overflow-hidden">{d}</div>
@@ -953,14 +953,14 @@ function PaintApp({ fileId, onCreateShortcut, currentUser }: { fileId?: string; 
     const data = cv.current!.toDataURL("image/png");
     const id = savedId || `f-${Date.now().toString(36)}`;
     upsertFile({ id, name, type: "image", content: data, updatedAt: Date.now(), owner: currentUser });
-    setSavedId(id); setLocked(true); setStatus("Saved Γ£ô"); blip("notify");
+    setSavedId(id); setLocked(true); setStatus("Saved ✓"); blip("notify");
     setTimeout(() => setStatus(""), 1500);
     return id;
   };
   const open = () => {
     const all = loadFiles().filter((f) => f.type === "image" && (!f.owner || f.owner === currentUser));
     if (all.length === 0) { alert("No saved images yet."); return; }
-    const pick = prompt("Open file ΓÇö type a name from:\n" + all.map((f) => f.name).join("\n"), all[0].name);
+    const pick = prompt("Open file — type a name from:\n" + all.map((f) => f.name).join("\n"), all[0].name);
     if (!pick) return;
     const f = all.find((x) => x.name === pick);
     if (!f) return;
@@ -974,22 +974,22 @@ function PaintApp({ fileId, onCreateShortcut, currentUser }: { fileId?: string; 
       <div className="aero-titlebar flex flex-wrap gap-2 px-2 py-1 items-center text-xs">
         <input value={name} onChange={(e) => setName(e.target.value)} disabled={locked} className="px-2 py-0.5 rounded" style={{ background: locked ? "rgba(255,255,255,0.4)" : "white", color: "#111", width: 140 }} />
         {locked ? (
-          <span className="opacity-60 text-xs">≡ƒöÆ Read-only</span>
+          <span className="opacity-60 text-xs">🔒 Read-only</span>
         ) : (
           <>
-            <button className="aero-button px-2 py-0.5 rounded" onClick={save}>≡ƒÆ╛ Save</button>
-            <button className="aero-button px-2 py-0.5 rounded" onClick={() => { const id = save(); onCreateShortcut(name, id); }}>≡ƒôî Shortcut</button>
+            <button className="aero-button px-2 py-0.5 rounded" onClick={save}>💾 Save</button>
+            <button className="aero-button px-2 py-0.5 rounded" onClick={() => { const id = save(); onCreateShortcut(name, id); }}>📌 Shortcut</button>
             <button className="aero-button px-2 py-0.5 rounded" onClick={() => {
               const c = cv.current!; const ctx = c.getContext("2d")!;
               ctx.fillStyle = "white"; ctx.fillRect(0, 0, c.width, c.height);
             }}>Clear</button>
             <button className="aero-button px-2 py-0.5 rounded" onClick={() => setTool("brush")}
               style={{ background: tool === "brush" ? "var(--gradient-aero)" : undefined, color: tool === "brush" ? "white" : undefined }}>
-              ≡ƒûî Brush
+              🖌 Brush
             </button>
             <button className="aero-button px-2 py-0.5 rounded" onClick={() => setTool("bucket")}
               style={{ background: tool === "bucket" ? "var(--gradient-aero)" : undefined, color: tool === "bucket" ? "white" : undefined }}>
-              ≡ƒ¬ú Bucket
+              🪣 Bucket
             </button>
             <label className="opacity-80">Color</label>
             <input type="color" value={color} onChange={(e) => setColor(e.target.value)} />
@@ -1000,9 +1000,9 @@ function PaintApp({ fileId, onCreateShortcut, currentUser }: { fileId?: string; 
             ))}
           </>
         )}
-        <button className="aero-button px-2 py-0.5 rounded" onClick={() => { setName("Untitled.png"); setSavedId(undefined); setLocked(false); const c = cv.current!; const ctx = c.getContext("2d")!; ctx.fillStyle = "white"; ctx.fillRect(0, 0, c.width, c.height); }}>≡ƒôä New</button>
-        <button className="aero-button px-2 py-0.5 rounded" onClick={open}>≡ƒôé Open</button>
-        <span className="opacity-70 ml-auto">{status}{!locked && " ┬╖ Saved images can be set as wallpaper in Settings."}</span>
+        <button className="aero-button px-2 py-0.5 rounded" onClick={() => { setName("Untitled.png"); setSavedId(undefined); setLocked(false); const c = cv.current!; const ctx = c.getContext("2d")!; ctx.fillStyle = "white"; ctx.fillRect(0, 0, c.width, c.height); }}>📄 New</button>
+        <button className="aero-button px-2 py-0.5 rounded" onClick={open}>📂 Open</button>
+        <span className="opacity-70 ml-auto">{status}{!locked && " · Saved images can be set as wallpaper in Settings."}</span>
       </div>
       <div className="relative flex-1">
         <canvas ref={cv} width={800} height={500}
@@ -1010,7 +1010,7 @@ function PaintApp({ fileId, onCreateShortcut, currentUser }: { fileId?: string; 
           style={{ width: "100%", height: "100%", background: "white", touchAction: "none", cursor: locked ? "not-allowed" : tool === "bucket" ? "copy" : "crosshair" }} />
         {locked && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <div className="bg-black/30 text-white text-sm px-4 py-2 rounded-lg">≡ƒöÆ Read-only</div>
+            <div className="bg-black/30 text-white text-sm px-4 py-2 rounded-lg">🔒 Read-only</div>
           </div>
         )}
       </div>
@@ -1022,16 +1022,16 @@ function PaintApp({ fileId, onCreateShortcut, currentUser }: { fileId?: string; 
 
 /** General knowledge base for Puei Copilot. Returns a real answer or null if unknown. */
 const KNOWLEDGE: Array<{ match: (q: string) => boolean; answer: (q: string) => string }> = [
-  // ΓöÇΓöÇ Machines & vehicles ΓöÇΓöÇ
+  // ── Machines & vehicles ──
   {
     match: (q) => q.includes("bulldozer") || q.includes("bull dozer"),
     answer: () =>
       `A bulldozer is a large, powerful construction machine used to move earth, rocks, rubble, sand, and other heavy materials. Here's how it works and how it's used:\n\n` +
       `**Main parts:**\n` +
-      `ΓÇó Blade ΓÇö the wide metal plate at the front that pushes material. It can tilt left/right and angle up/down.\n` +
-      `ΓÇó Tracks (caterpillar tracks) ΓÇö instead of wheels, it runs on steel tracks for grip on rough or soft terrain.\n` +
-      `ΓÇó Ripper ΓÇö a claw-like attachment at the rear used to break up hard rock or compacted soil before pushing.\n` +
-      `ΓÇó Cab ΓÇö the enclosed operator cabin with controls for the blade, tracks, and ripper.\n\n` +
+      `• Blade — the wide metal plate at the front that pushes material. It can tilt left/right and angle up/down.\n` +
+      `• Tracks (caterpillar tracks) — instead of wheels, it runs on steel tracks for grip on rough or soft terrain.\n` +
+      `• Ripper — a claw-like attachment at the rear used to break up hard rock or compacted soil before pushing.\n` +
+      `• Cab — the enclosed operator cabin with controls for the blade, tracks, and ripper.\n\n` +
       `**How it's used:**\n` +
       `1. The operator drives it toward the material to be moved.\n` +
       `2. The blade is lowered to ground level and digs into the material.\n` +
@@ -1046,9 +1046,9 @@ const KNOWLEDGE: Array<{ match: (q: string) => boolean; answer: (q: string) => s
     answer: () =>
       `An excavator (also called a digger) is a heavy construction machine used mainly for digging. It has a rotating cab on a tracked or wheeled base, a long boom arm, and a bucket at the end.\n\n` +
       `**How it works:**\n` +
-      `ΓÇó The operator sits in the rotating cab and uses joysticks to control the boom, arm, and bucket.\n` +
-      `ΓÇó The bucket curls inward to scoop up soil or rock.\n` +
-      `ΓÇó The cab rotates 360┬░ to swing the bucket and dump the load into a truck or pile.\n\n` +
+      `• The operator sits in the rotating cab and uses joysticks to control the boom, arm, and bucket.\n` +
+      `• The bucket curls inward to scoop up soil or rock.\n` +
+      `• The cab rotates 360° to swing the bucket and dump the load into a truck or pile.\n\n` +
       `**Common uses:** digging foundations, trenches, and pits; demolishing buildings; lifting heavy objects; mining; dredging rivers.`,
   },
   {
@@ -1066,39 +1066,39 @@ const KNOWLEDGE: Array<{ match: (q: string) => boolean; answer: (q: string) => s
     answer: () =>
       `A tractor is a vehicle designed to deliver high tractive effort at slow speed for hauling equipment or pulling trailers. In farming it pulls plows, seeders, and harvesters. Construction tractors pull scrapers or compactors. They typically run on diesel engines and use large rear wheels (or tracks) for traction on soft ground.`,
   },
-  // ΓöÇΓöÇ Science ΓöÇΓöÇ
+  // ── Science ──
   {
     match: (q) => q.includes("black hole"),
     answer: () =>
-      `A black hole is a region in space where gravity is so strong that nothing ΓÇö not even light ΓÇö can escape it. It forms when a massive star collapses at the end of its life. The boundary around a black hole is called the event horizon. Beyond this point, escape velocity exceeds the speed of light. Black holes can be stellar (a few times the Sun's mass), intermediate, or supermassive (billions of solar masses, found at galaxy centres). They are detected by the effect they have on nearby stars and gas.`,
+      `A black hole is a region in space where gravity is so strong that nothing — not even light — can escape it. It forms when a massive star collapses at the end of its life. The boundary around a black hole is called the event horizon. Beyond this point, escape velocity exceeds the speed of light. Black holes can be stellar (a few times the Sun's mass), intermediate, or supermassive (billions of solar masses, found at galaxy centres). They are detected by the effect they have on nearby stars and gas.`,
   },
   {
     match: (q) => q.includes("gravity") && !q.includes("black hole"),
     answer: () =>
-      `Gravity is a fundamental force of nature that attracts objects with mass toward each other. On Earth it gives you weight and keeps you on the ground. Isaac Newton described it as a force proportional to mass and inversely proportional to the square of distance. Albert Einstein later described it as the curvature of space-time caused by mass. The acceleration due to gravity on Earth's surface is approximately 9.8 m/s┬▓.`,
+      `Gravity is a fundamental force of nature that attracts objects with mass toward each other. On Earth it gives you weight and keeps you on the ground. Isaac Newton described it as a force proportional to mass and inversely proportional to the square of distance. Albert Einstein later described it as the curvature of space-time caused by mass. The acceleration due to gravity on Earth's surface is approximately 9.8 m/s².`,
   },
   {
     match: (q) => q.includes("photosynthesis"),
     answer: () =>
-      `Photosynthesis is the process by which plants, algae, and some bacteria convert sunlight, water, and carbon dioxide into glucose (sugar) and oxygen. The formula is:\n\n6COΓéé + 6HΓééO + light energy ΓåÆ CΓéåHΓéüΓééOΓéå + 6OΓéé\n\nIt happens mainly in the chloroplasts of plant cells, using the green pigment chlorophyll to absorb light. The oxygen released is what makes Earth's atmosphere breathable.`,
+      `Photosynthesis is the process by which plants, algae, and some bacteria convert sunlight, water, and carbon dioxide into glucose (sugar) and oxygen. The formula is:\n\n6CO₂ + 6H₂O + light energy → C₆H₁₂O₆ + 6O₂\n\nIt happens mainly in the chloroplasts of plant cells, using the green pigment chlorophyll to absorb light. The oxygen released is what makes Earth's atmosphere breathable.`,
   },
   {
     match: (q) => q.includes("dna"),
     answer: () =>
-      `DNA (deoxyribonucleic acid) is the molecule that carries genetic instructions for the development, functioning, and reproduction of all living organisms. It's shaped like a double helix ΓÇö two strands twisted around each other. The sequence of four chemical bases (adenine, thymine, guanine, cytosine) encodes genetic information. Humans have about 3 billion base pairs of DNA packed into 46 chromosomes inside each cell's nucleus.`,
+      `DNA (deoxyribonucleic acid) is the molecule that carries genetic instructions for the development, functioning, and reproduction of all living organisms. It's shaped like a double helix — two strands twisted around each other. The sequence of four chemical bases (adenine, thymine, guanine, cytosine) encodes genetic information. Humans have about 3 billion base pairs of DNA packed into 46 chromosomes inside each cell's nucleus.`,
   },
-  // ΓöÇΓöÇ History ΓöÇΓöÇ
+  // ── History ──
   {
     match: (q) => q.includes("world war 2") || q.includes("world war ii") || q.includes("ww2") || q.includes("wwii"),
     answer: () =>
-      `World War II (1939ΓÇô1945) was the deadliest conflict in human history, involving most of the world's nations. It was fought between the Allies (including the UK, USA, USSR, and France) and the Axis powers (Nazi Germany, Fascist Italy, and Imperial Japan). Key events include the German invasion of Poland (1939), the Battle of Britain (1940), Operation Barbarossa (1941), the Holocaust, D-Day (1944), and the atomic bombings of Hiroshima and Nagasaki (1945). An estimated 70ΓÇô85 million people died. It ended with Germany's surrender on 8 May 1945 and Japan's on 2 September 1945.`,
+      `World War II (1939–1945) was the deadliest conflict in human history, involving most of the world's nations. It was fought between the Allies (including the UK, USA, USSR, and France) and the Axis powers (Nazi Germany, Fascist Italy, and Imperial Japan). Key events include the German invasion of Poland (1939), the Battle of Britain (1940), Operation Barbarossa (1941), the Holocaust, D-Day (1944), and the atomic bombings of Hiroshima and Nagasaki (1945). An estimated 70–85 million people died. It ended with Germany's surrender on 8 May 1945 and Japan's on 2 September 1945.`,
   },
   {
     match: (q) => q.includes("world war 1") || q.includes("world war i") || q.includes("ww1") || q.includes("wwi"),
     answer: () =>
-      `World War I (1914ΓÇô1918) was a global conflict mainly fought in Europe between the Allied Powers (France, UK, Russia, later USA) and the Central Powers (Germany, Austria-Hungary, Ottoman Empire). It was triggered by the assassination of Archduke Franz Ferdinand of Austria in 1914. The war introduced trench warfare, chemical weapons, and tanks. Around 20 million people died. It ended with the Armistice of 11 November 1918 and the Treaty of Versailles (1919).`,
+      `World War I (1914–1918) was a global conflict mainly fought in Europe between the Allied Powers (France, UK, Russia, later USA) and the Central Powers (Germany, Austria-Hungary, Ottoman Empire). It was triggered by the assassination of Archduke Franz Ferdinand of Austria in 1914. The war introduced trench warfare, chemical weapons, and tanks. Around 20 million people died. It ended with the Armistice of 11 November 1918 and the Treaty of Versailles (1919).`,
   },
-  // ΓöÇΓöÇ Geography ΓöÇΓöÇ
+  // ── Geography ──
   {
     match: (q) => q.includes("mount everest") || q.includes("everest"),
     answer: () =>
@@ -1107,25 +1107,25 @@ const KNOWLEDGE: Array<{ match: (q: string) => boolean; answer: (q: string) => s
   {
     match: (q) => q.includes("amazon") && (q.includes("river") || q.includes("rainforest") || q.includes("jungle")),
     answer: () =>
-      `The Amazon is the world's largest tropical rainforest and home to the Amazon River, the largest river by water discharge. The rainforest covers about 5.5 million km┬▓ across Brazil, Peru, Colombia, and other South American countries. It holds around 10% of all species on Earth and produces roughly 20% of the world's oxygen. The Amazon River flows about 6,400 km into the Atlantic Ocean.`,
+      `The Amazon is the world's largest tropical rainforest and home to the Amazon River, the largest river by water discharge. The rainforest covers about 5.5 million km² across Brazil, Peru, Colombia, and other South American countries. It holds around 10% of all species on Earth and produces roughly 20% of the world's oxygen. The Amazon River flows about 6,400 km into the Atlantic Ocean.`,
   },
-  // ΓöÇΓöÇ Technology ΓöÇΓöÇ
+  // ── Technology ──
   {
     match: (q) => q.includes("internet") && !q.includes("pueios"),
     answer: () =>
-      `The Internet is a global network of interconnected computers that communicate using standardised protocols (mainly TCP/IP). It was developed from ARPANET in the 1960sΓÇô70s and became publicly available in the early 1990s. The World Wide Web (websites accessed via browsers) is built on top of the Internet. Today it connects billions of devices worldwide and enables communication, commerce, entertainment, and information sharing.`,
+      `The Internet is a global network of interconnected computers that communicate using standardised protocols (mainly TCP/IP). It was developed from ARPANET in the 1960s–70s and became publicly available in the early 1990s. The World Wide Web (websites accessed via browsers) is built on top of the Internet. Today it connects billions of devices worldwide and enables communication, commerce, entertainment, and information sharing.`,
   },
   {
     match: (q) => q.includes("artificial intelligence") || (q.includes(" ai ") && q.length < 60),
     answer: () =>
-      `Artificial Intelligence (AI) is the simulation of human intelligence by computer systems. It includes machine learning (systems that learn from data), natural language processing (understanding text and speech), computer vision, and robotics. Modern AI uses neural networks ΓÇö layers of mathematical functions inspired by the brain ΓÇö trained on large datasets. Applications include voice assistants, image recognition, translation, recommendation systems, and medical diagnosis.`,
+      `Artificial Intelligence (AI) is the simulation of human intelligence by computer systems. It includes machine learning (systems that learn from data), natural language processing (understanding text and speech), computer vision, and robotics. Modern AI uses neural networks — layers of mathematical functions inspired by the brain — trained on large datasets. Applications include voice assistants, image recognition, translation, recommendation systems, and medical diagnosis.`,
   },
   {
     match: (q) => q.includes("bitcoin") || q.includes("cryptocurrency") || q.includes("crypto"),
     answer: () =>
-      `Bitcoin is a decentralised digital currency created in 2009 by the pseudonymous Satoshi Nakamoto. It operates on a blockchain ΓÇö a public, distributed ledger that records all transactions. New bitcoins are created through "mining" (solving cryptographic puzzles). There will only ever be 21 million bitcoins. Cryptocurrency broadly refers to any digital currency using cryptography for security, including Ethereum, Litecoin, and thousands of others.`,
+      `Bitcoin is a decentralised digital currency created in 2009 by the pseudonymous Satoshi Nakamoto. It operates on a blockchain — a public, distributed ledger that records all transactions. New bitcoins are created through "mining" (solving cryptographic puzzles). There will only ever be 21 million bitcoins. Cryptocurrency broadly refers to any digital currency using cryptography for security, including Ethereum, Litecoin, and thousands of others.`,
   },
-  // ΓöÇΓöÇ Animals ΓöÇΓöÇ
+  // ── Animals ──
   {
     match: (q) => q.includes("shark"),
     answer: () =>
@@ -1136,24 +1136,24 @@ const KNOWLEDGE: Array<{ match: (q: string) => boolean; answer: (q: string) => s
     answer: () =>
       `Dinosaurs were a diverse group of reptiles that dominated terrestrial ecosystems for about 165 million years, from the Triassic period (~230 million years ago) until a mass extinction event ~66 million years ago (likely caused by an asteroid impact). They ranged from chicken-sized feathered creatures to the massive Argentinosaurus (~80 tonnes). Birds are the living descendants of theropod dinosaurs.`,
   },
-  // ΓöÇΓöÇ Math ΓöÇΓöÇ
+  // ── Math ──
   {
-    match: (q) => /what is \d+[\s]*[+\-*/├ù├╖][\s]*\d+/.test(q),
+    match: (q) => /what is \d+[\s]*[+\-*/×÷][\s]*\d+/.test(q),
     answer: (q) => {
-      const m = q.match(/(\d+(?:\.\d+)?)\s*([+\-*/├ù├╖])\s*(\d+(?:\.\d+)?)/);
+      const m = q.match(/(\d+(?:\.\d+)?)\s*([+\-*/×÷])\s*(\d+(?:\.\d+)?)/);
       if (!m) return "";
       const a = parseFloat(m[1]), op = m[2], b = parseFloat(m[3]);
       let result: number;
       if (op === "+" ) result = a + b;
       else if (op === "-") result = a - b;
-      else if (op === "*" || op === "├ù") result = a * b;
-      else if (op === "/" || op === "├╖") result = b !== 0 ? a / b : NaN;
+      else if (op === "*" || op === "×") result = a * b;
+      else if (op === "/" || op === "÷") result = b !== 0 ? a / b : NaN;
       else return "";
       if (isNaN(result)) return `Cannot divide by zero.`;
       return `${a} ${op} ${b} = **${result}**\n\nCalculated directly by Puei Copilot's math engine. All four search sources confirmed the result.`;
     },
   },
-  // ΓöÇΓöÇ Food ΓöÇΓöÇ
+  // ── Food ──
   {
     match: (q) => q.includes("pizza"),
     answer: () =>
@@ -1162,9 +1162,9 @@ const KNOWLEDGE: Array<{ match: (q: string) => boolean; answer: (q: string) => s
   {
     match: (q) => q.includes("spaghetti") || q.includes("pasta"),
     answer: () =>
-      `Pasta is an Italian food made from durum wheat semolina dough shaped into various forms ΓÇö spaghetti (long thin strands), penne, rigatoni, fusilli, lasagne, and hundreds more. It is typically boiled in salted water and served with a sauce. Spaghetti is commonly paired with tomato-based sauces (like bolognese or marinara), carbonara (eggs, cheese, pancetta), or aglio e olio (garlic, olive oil, chilli).`,
+      `Pasta is an Italian food made from durum wheat semolina dough shaped into various forms — spaghetti (long thin strands), penne, rigatoni, fusilli, lasagne, and hundreds more. It is typically boiled in salted water and served with a sauce. Spaghetti is commonly paired with tomato-based sauces (like bolognese or marinara), carbonara (eggs, cheese, pancetta), or aglio e olio (garlic, olive oil, chilli).`,
   },
-  // ΓöÇΓöÇ Sports ΓöÇΓöÇ
+  // ── Sports ──
   {
     match: (q) => q.includes("football") || q.includes("soccer"),
     answer: () =>
@@ -1175,7 +1175,7 @@ const KNOWLEDGE: Array<{ match: (q: string) => boolean; answer: (q: string) => s
     answer: () =>
       `Basketball is a sport invented by Dr. James Naismith in 1891 in the USA. Two teams of 5 players try to score by shooting a ball through the opposing team's hoop (10 feet/3 m high). Games have four 12-minute quarters (NBA) or two 20-minute halves (FIBA). The NBA (National Basketball Association) is the premier professional league. Famous players include Michael Jordan, LeBron James, and Kobe Bryant.`,
   },
-  // ΓöÇΓöÇ PueiOS-specific ΓöÇΓöÇ
+  // ── PueiOS-specific ──
   {
     match: (q) => q.includes("pueios") || q.includes("puei os"),
     answer: () =>
@@ -1184,7 +1184,7 @@ const KNOWLEDGE: Array<{ match: (q: string) => boolean; answer: (q: string) => s
   {
     match: (q) => q.includes("pueio number") || q.includes("puei number"),
     answer: () =>
-      `A Pueio Number is a unique 6-digit identifier assigned to every PueiOS account. It works like a phone number for PueiCloudChat ΓÇö you can add friends by their Pueio Number and send them messages.`,
+      `A Pueio Number is a unique 6-digit identifier assigned to every PueiOS account. It works like a phone number for PueiCloudChat — you can add friends by their Pueio Number and send them messages.`,
   },
   {
     match: (q) => q.includes("puei messenger") || q.includes("pueicloudchat") || q.includes("cloud chat"),
@@ -1194,7 +1194,7 @@ const KNOWLEDGE: Array<{ match: (q: string) => boolean; answer: (q: string) => s
   {
     match: (q) => q.includes("puei paint"),
     answer: () =>
-      `Puei Paint 2 is the built-in drawing app. Draw with different brush sizes and colors, save artwork as image files, and set a painting as your desktop wallpaper via Settings ΓåÆ Wallpaper.`,
+      `Puei Paint 2 is the built-in drawing app. Draw with different brush sizes and colors, save artwork as image files, and set a painting as your desktop wallpaper via Settings → Wallpaper.`,
   },
 ];
 
@@ -1210,7 +1210,7 @@ function generateCopilotAnswer(q: string): string {
     }
   }
 
-  // "how to" / "how do" questions ΓÇö give structured steps
+  // "how to" / "how do" questions — give structured steps
   if (/how (to|do|does|can|should)/.test(lq)) {
     const action = q.replace(/^how (to|do|does|can|should)( i| you| we)?\s+/i, "").trim();
     return (
@@ -1219,19 +1219,19 @@ function generateCopilotAnswer(q: string): string {
       `1. Research the specific requirements or prerequisites for "${action}"\n` +
       `2. Gather the necessary tools, materials, or knowledge beforehand\n` +
       `3. Follow authoritative step-by-step guides (manuals, official documentation, or expert tutorials)\n` +
-      `4. Practice or test carefully ΓÇö start small if possible\n` +
+      `4. Practice or test carefully — start small if possible\n` +
       `5. Adjust based on results and consult additional sources if needed\n\n` +
       `All four search engines returned consistent guidance on this topic.`
     );
   }
 
-  // "what is" / "who is" ΓÇö extract topic and give a real-sounding answer
+  // "what is" / "who is" — extract topic and give a real-sounding answer
   const whatMatch = lq.match(/^(what is|what are|who is|who are|what was|who was)\s+(.+)/);
   if (whatMatch) {
     const topic = whatMatch[2].trim();
     const capitalised = topic.charAt(0).toUpperCase() + topic.slice(1);
     return (
-      `${capitalised} ΓÇö here's what Puei Copilot found across Google, Edge, Firefox, and Opera:\n\n` +
+      `${capitalised} — here's what Puei Copilot found across Google, Edge, Firefox, and Opera:\n\n` +
       `${capitalised} is a topic well-covered in encyclopedias, academic sources, and news databases. ` +
       `All four search sources returned consistent, reliable results with no major discrepancies.\n\n` +
       `For a precise and detailed answer, the most authoritative sources are Wikipedia, official organisation websites, or peer-reviewed articles. ` +
@@ -1240,27 +1240,27 @@ function generateCopilotAnswer(q: string): string {
   }
 
   // Math quick-calc fallback
-  const mathMatch = q.match(/(\d+(?:\.\d+)?)\s*([+\-*/├ù├╖])\s*(\d+(?:\.\d+)?)/);
+  const mathMatch = q.match(/(\d+(?:\.\d+)?)\s*([+\-*/×÷])\s*(\d+(?:\.\d+)?)/);
   if (mathMatch) {
     const a = parseFloat(mathMatch[1]), op = mathMatch[2], b = parseFloat(mathMatch[3]);
     let result: number;
     if (op === "+") result = a + b;
     else if (op === "-") result = a - b;
-    else if (op === "*" || op === "├ù") result = a * b;
-    else if (op === "/" || op === "├╖") result = b !== 0 ? a / b : NaN;
+    else if (op === "*" || op === "×") result = a * b;
+    else if (op === "/" || op === "÷") result = b !== 0 ? a / b : NaN;
     else result = NaN;
     if (!isNaN(result)) return `${a} ${op} ${b} = **${result}**\n\nCalculated by Puei Copilot's built-in math engine.`;
   }
 
-  // General fallback ΓÇö still gives a real-feeling answer
+  // General fallback — still gives a real-feeling answer
   return (
     `Here's what Puei Copilot found for "${q}" across Google, Edge, Firefox, and Opera:\n\n` +
     `This topic appears in reference articles, educational content, news archives, and community discussions. ` +
     `All four search sources agree the information is widely available and consistent.\n\n` +
     `Key findings:\n` +
-    `ΓÇó Multiple authoritative sources cover this topic in depth\n` +
-    `ΓÇó No conflicting or misleading information was detected across the four search engines\n` +
-    `ΓÇó Untrusted and spam sources were filtered automatically\n\n` +
+    `• Multiple authoritative sources cover this topic in depth\n` +
+    `• No conflicting or misleading information was detected across the four search engines\n` +
+    `• Untrusted and spam sources were filtered automatically\n\n` +
     `Try rephrasing your question with more detail (e.g. "how does a bulldozer work", "what is gravity") for a more specific answer from Puei Copilot.`
   );
 }
@@ -1280,10 +1280,10 @@ function PueiCopilotPage() {
       const count2 = Math.floor(Math.random() * 90000) + 10000;
       const blocked = Math.floor(Math.random() * 5) + 1;
       const sources = [
-        { source: "Google", title: `${q} ΓÇö Overview`, summary: `Google: Found ${count1.toLocaleString()} results. Top results include reference articles, encyclopedias, and news. Authoritative sources verified.` },
-        { source: "Edge", title: `${q} ΓÇö Microsoft Search`, summary: `Edge / Bing: Found ${count2.toLocaleString()} results. Multiple authoritative pages with consistent information confirmed.` },
-        { source: "Firefox", title: `${q} ΓÇö Community sources`, summary: `Firefox: Community-curated results from open encyclopedias, forums, and educational sites. ${blocked} blocked sources filtered automatically.` },
-        { source: "Opera", title: `${q} ΓÇö Global search`, summary: `Opera: Surfaced in international news and reference databases. Cross-referenced with Google and Edge ΓÇö results are consistent.` },
+        { source: "Google", title: `${q} — Overview`, summary: `Google: Found ${count1.toLocaleString()} results. Top results include reference articles, encyclopedias, and news. Authoritative sources verified.` },
+        { source: "Edge", title: `${q} — Microsoft Search`, summary: `Edge / Bing: Found ${count2.toLocaleString()} results. Multiple authoritative pages with consistent information confirmed.` },
+        { source: "Firefox", title: `${q} — Community sources`, summary: `Firefox: Community-curated results from open encyclopedias, forums, and educational sites. ${blocked} blocked sources filtered automatically.` },
+        { source: "Opera", title: `${q} — Global search`, summary: `Opera: Surfaced in international news and reference databases. Cross-referenced with Google and Edge — results are consistent.` },
       ];
       setResults(sources);
       setAnswer(generateCopilotAnswer(q));
@@ -1294,10 +1294,10 @@ function PueiCopilotPage() {
   return (
     <div className="p-6 max-w-3xl mx-auto h-full overflow-auto">
       <div className="flex items-center gap-3 mb-5">
-        <div className="text-3xl">Γ£ª</div>
+        <div className="text-3xl">✦</div>
         <div>
           <h1 className="text-2xl font-bold" style={{ color: "var(--accent)" }}>Puei Copilot</h1>
-          <p className="text-[11px] opacity-60">AI assistant ┬╖ gathers from Google ┬╖ Edge ┬╖ Firefox ┬╖ Opera ┬╖ filters untrusted sources automatically</p>
+          <p className="text-[11px] opacity-60">AI assistant · gathers from Google · Edge · Firefox · Opera · filters untrusted sources automatically</p>
         </div>
       </div>
       <div className="flex gap-2 mb-5">
@@ -1305,20 +1305,20 @@ function PueiCopilotPage() {
           onKeyDown={(e) => e.key === "Enter" && doSearch(query)}
           className="flex-1 px-4 py-2.5 rounded-full text-sm outline-none"
           style={{ background: "white", color: "#111", border: "2px solid oklch(0.65 0.18 var(--accent-h))" }}
-          placeholder="Ask Puei Copilot or search anythingΓÇª" />
+          placeholder="Ask Puei Copilot or search anything…" />
         <button className="aero-button rounded-full px-5 py-2 text-sm font-semibold" onClick={() => doSearch(query)}>Search</button>
       </div>
       {thinking && (
         <div className="aero-glass-light rounded-xl p-4 mb-4 text-sm flex items-center gap-3 animate-pulse">
           <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin opacity-60 flex-shrink-0" />
-          Puei Copilot is searching Google, Edge, Firefox, and Opera and generating your answerΓÇª
+          Puei Copilot is searching Google, Edge, Firefox, and Opera and generating your answer…
         </div>
       )}
       {answer && (
         <div className="aero-glass-light rounded-xl p-4 mb-4 border" style={{ borderColor: "oklch(0.65 0.18 var(--accent-h) / 0.3)" }}>
           <div className="flex items-center gap-2 mb-3">
             <div className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
-              style={{ background: "var(--gradient-aero)", color: "white" }}>Γ£ª</div>
+              style={{ background: "var(--gradient-aero)", color: "white" }}>✦</div>
             <div className="font-semibold text-sm">Puei Copilot Summary</div>
           </div>
           <div className="text-sm whitespace-pre-wrap leading-relaxed opacity-90">
@@ -1340,13 +1340,13 @@ function PueiCopilotPage() {
                 {r.source[0]}
               </div>
               <div className="flex-1 min-w-0">
-                <div className="text-xs font-semibold">{r.source} ΓÇö {r.title}</div>
+                <div className="text-xs font-semibold">{r.source} — {r.title}</div>
                 <div className="text-xs opacity-70 mt-0.5 leading-relaxed">{r.summary}</div>
               </div>
             </div>
           ))}
           <div className="text-[10px] opacity-40 flex items-center gap-1 pt-2">
-            ≡ƒ¢í∩╕Å Untrusted and blocked sources filtered automatically by Pueios2 security policies.
+            🛡️ Untrusted and blocked sources filtered automatically by Pueios2 security policies.
           </div>
         </div>
       )}
@@ -1360,12 +1360,12 @@ function PueiCopilotPage() {
             ].map((q) => (
               <button key={q} className="aero-glass-light rounded-lg p-3 text-xs text-left hover:bg-white/30"
                 onClick={() => { setQuery(q); doSearch(q); }}>
-                <span className="opacity-50">≡ƒÆí</span> {q}
+                <span className="opacity-50">💡</span> {q}
               </button>
             ))}
           </div>
           <div className="text-[10px] opacity-40 mt-4 flex items-center gap-1">
-            Γ£ª Puei Copilot supports: Google ┬╖ Edge ┬╖ Firefox ┬╖ Opera
+            ✦ Puei Copilot supports: Google · Edge · Firefox · Opera
           </div>
         </div>
       )}
@@ -1485,13 +1485,13 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
         <p className="opacity-70 mt-2">The retro-futuristic web, circa 2020.</p>
         <div className="mt-6 grid grid-cols-3 gap-3 max-w-2xl mx-auto">
           {[
-            ["puei://board", "≡ƒôî PueiBoard"],
-            ["puei://updates", "Γ¼å∩╕Å Puei Updates"],
-            ["puei://search", "Γ£ª Puei Copilot"],
-            ["puei://forum", "≡ƒÆ¼ PueiForum"],
-            ["puei://mail", "Γ£ë∩╕Å PueiMail"],
-            ["puei://wallpapers", "≡ƒû╝∩╕Å Puei Wallpapers"],
-            ["puei://about", "Γä╣∩╕Å About"],
+            ["puei://board", "📌 PueiBoard"],
+            ["puei://updates", "⬆️ Puei Updates"],
+            ["puei://search", "✦ Puei Copilot"],
+            ["puei://forum", "💬 PueiForum"],
+            ["puei://mail", "✉️ PueiMail"],
+            ["puei://wallpapers", "🖼️ Puei Wallpapers"],
+            ["puei://about", "ℹ️ About"],
           ].map(([u, l]) => (
             <button key={u} onClick={() => navigate(u)} className="aero-button rounded-lg p-4">{l}</button>
           ))}
@@ -1501,7 +1501,7 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
     "puei://forum": (
       <div className="p-6 space-y-6 text-sm">
         <div>
-          <h2 className="text-2xl font-bold mb-1">≡ƒÆ¼ Puei Forum</h2>
+          <h2 className="text-2xl font-bold mb-1">💬 Puei Forum</h2>
           <p className="opacity-60 text-xs">The largest community for all Puei and PueiOS 2 users.</p>
         </div>
         <div>
@@ -1522,7 +1522,7 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
           </ul>
         </div>
         <div>
-          <div className="font-semibold mb-2 opacity-80">≡ƒöÑ Popular discussions:</div>
+          <div className="font-semibold mb-2 opacity-80">🔥 Popular discussions:</div>
           <ul className="space-y-1 opacity-70 list-disc list-inside">
             <li>"Why was old PueiOS 2 smoother?"</li>
             <li>"Rate my Puei desktop."</li>
@@ -1536,7 +1536,7 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
           </ul>
         </div>
         <div>
-          <div className="font-semibold mb-2 opacity-80">≡ƒôï Forum Rules:</div>
+          <div className="font-semibold mb-2 opacity-80">📋 Forum Rules:</div>
           <ul className="space-y-1 opacity-70 list-disc list-inside">
             <li>No corrupted files</li>
             <li>No fake Pueio Numbers</li>
@@ -1547,7 +1547,7 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
           </ul>
         </div>
         <div className="rounded-lg p-3" style={{ background: "rgba(255,255,255,0.07)" }}>
-          <div className="font-semibold mb-2 opacity-90">≡ƒô░ Latest News ΓÇö PueiOS 2+ Update:</div>
+          <div className="font-semibold mb-2 opacity-90">📰 Latest News — PueiOS 2+ Update:</div>
           <ul className="space-y-1 opacity-70 list-disc list-inside">
             <li>Faster cloud sync</li>
             <li>Improved PueiCloudChat saving</li>
@@ -1557,8 +1557,8 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
           </ul>
         </div>
         <div className="rounded-lg p-3 border" style={{ borderColor: "rgba(255,255,255,0.15)", background: "rgba(255,255,255,0.04)" }}>
-          <div className="text-xs opacity-50 mb-1">≡ƒöÑ Trending</div>
-          <div className="opacity-80">"My puei deleted my desktop shortcuts again ≡ƒÆÇ"</div>
+          <div className="text-xs opacity-50 mb-1">🔥 Trending</div>
+          <div className="opacity-80">"My puei deleted my desktop shortcuts again 💀"</div>
         </div>
       </div>
     ),
@@ -1569,7 +1569,7 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
     ),
     "puei://updates": (
       <div className="p-6 space-y-4">
-        <h2 className="text-2xl font-bold">Γ¼å∩╕Å Puei Updates</h2>
+        <h2 className="text-2xl font-bold">⬆️ Puei Updates</h2>
         <p className="text-sm opacity-75">Update flow: 1) Download ISO into Files, 2) Install Puei Updater from App Store, 3) Open Puei Updater and drag the ISO into it, 4) wait for restart into PueiOS 2+.</p>
 
         <div className="aero-glass-light rounded-xl p-4 space-y-3 max-w-xl">
@@ -1580,9 +1580,9 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
             Puei Updater status: {updaterInstalled ? <span className="font-semibold text-green-500">Installed</span> : <span className="font-semibold text-amber-500">Not installed from App Store</span>}
           </div>
           <div className="flex gap-2 flex-wrap">
-            <button className="aero-button rounded px-3 py-1.5 text-xs" onClick={downloadPlusIso}>Γ¼ç Download pueios2-plus.iso to Files</button>
+            <button className="aero-button rounded px-3 py-1.5 text-xs" onClick={downloadPlusIso}>⬇ Download pueios2-plus.iso to Files</button>
             <button className="aero-button rounded px-3 py-1.5 text-xs" disabled={!isoFile}
-              style={{ opacity: isoFile ? 1 : 0.5 }} onClick={deleteIsoAfterUpdate}>≡ƒùæ∩╕Å Delete ISO</button>
+              style={{ opacity: isoFile ? 1 : 0.5 }} onClick={deleteIsoAfterUpdate}>🗑️ Delete ISO</button>
           </div>
 
           <div className="text-xs rounded px-3 py-2" style={{ background: "rgba(255,255,255,0.08)" }}>
@@ -1600,7 +1600,7 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
     "puei://wallpapers": (
       <div className="p-6">
         <div className="mb-4">
-          <h2 className="text-2xl font-bold">≡ƒû╝∩╕Å Puei Wallpapers</h2>
+          <h2 className="text-2xl font-bold">🖼️ Puei Wallpapers</h2>
           <p className="text-xs opacity-70 mt-1">Generated Aero-style wallpaper pack. Click Download to save into Pictures, Downloads, or Desktop.</p>
         </div>
         <div className="grid grid-cols-2 gap-4">
@@ -1610,7 +1610,7 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
               <div className="mt-2 text-sm font-semibold">{w.name}</div>
               <button className="aero-button rounded-md px-3 py-1 text-xs mt-2"
                 onClick={() => downloadWallpaper(w)}>
-                Γ¼ç Download
+                ⬇ Download
               </button>
             </div>
           ))}
@@ -1626,7 +1626,7 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
   } else if (navUrl === "puei://mail") {
     content = null; // rendered below as PueiMailApp
   } else if (navUrl.startsWith("puei://")) {
-    content = fakeSites[navUrl] || <div className="p-6">404 ΓÇö page not found in this universe.</div>;
+    content = fakeSites[navUrl] || <div className="p-6">404 — page not found in this universe.</div>;
   } else {
     // Allow all https:// URLs
     let loadUrl = navUrl.trim();
@@ -1648,15 +1648,15 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
               background: active === t.id ? "var(--glass-strong)" : "var(--glass)",
               border: "1px solid var(--border)", borderBottom: "none",
             }}>
-            {t.title} <span onClick={(e) => { e.stopPropagation(); setTabs(tabs.filter(x => x.id !== t.id)); }} className="ml-2 opacity-60 hover:opacity-100">├ù</span>
+            {t.title} <span onClick={(e) => { e.stopPropagation(); setTabs(tabs.filter(x => x.id !== t.id)); }} className="ml-2 opacity-60 hover:opacity-100">×</span>
           </div>
         ))}
         <button className="aero-button rounded px-2 py-0.5 text-xs ml-1"
           onClick={() => { const id = Date.now(); setTabs([...tabs, { id, title: "New Tab", url: "puei://home" }]); setActive(id); navigate("puei://home"); }}>+</button>
       </div>
       <div className="aero-titlebar flex items-center gap-2 px-2 py-1">
-        <button className="aero-button rounded px-2 py-0.5 text-xs" onClick={() => navigate("puei://home")}>Γîé</button>
-        <button className="aero-button rounded px-2 py-0.5 text-xs" onClick={() => navigate("puei://search")}>Γ£ª</button>
+        <button className="aero-button rounded px-2 py-0.5 text-xs" onClick={() => navigate("puei://home")}>⌂</button>
+        <button className="aero-button rounded px-2 py-0.5 text-xs" onClick={() => navigate("puei://search")}>✦</button>
         <input value={urlBar} onChange={(e) => setUrlBar(e.target.value)}
           onKeyDown={(e) => { if (e.key === "Enter") navigate(urlBar); }}
           className="flex-1 rounded-full px-3 py-1 text-xs outline-none"
@@ -1674,12 +1674,12 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
 
 // ---------- PueiMail ----------
 const SYSTEM_FOLDERS: { id: MailFolderId; label: string; icon: string }[] = [
-  { id: "inbox", label: "Inbox", icon: "≡ƒôÑ" },
-  { id: "important", label: "Important", icon: "Γ¡É" },
-  { id: "drafts", label: "Drafts", icon: "≡ƒô¥" },
-  { id: "sent", label: "Sent", icon: "≡ƒôñ" },
-  { id: "spam", label: "Spam", icon: "≡ƒÜ½" },
-  { id: "trash", label: "Trash", icon: "≡ƒùæ∩╕Å" },
+  { id: "inbox", label: "Inbox", icon: "📥" },
+  { id: "important", label: "Important", icon: "⭐" },
+  { id: "drafts", label: "Drafts", icon: "📝" },
+  { id: "sent", label: "Sent", icon: "📤" },
+  { id: "spam", label: "Spam", icon: "🚫" },
+  { id: "trash", label: "Trash", icon: "🗑️" },
 ];
 
 function readFileAsAttachment(file: File): Promise<MailAttachment> {
@@ -1867,7 +1867,7 @@ function PueiMailApp({ currentUser, users }: { currentUser: string; users: User[
     const updated = [...others, d];
     setMsgs(updated); saveMail(updated);
     setDraftId(id);
-    setSendStatus("Γ£ô Draft saved!");
+    setSendStatus("✓ Draft saved!");
     setTimeout(() => setSendStatus(""), 2000);
   };
 
@@ -1927,7 +1927,7 @@ function PueiMailApp({ currentUser, users }: { currentUser: string; users: User[
       {/* Sidebar */}
       <div className="w-52 flex-shrink-0 p-3 border-r flex flex-col gap-1 overflow-y-auto" style={{ background: "var(--glass)" }}>
         <button className="aero-button rounded-lg px-3 py-2 text-sm font-semibold mb-2 w-full"
-          onClick={() => openCompose()}>Γ£Å∩╕Å Compose</button>
+          onClick={() => openCompose()}>✏️ Compose</button>
         {SYSTEM_FOLDERS.map((f) => (
           <div key={f.id} onClick={() => { setFolder(f.id); setSelected(null); setShowAttachmentsView(false); setShowDownloadsView(false); }}
             className="px-3 py-2 rounded-md cursor-pointer text-sm flex justify-between items-center"
@@ -1945,7 +1945,7 @@ function PueiMailApp({ currentUser, users }: { currentUser: string; users: User[
             <div key={id} onClick={() => { setFolder(id); setSelected(null); setShowAttachmentsView(false); setShowDownloadsView(false); }}
               className="px-3 py-2 rounded-md cursor-pointer text-sm flex justify-between items-center"
               style={{ background: folder === id ? "var(--gradient-aero)" : "transparent", color: folder === id ? "white" : "inherit" }}>
-              <span>≡ƒôü {name}</span>
+              <span>📁 {name}</span>
             </div>
           );
         })}
@@ -1955,12 +1955,12 @@ function PueiMailApp({ currentUser, users }: { currentUser: string; users: User[
           <div onClick={() => { setShowAttachmentsView(true); setShowDownloadsView(false); setSelected(null); setComposing(false); }}
             className="px-3 py-2 rounded-md cursor-pointer text-sm"
             style={{ background: showAttachmentsView ? "var(--gradient-aero)" : "transparent", color: showAttachmentsView ? "white" : "inherit" }}>
-            ≡ƒôÄ Saved attachments
+            📎 Saved attachments
           </div>
           <div onClick={() => { setShowDownloadsView(true); setShowAttachmentsView(false); setSelected(null); setComposing(false); }}
             className="px-3 py-2 rounded-md cursor-pointer text-sm"
             style={{ background: showDownloadsView ? "var(--gradient-aero)" : "transparent", color: showDownloadsView ? "white" : "inherit" }}>
-            Γ¼ç∩╕Å Download history
+            ⬇️ Download history
           </div>
         </div>
 
@@ -1973,17 +1973,17 @@ function PueiMailApp({ currentUser, users }: { currentUser: string; users: User[
       {/* Center column */}
       <div className="w-64 flex-shrink-0 border-r flex flex-col overflow-hidden">
         <div className="p-2 border-b">
-          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="≡ƒöì Search mailΓÇª"
+          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="🔍 Search mail…"
             className="w-full px-2 py-1 text-xs rounded outline-none"
             style={{ background: "white", color: "#111", border: "1px solid var(--border)" }} />
         </div>
         {showAttachmentsView ? (
-          <div className="px-3 py-2 text-xs font-semibold opacity-70 border-b">Saved attachments ┬╖ {allAttachments.length}</div>
+          <div className="px-3 py-2 text-xs font-semibold opacity-70 border-b">Saved attachments · {allAttachments.length}</div>
         ) : showDownloadsView ? (
-          <div className="px-3 py-2 text-xs font-semibold opacity-70 border-b">Download history ┬╖ {downloads.length}</div>
+          <div className="px-3 py-2 text-xs font-semibold opacity-70 border-b">Download history · {downloads.length}</div>
         ) : (
           <div className="px-3 py-2 text-xs font-semibold opacity-60 border-b capitalize">
-            {SYSTEM_FOLDERS.find((f) => f.id === folder)?.label || (customFolders.find((c) => c.split("|")[0] === folder)?.split("|")[1] ?? folder)} ┬╖ {folderMsgs.length}
+            {SYSTEM_FOLDERS.find((f) => f.id === folder)?.label || (customFolders.find((c) => c.split("|")[0] === folder)?.split("|")[1] ?? folder)} · {folderMsgs.length}
           </div>
         )}
         <div className="flex-1 overflow-auto">
@@ -2005,8 +2005,8 @@ function PueiMailApp({ currentUser, users }: { currentUser: string; users: User[
                     });
                   }
                 }}>
-                <div className="font-semibold truncate">{a.kind === "image" ? "≡ƒû╝∩╕Å" : a.kind === "video" ? "≡ƒÄ¼" : "≡ƒôÄ"} {a.name}</div>
-                <div className="opacity-60 truncate">{a.from} ┬╖ {a.subject}</div>
+                <div className="font-semibold truncate">{a.kind === "image" ? "🖼️" : a.kind === "video" ? "🎬" : "📎"} {a.name}</div>
+                <div className="opacity-60 truncate">{a.from} · {a.subject}</div>
               </div>
             ))
           ) : showDownloadsView ? (
@@ -2014,7 +2014,7 @@ function PueiMailApp({ currentUser, users }: { currentUser: string; users: User[
             : downloads.map((d) => (
               <div key={d.id} className="px-3 py-2 border-b text-xs">
                 <div className="font-semibold truncate">{d.name}</div>
-                <div className="opacity-60">{new Date(d.at).toLocaleString()} ┬╖ {Math.round(d.size / 1024)} KB</div>
+                <div className="opacity-60">{new Date(d.at).toLocaleString()} · {Math.round(d.size / 1024)} KB</div>
                 {d.destination && <div className="opacity-45">Saved to: {d.destination}</div>}
               </div>
             ))
@@ -2034,7 +2034,7 @@ function PueiMailApp({ currentUser, users }: { currentUser: string; users: User[
               style={{ background: selected?.id === msg.id ? "rgba(255,255,255,0.25)" : undefined }}>
               <div className="flex justify-between items-center">
                 <span className="text-xs truncate max-w-[140px]" style={{ fontWeight: !msg.read && msg.folder === "inbox" ? 700 : 400 }}>
-                  {msg.important && "Γ¡É "}{folder === "sent" || msg.folder === "sent" ? `ΓåÆ ${msg.to}` : msg.from}
+                  {msg.important && "⭐ "}{folder === "sent" || msg.folder === "sent" ? `→ ${msg.to}` : msg.from}
                 </span>
                 <span className="text-[10px] opacity-50 flex-shrink-0">{formatDate(msg.at)}</span>
               </div>
@@ -2042,7 +2042,7 @@ function PueiMailApp({ currentUser, users }: { currentUser: string; users: User[
                 {msg.subject || "(no subject)"}
               </div>
               <div className="text-[10px] truncate opacity-50">
-                {msg.attachments?.length ? `≡ƒôÄ${msg.attachments.length} ` : ""}{msg.body.slice(0, 60)}
+                {msg.attachments?.length ? `📎${msg.attachments.length} ` : ""}{msg.body.slice(0, 60)}
               </div>
             </div>
           ))}
@@ -2078,7 +2078,7 @@ function PueiMailApp({ currentUser, users }: { currentUser: string; users: User[
                 style={{ background: "white", color: "#111", border: "1px solid var(--border)" }} />
             </div>
             <textarea value={draft.body} onChange={(e) => setDraft({ ...draft, body: e.target.value })}
-              placeholder="Write your messageΓÇª"
+              placeholder="Write your message…"
               className="flex-1 px-3 py-2 rounded text-sm outline-none resize-none min-h-[160px]"
               style={{ background: "white", color: "#111", border: "1px solid var(--border)" }} />
 
@@ -2086,61 +2086,61 @@ function PueiMailApp({ currentUser, users }: { currentUser: string; users: User[
               <div className="flex flex-wrap gap-2">
                 {pending.map((a) => (
                   <div key={a.id} className="aero-glass-light rounded px-2 py-1 text-xs flex items-center gap-2">
-                    <span>{a.kind === "image" ? "≡ƒû╝∩╕Å" : a.kind === "video" ? "≡ƒÄ¼" : "≡ƒôÄ"} {a.name}</span>
-                    <button className="opacity-60 hover:opacity-100" onClick={() => setPending(pending.filter((x) => x.id !== a.id))}>├ù</button>
+                    <span>{a.kind === "image" ? "🖼️" : a.kind === "video" ? "🎬" : "📎"} {a.name}</span>
+                    <button className="opacity-60 hover:opacity-100" onClick={() => setPending(pending.filter((x) => x.id !== a.id))}>×</button>
                   </div>
                 ))}
               </div>
             )}
 
             <div className="text-[11px] opacity-60">
-              <strong>Γ£ª AI suggestions:</strong>
+              <strong>✦ AI suggestions:</strong>
               <div className="flex flex-wrap gap-1 mt-1">
                 {aiMailSuggestions({ subject: draft.subject, body: draft.body }).map((s, i) => (
                   <button key={i} onClick={() => setDraft({ ...draft, body: (draft.body ? draft.body + "\n\n" : "") + s })}
-                    className="aero-button rounded px-2 py-0.5 text-[10px]">{s.slice(0, 40)}{s.length > 40 ? "ΓÇª" : ""}</button>
+                    className="aero-button rounded px-2 py-0.5 text-[10px]">{s.slice(0, 40)}{s.length > 40 ? "…" : ""}</button>
                 ))}
               </div>
             </div>
 
             {sendStatus && <div className="text-red-400 text-xs">{sendStatus}</div>}
             <div className="flex gap-2 flex-wrap">
-              <button className="aero-button rounded-lg px-5 py-2 text-sm font-semibold" onClick={doSend}>≡ƒô¿ Send</button>
-              <button className="aero-button rounded-lg px-4 py-2 text-sm" onClick={handleAttachClick}>≡ƒôÄ Attach</button>
+              <button className="aero-button rounded-lg px-5 py-2 text-sm font-semibold" onClick={doSend}>📨 Send</button>
+              <button className="aero-button rounded-lg px-4 py-2 text-sm" onClick={handleAttachClick}>📎 Attach</button>
               <input type="file" multiple ref={fileInput} className="hidden"
                 accept="image/*,video/*,.pdf,.txt,.doc,.docx,.zip"
                 onChange={(e) => { handleFiles(e.target.files); e.target.value = ""; }} />
-              <button className="aero-button rounded-lg px-4 py-2 text-sm" onClick={saveDraft}>≡ƒÆ╛ Save draft</button>
+              <button className="aero-button rounded-lg px-4 py-2 text-sm" onClick={saveDraft}>💾 Save draft</button>
               <button className="aero-button rounded-lg px-4 py-2 text-sm" onClick={() => { setComposing(false); setSendStatus(""); setPending([]); setDraftId(null); }}>Discard</button>
             </div>
           </div>
         ) : selected ? (
           <div className="max-w-2xl">
             <div className="flex justify-between items-start mb-4 flex-wrap gap-2">
-              <h2 className="text-xl font-semibold">{selected.important && "Γ¡É "}{selected.subject || "(no subject)"}</h2>
+              <h2 className="text-xl font-semibold">{selected.important && "⭐ "}{selected.subject || "(no subject)"}</h2>
               <div className="flex gap-1 flex-wrap">
                 <button className="aero-button rounded px-2 py-1 text-xs"
                   onClick={() => openCompose({ to: selected.from === currentUser ? selected.to : selected.from, subject: `Re: ${selected.subject}`, body: `\n\n--- Original from ${selected.from} ---\n${selected.body}` })}>
-                  Γå⌐ Reply
+                  ↩ Reply
                 </button>
                 <button className="aero-button rounded px-2 py-1 text-xs" onClick={() => updateMsg((m) => ({ ...m, important: !m.important }), selected.id)}>
-                  {selected.important ? "Γÿå Unstar" : "Γ¡É Important"}
+                  {selected.important ? "☆ Unstar" : "⭐ Important"}
                 </button>
                 <button className="aero-button rounded px-2 py-1 text-xs" onClick={() => moveToFolder(selected.id, selected.folder === "spam" ? "inbox" : "spam")}>
-                  {selected.folder === "spam" ? "Γ£ô Not spam" : "≡ƒÜ½ Spam"}
+                  {selected.folder === "spam" ? "✓ Not spam" : "🚫 Spam"}
                 </button>
                 {selected.folder === "trash" ? (
                   <>
-                    <button className="aero-button rounded px-2 py-1 text-xs" onClick={() => moveToFolder(selected.id, "inbox")}>ΓÖ╗∩╕Å Restore</button>
-                    <button className="aero-button rounded px-2 py-1 text-xs" onClick={() => deleteMsg(selected.id, true)}>≡ƒùæ∩╕Å Delete forever</button>
+                    <button className="aero-button rounded px-2 py-1 text-xs" onClick={() => moveToFolder(selected.id, "inbox")}>♻️ Restore</button>
+                    <button className="aero-button rounded px-2 py-1 text-xs" onClick={() => deleteMsg(selected.id, true)}>🗑️ Delete forever</button>
                   </>
                 ) : (
-                  <button className="aero-button rounded px-2 py-1 text-xs" onClick={() => deleteMsg(selected.id)}>≡ƒùæ∩╕Å Trash</button>
+                  <button className="aero-button rounded px-2 py-1 text-xs" onClick={() => deleteMsg(selected.id)}>🗑️ Trash</button>
                 )}
                 {customFolders.length > 0 && (
                   <select className="text-xs rounded px-1 py-0.5" style={{ background: "white", color: "#111" }}
                     value="" onChange={(e) => e.target.value && moveToFolder(selected.id, e.target.value)}>
-                    <option value="">Move toΓÇª</option>
+                    <option value="">Move to…</option>
                     {customFolders.map((c) => { const [id, name] = c.split("|"); return <option key={id} value={id}>{name}</option>; })}
                   </select>
                 )}
@@ -2154,24 +2154,24 @@ function PueiMailApp({ currentUser, users }: { currentUser: string; users: User[
             </div>
             {selected.attachments && selected.attachments.length > 0 && (
               <div className="space-y-2">
-                <div className="text-xs font-semibold opacity-70">≡ƒôÄ Attachments ({selected.attachments.length})</div>
+                <div className="text-xs font-semibold opacity-70">📎 Attachments ({selected.attachments.length})</div>
                 {selected.attachments.map((a) => (
                   <div key={a.id} className="aero-glass-light rounded p-2 flex items-center gap-3">
                     {a.kind === "image" && <img src={a.dataUrl} alt={a.name} className="w-16 h-16 object-cover rounded" />}
                     {a.kind === "video" && <video src={a.dataUrl} className="w-24 h-16 rounded" />}
-                    {a.kind === "file" && <div className="w-16 h-16 flex items-center justify-center text-2xl bg-white/30 rounded">≡ƒôä</div>}
+                    {a.kind === "file" && <div className="w-16 h-16 flex items-center justify-center text-2xl bg-white/30 rounded">📄</div>}
                     <div className="flex-1 min-w-0">
                       <div className="text-sm truncate">{a.name}</div>
-                      <div className="text-[10px] opacity-60">{Math.round(a.size / 1024)} KB ┬╖ {a.mime}</div>
+                      <div className="text-[10px] opacity-60">{Math.round(a.size / 1024)} KB · {a.mime}</div>
                     </div>
                     <div className="flex flex-col gap-1">
                       {a.kind === "image" && (
                         <button className="aero-button rounded px-2 py-1 text-xs"
-                          onClick={() => window.open(a.dataUrl, "_blank")}>≡ƒöì Open</button>
+                          onClick={() => window.open(a.dataUrl, "_blank")}>🔍 Open</button>
                       )}
                       <button className="aero-button rounded px-2 py-1 text-xs"
                         onClick={() => { downloadAttachment(a); recordDownload(currentUser, { id: `dl-${Date.now()}`, name: a.name, kind: a.kind, size: a.size, at: Date.now(), mailId: selected.id }); }}>
-                        Γ¼ç∩╕Å Download
+                        ⬇️ Download
                       </button>
                     </div>
                   </div>
@@ -2186,7 +2186,7 @@ function PueiMailApp({ currentUser, users }: { currentUser: string; users: User[
               <div key={a.id} className="aero-glass-light rounded p-2">
                 {a.kind === "image" ? <img src={a.dataUrl} className="w-full h-24 object-cover rounded" /> :
                  a.kind === "video" ? <video src={a.dataUrl} className="w-full h-24 rounded" controls /> :
-                 <div className="w-full h-24 flex items-center justify-center text-3xl bg-white/30 rounded">≡ƒôä</div>}
+                 <div className="w-full h-24 flex items-center justify-center text-3xl bg-white/30 rounded">📄</div>}
                 <div className="text-xs truncate mt-1">{a.name}</div>
                 <div className="text-[10px] opacity-60 truncate">{a.from}</div>
                 <button className="aero-button rounded w-full mt-1 text-[10px] py-0.5"
@@ -2202,15 +2202,15 @@ function PueiMailApp({ currentUser, users }: { currentUser: string; users: User[
             {downloads.length === 0 ? <div className="opacity-50 text-sm">Nothing downloaded yet.</div>
             : downloads.map((d) => (
               <div key={d.id} className="aero-glass-light rounded p-2 text-sm flex justify-between">
-                <span>{d.kind === "image" ? "≡ƒû╝∩╕Å" : d.kind === "video" ? "≡ƒÄ¼" : "≡ƒôÄ"} {d.name}</span>
+                <span>{d.kind === "image" ? "🖼️" : d.kind === "video" ? "🎬" : "📎"} {d.name}</span>
                 <span className="text-xs opacity-60">{new Date(d.at).toLocaleString()}</span>
               </div>
             ))}
           </div>
         ) : (
           <div className="h-full flex flex-col items-center justify-center opacity-50 text-sm gap-2">
-            <div className="text-5xl">Γ£ë∩╕Å</div>
-            <div>Puei Mail ┬╖ {myAddress}</div>
+            <div className="text-5xl">✉️</div>
+            <div>Puei Mail · {myAddress}</div>
             <div className="text-xs">Select a message to read, or compose a new one.</div>
           </div>
         )}
@@ -2369,7 +2369,7 @@ function PueiCloudChatApp({ user, users, setUsers }: { user: string; users: User
 
   // Poll API
   useEffect(() => {
-    if (!myPueiNumber || myPueiNumber==="ΓÇö") return;
+    if (!myPueiNumber || myPueiNumber==="—") return;
     let cancelled = false;
     const poll = async () => {
       try {
@@ -2534,7 +2534,7 @@ function PueiCloudChatApp({ user, users, setUsers }: { user: string; users: User
   if (showSettings) return (
     <div className="flex flex-col h-full" style={{background:MAIN_BG,color:"white"}}>
       <div className="flex items-center gap-2 px-4 py-3 border-b border-white/10">
-        <button onClick={()=>setShowSettings(false)} className="text-sm px-3 py-1 rounded-full hover:bg-white/10">ΓåÉ Back</button>
+        <button onClick={()=>setShowSettings(false)} className="text-sm px-3 py-1 rounded-full hover:bg-white/10">← Back</button>
         <span className="font-semibold">My Profile</span>
       </div>
       <div className="flex-1 p-6 flex flex-col items-center gap-5">
@@ -2542,12 +2542,12 @@ function PueiCloudChatApp({ user, users, setUsers }: { user: string; users: User
           style={{background:`linear-gradient(135deg,oklch(0.7 0.18 ${me?.color??200}),oklch(0.45 0.2 ${me?.color??200}))`}}>
           {me?.avatar?.startsWith("data:")
             ? <img src={me.avatar} alt="" className="w-full h-full object-cover"/>
-            : (me?.avatar||"≡ƒæñ")}
+            : (me?.avatar||"👤")}
         </div>
         <div className="text-2xl font-bold">{user}</div>
         <div className="rounded-2xl p-5 w-full max-w-xs" style={{background:"rgba(255,255,255,0.07)"}}>
           <div className="text-xs opacity-50 mb-1 uppercase tracking-widest">Your Puei Number</div>
-          <div className="font-mono text-2xl font-bold tracking-wider">{myPueiNumber||"ΓÇö"}</div>
+          <div className="font-mono text-2xl font-bold tracking-wider">{myPueiNumber||"—"}</div>
           <div className="text-xs opacity-40 mt-2">Share this with people on other devices so they can message you</div>
         </div>
         {(() => {
@@ -2580,15 +2580,15 @@ function PueiCloudChatApp({ user, users, setUsers }: { user: string; users: User
         {/* Header */}
         <div className="px-3 pt-3 pb-2 flex items-center justify-between">
           <span className="font-bold text-sm flex items-center gap-1.5">
-            <span className="text-base">≡ƒÆ¼</span> PueiCloudChat
+            <span className="text-base">💬</span> PueiCloudChat
           </span>
           <button onClick={()=>{setShowSettings(true);blip("click");}}
             className="w-7 h-7 rounded-full flex items-center justify-center text-sm opacity-50 hover:opacity-100 transition-opacity"
-            style={{background:"rgba(255,255,255,0.08)"}}>ΓÜÖ∩╕Å</button>
+            style={{background:"rgba(255,255,255,0.08)"}}>⚙️</button>
         </div>
         {/* Search */}
         <div className="px-2 pb-2">
-          <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="SearchΓÇª"
+          <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search…"
             className="w-full px-3 py-1.5 rounded-full text-xs outline-none"
             style={{background:"rgba(255,255,255,0.08)",color:"white",border:"1px solid rgba(255,255,255,0.08)"}}/>
         </div>
@@ -2605,7 +2605,7 @@ function PueiCloudChatApp({ user, users, setUsers }: { user: string; users: User
                         borderLeft:isActive?"3px solid #8b5cf6":"3px solid transparent"}}>
                 <div className="w-9 h-9 rounded-full flex-shrink-0 flex items-center justify-center text-lg overflow-hidden"
                   style={{background:`linear-gradient(135deg,oklch(0.7 0.18 ${c.color??200}),oklch(0.45 0.2 ${c.color??200}))`}}>
-                  {c.avatar?.startsWith("data:")?<img src={c.avatar} alt="" className="w-full h-full object-cover"/>:(c.avatar||"≡ƒæñ")}
+                  {c.avatar?.startsWith("data:")?<img src={c.avatar} alt="" className="w-full h-full object-cover"/>:(c.avatar||"👤")}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="text-sm font-medium truncate">{c.name}</div>
@@ -2625,7 +2625,7 @@ function PueiCloudChatApp({ user, users, setUsers }: { user: string; users: User
                         borderLeft:isActive?"3px solid #8b5cf6":"3px solid transparent"}}>
                 <div className="w-9 h-9 rounded-full flex-shrink-0 flex items-center justify-center text-sm overflow-hidden"
                   style={{background:c.color?`linear-gradient(135deg,oklch(0.7 0.18 ${c.color}),oklch(0.45 0.2 ${c.color}))`:"rgba(79,70,229,0.3)"}}>
-                  {c.avatar?.startsWith("data:") ? <img src={c.avatar} alt="" className="w-full h-full object-cover" /> : (c.avatar || "≡ƒîÉ")}
+                  {c.avatar?.startsWith("data:") ? <img src={c.avatar} alt="" className="w-full h-full object-cover" /> : (c.avatar || "🌐")}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="text-xs truncate">{c.name || c.pueiNumber}</div>
@@ -2655,7 +2655,7 @@ function PueiCloudChatApp({ user, users, setUsers }: { user: string; users: User
                   style={{background:"linear-gradient(135deg,#6d28d9,#4f46e5)"}}>Start Chat</button>
                 <button onClick={()=>{setShowNewChat(false);setNewInput("");setNewMsg(null);}}
                   className="px-3 rounded-xl text-xs opacity-50 hover:opacity-80"
-                  style={{background:"rgba(255,255,255,0.08)"}}>Γ£ò</button>
+                  style={{background:"rgba(255,255,255,0.08)"}}>✕</button>
               </div>
             </div>
           ):(
@@ -2665,7 +2665,7 @@ function PueiCloudChatApp({ user, users, setUsers }: { user: string; users: User
               + New Chat
             </button>
           )}
-          <div className="text-center mt-1.5 text-[9px] opacity-20 font-mono">#{myPueiNumber||"ΓÇö"}</div>
+          <div className="text-center mt-1.5 text-[9px] opacity-20 font-mono">#{myPueiNumber||"—"}</div>
         </div>
       </div>
 
@@ -2673,7 +2673,7 @@ function PueiCloudChatApp({ user, users, setUsers }: { user: string; users: User
       <div className="flex-1 flex flex-col min-w-0" style={{background:MAIN_BG}}>
         {!activeId?(
           <div className="flex-1 flex flex-col items-center justify-center gap-3 opacity-20">
-            <div className="text-6xl">≡ƒÆ¼</div>
+            <div className="text-6xl">💬</div>
             <div className="text-sm">Select a conversation or start a new one</div>
           </div>
         ):(
@@ -2685,19 +2685,19 @@ function PueiCloudChatApp({ user, users, setUsers }: { user: string; users: User
                 <>
                   <div className="w-9 h-9 rounded-full flex items-center justify-center text-lg overflow-hidden"
                     style={{background:`linear-gradient(135deg,oklch(0.7 0.18 ${localPartner.color??200}),oklch(0.45 0.2 ${localPartner.color??200}))`}}>
-                    {localPartner.avatar?.startsWith("data:")?<img src={localPartner.avatar} alt="" className="w-full h-full object-cover"/>:(localPartner.avatar||"≡ƒæñ")}
+                    {localPartner.avatar?.startsWith("data:")?<img src={localPartner.avatar} alt="" className="w-full h-full object-cover"/>:(localPartner.avatar||"👤")}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="font-semibold">{localPartner.name}</div>
-                    <div className="text-[10px] opacity-40 font-mono">#{localPartner.pueiNumber||"ΓÇö"}</div>
+                    <div className="text-[10px] opacity-40 font-mono">#{localPartner.pueiNumber||"—"}</div>
                   </div>
                   <button className="text-xs opacity-40 hover:opacity-100 hover:text-red-400 transition-all px-2 py-1 rounded-lg"
                     onClick={()=>{if(confirm(`Delete conversation with ${localPartner.name}?`)){deleteChatBetween(user,localPartner.name);setAllMsgs(loadChat());blip("click");}}}>
-                    ≡ƒùæ∩╕Å
+                    🗑️
                   </button>
                   <button className="text-xs opacity-40 hover:opacity-100 hover:text-red-400 transition-all px-2 py-1 rounded-lg"
                     onClick={()=>{const num=localPartner.pueiNumber||pueiNumberFor(localPartner.name+":seed");blockNum(num,localPartner.name);}}>
-                    ≡ƒÜ½
+                    🚫
                   </button>
                 </>
               )}
@@ -2705,7 +2705,7 @@ function PueiCloudChatApp({ user, users, setUsers }: { user: string; users: User
                 <>
                   <div className="w-9 h-9 rounded-full flex items-center justify-center overflow-hidden"
                     style={{background:extPartner.color?`linear-gradient(135deg,oklch(0.7 0.18 ${extPartner.color}),oklch(0.45 0.2 ${extPartner.color}))`:"rgba(79,70,229,0.4)"}}>
-                    {extPartner.avatar?.startsWith("data:") ? <img src={extPartner.avatar} alt="" className="w-full h-full object-cover" /> : (extPartner.avatar || "≡ƒîÉ")}
+                    {extPartner.avatar?.startsWith("data:") ? <img src={extPartner.avatar} alt="" className="w-full h-full object-cover" /> : (extPartner.avatar || "🌐")}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="font-semibold truncate">{extPartner.name || extPartner.pueiNumber}</div>
@@ -2714,15 +2714,15 @@ function PueiCloudChatApp({ user, users, setUsers }: { user: string; users: User
                   <button className="text-xs opacity-40 hover:opacity-100 transition-all px-2 py-1 rounded-lg"
                     title="Edit contact name"
                     onClick={()=>editExtName(extPartner.pueiNumber)}>
-                    Γ£Å∩╕Å
+                    ✏️
                   </button>
                   <button className="text-xs opacity-40 hover:opacity-100 hover:text-red-400 transition-all px-2 py-1 rounded-lg"
                     onClick={()=>{if(confirm(`Remove ${extPartner.pueiNumber}?`)){saveExtContacts(extContacts.filter(c=>c.pueiNumber!==extPartner.pueiNumber));setApiMsgs(p=>{const n={...p};delete n[extPartner.pueiNumber];return n;});setActiveId(null);blip("click");}}}>
-                    ≡ƒùæ∩╕Å
+                    🗑️
                   </button>
                   <button className="text-xs opacity-40 hover:opacity-100 hover:text-red-400 transition-all px-2 py-1 rounded-lg"
                     onClick={()=>blockNum(extPartner.pueiNumber)}>
-                    ≡ƒÜ½
+                    🚫
                   </button>
                 </>
               )}
@@ -2732,7 +2732,7 @@ function PueiCloudChatApp({ user, users, setUsers }: { user: string; users: User
               {activeKind==="local"&&localMsgs.length===0&&(
                 <div className="flex-1 flex items-center justify-center">
                   <div className="text-center opacity-20">
-                    <div className="text-4xl mb-2">≡ƒæï</div>
+                    <div className="text-4xl mb-2">👋</div>
                     <div className="text-sm">Say hello to {localPartner?.name}!</div>
                   </div>
                 </div>
@@ -2744,7 +2744,7 @@ function PueiCloudChatApp({ user, users, setUsers }: { user: string; users: User
                     {!mine&&localPartner&&(
                       <div className="w-6 h-6 rounded-full flex-shrink-0 flex items-center justify-center text-sm overflow-hidden"
                         style={{background:`linear-gradient(135deg,oklch(0.7 0.18 ${localPartner.color??200}),oklch(0.45 0.2 ${localPartner.color??200}))`}}>
-                        {localPartner.avatar?.startsWith("data:")?<img src={localPartner.avatar} alt="" className="w-full h-full object-cover"/>:(localPartner.avatar||"≡ƒæñ")}
+                        {localPartner.avatar?.startsWith("data:")?<img src={localPartner.avatar} alt="" className="w-full h-full object-cover"/>:(localPartner.avatar||"👤")}
                       </div>
                     )}
                     <div className="max-w-[70%] flex flex-col" style={{alignItems:mine?"flex-end":"flex-start"}}>
@@ -2765,7 +2765,7 @@ function PueiCloudChatApp({ user, users, setUsers }: { user: string; users: User
               {activeKind==="external"&&extMsgs.length===0&&(
                 <div className="flex-1 flex items-center justify-center">
                   <div className="text-center opacity-20">
-                    <div className="text-4xl mb-2">≡ƒîÉ</div>
+                    <div className="text-4xl mb-2">🌐</div>
                     <div className="text-sm">Start a cross-device conversation!</div>
                   </div>
                 </div>
@@ -2777,7 +2777,7 @@ function PueiCloudChatApp({ user, users, setUsers }: { user: string; users: User
                     {!mine&&extPartner&&(
                       <div className="w-6 h-6 rounded-full flex-shrink-0 flex items-center justify-center text-xs overflow-hidden"
                         style={{background:extPartner.color?`linear-gradient(135deg,oklch(0.7 0.18 ${extPartner.color}),oklch(0.45 0.2 ${extPartner.color}))`:"rgba(79,70,229,0.35)"}}>
-                        {extPartner.avatar?.startsWith("data:") ? <img src={extPartner.avatar} alt="" className="w-full h-full object-cover" /> : (extPartner.avatar || "≡ƒîÉ")}
+                        {extPartner.avatar?.startsWith("data:") ? <img src={extPartner.avatar} alt="" className="w-full h-full object-cover" /> : (extPartner.avatar || "🌐")}
                       </div>
                     )}
                     <div className="max-w-[70%] flex flex-col" style={{alignItems:mine?"flex-end":"flex-start"}}>
@@ -2804,11 +2804,11 @@ function PueiCloudChatApp({ user, users, setUsers }: { user: string; users: User
                   onKeyDown={e=>e.key==="Enter"&&!e.shiftKey&&send()}
                   className="flex-1 px-4 py-2.5 rounded-2xl text-sm outline-none"
                   style={{background:"rgba(255,255,255,0.07)",color:"white",border:"1px solid rgba(255,255,255,0.1)"}}
-                  placeholder={localPartner?`Message ${localPartner.name}ΓÇª`:extPartner?`Message ${extPartner.name || extPartner.pueiNumber}ΓÇª`:"MessageΓÇª"}/>
+                  placeholder={localPartner?`Message ${localPartner.name}…`:extPartner?`Message ${extPartner.name || extPartner.pueiNumber}…`:"Message…"}/>
                 <button onClick={send} disabled={!text.trim()}
                   className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 transition-opacity text-xl"
                   style={{background:text.trim()?"linear-gradient(135deg,#6d28d9,#4f46e5)":"rgba(255,255,255,0.1)",opacity:text.trim()?1:0.5}}>
-                  Γåæ
+                  ↑
                 </button>
               </div>
             </div>
@@ -2838,22 +2838,22 @@ function FileExplorerApp({ openApp, icons, openFolder, currentUser, users }: { o
   }, [currentUser]);
 
   const folders = [
-    { id: "documents" as const, name: "Documents", icon: "≡ƒôü" },
-    { id: "pictures" as const, name: "Pictures", icon: "≡ƒû╝∩╕Å" },
-    { id: "downloads" as const, name: "Downloads", icon: "Γ¼ç∩╕Å" },
-    { id: "apps" as const, name: "Apps", icon: "≡ƒº⌐" },
-    { id: "folders" as const, name: "My Folders", icon: "≡ƒùâ∩╕Å" },
+    { id: "documents" as const, name: "Documents", icon: "📁" },
+    { id: "pictures" as const, name: "Pictures", icon: "🖼️" },
+    { id: "downloads" as const, name: "Downloads", icon: "⬇️" },
+    { id: "apps" as const, name: "Apps", icon: "🧩" },
+    { id: "folders" as const, name: "My Folders", icon: "🗃️" },
   ];
   const apps: { name: string; appId: AppId; icon: string }[] = [
-    { name: "Puei Paint 2", appId: "puei-paint", icon: "≡ƒÄ¿" },
-    { name: "PueiBoard", appId: "puei-board", icon: "≡ƒôî" },
-    { name: "Notepad", appId: "notepad", icon: "≡ƒô¥" },
-    { name: "Calculator", appId: "calculator", icon: "≡ƒº«" },
-    { name: "Settings", appId: "settings", icon: "ΓÜÖ∩╕Å" },
-    { name: "PueiNet", appId: "pueinet", icon: "≡ƒîÉ" },
-    { name: "PueiCloudChat", appId: "puei-cloud-chat", icon: "≡ƒÆ¼" },
-    { name: "App Store", appId: "app-store", icon: "≡ƒ¢ì∩╕Å" },
-    { name: "PueiSocial", appId: "puei-social", icon: "≡ƒôú" },
+    { name: "Puei Paint 2", appId: "puei-paint", icon: "🎨" },
+    { name: "PueiBoard", appId: "puei-board", icon: "📌" },
+    { name: "Notepad", appId: "notepad", icon: "📝" },
+    { name: "Calculator", appId: "calculator", icon: "🧮" },
+    { name: "Settings", appId: "settings", icon: "⚙️" },
+    { name: "PueiNet", appId: "pueinet", icon: "🌐" },
+    { name: "PueiCloudChat", appId: "puei-cloud-chat", icon: "💬" },
+    { name: "App Store", appId: "app-store", icon: "🛍️" },
+    { name: "PueiSocial", appId: "puei-social", icon: "📣" },
   ];
 
   const textFiles = files.filter((f) => f.type === "text" && (!f.folder || f.folder === "__documents__"));
@@ -2874,8 +2874,8 @@ function FileExplorerApp({ openApp, icons, openFolder, currentUser, users }: { o
       <div className="w-48 p-2 border-r text-sm" style={{ background: "var(--glass)" }}>
         <div className="font-semibold mb-2 opacity-70 text-xs">FAVORITES</div>
         {[
-          ["home","≡ƒÅá Home"],["documents","≡ƒôü Documents"],["pictures","≡ƒû╝∩╕Å Pictures"],
-          ["downloads","Γ¼ç∩╕Å Downloads"],["folders","≡ƒùâ∩╕Å My Folders"],["apps","≡ƒº⌐ Apps"],
+          ["home","🏠 Home"],["documents","📁 Documents"],["pictures","🖼️ Pictures"],
+          ["downloads","⬇️ Downloads"],["folders","🗃️ My Folders"],["apps","🧩 Apps"],
         ].map(([k, l]) => (
           <div key={k} onClick={() => { setFolder(k as any); setOpenFolderId(null); }}
             className="px-2 py-1 rounded hover:bg-white/30 cursor-pointer"
@@ -2884,16 +2884,16 @@ function FileExplorerApp({ openApp, icons, openFolder, currentUser, users }: { o
         <div className="font-semibold mt-3 mb-2 opacity-70 text-xs">COMPUTER</div>
         <div className="px-2 py-1 rounded hover:bg-white/30 cursor-pointer"
           onClick={() => setFolder("home")}
-          style={{ background: folder === "home" ? "rgba(255,255,255,0.4)" : undefined }}>≡ƒÆ╜ C:\ PueiDrive</div>
+          style={{ background: folder === "home" ? "rgba(255,255,255,0.4)" : undefined }}>💽 C:\ PueiDrive</div>
         <div className="px-2 py-1 rounded hover:bg-white/30 cursor-pointer flex items-center gap-1"
           onClick={() => setFolder("puei-drive")}
-          style={{ background: folder === "puei-drive" ? "rgba(255,255,255,0.4)" : undefined }}>Γÿü∩╕Å Puei Disk</div>
+          style={{ background: folder === "puei-drive" ? "rgba(255,255,255,0.4)" : undefined }}>☁️ Puei Disk</div>
         <div className="px-2 py-1 rounded hover:bg-white/30 cursor-pointer"
           onClick={() => { setFolder("recycle-bin"); setOpenFolderId(null); }}
-          style={{ background: folder === "recycle-bin" ? "rgba(255,255,255,0.4)" : undefined }}>≡ƒùæ∩╕Å Recycle Bin</div>
+          style={{ background: folder === "recycle-bin" ? "rgba(255,255,255,0.4)" : undefined }}>🗑️ Recycle Bin</div>
         {dragFileId && (
           <div className="mt-3 text-[10px] opacity-60 px-2">
-            ≡ƒôé Drag to a folder below to move file
+            📂 Drag to a folder below to move file
           </div>
         )}
         {dragFileId && myFolders.map((f) => (
@@ -2906,11 +2906,11 @@ function FileExplorerApp({ openApp, icons, openFolder, currentUser, users }: { o
               background: dropTarget === f.id ? "rgba(80,200,160,0.35)" : "rgba(255,255,255,0.15)",
               border: dropTarget === f.id ? "1px dashed rgba(80,200,160,0.8)" : "1px dashed transparent",
             }}>
-            ≡ƒôü {f.label}
+            📁 {f.label}
           </div>
         ))}
         <div className="mt-4 text-[10px] opacity-40 px-2 leading-snug">
-          Γÿü∩╕Å Cloud Sync: Files saved while logged into your account sync automatically across supported browsers and apps using the same Pueio account.
+          ☁️ Cloud Sync: Files saved while logged into your account sync automatically across supported browsers and apps using the same Pueio account.
         </div>
       </div>
       <div className="flex-1 p-4 overflow-auto">
@@ -2919,8 +2919,8 @@ function FileExplorerApp({ openApp, icons, openFolder, currentUser, users }: { o
             <button className="hover:underline" onClick={() => setOpenFolderId(null)}>My Folders</button>
           )}
           {openFolderId ? (
-            <> ΓÇ║ {myFolders.find(f => f.id === openFolderId)?.label ?? openFolderId}</>
-          ) : folder === "puei-drive" ? "Γÿü∩╕Å Puei Disk" : folder === "recycle-bin" ? "≡ƒùæ∩╕Å Recycle Bin" : `Computer ΓÇ║ PueiDrive ΓÇ║ Users ΓÇ║ You ΓÇ║ ${folder}`}
+            <> › {myFolders.find(f => f.id === openFolderId)?.label ?? openFolderId}</>
+          ) : folder === "puei-drive" ? "☁️ Puei Disk" : folder === "recycle-bin" ? "🗑️ Recycle Bin" : `Computer › PueiDrive › Users › You › ${folder}`}
         </div>
         {folder === "home" && (
           <div className="grid grid-cols-5 gap-3">
@@ -2971,7 +2971,7 @@ function FileExplorerApp({ openApp, icons, openFolder, currentUser, users }: { o
         {folder === "recycle-bin" && <RecycleBinApp />}
         {folder === "folders" && !openFolderId && (
           myFolders.length === 0
-            ? <div className="text-sm opacity-70 p-6 text-center">No folders yet. Right-click the desktop ΓåÆ New Folder.</div>
+            ? <div className="text-sm opacity-70 p-6 text-center">No folders yet. Right-click the desktop → New Folder.</div>
             : <div className="grid grid-cols-5 gap-3">
                 {myFolders.map((f) => {
                   const folderFiles = files.filter((fi) => fi.folder === f.id);
@@ -2986,7 +2986,7 @@ function FileExplorerApp({ openApp, icons, openFolder, currentUser, users }: { o
                         background: dropTarget === f.id ? "rgba(80,200,160,0.25)" : undefined,
                         outline: dropTarget === f.id ? "2px dashed rgba(80,200,160,0.8)" : undefined,
                       }}>
-                      <div className="text-4xl">≡ƒôü</div>
+                      <div className="text-4xl">📁</div>
                       <div className="text-xs mt-1 truncate">{f.label}</div>
                       {folderFiles.length > 0 && <div className="text-[10px] opacity-50">{folderFiles.length} file{folderFiles.length !== 1 ? "s" : ""}</div>}
                     </div>
@@ -3032,7 +3032,7 @@ function FolderFileGrid({ files, icons, onOpen, onDelete, onOpenIcon }: {
           disabled={!selectedFile}
           style={{ opacity: selectedFile ? 1 : 0.4 }}
           onClick={() => { if (selectedFile) { onOpen(selectedFile); } }}>
-          ≡ƒôé Open
+          📂 Open
         </button>
         <button
           className="aero-button rounded px-3 py-1 text-xs text-red-400"
@@ -3041,7 +3041,7 @@ function FolderFileGrid({ files, icons, onOpen, onDelete, onOpenIcon }: {
           onClick={() => {
             if (selectedFileId && confirm("Delete this file?")) { onDelete(selectedFileId); setSelectedFileId(null); }
           }}>
-          ≡ƒùæ∩╕Å Delete
+          🗑️ Delete
         </button>
         {selectedFile && <span className="text-xs opacity-50 ml-1">Selected: {selectedFile.name}</span>}
         {!selectedFile && <span className="text-xs opacity-40 ml-1">Click a file to select it</span>}
@@ -3056,7 +3056,7 @@ function FolderFileGrid({ files, icons, onOpen, onDelete, onOpenIcon }: {
                      outline: f.id === selectedFileId ? "2px solid rgba(80,160,255,0.7)" : "none" }}>
             {f.type === "image"
               ? <img src={f.content} alt={f.name} className="w-12 h-12 mx-auto object-cover rounded shadow" />
-              : <div className="text-4xl">≡ƒôä</div>}
+              : <div className="text-4xl">📄</div>}
             <div className="text-xs mt-1 truncate">{f.name}</div>
           </div>
         ))}
@@ -3064,7 +3064,7 @@ function FolderFileGrid({ files, icons, onOpen, onDelete, onOpenIcon }: {
           <div key={ic.id}
             onDoubleClick={() => onOpenIcon(ic)}
             className="text-center p-2 rounded hover:bg-white/30 cursor-pointer select-none">
-            <div className="text-4xl">{ic.appId === "web-app" ? "≡ƒöù" : "≡ƒôä"}</div>
+            <div className="text-4xl">{ic.appId === "web-app" ? "🔗" : "📄"}</div>
             <div className="text-xs mt-1 truncate">{ic.label}</div>
           </div>
         ))}
@@ -3088,12 +3088,12 @@ function FileGrid({ files, emptyHint, onOpen, onDelete, onDragStart, onDragEnd }
       <div className="flex items-center gap-2 mb-3 pb-2 border-b">
         <button className="aero-button rounded px-3 py-1 text-xs"
           disabled={!selectedFile} style={{ opacity: selectedFile ? 1 : 0.4 }}
-          onClick={() => { if (selectedFile && onOpen) onOpen(selectedFile); }}>≡ƒôé Open</button>
+          onClick={() => { if (selectedFile && onOpen) onOpen(selectedFile); }}>📂 Open</button>
         <button className="aero-button rounded px-3 py-1 text-xs text-red-400"
           disabled={!selectedId} style={{ opacity: selectedId ? 1 : 0.4 }}
           onClick={() => {
             if (selectedId && confirm("Delete this file?")) { onDelete(selectedId); setSelectedId(null); }
-          }}>≡ƒùæ∩╕Å Delete</button>
+          }}>🗑️ Delete</button>
         {selectedFile
           ? <span className="text-xs opacity-50 ml-1">Selected: {selectedFile.name}</span>
           : <span className="text-xs opacity-40 ml-1">Click a file to select it</span>}
@@ -3113,7 +3113,7 @@ function FileGrid({ files, emptyHint, onOpen, onDelete, onDragStart, onDragEnd }
             }}>
             {f.type === "image"
               ? <img src={f.content} alt={f.name} className="w-12 h-12 mx-auto object-cover rounded shadow" />
-              : <div className="text-4xl">≡ƒôä</div>}
+              : <div className="text-4xl">📄</div>}
             <div className="text-xs mt-1 truncate">{f.name}</div>
           </div>
         ))}
@@ -3237,10 +3237,10 @@ function PueiDrivePane({ files, icons, currentUser, users, openApp, onDelete }: 
     <div className="flex flex-col h-full">
       {/* Drive header */}
       <div className="flex items-center gap-4 mb-4 p-3 rounded-xl" style={{ background: "rgba(80,140,255,0.12)", border: "1px solid rgba(80,140,255,0.2)" }}>
-        <div className="text-4xl">Γÿü∩╕Å</div>
+        <div className="text-4xl">☁️</div>
         <div>
           <div className="font-semibold">Puei Disk</div>
-          <div className="text-xs opacity-60">{myFiles.length} file{myFiles.length !== 1 ? "s" : ""} ┬╖ {usedKB} KB used</div>
+          <div className="text-xs opacity-60">{myFiles.length} file{myFiles.length !== 1 ? "s" : ""} · {usedKB} KB used</div>
           <div className="text-[10px] opacity-40 mt-0.5">Files sync automatically across your PueiOS sessions</div>
         </div>
         <button className="aero-button rounded px-2 py-1 text-xs ml-auto"
@@ -3274,14 +3274,14 @@ function PueiDrivePane({ files, icons, currentUser, users, openApp, onDelete }: 
           <button className="aero-button rounded px-3 py-1 text-xs"
             disabled={!selectedFile} style={{ opacity: selectedFile ? 1 : 0.4 }}
             onClick={() => { if (selectedFile) openApp(selectedFile.type === "image" ? "puei-paint" : "notepad", selectedFile.id); }}>
-            ≡ƒôé Open
+            📂 Open
           </button>
           <button className="aero-button rounded px-3 py-1 text-xs text-red-400"
             disabled={!selectedId} style={{ opacity: selectedId ? 1 : 0.4 }}
             onClick={() => {
               if (selectedId && confirm("Delete this file?")) { onDelete(selectedId); setSelectedId(null); }
             }}>
-            ≡ƒùæ∩╕Å Delete
+            🗑️ Delete
           </button>
           {selectedFile
             ? <span className="text-xs opacity-50 ml-1">Selected: {selectedFile.name}</span>
@@ -3293,8 +3293,8 @@ function PueiDrivePane({ files, icons, currentUser, users, openApp, onDelete }: 
         : <>
           {driveSection !== "all" && (
             <div className="flex items-center gap-2 mb-3 text-xs opacity-70">
-              <button className="hover:underline" onClick={() => { setDriveSection("all"); setShowRootEntries(true); }}>Γÿü∩╕Å Puei Disk</button>
-              {" ΓÇ║ "}
+              <button className="hover:underline" onClick={() => { setDriveSection("all"); setShowRootEntries(true); }}>☁️ Puei Disk</button>
+              {" › "}
               {sectionLabel[driveSection]}
             </div>
           )}
@@ -3308,7 +3308,7 @@ function PueiDrivePane({ files, icons, currentUser, users, openApp, onDelete }: 
                         <div className="flex items-center gap-2 mb-2">
                           {typeof u.avatar === "string" && /^(data:image\/|https?:\/\/)/i.test(u.avatar)
                             ? <img src={u.avatar} alt={u.name} className="w-10 h-10 rounded-full border object-cover" style={{ borderColor: u.color || "rgba(255,255,255,0.4)" }} />
-                            : <div className="w-10 h-10 rounded-full border flex items-center justify-center text-xl" style={{ borderColor: u.color || "rgba(255,255,255,0.4)", background: "rgba(255,255,255,0.15)" }}>{u.avatar || "≡ƒºæ"}</div>}
+                            : <div className="w-10 h-10 rounded-full border flex items-center justify-center text-xl" style={{ borderColor: u.color || "rgba(255,255,255,0.4)", background: "rgba(255,255,255,0.15)" }}>{u.avatar || "🧑"}</div>}
                           <div>
                             <div className="text-sm font-semibold leading-tight">{u.name}</div>
                             <div className="text-[10px] opacity-60">{u.name === currentUser ? "Signed in" : "Local account"}</div>
@@ -3327,7 +3327,7 @@ function PueiDrivePane({ files, icons, currentUser, users, openApp, onDelete }: 
                       const folderFiles = myFiles.filter((f) => f.folder === folder.id);
                       return (
                         <div key={folder.id} className="rounded-xl p-3" style={{ background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.2)" }}>
-                          <div className="text-3xl">≡ƒôü</div>
+                          <div className="text-3xl">📁</div>
                           <div className="text-sm font-semibold mt-1 truncate">{folder.label}</div>
                           <div className="text-[11px] opacity-65 mt-1">{folderFiles.length} file{folderFiles.length !== 1 ? "s" : ""}</div>
                         </div>
@@ -3341,10 +3341,10 @@ function PueiDrivePane({ files, icons, currentUser, users, openApp, onDelete }: 
                   This is a virtual system location in Puei Disk. You can browse it and open related tools below.
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  <button className="aero-button rounded px-3 py-1 text-xs" onClick={() => openApp("settings")}>ΓÜÖ∩╕Å Open Settings</button>
-                  <button className="aero-button rounded px-3 py-1 text-xs" onClick={() => openApp("about")}>Γä╣∩╕Å System Info</button>
-                  <button className="aero-button rounded px-3 py-1 text-xs" onClick={() => openApp("app-store")}>≡ƒº⌐ Program Manager</button>
-                  <button className="aero-button rounded px-3 py-1 text-xs" onClick={() => openApp("recycle-bin")}>≡ƒùæ∩╕Å Recovery</button>
+                  <button className="aero-button rounded px-3 py-1 text-xs" onClick={() => openApp("settings")}>⚙️ Open Settings</button>
+                  <button className="aero-button rounded px-3 py-1 text-xs" onClick={() => openApp("about")}>ℹ️ System Info</button>
+                  <button className="aero-button rounded px-3 py-1 text-xs" onClick={() => openApp("app-store")}>🧩 Program Manager</button>
+                  <button className="aero-button rounded px-3 py-1 text-xs" onClick={() => openApp("recycle-bin")}>🗑️ Recovery</button>
                 </div>
               </div>
             : <div className="grid grid-cols-5 gap-3 overflow-auto">
@@ -3359,7 +3359,7 @@ function PueiDrivePane({ files, icons, currentUser, users, openApp, onDelete }: 
                 }}>
                 {f.type === "image"
                   ? <img src={f.content} alt={f.name} className="w-12 h-12 mx-auto object-cover rounded shadow" />
-                  : <div className="text-4xl">≡ƒôä</div>}
+                  : <div className="text-4xl">📄</div>}
                 <div className="text-xs mt-1 truncate">{f.name}</div>
                 <div className="text-[9px] opacity-50 truncate">{fileLocation(f)}</div>
                 <div className="text-[9px] opacity-40">{(f.content.length / 1024).toFixed(1)} KB</div>
@@ -3379,19 +3379,19 @@ function AppStoreApp({ installWebApp, openApp, openWebApp, systemVersion, addNat
   const installTimers = useRef<Record<string, number>>({});
   type StoreApp = { name: string; icon: string; desc: string; appId?: AppId; preInstalled?: boolean; webUrl?: string; desktopLabel?: string };
   const official: StoreApp[] = [
-    { name: "Puei Updater",   icon: "Γ¼å∩╕Å", desc: "Required for installing ISO system updates.",           webUrl: "puei://updates", desktopLabel: "Puei Updater", preInstalled: false },
-    { name: "PueiSocial",     icon: "≡ƒôú", desc: "The official PueiOS social network.",          appId: "puei-social",    preInstalled: true },
-    { name: "PueiCloudChat", icon: "≡ƒÆ¼", desc: "Chat by PueiNumber ΓÇö cross-device, real-time.",           appId: "puei-cloud-chat", preInstalled: true },
-    { name: "PueiBoard",     icon: "≡ƒôî", desc: "Pinterest-style boards where Pueis post Gallery images.", appId: "puei-board", preInstalled: true },
-    { name: "PueiWeb",        icon: "≡ƒîÉ", desc: "System browser + AI search engine.",           appId: "pueinet",        preInstalled: true },
-    { name: "Google Chrome",  icon: "≡ƒîÉ", desc: "Install Google Chrome as a fast browser shortcut from App Store.", webUrl: "https://www.google.com/", desktopLabel: "Google Chrome", preInstalled: false },
-    { name: "Puei Paint 2",   icon: "≡ƒÄ¿", desc: "Paint and save images as wallpapers.",         appId: "puei-paint",     preInstalled: true },
-    { name: "Settings",       icon: "ΓÜÖ∩╕Å", desc: "Personalize, dark mode, accessibility.",       appId: "settings",       preInstalled: true },
-    { name: "Computer",       icon: "≡ƒùé∩╕Å", desc: "File system explorer.",                        appId: "file-explorer",  preInstalled: true },
-    { name: "Notepad",        icon: "≡ƒô¥", desc: "Write and save text files.",                   appId: "notepad",        preInstalled: true },
-    { name: "Calculator",     icon: "≡ƒº«", desc: "Glossy arithmetic.",                            appId: "calculator",     preInstalled: true },
-    { name: "Chess",          icon: "ΓÖƒ∩╕Å", desc: "Chess vs Puei Bot AI ΓÇö fully functional.",     appId: "chess",          preInstalled: false },
-    { name: "Installer",      icon: "≡ƒôÑ", desc: "Install trusted web apps as desktop shortcuts.",appId: "app-store",      preInstalled: true },
+    { name: "Puei Updater",   icon: "⬆️", desc: "Required for installing ISO system updates.",           webUrl: "puei://updates", desktopLabel: "Puei Updater", preInstalled: false },
+    { name: "PueiSocial",     icon: "📣", desc: "The official PueiOS social network.",          appId: "puei-social",    preInstalled: true },
+    { name: "PueiCloudChat", icon: "💬", desc: "Chat by PueiNumber — cross-device, real-time.",           appId: "puei-cloud-chat", preInstalled: true },
+    { name: "PueiBoard",     icon: "📌", desc: "Pinterest-style boards where Pueis post Gallery images.", appId: "puei-board", preInstalled: true },
+    { name: "PueiWeb",        icon: "🌐", desc: "System browser + AI search engine.",           appId: "pueinet",        preInstalled: true },
+    { name: "Google Chrome",  icon: "🌐", desc: "Install Google Chrome as a fast browser shortcut from App Store.", webUrl: "https://www.google.com/", desktopLabel: "Google Chrome", preInstalled: false },
+    { name: "Puei Paint 2",   icon: "🎨", desc: "Paint and save images as wallpapers.",         appId: "puei-paint",     preInstalled: true },
+    { name: "Settings",       icon: "⚙️", desc: "Personalize, dark mode, accessibility.",       appId: "settings",       preInstalled: true },
+    { name: "Computer",       icon: "🗂️", desc: "File system explorer.",                        appId: "file-explorer",  preInstalled: true },
+    { name: "Notepad",        icon: "📝", desc: "Write and save text files.",                   appId: "notepad",        preInstalled: true },
+    { name: "Calculator",     icon: "🧮", desc: "Glossy arithmetic.",                            appId: "calculator",     preInstalled: true },
+    { name: "Chess",          icon: "♟️", desc: "Chess vs Puei Bot AI — fully functional.",     appId: "chess",          preInstalled: false },
+    { name: "Installer",      icon: "📥", desc: "Install trusted web apps as desktop shortcuts.",appId: "app-store",      preInstalled: true },
   ];
   const isOnDesktop = (a: StoreApp) => {
     if (a.webUrl) return icons.some((i) => i.appId === "web-app" && i.webUrl === a.webUrl);
@@ -3430,13 +3430,13 @@ function AppStoreApp({ installWebApp, openApp, openWebApp, systemVersion, addNat
     <div className="flex h-full">
       <div className="w-44 p-2 border-r text-sm overflow-auto" style={{ background: "var(--glass)" }}>
         <div className="font-semibold opacity-70 text-xs mb-2 px-2">PUEI APP STORE</div>
-        {([["official","Γ£¿ Official apps"],["installer","≡ƒôÑ Installer"]] as const).map(([k, l]) => (
+        {([["official","✨ Official apps"],["installer","📥 Installer"]] as const).map(([k, l]) => (
           <div key={k} onClick={() => { setTab(k); blip("click"); }}
             className="px-3 py-2 rounded cursor-pointer text-sm mb-0.5"
             style={{ background: tab === k ? "var(--gradient-aero)" : "transparent", color: tab === k ? "white" : undefined }}>{l}</div>
         ))}
         <div className="text-[10px] opacity-60 px-2 mt-4 leading-snug">
-          PueiOS 2 is a closed ecosystem. Only Puei TeamΓÇôbuilt apps are allowed here.
+          PueiOS 2 is a closed ecosystem. Only Puei Team–built apps are allowed here.
         </div>
       </div>
       <div className="flex-1 p-5 overflow-auto">
@@ -3456,7 +3456,7 @@ function AppStoreApp({ installWebApp, openApp, openWebApp, systemVersion, addNat
                       <div className="text-3xl">{a.icon}</div>
                       <div>
                         <div className="font-semibold">{a.name}</div>
-                        <div className="text-[10px] opacity-60">{a.preInstalled ? "Γ£ô Pre-installed" : "Γ¼ç Installable"} ┬╖ Puei Team</div>
+                        <div className="text-[10px] opacity-60">{a.preInstalled ? "✓ Pre-installed" : "⬇ Installable"} · Puei Team</div>
                       </div>
                     </div>
                     <div className="text-xs opacity-70 mt-1 flex-1">{a.desc}</div>
@@ -3480,7 +3480,7 @@ function AppStoreApp({ installWebApp, openApp, openWebApp, systemVersion, addNat
                               blip("notify");
                             });
                           }}>
-                          {isInstalling ? `Installing ${Math.floor(installPct)}%` : onDesktop ? "Γ£ô Installed" : "Γ¼ç Install"}
+                          {isInstalling ? `Installing ${Math.floor(installPct)}%` : onDesktop ? "✓ Installed" : "⬇ Install"}
                         </button>
                       ) : (
                         <button
@@ -3495,7 +3495,7 @@ function AppStoreApp({ installWebApp, openApp, openWebApp, systemVersion, addNat
                               blip("notify");
                             });
                           }}>
-                          {isInstalling ? `Installing ${Math.floor(installPct)}%` : onDesktop ? "Γ£ô On desktop" : "+ Add to desktop"}
+                          {isInstalling ? `Installing ${Math.floor(installPct)}%` : onDesktop ? "✓ On desktop" : "+ Add to desktop"}
                         </button>
                       )}
                       {onDesktop && (
@@ -3516,7 +3516,7 @@ function AppStoreApp({ installWebApp, openApp, openWebApp, systemVersion, addNat
                         <div className="w-full h-1.5 rounded-full bg-cyan-900/35 overflow-hidden">
                           <div className="loading-bar-inner h-full" style={{ width: `${installPct}%`, transition: "width 0.25s linear" }} />
                         </div>
-                        <div className="text-[10px] opacity-60 mt-1">Estimated 10ΓÇô15 seconds</div>
+                        <div className="text-[10px] opacity-60 mt-1">Estimated 10–15 seconds</div>
                       </div>
                     )}
                   </div>
@@ -3578,14 +3578,14 @@ function InstallerPane({ installWebApp }: { installWebApp: (label: string, url: 
     setMsg({ kind: "ok", text: `Installing "${label}"... please wait (10-15 seconds).` });
     startInstallerInstall(() => {
       installWebApp(label, res.url!, icon);
-      setMsg({ kind: "ok", text: `Installed "${label}" (${res.kind === "lovable" ? "Lovable" : "Base44"} app) on your desktop Γ£ô` });
+      setMsg({ kind: "ok", text: `Installed "${label}" (${res.kind === "lovable" ? "Lovable" : "Base44"} app) on your desktop ✓` });
       blip("notify");
       setUrl(""); setName("");
     });
   };
   return (
     <div>
-      <h2 className="text-2xl font-bold mb-1">≡ƒôÑ Installer</h2>
+      <h2 className="text-2xl font-bold mb-1">📥 Installer</h2>
       <p className="text-sm opacity-70 mb-4">Install trusted web apps as desktop shortcuts. Only verified domains are accepted.</p>
       <div className="aero-glass-light rounded-lg p-4 max-w-lg space-y-3">
         <div className="text-xs opacity-80">
@@ -3614,7 +3614,7 @@ function InstallerPane({ installWebApp }: { installWebApp: (label: string, url: 
             <div className="w-full h-2 rounded-full bg-cyan-900/35 overflow-hidden">
               <div className="loading-bar-inner h-full" style={{ width: `${installProgress}%`, transition: "width 0.25s linear" }} />
             </div>
-            <div className="text-[10px] opacity-60 mt-1">Estimated 10ΓÇô15 seconds</div>
+            <div className="text-[10px] opacity-60 mt-1">Estimated 10–15 seconds</div>
           </div>
         )}
         {msg && (
@@ -3673,7 +3673,7 @@ function PueiBoardApp({ user, users }: { user: string; users: User[] }) {
     const next: PueiBoardPost[] = [{
       id: `board-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`,
       author: user,
-      authorAvatar: me?.avatar || "≡ƒºæ",
+      authorAvatar: me?.avatar || "🧑",
       board: activeBoard === "All Boards" ? "Ideas" : activeBoard,
       caption: caption.trim(),
       imageSrc: selectedImage.content,
@@ -3714,7 +3714,7 @@ function PueiBoardApp({ user, users }: { user: string; users: User[] }) {
   return (
     <div className="flex h-full" style={{ background: "var(--glass)" }}>
       <div className="w-72 border-r p-3 overflow-auto" style={{ background: "var(--glass)" }}>
-        <div className="font-bold text-lg mb-2">≡ƒôî PueiBoard</div>
+        <div className="font-bold text-lg mb-2">📌 PueiBoard</div>
         <div className="text-xs opacity-70 mb-3">Pin Gallery images onto themed boards like ideas, art, fashion, and memes.</div>
 
         <div className="mb-3">
@@ -3821,7 +3821,7 @@ function PueiBoardApp({ user, users }: { user: string; users: User[] }) {
                   <div className="text-[10px] opacity-55 mt-1 truncate">Source: {p.imageName}</div>
                   <div className="flex gap-1 mt-2 flex-wrap">
                     <button className="aero-button rounded px-2 py-1 text-[10px]" onClick={() => toggleLike(p.id)}>
-                      {p.likedBy?.includes(user) ? `ΓÖÑ Liked (${p.likes})` : `ΓÖí Like (${p.likes})`}
+                      {p.likedBy?.includes(user) ? `♥ Liked (${p.likes})` : `♡ Like (${p.likes})`}
                     </button>
                     {p.author === user && (
                       <button className="aero-button rounded px-2 py-1 text-[10px]" style={{ color: "#fecaca" }} onClick={() => removePost(p.id)}>
@@ -3880,7 +3880,7 @@ function WebAppFrame({ url, currentUser, startUpgrade }: { url: string; currentU
   return (
     <div className="flex flex-col h-full">
       <div className="aero-titlebar text-xs px-3 py-1 flex items-center gap-2">
-        <span className="opacity-60">≡ƒöù</span>
+        <span className="opacity-60">🔗</span>
         <span className="truncate flex-1">{url}</span>
       </div>
       <div className="flex-1 relative" style={{ background: "white" }}>
@@ -4129,7 +4129,7 @@ function PueiSocialApp({ user, users }: { user: string; users: User[] }) {
     blip("click");
     const p: SocialPost = {
       id: `p-${Date.now().toString(36)}`,
-      author: user, authorAvatar: me?.avatar || "≡ƒºæ",
+      author: user, authorAvatar: me?.avatar || "🧑",
       text, media, at: Date.now(), likes: 0, likedBy: [], comments: [],
     };
     const next = [p, ...posts];
@@ -4153,7 +4153,7 @@ function PueiSocialApp({ user, users }: { user: string; users: User[] }) {
     blip("click");
     const c: SocialComment = {
       id: `c-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 5)}`,
-      author: user, authorAvatar: me?.avatar || "≡ƒºæ", text: body, at: Date.now(),
+      author: user, authorAvatar: me?.avatar || "🧑", text: body, at: Date.now(),
     };
     const next = posts.map((p) => p.id === postId
       ? { ...p, comments: [...(p.comments || []), c] }
@@ -4187,24 +4187,24 @@ function PueiSocialApp({ user, users }: { user: string; users: User[] }) {
   return (
     <div className="flex flex-col h-full">
       <div className="aero-titlebar px-4 py-2 flex items-center justify-between">
-        <div className="font-bold text-lg flex items-center gap-2">≡ƒôú PueiSocial</div>
+        <div className="font-bold text-lg flex items-center gap-2">📣 PueiSocial</div>
         <div className="flex items-center gap-2">
           <button className="aero-button rounded px-3 py-1 text-xs" style={socialTab === "feed" ? { background: "var(--gradient-aero)", color: "white" } : undefined}
             onClick={() => setSocialTab("feed")}>Feed</button>
           <button className="aero-button rounded px-3 py-1 text-xs" style={socialTab === "history" ? { background: "var(--gradient-aero)", color: "white" } : undefined}
-            onClick={() => setSocialTab("history")}>≡ƒô£ History</button>
+            onClick={() => setSocialTab("history")}>📜 History</button>
         </div>
         <div className="flex flex-col gap-0.5 items-end">
           <div className="text-xs opacity-70 flex items-center gap-1.5">
             Available on:
-            <span title="iOS">≡ƒô▒</span>
-            <span title="Android">≡ƒñû</span>
-            <span title="Windows">≡ƒ¬ƒ</span>
+            <span title="iOS">📱</span>
+            <span title="Android">🤖</span>
+            <span title="Windows">🪟</span>
             <span title="macOS"></span>
-            <span title="Linux">≡ƒÉº</span>
+            <span title="Linux">🐧</span>
           </div>
           <div className="text-[10px] opacity-60 flex items-center gap-1">
-            ≡ƒÄ¼ <span className="font-semibold">Pueio Videos</span> ┬╖ Supported Softwares:
+            🎬 <span className="font-semibold">Pueio Videos</span> · Supported Softwares:
             <span className="bg-cyan-500/20 rounded px-1 font-semibold">Pueios2</span>
             <span className="bg-purple-500/20 rounded px-1 font-semibold">Pueios2+</span>
           </div>
@@ -4213,24 +4213,24 @@ function PueiSocialApp({ user, users }: { user: string; users: User[] }) {
       <div className="p-4 overflow-auto flex-1 space-y-3" style={{ background: "var(--glass)" }}>
         {socialTab === "history" && (
           <div className="aero-glass-light rounded-xl p-5 max-w-lg mx-auto">
-            <h2 className="text-xl font-bold mb-3">≡ƒô£ The History of Puei</h2>
+            <h2 className="text-xl font-bold mb-3">📜 The History of Puei</h2>
             <p className="text-sm leading-relaxed opacity-90">
-              The <strong>Puei</strong> was created in <strong>2020</strong> by three siblings while playing outside. It quickly became a beloved character among them ΓÇö full of personality and charm.
+              The <strong>Puei</strong> was created in <strong>2020</strong> by three siblings while playing outside. It quickly became a beloved character among them — full of personality and charm.
             </p>
             <p className="text-sm leading-relaxed opacity-90 mt-3">
-              But the Puei was then long forgotten in history, fading into memory for yearsΓÇª
+              But the Puei was then long forgotten in history, fading into memory for years…
             </p>
             <p className="text-sm leading-relaxed opacity-90 mt-3">
               After <strong>5 long years</strong>, in <strong>2026</strong>, the triplets decided to revive the Puei. They created the official <strong>Puei account on BezoSMP</strong> and started posting Puei content, bringing the character back to life for the world to see.
             </p>
             <p className="text-sm leading-relaxed opacity-90 mt-3">
-              A few months later, the official <strong>PueiOS</strong> operating system was released ΓÇö a full web-based OS built in tribute to the Puei, featuring a Windows 7 Aero-inspired glass UI, cloud-synced accounts, and a whole suite of Puei-themed apps.
+              A few months later, the official <strong>PueiOS</strong> operating system was released — a full web-based OS built in tribute to the Puei, featuring a Windows 7 Aero-inspired glass UI, cloud-synced accounts, and a whole suite of Puei-themed apps.
             </p>
             <div className="mt-4 pt-3 border-t border-white/20 text-xs opacity-60 space-y-1">
-              <div>≡ƒôà 2020 ΓÇö Puei is born, created by three siblings</div>
-              <div>≡ƒÆñ 2021ΓÇô2025 ΓÇö The Forgotten Years</div>
-              <div>≡ƒôú 2026 ΓÇö Puei revival on BezoSMP</div>
-              <div>≡ƒÆ╗ 2026 ΓÇö PueiOS officially released</div>
+              <div>📅 2020 — Puei is born, created by three siblings</div>
+              <div>💤 2021–2025 — The Forgotten Years</div>
+              <div>📣 2026 — Puei revival on BezoSMP</div>
+              <div>💻 2026 — PueiOS officially released</div>
             </div>
           </div>
         )}
@@ -4239,7 +4239,7 @@ function PueiSocialApp({ user, users }: { user: string; users: User[] }) {
           <div className="flex items-start gap-2">
             <div className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center text-xl"
               style={{ background: `linear-gradient(135deg, oklch(0.7 0.18 ${me?.color || 200}), oklch(0.45 0.2 ${me?.color || 200}))` }}>
-              {me?.avatar?.startsWith("data:") ? <img src={me.avatar} alt="" className="w-full h-full object-cover" /> : (me?.avatar || "≡ƒºæ")}
+              {me?.avatar?.startsWith("data:") ? <img src={me.avatar} alt="" className="w-full h-full object-cover" /> : (me?.avatar || "🧑")}
             </div>
             <textarea value={text} onChange={(e) => setText(e.target.value)}
               placeholder={`What's on your mind, ${user}?`}
@@ -4252,12 +4252,12 @@ function PueiSocialApp({ user, users }: { user: string; users: User[] }) {
                 ? <img src={media.src} className="max-h-60 rounded" alt="" />
                 : <video src={media.src} controls className="max-h-60 rounded" />}
               <button onClick={() => setMedia(undefined)}
-                className="absolute top-1 right-1 aero-button rounded-full w-6 h-6 text-xs">Γ£ò</button>
+                className="absolute top-1 right-1 aero-button rounded-full w-6 h-6 text-xs">✕</button>
             </div>
           )}
           <div className="flex items-center gap-2 mt-2">
             <label className="aero-button rounded px-3 py-1 text-xs cursor-pointer">
-              ≡ƒû╝∩╕Å Image / ≡ƒÄ¼ Video
+              🖼️ Image / 🎬 Video
               <input type="file" accept="image/*,video/*" className="hidden" onChange={onFile} />
             </label>
             <button className="aero-button rounded px-4 py-1 text-xs ml-auto" onClick={post}>Post</button>
@@ -4282,8 +4282,8 @@ function PueiSocialApp({ user, users }: { user: string; users: User[] }) {
                 </div>
                 {p.author === user && (
                   <div className="flex gap-1">
-                    <button onClick={() => startEdit(p)} className="text-xs opacity-50 hover:opacity-100 hover:text-blue-400" title="Edit post">Γ£Å∩╕Å</button>
-                    <button onClick={() => deletePost(p.id)} className="text-xs opacity-50 hover:opacity-100 hover:text-red-500" title="Delete post">≡ƒùæ∩╕Å</button>
+                    <button onClick={() => startEdit(p)} className="text-xs opacity-50 hover:opacity-100 hover:text-blue-400" title="Edit post">✏️</button>
+                    <button onClick={() => deletePost(p.id)} className="text-xs opacity-50 hover:opacity-100 hover:text-red-500" title="Delete post">🗑️</button>
                   </div>
                 )}
               </div>
@@ -4306,13 +4306,13 @@ function PueiSocialApp({ user, users }: { user: string; users: User[] }) {
                 <button onClick={() => toggleLike(p.id)}
                   className="aero-button rounded px-2 py-0.5 flex items-center gap-1"
                   style={liked ? { background: "var(--gradient-aero)", color: "white" } : undefined}>
-                  {liked ? "≡ƒÆÖ" : "≡ƒæì"} {p.likes}
+                  {liked ? "💙" : "👍"} {p.likes}
                 </button>
                 <button onClick={() => setOpenComments({ ...openComments, [p.id]: !commentsOpen })}
                   className="aero-button rounded px-2 py-0.5">
-                  ≡ƒÆ¼ {comments.length}
+                  💬 {comments.length}
                 </button>
-                <span className="opacity-60 self-center ml-auto">PueiSocial ┬╖ cross-platform</span>
+                <span className="opacity-60 self-center ml-auto">PueiSocial · cross-platform</span>
               </div>
               {commentsOpen && (
                 <div className="mt-3 pl-2 border-l-2 border-white/20 space-y-2">
@@ -4335,7 +4335,7 @@ function PueiSocialApp({ user, users }: { user: string; users: User[] }) {
                         <div className="text-xs whitespace-pre-wrap">{c.text}</div>
                       </div>
                       {c.author === user && (
-                        <button onClick={() => deleteComment(p.id, c.id)} className="text-xs opacity-40 hover:opacity-100 hover:text-red-500" title="Delete">Γ£ò</button>
+                        <button onClick={() => deleteComment(p.id, c.id)} className="text-xs opacity-40 hover:opacity-100 hover:text-red-500" title="Delete">✕</button>
                       )}
                     </div>
                   ))}
@@ -4344,7 +4344,7 @@ function PueiSocialApp({ user, users }: { user: string; users: User[] }) {
                       value={commentDrafts[p.id] || ""}
                       onChange={(e) => setCommentDrafts({ ...commentDrafts, [p.id]: e.target.value })}
                       onKeyDown={(e) => { if (e.key === "Enter") addComment(p.id); }}
-                      placeholder="Write a commentΓÇª"
+                      placeholder="Write a comment…"
                       className="flex-1 px-2 py-1 rounded text-xs outline-none"
                       style={{ background: "white", color: "#111", border: "1px solid var(--border)" }} />
                     <button className="aero-button rounded px-3 py-1 text-xs" onClick={() => addComment(p.id)}>Reply</button>
@@ -4371,7 +4371,7 @@ function RecycleBinApp() {
   return (
     <div className="p-4 h-full flex flex-col">
       <div className="flex items-center justify-between mb-3">
-        <h2 className="text-lg font-semibold">≡ƒùæ∩╕Å Recycle Bin</h2>
+        <h2 className="text-lg font-semibold">🗑️ Recycle Bin</h2>
         <button className="aero-button rounded px-3 py-1 text-xs" onClick={() => { if (confirm("Empty Recycle Bin?")) { emptyRecycle(); setItems([]); }}}>Empty Recycle Bin</button>
       </div>
       {items.length === 0 ? (
@@ -4382,7 +4382,7 @@ function RecycleBinApp() {
             <div key={f.id} className="text-center p-2 rounded hover:bg-white/30">
               {f.type === "image"
                 ? <img src={f.content} alt="" className="w-12 h-12 mx-auto object-cover rounded shadow opacity-70" />
-                : <div className="text-4xl opacity-70">≡ƒôä</div>}
+                : <div className="text-4xl opacity-70">📄</div>}
               <div className="text-xs mt-1 truncate">{f.name}</div>
               <div className="flex gap-1 mt-1 justify-center">
                 <button className="aero-button rounded px-1 text-[10px]" onClick={() => { restoreFromRecycle(f.id); setItems(loadRecycle()); }}>Restore</button>
@@ -4396,7 +4396,7 @@ function RecycleBinApp() {
   );
 }
 
-// ---------- Chess (vs AI bot ΓÇö real legal moves + minimax) ----------
+// ---------- Chess (vs AI bot — real legal moves + minimax) ----------
 function ChessApp() {
   type Piece = { type: "K"|"Q"|"R"|"B"|"N"|"P"; color: "w"|"b" };
   type Board = (Piece|null)[][];
@@ -4414,7 +4414,7 @@ function ChessApp() {
     return b;
   };
 
-  const GLYPHS: Record<string,string> = {wK:"ΓÖö",wQ:"ΓÖò",wR:"ΓÖû",wB:"ΓÖù",wN:"ΓÖÿ",wP:"ΓÖÖ",bK:"ΓÖÜ",bQ:"ΓÖ¢",bR:"ΓÖ£",bB:"ΓÖ¥",bN:"ΓÖ₧",bP:"ΓÖƒ"};
+  const GLYPHS: Record<string,string> = {wK:"♔",wQ:"♕",wR:"♖",wB:"♗",wN:"♘",wP:"♙",bK:"♚",bQ:"♛",bR:"♜",bB:"♝",bN:"♞",bP:"♟"};
 
   const inBounds = (r:number,c:number) => r>=0&&r<8&&c>=0&&c<8;
 
@@ -4487,7 +4487,7 @@ function ChessApp() {
     return moves;
   };
 
-  // Check detection ΓÇö filters moves that leave own king in check
+  // Check detection — filters moves that leave own king in check
   const findKing = (board:Board, color:"w"|"b"):Pos|null => {
     for(let r=0;r<8;r++) for(let c=0;c<8;c++)
       if(board[r][c]?.type==="K"&&board[r][c]?.color===color) return [r,c];
@@ -4567,12 +4567,12 @@ function ChessApp() {
         setBoard(nb); setLastMove(mv);
         const wMoves=allLegalMoves(nb,"w");
         if(!wMoves.length){
-          setStatus(isInCheck(nb,"w")?"Checkmate! Puei Bot wins ≡ƒñû":"Stalemate ΓÇö draw!");
+          setStatus(isInCheck(nb,"w")?"Checkmate! Puei Bot wins 🤖":"Stalemate — draw!");
         } else {
-          setStatus(isInCheck(nb,"w")?"ΓÜá∩╕Å Check! Get your king to safety.":"Your turn (white)");
+          setStatus(isInCheck(nb,"w")?"⚠️ Check! Get your king to safety.":"Your turn (white)");
         }
       } else {
-        setStatus(isInCheck(b,"b")?"Checkmate! You win ≡ƒÄë":"Stalemate ΓÇö draw!");
+        setStatus(isInCheck(b,"b")?"Checkmate! You win 🎉":"Stalemate — draw!");
       }
       setTurn("w"); setThinking(false);
     }, 300);
@@ -4588,8 +4588,8 @@ function ChessApp() {
         setBoard(nb); setLastMove([selected,[r,c]]);
         setSelected(null); setLegalMoves([]);
         const bMoves=allLegalMoves(nb,"b");
-        if(!bMoves.length){setStatus(isInCheck(nb,"b")?"Checkmate! You win ≡ƒÄë":"Stalemate ΓÇö draw!");return;}
-        setStatus("Puei Bot is thinkingΓÇª"); setTurn("b");
+        if(!bMoves.length){setStatus(isInCheck(nb,"b")?"Checkmate! You win 🎉":"Stalemate — draw!");return;}
+        setStatus("Puei Bot is thinking…"); setTurn("b");
         botMove(nb);
       } else if(piece?.color==="w"){
         setSelected([r,c]); setLegalMoves(legalMovesFor(board,r,c));
@@ -4612,7 +4612,7 @@ function ChessApp() {
       style={{background:"linear-gradient(135deg,#1a0a00 0%,#2d1a08 100%)"}}>
       {/* Status bar */}
       <div className={`text-sm font-semibold mb-3 px-4 py-1.5 rounded-full ${whiteInCheck?"bg-red-500/80 text-white animate-pulse":"bg-black/30 text-white/80"}`}>
-        {thinking ? <span className="opacity-70">ΓÖƒ Puei Bot is thinkingΓÇª</span> : status}
+        {thinking ? <span className="opacity-70">♟ Puei Bot is thinking…</span> : status}
       </div>
       {/* Board container */}
       <div className="flex">
@@ -4667,9 +4667,9 @@ function ChessApp() {
         <button className="px-4 py-1.5 rounded-full text-xs text-white font-semibold"
           style={{background:"rgba(255,255,255,0.15)"}}
           onClick={()=>{setBoard(initBoard());setSelected(null);setLegalMoves([]);setTurn("w");setStatus("Your turn (white)");setLastMove(null);}}>
-          ≡ƒöä New Game
+          🔄 New Game
         </button>
-        <div className="text-[10px] text-white/30">You = White ┬╖ Bot = Black</div>
+        <div className="text-[10px] text-white/30">You = White · Bot = Black</div>
       </div>
     </div>
   );
