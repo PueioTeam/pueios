@@ -1295,8 +1295,8 @@ export function PueiOS() {
 
       {/* Start menu */}
       {startOpen && (
-        <div className="fixed bottom-12 left-2 aero-glass rounded-xl w-[440px] z-[9000] overflow-hidden"
-          style={{ animation: "fade-scale 0.18s ease-out" }} onMouseDown={(e) => e.stopPropagation()}>
+        <div className="fixed bottom-12 left-2 rounded-xl w-[440px] z-[9000] overflow-hidden border border-slate-300/80 shadow-2xl"
+          style={{ animation: "fade-scale 0.18s ease-out", background: "linear-gradient(180deg, #f8fbff 0%, #eef4fb 100%)" }} onMouseDown={(e) => e.stopPropagation()}>
           <div className="aero-titlebar px-4 py-2 flex items-center gap-2">
             <div className="w-10 h-10 rounded-full flex items-center justify-center text-xl overflow-hidden"
               style={{ background: "var(--gradient-aero)" }}>
