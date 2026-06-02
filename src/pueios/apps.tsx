@@ -52,10 +52,10 @@ export function AppRenderer(p: AppRendererProps) {
     case "pueinet": return <PueiWebApp currentUser={p.currentUser} users={p.users} icons={p.icons} />;
     case "puei-cloud-chat": return <PueiCloudChatApp user={p.currentUser} users={p.users} setUsers={p.setUsers} />;
     case "file-explorer": return <FileExplorerApp openApp={p.openApp} icons={p.icons} openFolder={p.openFolder} currentUser={p.currentUser} users={p.users} />;
-    case "app-store": return <AppStoreApp installWebApp={p.installWebApp} openApp={p.openApp} systemVersion={p.systemVersion} addNativeIcon={p.addNativeIcon} uninstallApp={p.uninstallApp} uninstallWebApp={p.uninstallWebApp} icons={p.icons} />;
+    case "app-store": return <AppStoreApp installWebApp={p.installWebApp} openApp={p.openApp} openWebApp={p.openWebApp} systemVersion={p.systemVersion} addNativeIcon={p.addNativeIcon} uninstallApp={p.uninstallApp} uninstallWebApp={p.uninstallWebApp} icons={p.icons} />;
     case "puei-social": return <PueiSocialApp user={p.currentUser} users={p.users} />;
     case "folder": return <FolderApp folderIconId={p.folderIconId!} icons={p.icons} openApp={p.openApp} openWebApp={p.openWebApp} />;
-    case "web-app": return <WebAppFrame url={p.webUrl!} />;
+    case "web-app": return <WebAppFrame url={p.webUrl!} currentUser={p.currentUser} startUpgrade={p.startUpgrade} />;
     case "recycle-bin": return <RecycleBinApp />;
     case "chess": return <ChessApp />;
   }
@@ -1379,13 +1379,6 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
   const [navUrl, setNavUrl] = useState("puei://home");
   const [tabs, setTabs] = useState([{ id: 1, title: "Home", url: "puei://home" }]);
   const [active, setActive] = useState(1);
-  const updatesDoneKey = `pueios2plus-updates-done-${currentUser}`;
-  const [updatesProgress, setUpdatesProgress] = useState(0);
-  const [isUpdating, setIsUpdating] = useState(false);
-  const [updatesCancelled, setUpdatesCancelled] = useState(false);
-  const [updatesDone, setUpdatesDone] = useState(() => {
-    try { return localStorage.getItem(updatesDoneKey) === "1"; } catch { return false; }
-  });
   const [isoRefresh, setIsoRefresh] = useState(0);
 
   useEffect(() => {
@@ -1397,22 +1390,6 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
       window.removeEventListener("storage", fn);
     };
   }, []);
-
-  useEffect(() => {
-    if (!isUpdating) return;
-    const t = window.setInterval(() => {
-      setUpdatesProgress((p) => Math.min(100, p + 0.8 + Math.random() * 1.6));
-    }, 700);
-    return () => window.clearInterval(t);
-  }, [isUpdating]);
-
-  useEffect(() => {
-    if (!isUpdating || updatesProgress < 100) return;
-    setIsUpdating(false);
-    setUpdatesDone(true);
-    try { localStorage.setItem(updatesDoneKey, "1"); } catch {}
-    blip("notify");
-  }, [isUpdating, updatesProgress, updatesDoneKey]);
 
   const isoFile = loadFiles().find((f) =>
     f.type === "text" &&
@@ -1432,40 +1409,13 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
       id: `iso-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`,
       name: "pueios2-plus.iso",
       type: "text",
-      content: "PueiOS2 Plus installation ISO image placeholder. Keep this file to run updates from puei://updates.",
+      content: "PueiOS2 Plus installation ISO image placeholder. Keep this file in Files/Downloads, then install Puei Updater from App Store and drag the ISO into that app.",
       updatedAt: Date.now(),
       owner: currentUser,
       folder: SYS_FOLDER_DOWNLOADS,
     });
     setIsoRefresh((v) => v + 1);
     blip("notify");
-  };
-
-  const installUpdatesFromIso = () => {
-    if (!isoFile) {
-      blip("error");
-      alert("Download pueios2-plus.iso to Files/Downloads first.");
-      return;
-    }
-    if (!updaterInstalled) {
-      blip("error");
-      alert("Install Puei Updater from App Store first.");
-      return;
-    }
-    if (!confirm("Install Pueios2 Plus updates from ISO now?")) return;
-    setUpdatesCancelled(false);
-    setUpdatesProgress(0);
-    setIsUpdating(true);
-    blip("start");
-  };
-
-  const cancelUpdatesFromIso = () => {
-    if (!isUpdating) return;
-    if (!confirm("Stop ISO installation now?")) return;
-    setIsUpdating(false);
-    setUpdatesProgress(0);
-    setUpdatesCancelled(true);
-    blip("click");
   };
 
   const deleteIsoAfterUpdate = () => {
@@ -1620,7 +1570,7 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
     "puei://updates": (
       <div className="p-6 space-y-4">
         <h2 className="text-2xl font-bold">Γ¼å∩╕Å Puei Updates</h2>
-        <p className="text-sm opacity-75">Update flow: 1) Download ISO into Files, 2) Install Puei Updater from App Store, 3) Run the update.</p>
+        <p className="text-sm opacity-75">Update flow: 1) Download ISO into Files, 2) Install Puei Updater from App Store, 3) Open Puei Updater and drag the ISO into it, 4) wait for restart into PueiOS 2+.</p>
 
         <div className="aero-glass-light rounded-xl p-4 space-y-3 max-w-xl">
           <div className="text-sm">
@@ -1631,33 +1581,16 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
           </div>
           <div className="flex gap-2 flex-wrap">
             <button className="aero-button rounded px-3 py-1.5 text-xs" onClick={downloadPlusIso}>Γ¼ç Download pueios2-plus.iso to Files</button>
-            <button className="aero-button rounded px-3 py-1.5 text-xs" disabled={!isoFile || !updaterInstalled || isUpdating}
-              style={{ opacity: (!isoFile || !updaterInstalled || isUpdating) ? 0.5 : 1 }} onClick={installUpdatesFromIso}>ΓÜÖ∩╕Å Install updates</button>
-            <button className="aero-button rounded px-3 py-1.5 text-xs" disabled={!isUpdating}
-              style={{ opacity: isUpdating ? 1 : 0.5, color: "#fca5a5" }} onClick={cancelUpdatesFromIso}>ΓÅ╣ Stop installation</button>
             <button className="aero-button rounded px-3 py-1.5 text-xs" disabled={!isoFile}
               style={{ opacity: isoFile ? 1 : 0.5 }} onClick={deleteIsoAfterUpdate}>≡ƒùæ∩╕Å Delete ISO</button>
           </div>
 
-          {isUpdating && (
-            <div>
-              <div className="text-xs opacity-70 mb-1">Installing updates from ISOΓÇª</div>
-              <div className="w-full h-2 rounded-full bg-cyan-900/40 overflow-hidden">
-                <div className="loading-bar-inner h-full" style={{ width: `${updatesProgress}%`, transition: "width 0.6s" }} />
-              </div>
-              <div className="text-[10px] opacity-60 mt-1">{Math.floor(updatesProgress)}%</div>
-            </div>
-          )}
-
-          {updatesCancelled && !isUpdating && (
-            <div className="text-xs rounded px-2 py-2" style={{ background: "rgba(250,204,21,0.2)" }}>
-              ΓÅ╣ Installation stopped. You can restart when ready.
-            </div>
-          )}
-
-          {updatesDone && (
-            <div className="text-xs rounded px-2 py-2" style={{ background: "rgba(80,200,120,0.2)" }}>
-              Γ£à Updates completed. You can delete the ISO and nothing will happen.
+          <div className="text-xs rounded px-3 py-2" style={{ background: "rgba(255,255,255,0.08)" }}>
+            PueiWeb can only download the ISO now. Installation only works inside the installed Puei Updater app.
+          </div>
+          {updaterInstalled && (
+            <div className="text-xs rounded px-3 py-2" style={{ background: "rgba(80,200,120,0.16)" }}>
+              Puei Updater is installed. Open it from your desktop and drag the ISO from its Downloads list into the install zone.
             </div>
           )}
         </div>
@@ -3440,7 +3373,7 @@ function PueiDrivePane({ files, icons, currentUser, users, openApp, onDelete }: 
 }
 
 // ---------- App Store ----------
-function AppStoreApp({ installWebApp, openApp, systemVersion, addNativeIcon, uninstallApp, uninstallWebApp, icons }: { installWebApp: (label: string, url: string, iconUrl?: string) => void; openApp: (id: AppId) => void; systemVersion: SystemVersion; addNativeIcon: (appId: AppId, label: string, icon: string) => void; uninstallApp: (appId: AppId) => void; uninstallWebApp: (url: string) => void; icons: DesktopIcon[] }) {
+function AppStoreApp({ installWebApp, openApp, openWebApp, systemVersion, addNativeIcon, uninstallApp, uninstallWebApp, icons }: { installWebApp: (label: string, url: string, iconUrl?: string) => void; openApp: (id: AppId) => void; openWebApp: (url: string, title: string) => void; systemVersion: SystemVersion; addNativeIcon: (appId: AppId, label: string, icon: string) => void; uninstallApp: (appId: AppId) => void; uninstallWebApp: (url: string) => void; icons: DesktopIcon[] }) {
   const [tab, setTab] = useState<"official" | "installer">("official");
   const [installing, setInstalling] = useState<Record<string, number>>({});
   const installTimers = useRef<Record<string, number>>({});
@@ -3529,7 +3462,7 @@ function AppStoreApp({ installWebApp, openApp, systemVersion, addNativeIcon, uni
                     <div className="text-xs opacity-70 mt-1 flex-1">{a.desc}</div>
                     <div className="grid grid-cols-2 gap-1 mt-2">
                       <button className="aero-button rounded px-2 py-1 text-xs w-full"
-                        onClick={() => openApp(a.appId ?? "pueinet")}>Open</button>
+                        onClick={() => a.webUrl ? openWebApp(a.webUrl, a.desktopLabel || a.name) : openApp(a.appId ?? "pueinet")}>Open</button>
                       {!a.preInstalled ? (
                         <button
                           className="aero-button rounded px-2 py-1 text-xs w-full"
@@ -3939,8 +3872,11 @@ function FolderApp({ folderIconId, icons, openApp, openWebApp }: {
 }
 
 // ---------- Web App frame ----------
-function WebAppFrame({ url }: { url: string }) {
+function WebAppFrame({ url, currentUser, startUpgrade }: { url: string; currentUser: string; startUpgrade: (target: SystemVersion) => void }) {
   const [failed, setFailed] = useState(false);
+  if (url === "puei://updates") {
+    return <PueiUpdaterApp currentUser={currentUser} startUpgrade={startUpgrade} />;
+  }
   return (
     <div className="flex flex-col h-full">
       <div className="aero-titlebar text-xs px-3 py-1 flex items-center gap-2">
@@ -3955,6 +3891,214 @@ function WebAppFrame({ url }: { url: string }) {
             This site refused to load in a frame.
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+function PueiUpdaterApp({ currentUser, startUpgrade }: { currentUser: string; startUpgrade: (target: SystemVersion) => void }) {
+  const [filesVersion, setFilesVersion] = useState(0);
+  const [draggingIsoId, setDraggingIsoId] = useState<string | null>(null);
+  const [dropActive, setDropActive] = useState(false);
+  const [mountedIsoId, setMountedIsoId] = useState<string | null>(null);
+  const [installProgress, setInstallProgress] = useState(0);
+  const [isInstalling, setIsInstalling] = useState(false);
+  const [installStopped, setInstallStopped] = useState(false);
+  const [restartQueued, setRestartQueued] = useState(false);
+  const restartTimer = useRef<number | null>(null);
+
+  useEffect(() => {
+    const refresh = () => setFilesVersion((value) => value + 1);
+    window.addEventListener("pueios-files-changed", refresh);
+    window.addEventListener("storage", refresh);
+    return () => {
+      window.removeEventListener("pueios-files-changed", refresh);
+      window.removeEventListener("storage", refresh);
+    };
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (restartTimer.current) window.clearTimeout(restartTimer.current);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isInstalling) return;
+    const started = Date.now();
+    const duration = 10000 + Math.floor(Math.random() * 5000);
+    const timer = window.setInterval(() => {
+      const pct = Math.min(100, ((Date.now() - started) / duration) * 100);
+      setInstallProgress(pct);
+      if (pct >= 100) {
+        window.clearInterval(timer);
+        setIsInstalling(false);
+        setRestartQueued(true);
+        blip("notify");
+        restartTimer.current = window.setTimeout(() => {
+          blip("start");
+          startUpgrade("PueiOS 2+");
+        }, 900);
+      }
+    }, 250);
+    return () => window.clearInterval(timer);
+  }, [isInstalling, startUpgrade]);
+
+  const isoFiles = loadFiles().filter((f) =>
+    f.type === "text" &&
+    (!f.owner || f.owner === currentUser) &&
+    f.folder === SYS_FOLDER_DOWNLOADS &&
+    ["pueios2-plus.iso", "pueios2plus.iso"].includes(f.name.trim().toLowerCase())
+  );
+  const mountedIso = isoFiles.find((file) => file.id === mountedIsoId) || null;
+
+  useEffect(() => {
+    if (mountedIsoId && !isoFiles.some((file) => file.id === mountedIsoId)) {
+      setMountedIsoId(null);
+    }
+  }, [filesVersion, isoFiles, mountedIsoId]);
+
+  const beginInstall = () => {
+    if (!mountedIso) {
+      blip("error");
+      alert("Drag pueios2-plus.iso into the installer area first.");
+      return;
+    }
+    if (!confirm(`Install PueiOS 2+ from ${mountedIso.name}? Your device will restart when installation finishes.`)) return;
+    setInstallStopped(false);
+    setRestartQueued(false);
+    setInstallProgress(0);
+    setIsInstalling(true);
+    blip("start");
+  };
+
+  const stopInstall = () => {
+    if (!isInstalling) return;
+    if (!confirm("Stop ISO installation now?")) return;
+    if (restartTimer.current) {
+      window.clearTimeout(restartTimer.current);
+      restartTimer.current = null;
+    }
+    setIsInstalling(false);
+    setInstallProgress(0);
+    setRestartQueued(false);
+    setInstallStopped(true);
+    blip("click");
+  };
+
+  return (
+    <div className="flex flex-col h-full">
+      <div className="aero-titlebar text-xs px-3 py-1 flex items-center gap-2">
+        <span className="opacity-60">Update</span>
+        <span className="truncate flex-1">Puei Updater</span>
+      </div>
+      <div className="flex-1 overflow-auto p-5 space-y-4">
+        <div>
+          <h2 className="text-2xl font-bold">Puei Updater</h2>
+          <p className="text-sm opacity-70 mt-1">Installation is only available here. Download the ISO in Files first, then drag it into the installer zone below.</p>
+        </div>
+
+        <div className="grid grid-cols-[minmax(0,240px)_minmax(0,1fr)] gap-4">
+          <div className="aero-glass-light rounded-xl p-4 space-y-3">
+            <div className="text-sm font-semibold">Files / Downloads</div>
+            <div className="text-[11px] opacity-60">Drag the ISO from here into the install zone.</div>
+            {isoFiles.length === 0 ? (
+              <div className="text-xs rounded-lg px-3 py-3" style={{ background: "rgba(255,255,255,0.08)" }}>
+                No ISO found. Go to PueiWeb, download pueios2-plus.iso, then come back here.
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {isoFiles.map((file) => (
+                  <div
+                    key={file.id}
+                    draggable={!isInstalling}
+                    onDragStart={(event) => {
+                      event.dataTransfer.effectAllowed = "move";
+                      event.dataTransfer.setData("text/plain", file.id);
+                      setDraggingIsoId(file.id);
+                    }}
+                    onDragEnd={() => setDraggingIsoId(null)}
+                    className="rounded-lg px-3 py-3 cursor-grab active:cursor-grabbing border"
+                    style={{
+                      background: mountedIsoId === file.id ? "rgba(80,200,120,0.16)" : "rgba(255,255,255,0.08)",
+                      borderColor: draggingIsoId === file.id ? "rgba(125,211,252,0.8)" : "rgba(255,255,255,0.14)",
+                    }}>
+                    <div className="text-sm font-semibold">{file.name}</div>
+                    <div className="text-[11px] opacity-60">Ready in Downloads</div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="aero-glass-light rounded-xl p-4 space-y-4">
+            <div
+              onDragOver={(event) => {
+                event.preventDefault();
+                if (!isInstalling) setDropActive(true);
+              }}
+              onDragLeave={() => setDropActive(false)}
+              onDrop={(event) => {
+                event.preventDefault();
+                setDropActive(false);
+                if (isInstalling) return;
+                const fileId = event.dataTransfer.getData("text/plain") || draggingIsoId;
+                const file = isoFiles.find((entry) => entry.id === fileId);
+                if (!file) {
+                  blip("error");
+                  return;
+                }
+                setMountedIsoId(file.id);
+                setInstallStopped(false);
+                blip("click");
+              }}
+              className="rounded-xl border-2 border-dashed p-6 text-center transition-colors"
+              style={{
+                borderColor: dropActive ? "rgba(125,211,252,0.9)" : mountedIso ? "rgba(80,200,120,0.7)" : "rgba(255,255,255,0.22)",
+                background: dropActive ? "rgba(14,165,233,0.14)" : mountedIso ? "rgba(80,200,120,0.1)" : "rgba(255,255,255,0.05)",
+              }}>
+              <div className="text-sm font-semibold">{mountedIso ? `${mountedIso.name} mounted` : "Drop ISO here to prepare installation"}</div>
+              <div className="text-xs opacity-65 mt-1">
+                {mountedIso ? "Puei Updater is ready to install PueiOS 2+ from this ISO." : "Only pueios2-plus.iso from Files/Downloads is accepted."}
+              </div>
+            </div>
+
+            <div className="flex gap-2 flex-wrap">
+              <button className="aero-button rounded px-3 py-1.5 text-xs" disabled={!mountedIso || isInstalling || restartQueued}
+                style={{ opacity: (!mountedIso || isInstalling || restartQueued) ? 0.5 : 1 }}
+                onClick={beginInstall}>
+                Install PueiOS 2+
+              </button>
+              <button className="aero-button rounded px-3 py-1.5 text-xs" disabled={!isInstalling}
+                style={{ opacity: isInstalling ? 1 : 0.5, color: "#fca5a5" }}
+                onClick={stopInstall}>
+                Stop installation
+              </button>
+            </div>
+
+            {isInstalling && (
+              <div>
+                <div className="text-xs opacity-70 mb-1">Installing from ISO...</div>
+                <div className="w-full h-2 rounded-full bg-cyan-900/40 overflow-hidden">
+                  <div className="loading-bar-inner h-full" style={{ width: `${installProgress}%`, transition: "width 0.25s linear" }} />
+                </div>
+                <div className="text-[10px] opacity-60 mt-1">{Math.floor(installProgress)}% • Estimated 10-15 seconds</div>
+              </div>
+            )}
+
+            {installStopped && !isInstalling && (
+              <div className="text-xs rounded px-3 py-2" style={{ background: "rgba(250,204,21,0.2)" }}>
+                Installation stopped. Drag the ISO again or press install when ready.
+              </div>
+            )}
+
+            {restartQueued && !isInstalling && (
+              <div className="text-xs rounded px-3 py-2" style={{ background: "rgba(80,200,120,0.2)" }}>
+                Installation finished. Restarting now into PueiOS 2+...
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );
