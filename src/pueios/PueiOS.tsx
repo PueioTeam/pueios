@@ -1318,7 +1318,13 @@ export function PueiOS() {
               </button>
             ))}
             {hasPueiOSPlusUpgrade && (
-              <button onClick={() => { openApp("settings"); setStartOpen(false); setCtxMenu(null); }}
+              <button onClick={() => {
+                if (!confirm("Start upgrade to PueiOS 2+ now?")) return;
+                setUpgradeTarget("PueiOS 2+");
+                setUpgradeProgress(0);
+                setStartOpen(false);
+                setPhase("upgrade");
+              }}
                 className="flex items-center gap-2 px-3 py-2 rounded text-sm text-left"
                 style={{ background: "linear-gradient(135deg, rgba(90,160,255,0.22), rgba(30,90,220,0.30))", border: "1px solid rgba(60,120,240,0.35)" }}>
                 <div className="w-[26px] h-[26px] rounded flex items-center justify-center text-lg" style={{ background: "rgba(255,255,255,0.55)" }}>⬆️</div>
@@ -1378,7 +1384,14 @@ export function PueiOS() {
             className="taskbar-item h-9 px-3 rounded flex items-center gap-2 text-xs"
             title="Update to PueiOS 2+"
             style={{ background: "linear-gradient(180deg, rgba(120,190,255,0.95), rgba(60,120,240,0.9))", color: "white", border: "1px solid rgba(255,255,255,0.35)" }}
-            onClick={(e) => { e.stopPropagation(); openApp("settings"); setStartOpen(false); }}>
+            onClick={(e) => {
+              e.stopPropagation();
+              if (!confirm("Start upgrade to PueiOS 2+ now?")) return;
+              setUpgradeTarget("PueiOS 2+");
+              setUpgradeProgress(0);
+              setStartOpen(false);
+              setPhase("upgrade");
+            }}>
             <span>⬆️</span>
             <span className="font-semibold">PueiOS 2+</span>
           </button>
