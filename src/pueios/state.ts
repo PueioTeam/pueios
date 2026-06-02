@@ -107,10 +107,7 @@ export function pueiNumberFor(name: string): string {
 export function googleFaviconFor(url: string, size = 64): string {
   try {
     const u = url.startsWith("http") ? url : "https://" + url;
-    const host = new URL(u).hostname;
-    // DuckDuckGo's icon service resolves per-subdomain favicons correctly
-    // (Google's s2/favicons collapses subdomains to the root domain).
-    return `https://icons.duckduckgo.com/ip3/${host}.ico?sz=${size}`;
+    return `https://www.google.com/s2/favicons?sz=${size}&domain_url=${encodeURIComponent(u)}`;
   } catch {
     return "";
   }

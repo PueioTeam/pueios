@@ -252,6 +252,14 @@ export function appIcon(appId: AppId, size = 32, override?: string, iconUrl?: st
   };
   const isImg = typeof override === "string" && override.startsWith("data:");
   const useUrl = !isImg && !override && !!iconUrl;
+  const fallbackGlyph = override || map[appId];
+  const fallbackIconUrl = (() => {
+    if (!iconUrl) return "";
+    const duckMatch = iconUrl.match(/\/ip3\/([^/?]+)\.ico/i);
+    const host = duckMatch?.[1];
+    if (!host) return "";
+    return `https://www.google.com/s2/favicons?sz=${Math.max(32, Math.round(s))}&domain_url=${encodeURIComponent(`https://${host}`)}`;
+  })();
   return (
     <div
       className="flex items-center justify-center rounded-md overflow-hidden"
@@ -265,8 +273,27 @@ export function appIcon(appId: AppId, size = 32, override?: string, iconUrl?: st
       {isImg
         ? <img src={override} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
         : useUrl
-          ? <img src={iconUrl} alt="" style={{ width: "78%", height: "78%", objectFit: "contain" }} onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
-          : (override || map[appId])}
+          ? <>
+              <img
+                src={iconUrl}
+                alt=""
+                data-fallback={fallbackIconUrl}
+                style={{ width: "78%", height: "78%", objectFit: "contain" }}
+                onError={(e) => {
+                  const img = e.currentTarget as HTMLImageElement;
+                  const fallback = img.dataset.fallback || "";
+                  if (fallback && img.src !== fallback) {
+                    img.src = fallback;
+                    return;
+                  }
+                  img.style.display = "none";
+                  const fallbackEl = img.nextElementSibling as HTMLElement | null;
+                  if (fallbackEl) fallbackEl.style.display = "flex";
+                }}
+              />
+              <span style={{ display: "none", width: "100%", height: "100%", alignItems: "center", justifyContent: "center" }}>{fallbackGlyph}</span>
+            </>
+          : fallbackGlyph}
     </div>
   );
 }

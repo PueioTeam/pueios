@@ -9,7 +9,7 @@ import { AppWindow, ContextMenu, appIcon } from "./Window";
 import { AppRenderer } from "./apps";
 import { PueiMascot, PueiLogoSvg } from "./Mascot";
 import { pullAndMergeFiles, pushFile as pushFileToServer, removeFileFromServer } from "./fileSync";
-import { loadFiles } from "./state";
+import { loadFiles, saveFiles } from "./state";
 import { loginRemote, createRemote, applySnapshot, schedulePush, type AccountSnapshot } from "./accountSync";
 
 
@@ -521,7 +521,18 @@ export function PueiOS() {
         if (n) setIcons(icons.map((i) => i.id === icon.id ? { ...i, label: n } : i));
       }},
       { label: "🗑️ Delete shortcut", action: () => {
-        setIcons((prev) => prev.filter((i) => i.id !== icon.id && i.folderId !== icon.id));
+        if (icon.appId === "folder") {
+          const confirmed = confirm(`Delete folder "${icon.label}"? Files and shortcuts inside it will be moved back to the desktop.`);
+          if (!confirmed) return;
+          const allFiles = loadFiles();
+          saveFiles(allFiles.map((file) => file.folder === icon.id ? { ...file, folder: undefined } : file));
+          setIcons((prev) => prev
+            .map((i) => i.folderId === icon.id ? { ...i, folderId: undefined } : i)
+            .filter((i) => i.id !== icon.id));
+          return;
+        }
+        if (!confirm(`Delete shortcut "${icon.label}"?`)) return;
+        setIcons((prev) => prev.filter((i) => i.id !== icon.id));
       }},
       ...(icon.appId === "folder" ? [{ label: "New shortcut here", action: () => {
         const u = prompt("Website URL to install into this folder:", "https://example.com");

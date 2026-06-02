@@ -2890,7 +2890,7 @@ function FileExplorerApp({ openApp, icons, openFolder, currentUser, users }: { o
           </div>
         )}
         {folder === "puei-drive" && (
-          <PueiDrivePane files={files} currentUser={currentUser} users={users} openApp={openApp} onDelete={(id) => { deleteFile(id); setFiles(myFiles()); }} />
+          <PueiDrivePane files={files} icons={icons} currentUser={currentUser} users={users} openApp={openApp} onDelete={(id) => { deleteFile(id); setFiles(myFiles()); }} />
         )}
         {folder === "recycle-bin" && <RecycleBinApp />}
         {folder === "folders" && !openFolderId && (
@@ -2962,7 +2962,9 @@ function FolderFileGrid({ files, icons, onOpen, onDelete, onOpenIcon }: {
           className="aero-button rounded px-3 py-1 text-xs text-red-400"
           disabled={!selectedFileId}
           style={{ opacity: selectedFileId ? 1 : 0.4 }}
-          onClick={() => { if (selectedFileId) { onDelete(selectedFileId); setSelectedFileId(null); } }}>
+          onClick={() => {
+            if (selectedFileId && confirm("Delete this file?")) { onDelete(selectedFileId); setSelectedFileId(null); }
+          }}>
           🗑️ Delete
         </button>
         {selectedFile && <span className="text-xs opacity-50 ml-1">Selected: {selectedFile.name}</span>}
@@ -3013,7 +3015,9 @@ function FileGrid({ files, emptyHint, onOpen, onDelete, onDragStart, onDragEnd }
           onClick={() => { if (selectedFile && onOpen) onOpen(selectedFile); }}>📂 Open</button>
         <button className="aero-button rounded px-3 py-1 text-xs text-red-400"
           disabled={!selectedId} style={{ opacity: selectedId ? 1 : 0.4 }}
-          onClick={() => { if (selectedId) { onDelete(selectedId); setSelectedId(null); } }}>🗑️ Delete</button>
+          onClick={() => {
+            if (selectedId && confirm("Delete this file?")) { onDelete(selectedId); setSelectedId(null); }
+          }}>🗑️ Delete</button>
         {selectedFile
           ? <span className="text-xs opacity-50 ml-1">Selected: {selectedFile.name}</span>
           : <span className="text-xs opacity-40 ml-1">Click a file to select it</span>}
@@ -3043,14 +3047,16 @@ function FileGrid({ files, emptyHint, onOpen, onDelete, onDragStart, onDragEnd }
 }
 
 // ---------- Puei Drive Pane ----------
-function PueiDrivePane({ files, currentUser, users, openApp, onDelete }: {
+function PueiDrivePane({ files, icons, currentUser, users, openApp, onDelete }: {
   files: SavedFile[]; currentUser: string;
+  icons: DesktopIcon[];
   users: User[];
   openApp: (id: AppId, fileId?: string) => void;
   onDelete: (id: string) => void;
 }) {
   type DriveSection =
     | "all"
+    | "custom-folders"
     | "dev"
     | "media"
     | "projects"
@@ -3068,10 +3074,12 @@ function PueiDrivePane({ files, currentUser, users, openApp, onDelete }: {
   const [showRootEntries, setShowRootEntries] = useState(true);
   const [driveSection, setDriveSection] = useState<DriveSection>("all");
   const myFiles = files.filter(f => !f.owner || f.owner === currentUser);
+  const customFolders = icons.filter((i) => i.appId === "folder");
   const totalSize = myFiles.reduce((acc, f) => acc + f.content.length, 0);
   const usedKB = (totalSize / 1024).toFixed(1);
   const deviceUsers = users;
   const sectionMap: Record<string, DriveSection> = {
+    "C:\\Folders": "custom-folders",
     "C:\\Dev": "dev",
     "C:\\Media": "media",
     "C:\\Projects": "projects",
@@ -3087,6 +3095,7 @@ function PueiDrivePane({ files, currentUser, users, openApp, onDelete }: {
   };
   const sectionLabel: Record<DriveSection, string> = {
     all: "C:\\",
+    "custom-folders": "C:\\Folders",
     dev: "C:\\Dev",
     media: "C:\\Media",
     projects: "C:\\Projects",
@@ -3102,6 +3111,8 @@ function PueiDrivePane({ files, currentUser, users, openApp, onDelete }: {
   };
   const shownFiles = (() => {
     switch (driveSection) {
+      case "custom-folders":
+        return myFiles.filter((f) => !!f.folder && customFolders.some((folder) => folder.id === f.folder));
       case "media":
         return myFiles.filter((f) => f.type === "image");
       case "dev":
@@ -3119,10 +3130,22 @@ function PueiDrivePane({ files, currentUser, users, openApp, onDelete }: {
         return myFiles;
     }
   })();
-  const isFileSection = ["all", "dev", "media", "projects", "logs", "temp", "games"].includes(driveSection);
+  const isFileSection = ["all", "custom-folders", "dev", "media", "projects", "logs", "temp", "games"].includes(driveSection);
   const isVirtualSection = ["windows", "system", "program-files", "recovery", "config"].includes(driveSection);
   const selectedFile = shownFiles.find(f => f.id === selectedId) ?? null;
+  const fileLocation = (file: SavedFile) => {
+    if (!file.folder) return "Desktop";
+    if (file.folder === SYS_FOLDER_PICTURES) return "Pictures";
+    if (file.folder === SYS_FOLDER_DOWNLOADS) return "Downloads";
+    return customFolders.find((folder) => folder.id === file.folder)?.label || "Folder";
+  };
+  const emptySectionHint = driveSection === "media"
+    ? "No media files saved yet."
+    : driveSection === "custom-folders"
+      ? "No files are currently stored in custom folders."
+      : "No files yet. Save something from Notepad or Puei Paint 2 and it will appear here.";
   const rootEntries = [
+    "C:\\Folders",
     "C:\\Dev", "C:\\Media", "C:\\Projects", "C:\\Users", "C:\\Windows",
     "C:\\System", "C:\\Games", "C:\\Logs", "C:\\Program Files", "C:\\Temp",
     "C:\\Recovery", "C:\\puei.config.ini",
@@ -3177,7 +3200,9 @@ function PueiDrivePane({ files, currentUser, users, openApp, onDelete }: {
           </button>
           <button className="aero-button rounded px-3 py-1 text-xs text-red-400"
             disabled={!selectedId} style={{ opacity: selectedId ? 1 : 0.4 }}
-            onClick={() => { if (selectedId) { onDelete(selectedId); setSelectedId(null); } }}>
+            onClick={() => {
+              if (selectedId && confirm("Delete this file?")) { onDelete(selectedId); setSelectedId(null); }
+            }}>
             🗑️ Delete
           </button>
           {selectedFile
@@ -3185,8 +3210,8 @@ function PueiDrivePane({ files, currentUser, users, openApp, onDelete }: {
             : <span className="text-xs opacity-40 ml-1">Click a file to select it</span>}
         </div>
       )}
-      {isFileSection && myFiles.length === 0
-        ? <div className="text-sm opacity-60 text-center p-8">No files yet. Save something from Notepad or Puei Paint 2 and it will appear here.</div>
+      {isFileSection && shownFiles.length === 0
+        ? <div className="text-sm opacity-60 text-center p-8">{emptySectionHint}</div>
         : <>
           {driveSection !== "all" && (
             <div className="flex items-center gap-2 mb-3 text-xs opacity-70">
@@ -3229,8 +3254,6 @@ function PueiDrivePane({ files, currentUser, users, openApp, onDelete }: {
                   <button className="aero-button rounded px-3 py-1 text-xs" onClick={() => openApp("recycle-bin")}>🗑️ Recovery</button>
                 </div>
               </div>
-            : shownFiles.length === 0
-            ? <div className="text-sm opacity-60 text-center p-8">{driveSection === "media" ? "No media files saved yet." : "No text files saved yet."}</div>
             : <div className="grid grid-cols-5 gap-3 overflow-auto">
                 {shownFiles.map(f => (
                   <div key={f.id}
@@ -3245,6 +3268,7 @@ function PueiDrivePane({ files, currentUser, users, openApp, onDelete }: {
                   ? <img src={f.content} alt={f.name} className="w-12 h-12 mx-auto object-cover rounded shadow" />
                   : <div className="text-4xl">📄</div>}
                 <div className="text-xs mt-1 truncate">{f.name}</div>
+                <div className="text-[9px] opacity-50 truncate">{fileLocation(f)}</div>
                 <div className="text-[9px] opacity-40">{(f.content.length / 1024).toFixed(1)} KB</div>
               </div>
             ))}
