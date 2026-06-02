@@ -1211,6 +1211,7 @@ export function PueiOS() {
               systemVersion={systemVersion}
               startUpgrade={(target) => { setUpgradeTarget(target); setUpgradeProgress(0); setPhase("upgrade"); }}
               uninstallApp={(appId) => setIcons((cur) => cur.filter((i) => !(i.appId === appId && !i.fileId && !i.webUrl)))}
+              uninstallWebApp={(url) => setIcons((cur) => cur.filter((i) => !(i.appId === "web-app" && i.webUrl === url)))}
               addNativeIcon={(appId, label, icon) => setIcons((cur) => cur.some((i) => i.appId === appId && !i.fileId && !i.webUrl) ? cur : [...cur, { id: `native-${appId}`, label, appId, iconEmoji: icon }])}
               installWebApp={(label, url, iconUrl) => addIcon({ id: `web-${Date.now().toString(36)}`, label, appId: "web-app", webUrl: url, iconUrl: iconUrl || googleFaviconFor(url, 64) })}
               openWebApp={(url, title) => openApp("web-app", { webUrl: url, title })}

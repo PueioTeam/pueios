@@ -30,6 +30,7 @@ export type AppRendererProps = {
   systemVersion: SystemVersion;
   startUpgrade: (target: SystemVersion) => void;
   uninstallApp: (appId: AppId) => void;
+  uninstallWebApp: (url: string) => void;
   addNativeIcon: (appId: AppId, label: string, icon: string) => void;
   onCreateShortcut: (label: string, fileId: string) => void;
   installWebApp: (label: string, url: string, iconUrl?: string) => void;
@@ -50,7 +51,7 @@ export function AppRenderer(p: AppRendererProps) {
     case "pueinet": return <PueiWebApp currentUser={p.currentUser} users={p.users} />;
     case "puei-cloud-chat": return <PueiCloudChatApp user={p.currentUser} users={p.users} setUsers={p.setUsers} />;
     case "file-explorer": return <FileExplorerApp openApp={p.openApp} icons={p.icons} openFolder={p.openFolder} currentUser={p.currentUser} users={p.users} />;
-    case "app-store": return <AppStoreApp installWebApp={p.installWebApp} openApp={p.openApp} systemVersion={p.systemVersion} addNativeIcon={p.addNativeIcon} icons={p.icons} />;
+    case "app-store": return <AppStoreApp installWebApp={p.installWebApp} openApp={p.openApp} systemVersion={p.systemVersion} addNativeIcon={p.addNativeIcon} uninstallApp={p.uninstallApp} uninstallWebApp={p.uninstallWebApp} icons={p.icons} />;
     case "puei-social": return <PueiSocialApp user={p.currentUser} users={p.users} />;
     case "folder": return <FolderApp folderIconId={p.folderIconId!} icons={p.icons} openApp={p.openApp} openWebApp={p.openWebApp} />;
     case "web-app": return <WebAppFrame url={p.webUrl!} />;
@@ -3220,13 +3221,14 @@ function PueiDrivePane({ files, currentUser, users, openApp, onDelete }: {
 }
 
 // ---------- App Store ----------
-function AppStoreApp({ installWebApp, openApp, systemVersion, addNativeIcon, icons }: { installWebApp: (label: string, url: string, iconUrl?: string) => void; openApp: (id: AppId) => void; systemVersion: SystemVersion; addNativeIcon: (appId: AppId, label: string, icon: string) => void; icons: DesktopIcon[] }) {
+function AppStoreApp({ installWebApp, openApp, systemVersion, addNativeIcon, uninstallApp, uninstallWebApp, icons }: { installWebApp: (label: string, url: string, iconUrl?: string) => void; openApp: (id: AppId) => void; systemVersion: SystemVersion; addNativeIcon: (appId: AppId, label: string, icon: string) => void; uninstallApp: (appId: AppId) => void; uninstallWebApp: (url: string) => void; icons: DesktopIcon[] }) {
   const [tab, setTab] = useState<"official" | "installer">("official");
-  type StoreApp = { name: string; icon: string; desc: string; appId: AppId; preInstalled?: boolean };
+  type StoreApp = { name: string; icon: string; desc: string; appId?: AppId; preInstalled?: boolean; webUrl?: string; desktopLabel?: string };
   const official: StoreApp[] = [
     { name: "PueiSocial",     icon: "📣", desc: "The official PueiOS social network.",          appId: "puei-social",    preInstalled: true },
     { name: "PueiCloudChat", icon: "💬", desc: "Chat by PueiNumber — cross-device, real-time.",           appId: "puei-cloud-chat", preInstalled: true },
     { name: "PueiWeb",        icon: "🌐", desc: "System browser + AI search engine.",           appId: "pueinet",        preInstalled: true },
+    { name: "Opera Browser",  icon: "🅾️", desc: "Install Opera as a fast browser shortcut from App Store.", webUrl: "https://www.opera.com", desktopLabel: "Opera Browser", preInstalled: false },
     { name: "Puei Paint 2",   icon: "🎨", desc: "Paint and save images as wallpapers.",         appId: "puei-paint",     preInstalled: true },
     { name: "Settings",       icon: "⚙️", desc: "Personalize, dark mode, accessibility.",       appId: "settings",       preInstalled: true },
     { name: "Computer",       icon: "🗂️", desc: "File system explorer.",                        appId: "file-explorer",  preInstalled: true },
@@ -3235,7 +3237,11 @@ function AppStoreApp({ installWebApp, openApp, systemVersion, addNativeIcon, ico
     { name: "Chess",          icon: "♟️", desc: "Chess vs Puei Bot AI — fully functional.",     appId: "chess",          preInstalled: false },
     { name: "Installer",      icon: "📥", desc: "Install trusted web apps as desktop shortcuts.",appId: "app-store",      preInstalled: true },
   ];
-  const isOnDesktop = (appId: AppId) => icons.some((i) => i.appId === appId && !i.fileId && !i.webUrl);
+  const isOnDesktop = (a: StoreApp) => {
+    if (a.webUrl) return icons.some((i) => i.appId === "web-app" && i.webUrl === a.webUrl);
+    if (!a.appId) return false;
+    return icons.some((i) => i.appId === a.appId && !i.fileId && !i.webUrl);
+  };
   return (
     <div className="flex h-full">
       <div className="w-44 p-2 border-r text-sm overflow-auto" style={{ background: "var(--glass)" }}>
@@ -3256,7 +3262,7 @@ function AppStoreApp({ installWebApp, openApp, systemVersion, addNativeIcon, ico
             <p className="text-sm opacity-70 mb-4">Verified, first-party apps built by the Puei Team.</p>
             <div className="grid grid-cols-3 gap-3">
               {official.map((a) => {
-                const onDesktop = isOnDesktop(a.appId);
+                const onDesktop = isOnDesktop(a);
                 return (
                   <div key={a.name} className="aero-glass-light rounded-lg p-3 flex flex-col">
                     <div className="flex items-center gap-2">
@@ -3269,20 +3275,39 @@ function AppStoreApp({ installWebApp, openApp, systemVersion, addNativeIcon, ico
                     <div className="text-xs opacity-70 mt-1 flex-1">{a.desc}</div>
                     <div className="flex gap-1 mt-2">
                       <button className="aero-button rounded px-2 py-1 text-xs flex-1"
-                        onClick={() => openApp(a.appId)}>Open</button>
+                        onClick={() => openApp(a.appId ?? "pueinet")}>Open</button>
                       {!a.preInstalled ? (
                         <button
                           className="aero-button rounded px-2 py-1 text-xs flex-1"
                           style={{ background: onDesktop ? "rgba(80,200,120,0.25)" : undefined, color: onDesktop ? "#4ade80" : undefined }}
-                          onClick={() => { addNativeIcon(a.appId, a.name, a.icon); blip("notify"); }}>
+                          onClick={() => {
+                            if (a.webUrl) {
+                              installWebApp(a.desktopLabel || a.name, a.webUrl, googleFaviconFor(a.webUrl, 64));
+                            } else if (a.appId) {
+                              addNativeIcon(a.appId, a.name, a.icon);
+                            }
+                            blip("notify");
+                          }}>
                           {onDesktop ? "✓ Installed" : "⬇ Install"}
                         </button>
                       ) : (
                         <button
                           className="aero-button rounded px-2 py-1 text-xs flex-1"
                           style={{ background: onDesktop ? "rgba(80,200,120,0.25)" : undefined, color: onDesktop ? "#4ade80" : undefined }}
-                          onClick={() => { addNativeIcon(a.appId, a.name, a.icon); blip("notify"); }}>
+                          onClick={() => { if (a.appId) { addNativeIcon(a.appId, a.name, a.icon); blip("notify"); } }}>
                           {onDesktop ? "✓ On desktop" : "+ Add to desktop"}
+                        </button>
+                      )}
+                      {onDesktop && (
+                        <button
+                          className="aero-button rounded px-2 py-1 text-xs"
+                          style={{ color: "#fca5a5" }}
+                          onClick={() => {
+                            if (a.webUrl) uninstallWebApp(a.webUrl);
+                            else if (a.appId) uninstallApp(a.appId);
+                            blip("notify");
+                          }}>
+                          Uninstall
                         </button>
                       )}
                     </div>
