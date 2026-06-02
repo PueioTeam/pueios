@@ -69,10 +69,13 @@ type PueiBoardPost = {
   id: string;
   author: string;
   authorAvatar: string;
+  board: string;
   caption: string;
   imageSrc: string;
   imageName: string;
   at: number;
+  likes: number;
+  likedBy?: string[];
 };
 
 function loadPueiBoard(): PueiBoardPost[] {
@@ -3412,10 +3415,13 @@ function PueiBoardApp({ user, users }: { user: string; users: User[] }) {
   const [posts, setPosts] = useState<PueiBoardPost[]>(() => loadPueiBoard());
   const [caption, setCaption] = useState("");
   const [selectedImageId, setSelectedImageId] = useState<string>("");
+  const [activeBoard, setActiveBoard] = useState<string>("All Boards");
   const [mineOnly, setMineOnly] = useState(false);
   const [galleryImages, setGalleryImages] = useState<SavedFile[]>(() =>
     loadFiles().filter((f) => f.type === "image" && (!f.owner || f.owner === user))
   );
+
+  const boards = ["All Boards", "Ideas", "Fashion", "Art", "Rooms", "Memes"];
 
   useEffect(() => {
     const refreshBoard = () => setPosts(loadPueiBoard());
@@ -3437,7 +3443,10 @@ function PueiBoardApp({ user, users }: { user: string; users: User[] }) {
 
   const me = users.find((u) => u.name === user);
   const selectedImage = galleryImages.find((f) => f.id === selectedImageId);
-  const visiblePosts = (mineOnly ? posts.filter((p) => p.author === user) : posts).sort((a, b) => b.at - a.at);
+  const visiblePosts = posts
+    .filter((p) => (mineOnly ? p.author === user : true))
+    .filter((p) => activeBoard === "All Boards" ? true : p.board === activeBoard)
+    .sort((a, b) => b.at - a.at);
 
   const post = () => {
     if (!selectedImage) return;
@@ -3445,10 +3454,13 @@ function PueiBoardApp({ user, users }: { user: string; users: User[] }) {
       id: `board-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`,
       author: user,
       authorAvatar: me?.avatar || "🧑",
+      board: activeBoard === "All Boards" ? "Ideas" : activeBoard,
       caption: caption.trim(),
       imageSrc: selectedImage.content,
       imageName: selectedImage.name,
       at: Date.now(),
+      likes: 0,
+      likedBy: [],
     }, ...posts];
     setPosts(next);
     savePueiBoard(next);
@@ -3466,11 +3478,40 @@ function PueiBoardApp({ user, users }: { user: string; users: User[] }) {
     blip("click");
   };
 
+  const toggleLike = (postId: string) => {
+    const next = posts.map((p) => {
+      if (p.id !== postId) return p;
+      const likedBy = p.likedBy || [];
+      const hasLiked = likedBy.includes(user);
+      const nextLikedBy = hasLiked ? likedBy.filter((n) => n !== user) : [...likedBy, user];
+      return { ...p, likedBy: nextLikedBy, likes: nextLikedBy.length };
+    });
+    setPosts(next);
+    savePueiBoard(next);
+    blip("click");
+  };
+
   return (
     <div className="flex h-full" style={{ background: "var(--glass)" }}>
       <div className="w-72 border-r p-3 overflow-auto" style={{ background: "var(--glass)" }}>
         <div className="font-bold text-lg mb-2">📌 PueiBoard</div>
-        <div className="text-xs opacity-70 mb-3">Post pictures from your Gallery to a shared inspiration board.</div>
+        <div className="text-xs opacity-70 mb-3">Pin Gallery images onto themed boards like ideas, art, fashion, and memes.</div>
+
+        <div className="mb-3">
+          <div className="text-xs opacity-70 mb-1">Boards</div>
+          <div className="flex flex-wrap gap-1">
+            {boards.map((board) => (
+              <button
+                key={board}
+                className="aero-button rounded px-2 py-1 text-[10px]"
+                style={activeBoard === board ? { background: "var(--gradient-aero)", color: "white" } : undefined}
+                onClick={() => setActiveBoard(board)}
+              >
+                {board}
+              </button>
+            ))}
+          </div>
+        </div>
 
         <label className="text-xs opacity-70">Choose image from Gallery</label>
         <select
@@ -3504,7 +3545,7 @@ function PueiBoardApp({ user, users }: { user: string; users: User[] }) {
           style={{ opacity: selectedImage ? 1 : 0.6 }}
           onClick={post}
         >
-          Post to PueiBoard
+          Pin to {activeBoard === "All Boards" ? "Ideas" : activeBoard}
         </button>
 
         <div className="text-[10px] opacity-60 mt-2">
@@ -3514,14 +3555,25 @@ function PueiBoardApp({ user, users }: { user: string; users: User[] }) {
 
       <div className="flex-1 p-4 overflow-auto">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-xl font-semibold">Board Feed</h2>
-          <button
-            className="aero-button rounded px-3 py-1 text-xs"
-            style={mineOnly ? { background: "var(--gradient-aero)", color: "white" } : undefined}
-            onClick={() => setMineOnly((v) => !v)}
-          >
-            {mineOnly ? "Showing: My posts" : "Showing: Everyone"}
-          </button>
+          <div>
+            <h2 className="text-xl font-semibold">{activeBoard === "All Boards" ? "Board Feed" : `${activeBoard} Board`}</h2>
+            <div className="text-[10px] opacity-55">{visiblePosts.length} pins shown</div>
+          </div>
+          <div className="flex gap-2">
+            <button
+              className="aero-button rounded px-3 py-1 text-xs"
+              style={mineOnly ? { background: "var(--gradient-aero)", color: "white" } : undefined}
+              onClick={() => setMineOnly((v) => !v)}
+            >
+              {mineOnly ? "Mine only" : "Everyone"}
+            </button>
+            <button
+              className="aero-button rounded px-3 py-1 text-xs"
+              onClick={() => setActiveBoard("All Boards")}
+            >
+              Show all boards
+            </button>
+          </div>
         </div>
 
         {visiblePosts.length === 0 ? (
@@ -3545,12 +3597,18 @@ function PueiBoardApp({ user, users }: { user: string; users: User[] }) {
                     <div className="text-[10px] opacity-60">{new Date(p.at).toLocaleDateString()}</div>
                   </div>
                   {p.caption && <div className="text-sm mt-1 whitespace-pre-wrap">{p.caption}</div>}
+                  <div className="text-[10px] uppercase tracking-widest opacity-55 mt-1">Board: {p.board}</div>
                   <div className="text-[10px] opacity-55 mt-1 truncate">Source: {p.imageName}</div>
-                  {p.author === user && (
-                    <button className="aero-button rounded px-2 py-1 text-[10px] mt-2" style={{ color: "#fecaca" }} onClick={() => removePost(p.id)}>
-                      Delete post
+                  <div className="flex gap-1 mt-2 flex-wrap">
+                    <button className="aero-button rounded px-2 py-1 text-[10px]" onClick={() => toggleLike(p.id)}>
+                      {p.likedBy?.includes(user) ? `♥ Liked (${p.likes})` : `♡ Like (${p.likes})`}
                     </button>
-                  )}
+                    {p.author === user && (
+                      <button className="aero-button rounded px-2 py-1 text-[10px]" style={{ color: "#fecaca" }} onClick={() => removePost(p.id)}>
+                        Delete pin
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             ))}
