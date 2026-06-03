@@ -3955,7 +3955,7 @@ function PueiUpdaterApp({ currentUser, startUpgrade }: { currentUser: string; st
   }, [isInstalling, startUpgrade]);
 
   const isoFiles = loadFiles().filter((f) =>
-    f.type === "text" &&
+    f.type === "iso" &&
     (!f.owner || f.owner === currentUser) &&
     f.folder === SYS_FOLDER_DOWNLOADS &&
     ["pueios2-plus.iso", "pueios2plus.iso"].includes(f.name.trim().toLowerCase())
@@ -3965,6 +3965,8 @@ function PueiUpdaterApp({ currentUser, startUpgrade }: { currentUser: string; st
   useEffect(() => {
     if (mountedIsoId && !isoFiles.some((file) => file.id === mountedIsoId)) {
       setMountedIsoId(null);
+      setCodeInput("");
+      setCodeError(null);
     }
   }, [filesVersion, isoFiles, mountedIsoId]);
 
@@ -3974,6 +3976,19 @@ function PueiUpdaterApp({ currentUser, startUpgrade }: { currentUser: string; st
       alert("Drag pueios2-plus.iso into the installer area first.");
       return;
     }
+    const expected = (mountedIso.content || "").trim().toUpperCase();
+    const entered = codeInput.trim().toUpperCase();
+    if (!entered) {
+      setCodeError("Enter the installation code that came with your ISO.");
+      blip("error");
+      return;
+    }
+    if (entered !== expected) {
+      setCodeError("Incorrect installation code. Check the code from PueiWeb → Updates.");
+      blip("error");
+      return;
+    }
+    setCodeError(null);
     if (!confirm(`Install PueiOS 2+ from ${mountedIso.name}? Your device will restart when installation finishes.`)) return;
     setInstallStopped(false);
     setRestartQueued(false);
