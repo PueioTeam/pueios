@@ -20,7 +20,7 @@ function openSavedFile(f: SavedFile, openApp: (id: AppId, fileId?: string) => vo
     window.dispatchEvent(new CustomEvent("pueios-open-updater"));
     return;
   }
-  openApp(f.type === "image" ? "puei-paint" : "notepad", f.id);
+  openSavedFile(f, openApp);
 }
 
 function fileIconFor(f: SavedFile) {
@@ -3024,7 +3024,7 @@ function FileExplorerApp({ openApp, icons, openFolder, currentUser, users }: { o
             <FolderFileGrid
               files={folderFiles}
               icons={folderIcons}
-              onOpen={(f) => openApp(f.type === "image" ? "puei-paint" : "notepad", f.id)}
+              onOpen={(f) => openSavedFile(f, openApp)}
               onDelete={(id) => { deleteFile(id); setFiles(myFiles()); }}
               onOpenIcon={(ic) => { if (ic.appId !== "web-app") openApp(ic.appId, ic.fileId); }}
             />
@@ -3372,7 +3372,7 @@ function PueiDrivePane({ files, icons, currentUser, users, openApp, onDelete }: 
                 {shownFiles.map(f => (
                   <div key={f.id}
                     onClick={() => setSelectedId(f.id === selectedId ? null : f.id)}
-                    onDoubleClick={() => openApp(f.type === "image" ? "puei-paint" : "notepad", f.id)}
+                    onDoubleClick={() => openSavedFile(f, openApp)}
                     className="text-center p-2 rounded cursor-pointer select-none transition-all"
                     style={{
                       background: f.id === selectedId ? "rgba(80,160,255,0.35)" : "transparent",
@@ -3886,7 +3886,7 @@ function FolderApp({ folderIconId, icons, openApp, openWebApp }: {
         : <FolderFileGrid
             files={savedFiles}
             icons={children}
-            onOpen={(f) => openApp(f.type === "image" ? "puei-paint" : "notepad", f.id)}
+            onOpen={(f) => openSavedFile(f, openApp)}
             onDelete={(id) => { deleteFile(id); setSavedFiles(loadFiles().filter((f) => f.folder === folderIconId)); }}
             onOpenIcon={(ic) => ic.appId === "web-app" ? openWebApp(ic.webUrl!, ic.label) : openApp(ic.appId, ic.fileId)}
           />
