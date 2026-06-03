@@ -3909,6 +3909,8 @@ function PueiUpdaterApp({ currentUser, startUpgrade }: { currentUser: string; st
   const [draggingIsoId, setDraggingIsoId] = useState<string | null>(null);
   const [dropActive, setDropActive] = useState(false);
   const [mountedIsoId, setMountedIsoId] = useState<string | null>(null);
+  const [codeInput, setCodeInput] = useState("");
+  const [codeError, setCodeError] = useState<string | null>(null);
   const [installProgress, setInstallProgress] = useState(0);
   const [isInstalling, setIsInstalling] = useState(false);
   const [installStopped, setInstallStopped] = useState(false);
