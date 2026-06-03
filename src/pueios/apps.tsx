@@ -3294,7 +3294,7 @@ function PueiDrivePane({ files, icons, currentUser, users, openApp, onDelete }: 
         <div className="flex items-center gap-2 mb-3 pb-2 border-b">
           <button className="aero-button rounded px-3 py-1 text-xs"
             disabled={!selectedFile} style={{ opacity: selectedFile ? 1 : 0.4 }}
-            onClick={() => { if (selectedFile) openApp(selectedFile.type === "image" ? "puei-paint" : "notepad", selectedFile.id); }}>
+            onClick={() => { if (selectedFile) openSavedFile(selectedFile, openApp); }}>
             📂 Open
           </button>
           <button className="aero-button rounded px-3 py-1 text-xs text-red-400"
