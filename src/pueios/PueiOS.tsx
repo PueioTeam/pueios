@@ -489,6 +489,13 @@ export function PueiOS() {
     }]);
   }, [windows, zCounter, focusWin]);
 
+  // Open the Puei Updater web app when any iso file is double-clicked anywhere.
+  useEffect(() => {
+    const fn = () => openApp("web-app", { webUrl: "puei://updates", title: "Puei Updater" });
+    window.addEventListener("pueios-open-updater", fn);
+    return () => window.removeEventListener("pueios-open-updater", fn);
+  }, [openApp]);
+
   // Simpler signature for openers that just need (appId, fileId)
   const openAppSimple = useCallback((appId: AppId, fileId?: string) => {
     openApp(appId, { fileId });
