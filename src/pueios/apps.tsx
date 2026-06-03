@@ -133,7 +133,7 @@ function saveDownloadedImage(owner: string, name: string, dataUrl: string, folde
 }
 
 
-function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, currentUser, users, setUsers, systemVersion, startUpgrade, uninstallApp, icons, signOut, lockScreen, deleteAccount }: any) {
+function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, openWebApp, currentUser, users, setUsers, systemVersion, startUpgrade, uninstallApp, icons, signOut, lockScreen, deleteAccount }: any) {
   const [tab, setTab] = useState("personalize");
   const [paintImages, setPaintImages] = useState<SavedFile[]>(() => loadFiles().filter((f) => f.type === "image" && (!f.owner || f.owner === currentUser)));
   useEffect(() => {
