@@ -1582,9 +1582,13 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
           </div>
           <div className="flex gap-2 flex-wrap">
             <button className="aero-button rounded px-3 py-1.5 text-xs" onClick={downloadPlusIso}>⬇ Download pueios2-plus.iso to Files</button>
-            <button className="aero-button rounded px-3 py-1.5 text-xs" disabled={!isoFile}
-              style={{ opacity: isoFile ? 1 : 0.5 }} onClick={deleteIsoAfterUpdate}>🗑️ Delete ISO</button>
           </div>
+
+          {isoFile && (
+            <div className="text-xs rounded px-3 py-2 font-mono" style={{ background: "rgba(80,200,120,0.16)" }}>
+              Your install code: <strong>{isoFile.content}</strong>
+            </div>
+          )}
 
           <div className="text-xs rounded px-3 py-2" style={{ background: "rgba(255,255,255,0.08)" }}>
             PueiWeb can only download the ISO now. Installation only works inside the installed Puei Updater app.
