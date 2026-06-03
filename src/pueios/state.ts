@@ -191,7 +191,7 @@ export function lookupPueiNumber(num: string): DirectoryEntry | undefined {
 export type SavedFile = {
   id: string;
   name: string;
-  type: "text" | "image";
+  type: "text" | "image" | "iso";
   content: string;
   updatedAt: number;
   folder?: string; // user folder id (DesktopIcon.id for type=folder)

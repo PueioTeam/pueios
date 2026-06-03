@@ -13,6 +13,22 @@ import {
 import { pullAndMergeFiles, pushFile as pushFileToServer, removeFileFromServer } from "./fileSync";
 import { changePasswordRemote } from "./accountSync";
 
+// Helper to open a file based on its type. ISO files trigger the Puei Updater
+// app via a global event listener in PueiOS.tsx instead of opening Notepad.
+function openSavedFile(f: SavedFile, openApp: (id: AppId, fileId?: string) => void) {
+  if (f.type === "iso") {
+    window.dispatchEvent(new CustomEvent("pueios-open-updater"));
+    return;
+  }
+  openSavedFile(f, openApp);
+}
+
+function fileIconFor(f: SavedFile) {
+  if (f.type === "iso") return "💿";
+  return "📄";
+}
+
+
 
 export type AppRendererProps = {
   appId: AppId;
@@ -44,7 +60,7 @@ export type AppRendererProps = {
 
 export function AppRenderer(p: AppRendererProps) {
   switch (p.appId) {
-    case "settings": return <SettingsApp theme={p.theme} setTheme={p.setTheme} wallpaper={p.wallpaper} setWallpaper={p.setWallpaper} openApp={p.openApp} currentUser={p.currentUser} users={p.users} setUsers={p.setUsers} systemVersion={p.systemVersion} startUpgrade={p.startUpgrade} uninstallApp={p.uninstallApp} icons={p.icons} signOut={p.signOut} lockScreen={p.lockScreen} deleteAccount={p.deleteAccount} />;
+    case "settings": return <SettingsApp theme={p.theme} setTheme={p.setTheme} wallpaper={p.wallpaper} setWallpaper={p.setWallpaper} openApp={p.openApp} openWebApp={p.openWebApp} currentUser={p.currentUser} users={p.users} setUsers={p.setUsers} systemVersion={p.systemVersion} startUpgrade={p.startUpgrade} uninstallApp={p.uninstallApp} icons={p.icons} signOut={p.signOut} lockScreen={p.lockScreen} deleteAccount={p.deleteAccount} />;
     case "about": return <AboutApp />;
     case "notepad": return <NotepadApp fileId={p.fileId} onCreateShortcut={p.onCreateShortcut} currentUser={p.currentUser} />;
     case "calculator": return <CalculatorApp />;
@@ -133,7 +149,7 @@ function saveDownloadedImage(owner: string, name: string, dataUrl: string, folde
 }
 
 
-function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, currentUser, users, setUsers, systemVersion, startUpgrade, uninstallApp, icons, signOut, lockScreen, deleteAccount }: any) {
+function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, openWebApp, currentUser, users, setUsers, systemVersion, startUpgrade, uninstallApp, icons, signOut, lockScreen, deleteAccount }: any) {
   const [tab, setTab] = useState("personalize");
   const [paintImages, setPaintImages] = useState<SavedFile[]>(() => loadFiles().filter((f) => f.type === "image" && (!f.owner || f.owner === currentUser)));
   useEffect(() => {
@@ -521,8 +537,8 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, curren
                     </div>
                   </div>
                   <button className="aero-button rounded-lg px-4 py-2 text-sm flex-shrink-0"
-                    onClick={() => { blip("notify"); startUpgrade(v); }}>
-                    Upgrade →
+                    onClick={() => { blip("click"); openWebApp("puei://updates", "Puei Updater"); }}>
+                    Open Updater →
                   </button>
                 </div>
 
@@ -1393,38 +1409,38 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
   }, []);
 
   const isoFile = loadFiles().find((f) =>
-    f.type === "text" &&
+    f.type === "iso" &&
     (!f.owner || f.owner === currentUser) &&
     f.folder === SYS_FOLDER_DOWNLOADS &&
     ["pueios2-plus.iso", "pueios2plus.iso"].includes(f.name.trim().toLowerCase())
   );
   const updaterInstalled = icons.some((i) => i.appId === "web-app" && i.webUrl === "puei://updates" && i.label.trim().toLowerCase() === "puei updater");
 
+  const generateInstallCode = () => {
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    const block = () => Array.from({ length: 4 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
+    return `P2PL-${block()}-${block()}-${block()}`;
+  };
+
   const downloadPlusIso = () => {
     if (isoFile) {
       blip("click");
-      alert("Pueios2 Plus ISO is already downloaded in Files.");
+      alert(`Pueios2 Plus ISO is already in Files/Downloads.\nInstallation code: ${isoFile.content}`);
       return;
     }
+    const code = generateInstallCode();
     upsertFile({
       id: `iso-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`,
       name: "pueios2-plus.iso",
-      type: "text",
-      content: "PueiOS2 Plus installation ISO image placeholder. Keep this file in Files/Downloads, then install Puei Updater from App Store and drag the ISO into that app.",
+      type: "iso",
+      content: code,
       updatedAt: Date.now(),
       owner: currentUser,
       folder: SYS_FOLDER_DOWNLOADS,
     });
     setIsoRefresh((v) => v + 1);
     blip("notify");
-  };
-
-  const deleteIsoAfterUpdate = () => {
-    if (!isoFile) return;
-    if (!confirm("Delete pueios2-plus.iso? Updates will remain installed.")) return;
-    deleteFile(isoFile.id);
-    setIsoRefresh((v) => v + 1);
-    blip("click");
+    alert(`pueios2-plus.iso downloaded.\n\nYour installation code is:\n${code}\n\nDrag the ISO into Puei Updater and enter this code to install.`);
   };
 
   const makeWaveWallpaper = (name: string, left: string, right: string, glow: string, stars = false) => {
@@ -1582,9 +1598,13 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
           </div>
           <div className="flex gap-2 flex-wrap">
             <button className="aero-button rounded px-3 py-1.5 text-xs" onClick={downloadPlusIso}>⬇ Download pueios2-plus.iso to Files</button>
-            <button className="aero-button rounded px-3 py-1.5 text-xs" disabled={!isoFile}
-              style={{ opacity: isoFile ? 1 : 0.5 }} onClick={deleteIsoAfterUpdate}>🗑️ Delete ISO</button>
           </div>
+
+          {isoFile && (
+            <div className="text-xs rounded px-3 py-2 font-mono" style={{ background: "rgba(80,200,120,0.16)" }}>
+              Your install code: <strong>{isoFile.content}</strong>
+            </div>
+          )}
 
           <div className="text-xs rounded px-3 py-2" style={{ background: "rgba(255,255,255,0.08)" }}>
             PueiWeb can only download the ISO now. Installation only works inside the installed Puei Updater app.
@@ -3004,7 +3024,7 @@ function FileExplorerApp({ openApp, icons, openFolder, currentUser, users }: { o
             <FolderFileGrid
               files={folderFiles}
               icons={folderIcons}
-              onOpen={(f) => openApp(f.type === "image" ? "puei-paint" : "notepad", f.id)}
+              onOpen={(f) => openSavedFile(f, openApp)}
               onDelete={(id) => { deleteFile(id); setFiles(myFiles()); }}
               onOpenIcon={(ic) => { if (ic.appId !== "web-app") openApp(ic.appId, ic.fileId); }}
             />
@@ -3057,7 +3077,7 @@ function FolderFileGrid({ files, icons, onOpen, onDelete, onOpenIcon }: {
                      outline: f.id === selectedFileId ? "2px solid rgba(80,160,255,0.7)" : "none" }}>
             {f.type === "image"
               ? <img src={f.content} alt={f.name} className="w-12 h-12 mx-auto object-cover rounded shadow" />
-              : <div className="text-4xl">📄</div>}
+              : <div className="text-4xl">{fileIconFor(f)}</div>}
             <div className="text-xs mt-1 truncate">{f.name}</div>
           </div>
         ))}
@@ -3114,7 +3134,7 @@ function FileGrid({ files, emptyHint, onOpen, onDelete, onDragStart, onDragEnd }
             }}>
             {f.type === "image"
               ? <img src={f.content} alt={f.name} className="w-12 h-12 mx-auto object-cover rounded shadow" />
-              : <div className="text-4xl">📄</div>}
+              : <div className="text-4xl">{fileIconFor(f)}</div>}
             <div className="text-xs mt-1 truncate">{f.name}</div>
           </div>
         ))}
@@ -3274,7 +3294,7 @@ function PueiDrivePane({ files, icons, currentUser, users, openApp, onDelete }: 
         <div className="flex items-center gap-2 mb-3 pb-2 border-b">
           <button className="aero-button rounded px-3 py-1 text-xs"
             disabled={!selectedFile} style={{ opacity: selectedFile ? 1 : 0.4 }}
-            onClick={() => { if (selectedFile) openApp(selectedFile.type === "image" ? "puei-paint" : "notepad", selectedFile.id); }}>
+            onClick={() => { if (selectedFile) openSavedFile(selectedFile, openApp); }}>
             📂 Open
           </button>
           <button className="aero-button rounded px-3 py-1 text-xs text-red-400"
@@ -3352,7 +3372,7 @@ function PueiDrivePane({ files, icons, currentUser, users, openApp, onDelete }: 
                 {shownFiles.map(f => (
                   <div key={f.id}
                     onClick={() => setSelectedId(f.id === selectedId ? null : f.id)}
-                    onDoubleClick={() => openApp(f.type === "image" ? "puei-paint" : "notepad", f.id)}
+                    onDoubleClick={() => openSavedFile(f, openApp)}
                     className="text-center p-2 rounded cursor-pointer select-none transition-all"
                     style={{
                       background: f.id === selectedId ? "rgba(80,160,255,0.35)" : "transparent",
@@ -3360,7 +3380,7 @@ function PueiDrivePane({ files, icons, currentUser, users, openApp, onDelete }: 
                 }}>
                 {f.type === "image"
                   ? <img src={f.content} alt={f.name} className="w-12 h-12 mx-auto object-cover rounded shadow" />
-                  : <div className="text-4xl">📄</div>}
+                  : <div className="text-4xl">{fileIconFor(f)}</div>}
                 <div className="text-xs mt-1 truncate">{f.name}</div>
                 <div className="text-[9px] opacity-50 truncate">{fileLocation(f)}</div>
                 <div className="text-[9px] opacity-40">{(f.content.length / 1024).toFixed(1)} KB</div>
@@ -3386,7 +3406,7 @@ function AppStoreApp({ installWebApp, openApp, openWebApp, systemVersion, addNat
     { name: "PueiBoard",     icon: "📌", desc: "Pinterest-style boards where Pueis post Gallery images.", appId: "puei-board", preInstalled: true },
     { name: "PueiWeb",        icon: "🌐", desc: "System browser + AI search engine.",           appId: "pueinet",        preInstalled: true },
     { name: "Google Chrome",  icon: "🌐", desc: "Install Google Chrome as a fast browser shortcut from App Store.", webUrl: "https://www.google.com/", desktopLabel: "Google Chrome", preInstalled: false, by: "Google" },
-    { name: "Bezos MP", icon: bezosmpIcon.url, desc: "Music and media player by Bezos MP.", webUrl: "https://bezosmp.lovable.app", desktopLabel: "Bezos MP", preInstalled: false, by: "Bazicioschi" },
+    { name: "BezoSMP", icon: bezosmpIcon.url, desc: "Social network — share posts, follow people, like Bluesky or X.", webUrl: "https://bezosmp.lovable.app", desktopLabel: "BezoSMP", preInstalled: false, by: "Bazicioschi" },
     { name: "Puei Paint 2",   icon: "🎨", desc: "Paint and save images as wallpapers.",         appId: "puei-paint",     preInstalled: true },
     { name: "Settings",       icon: "⚙️", desc: "Personalize, dark mode, accessibility.",       appId: "settings",       preInstalled: true },
     { name: "Computer",       icon: "🗂️", desc: "File system explorer.",                        appId: "file-explorer",  preInstalled: true },
@@ -3866,7 +3886,7 @@ function FolderApp({ folderIconId, icons, openApp, openWebApp }: {
         : <FolderFileGrid
             files={savedFiles}
             icons={children}
-            onOpen={(f) => openApp(f.type === "image" ? "puei-paint" : "notepad", f.id)}
+            onOpen={(f) => openSavedFile(f, openApp)}
             onDelete={(id) => { deleteFile(id); setSavedFiles(loadFiles().filter((f) => f.folder === folderIconId)); }}
             onOpenIcon={(ic) => ic.appId === "web-app" ? openWebApp(ic.webUrl!, ic.label) : openApp(ic.appId, ic.fileId)}
           />
@@ -3905,6 +3925,8 @@ function PueiUpdaterApp({ currentUser, startUpgrade }: { currentUser: string; st
   const [draggingIsoId, setDraggingIsoId] = useState<string | null>(null);
   const [dropActive, setDropActive] = useState(false);
   const [mountedIsoId, setMountedIsoId] = useState<string | null>(null);
+  const [codeInput, setCodeInput] = useState("");
+  const [codeError, setCodeError] = useState<string | null>(null);
   const [installProgress, setInstallProgress] = useState(0);
   const [isInstalling, setIsInstalling] = useState(false);
   const [installStopped, setInstallStopped] = useState(false);
@@ -3949,7 +3971,7 @@ function PueiUpdaterApp({ currentUser, startUpgrade }: { currentUser: string; st
   }, [isInstalling, startUpgrade]);
 
   const isoFiles = loadFiles().filter((f) =>
-    f.type === "text" &&
+    f.type === "iso" &&
     (!f.owner || f.owner === currentUser) &&
     f.folder === SYS_FOLDER_DOWNLOADS &&
     ["pueios2-plus.iso", "pueios2plus.iso"].includes(f.name.trim().toLowerCase())
@@ -3959,6 +3981,8 @@ function PueiUpdaterApp({ currentUser, startUpgrade }: { currentUser: string; st
   useEffect(() => {
     if (mountedIsoId && !isoFiles.some((file) => file.id === mountedIsoId)) {
       setMountedIsoId(null);
+      setCodeInput("");
+      setCodeError(null);
     }
   }, [filesVersion, isoFiles, mountedIsoId]);
 
@@ -3968,6 +3992,19 @@ function PueiUpdaterApp({ currentUser, startUpgrade }: { currentUser: string; st
       alert("Drag pueios2-plus.iso into the installer area first.");
       return;
     }
+    const expected = (mountedIso.content || "").trim().toUpperCase();
+    const entered = codeInput.trim().toUpperCase();
+    if (!entered) {
+      setCodeError("Enter the installation code that came with your ISO.");
+      blip("error");
+      return;
+    }
+    if (entered !== expected) {
+      setCodeError("Incorrect installation code. Check the code from PueiWeb → Updates.");
+      blip("error");
+      return;
+    }
+    setCodeError(null);
     if (!confirm(`Install PueiOS 2+ from ${mountedIso.name}? Your device will restart when installation finishes.`)) return;
     setInstallStopped(false);
     setRestartQueued(false);
@@ -4066,6 +4103,24 @@ function PueiUpdaterApp({ currentUser, startUpgrade }: { currentUser: string; st
                 {mountedIso ? "Puei Updater is ready to install PueiOS 2+ from this ISO." : "Only pueios2-plus.iso from Files/Downloads is accepted."}
               </div>
             </div>
+
+            {mountedIso && (
+              <div className="space-y-1">
+                <label className="text-xs opacity-80 font-semibold">Installation code</label>
+                <input
+                  value={codeInput}
+                  onChange={(e) => { setCodeInput(e.target.value.toUpperCase()); setCodeError(null); }}
+                  placeholder="P2PL-XXXX-XXXX-XXXX"
+                  disabled={isInstalling || restartQueued}
+                  spellCheck={false}
+                  className="w-full font-mono text-sm rounded px-3 py-2 outline-none"
+                  style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.18)" }}
+                />
+                {codeError && <div className="text-[11px] text-red-400">{codeError}</div>}
+                <div className="text-[11px] opacity-60">Enter the code shown when you downloaded this ISO in PueiWeb → Updates.</div>
+              </div>
+            )}
+
 
             <div className="flex gap-2 flex-wrap">
               <button className="aero-button rounded px-3 py-1.5 text-xs" disabled={!mountedIso || isInstalling || restartQueued}
@@ -4386,7 +4441,7 @@ function RecycleBinApp() {
             <div key={f.id} className="text-center p-2 rounded hover:bg-white/30">
               {f.type === "image"
                 ? <img src={f.content} alt="" className="w-12 h-12 mx-auto object-cover rounded shadow opacity-70" />
-                : <div className="text-4xl opacity-70">📄</div>}
+                : <div className="text-4xl opacity-70">{fileIconFor(f)}</div>}
               <div className="text-xs mt-1 truncate">{f.name}</div>
               <div className="flex gap-1 mt-1 justify-center">
                 <button className="aero-button rounded px-1 text-[10px]" onClick={() => { restoreFromRecycle(f.id); setItems(loadRecycle()); }}>Restore</button>
