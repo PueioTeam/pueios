@@ -3077,7 +3077,7 @@ function FolderFileGrid({ files, icons, onOpen, onDelete, onOpenIcon }: {
                      outline: f.id === selectedFileId ? "2px solid rgba(80,160,255,0.7)" : "none" }}>
             {f.type === "image"
               ? <img src={f.content} alt={f.name} className="w-12 h-12 mx-auto object-cover rounded shadow" />
-              : <div className="text-4xl">📄</div>}
+              : <div className="text-4xl">{fileIconFor(f)}</div>}
             <div className="text-xs mt-1 truncate">{f.name}</div>
           </div>
         ))}
@@ -3134,7 +3134,7 @@ function FileGrid({ files, emptyHint, onOpen, onDelete, onDragStart, onDragEnd }
             }}>
             {f.type === "image"
               ? <img src={f.content} alt={f.name} className="w-12 h-12 mx-auto object-cover rounded shadow" />
-              : <div className="text-4xl">📄</div>}
+              : <div className="text-4xl">{fileIconFor(f)}</div>}
             <div className="text-xs mt-1 truncate">{f.name}</div>
           </div>
         ))}
@@ -3380,7 +3380,7 @@ function PueiDrivePane({ files, icons, currentUser, users, openApp, onDelete }: 
                 }}>
                 {f.type === "image"
                   ? <img src={f.content} alt={f.name} className="w-12 h-12 mx-auto object-cover rounded shadow" />
-                  : <div className="text-4xl">📄</div>}
+                  : <div className="text-4xl">{fileIconFor(f)}</div>}
                 <div className="text-xs mt-1 truncate">{f.name}</div>
                 <div className="text-[9px] opacity-50 truncate">{fileLocation(f)}</div>
                 <div className="text-[9px] opacity-40">{(f.content.length / 1024).toFixed(1)} KB</div>
@@ -4441,7 +4441,7 @@ function RecycleBinApp() {
             <div key={f.id} className="text-center p-2 rounded hover:bg-white/30">
               {f.type === "image"
                 ? <img src={f.content} alt="" className="w-12 h-12 mx-auto object-cover rounded shadow opacity-70" />
-                : <div className="text-4xl opacity-70">📄</div>}
+                : <div className="text-4xl opacity-70">{fileIconFor(f)}</div>}
               <div className="text-xs mt-1 truncate">{f.name}</div>
               <div className="flex gap-1 mt-1 justify-center">
                 <button className="aero-button rounded px-1 text-[10px]" onClick={() => { restoreFromRecycle(f.id); setItems(loadRecycle()); }}>Restore</button>
