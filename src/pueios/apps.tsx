@@ -1,4 +1,5 @@
 ﻿import { useEffect, useRef, useState } from "react";
+import bezosmpIcon from "@/assets/bezosmp.png.asset.json";
 import type { AppId, Theme, User, WallpaperId, SavedFile, ChatMessage, DesktopIcon, SocialPost, SocialComment, SystemVersion, RecycleEntry, MailMessage, MailAttachment, MailFolderId, DownloadEntry } from "./state";
 import {
   blip, loadFiles, upsertFile, deleteFile, getFile, appendChat, loadChat, deleteChatBetween,
