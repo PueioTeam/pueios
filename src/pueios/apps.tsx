@@ -1,4 +1,5 @@
 ﻿import { useEffect, useRef, useState } from "react";
+import bezosmpIcon from "@/assets/bezosmp.png.asset.json";
 import type { AppId, Theme, User, WallpaperId, SavedFile, ChatMessage, DesktopIcon, SocialPost, SocialComment, SystemVersion, RecycleEntry, MailMessage, MailAttachment, MailFolderId, DownloadEntry } from "./state";
 import {
   blip, loadFiles, upsertFile, deleteFile, getFile, appendChat, loadChat, deleteChatBetween,
@@ -507,9 +508,9 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, curren
             <h2 className="text-xl font-semibold">⬆️ System Upgrade</h2>
             <p className="text-sm opacity-70">Upgrade PueiOS to a newer version. Your files, accounts, messages, and settings are preserved — just like upgrading from Windows XP to Vista to 7.</p>
             <div className="text-xs opacity-60 mb-2">Current version: <strong>{systemVersion}</strong></div>
-            {SYSTEM_ORDER.filter((v) => compareVersion(v, systemVersion) > 0).length === 0 ? (
-              <div className="aero-glass-light rounded-xl p-4 text-sm text-center opacity-70">✅ You are on the latest version of PueiOS.</div>
-            ) : SYSTEM_ORDER.filter((v) => compareVersion(v, systemVersion) > 0).map((v) => (
+            {SYSTEM_ORDER.filter((v) => compareVersion(v, systemVersion) > 0 && v !== "PueiOS 3").length === 0 ? (
+              <div className="aero-glass-light rounded-xl p-4 text-sm text-center opacity-70">✅ You are on the latest version of PueiOS. (PueiOS 3 has not been released yet.)</div>
+            ) : SYSTEM_ORDER.filter((v) => compareVersion(v, systemVersion) > 0 && v !== "PueiOS 3").map((v) => (
               <div key={v} className="aero-glass-light rounded-xl p-4 space-y-3">
                 <div className="flex items-center justify-between gap-4">
                   <div>
@@ -3385,7 +3386,7 @@ function AppStoreApp({ installWebApp, openApp, openWebApp, systemVersion, addNat
     { name: "PueiBoard",     icon: "📌", desc: "Pinterest-style boards where Pueis post Gallery images.", appId: "puei-board", preInstalled: true },
     { name: "PueiWeb",        icon: "🌐", desc: "System browser + AI search engine.",           appId: "pueinet",        preInstalled: true },
     { name: "Google Chrome",  icon: "🌐", desc: "Install Google Chrome as a fast browser shortcut from App Store.", webUrl: "https://www.google.com/", desktopLabel: "Google Chrome", preInstalled: false },
-    { name: "Bezos MP", icon: googleFaviconFor("https://bezosmp.lovable.app", 64), desc: "Music and media player by Bezos MP.", webUrl: "https://bezosmp.lovable.app", desktopLabel: "Bezos MP", preInstalled: false },
+    { name: "Bezos MP", icon: bezosmpIcon.url, desc: "Music and media player by Bezos MP.", webUrl: "https://bezosmp.lovable.app", desktopLabel: "Bezos MP", preInstalled: false },
     { name: "Puei Paint 2",   icon: "🎨", desc: "Paint and save images as wallpapers.",         appId: "puei-paint",     preInstalled: true },
     { name: "Settings",       icon: "⚙️", desc: "Personalize, dark mode, accessibility.",       appId: "settings",       preInstalled: true },
     { name: "Computer",       icon: "🗂️", desc: "File system explorer.",                        appId: "file-explorer",  preInstalled: true },
