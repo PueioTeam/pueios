@@ -1393,38 +1393,38 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
   }, []);
 
   const isoFile = loadFiles().find((f) =>
-    f.type === "text" &&
+    f.type === "iso" &&
     (!f.owner || f.owner === currentUser) &&
     f.folder === SYS_FOLDER_DOWNLOADS &&
     ["pueios2-plus.iso", "pueios2plus.iso"].includes(f.name.trim().toLowerCase())
   );
   const updaterInstalled = icons.some((i) => i.appId === "web-app" && i.webUrl === "puei://updates" && i.label.trim().toLowerCase() === "puei updater");
 
+  const generateInstallCode = () => {
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    const block = () => Array.from({ length: 4 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
+    return `P2PL-${block()}-${block()}-${block()}`;
+  };
+
   const downloadPlusIso = () => {
     if (isoFile) {
       blip("click");
-      alert("Pueios2 Plus ISO is already downloaded in Files.");
+      alert(`Pueios2 Plus ISO is already in Files/Downloads.\nInstallation code: ${isoFile.content}`);
       return;
     }
+    const code = generateInstallCode();
     upsertFile({
       id: `iso-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`,
       name: "pueios2-plus.iso",
-      type: "text",
-      content: "PueiOS2 Plus installation ISO image placeholder. Keep this file in Files/Downloads, then install Puei Updater from App Store and drag the ISO into that app.",
+      type: "iso",
+      content: code,
       updatedAt: Date.now(),
       owner: currentUser,
       folder: SYS_FOLDER_DOWNLOADS,
     });
     setIsoRefresh((v) => v + 1);
     blip("notify");
-  };
-
-  const deleteIsoAfterUpdate = () => {
-    if (!isoFile) return;
-    if (!confirm("Delete pueios2-plus.iso? Updates will remain installed.")) return;
-    deleteFile(isoFile.id);
-    setIsoRefresh((v) => v + 1);
-    blip("click");
+    alert(`pueios2-plus.iso downloaded.\n\nYour installation code is:\n${code}\n\nDrag the ISO into Puei Updater and enter this code to install.`);
   };
 
   const makeWaveWallpaper = (name: string, left: string, right: string, glow: string, stars = false) => {
