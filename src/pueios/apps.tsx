@@ -13,6 +13,22 @@ import {
 import { pullAndMergeFiles, pushFile as pushFileToServer, removeFileFromServer } from "./fileSync";
 import { changePasswordRemote } from "./accountSync";
 
+// Helper to open a file based on its type. ISO files trigger the Puei Updater
+// app via a global event listener in PueiOS.tsx instead of opening Notepad.
+function openSavedFile(f: SavedFile, openApp: (id: AppId, fileId?: string) => void) {
+  if (f.type === "iso") {
+    window.dispatchEvent(new CustomEvent("pueios-open-updater"));
+    return;
+  }
+  openApp(f.type === "image" ? "puei-paint" : "notepad", f.id);
+}
+
+function fileIconFor(f: SavedFile) {
+  if (f.type === "iso") return "💿";
+  return "📄";
+}
+
+
 
 export type AppRendererProps = {
   appId: AppId;
