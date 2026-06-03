@@ -521,8 +521,8 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, openWe
                     </div>
                   </div>
                   <button className="aero-button rounded-lg px-4 py-2 text-sm flex-shrink-0"
-                    onClick={() => { blip("notify"); startUpgrade(v); }}>
-                    Upgrade →
+                    onClick={() => { blip("click"); openWebApp("puei://updates", "Puei Updater"); }}>
+                    Open Updater →
                   </button>
                 </div>
 
