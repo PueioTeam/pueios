@@ -4088,6 +4088,24 @@ function PueiUpdaterApp({ currentUser, startUpgrade }: { currentUser: string; st
               </div>
             </div>
 
+            {mountedIso && (
+              <div className="space-y-1">
+                <label className="text-xs opacity-80 font-semibold">Installation code</label>
+                <input
+                  value={codeInput}
+                  onChange={(e) => { setCodeInput(e.target.value.toUpperCase()); setCodeError(null); }}
+                  placeholder="P2PL-XXXX-XXXX-XXXX"
+                  disabled={isInstalling || restartQueued}
+                  spellCheck={false}
+                  className="w-full font-mono text-sm rounded px-3 py-2 outline-none"
+                  style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.18)" }}
+                />
+                {codeError && <div className="text-[11px] text-red-400">{codeError}</div>}
+                <div className="text-[11px] opacity-60">Enter the code shown when you downloaded this ISO in PueiWeb → Updates.</div>
+              </div>
+            )}
+
+
             <div className="flex gap-2 flex-wrap">
               <button className="aero-button rounded px-3 py-1.5 text-xs" disabled={!mountedIso || isInstalling || restartQueued}
                 style={{ opacity: (!mountedIso || isInstalling || restartQueued) ? 0.5 : 1 }}
