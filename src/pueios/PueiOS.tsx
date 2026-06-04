@@ -31,6 +31,7 @@ const APP_TITLES: Record<AppId, string> = {
   "web-app": "Web App",
   "recycle-bin": "Recycle Bin",
   "chess": "Chess",
+  "puei-films": "PueiFilms",
 };
 const APP_SIZES: Partial<Record<AppId, { w: number; h: number }>> = {
   "calculator": { w: 280, h: 380 },
@@ -48,6 +49,7 @@ const APP_SIZES: Partial<Record<AppId, { w: number; h: number }>> = {
   "web-app": { w: 900, h: 600 },
   "recycle-bin": { w: 640, h: 460 },
   "chess": { w: 560, h: 600 },
+  "puei-films": { w: 920, h: 620 },
 };
 
 const GRID_W = 96;
@@ -495,6 +497,54 @@ export function PueiOS() {
     window.addEventListener("pueios-open-updater", fn);
     return () => window.removeEventListener("pueios-open-updater", fn);
   }, [openApp]);
+
+  // Track mouse globally for custom Puei cursor follower.
+  const [cursorVisible, setCursorVisible] = useState(true);
+  useEffect(() => {
+    const onMove = (e: MouseEvent) => { setCursorPos({ x: e.clientX, y: e.clientY }); setCursorVisible(true); };
+    const onLeave = () => setCursorVisible(false);
+    const onEnter = () => setCursorVisible(true);
+    window.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseleave", onLeave);
+    document.addEventListener("mouseenter", onEnter);
+    return () => {
+      window.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseleave", onLeave);
+      document.removeEventListener("mouseenter", onEnter);
+    };
+  }, []);
+
+  // Toggle a class on <html> so the custom cursor CSS applies system-wide.
+  useEffect(() => {
+    const root = document.documentElement;
+    root.classList.toggle("puei-cursor", !!theme.pueiCursor);
+    return () => root.classList.remove("puei-cursor");
+  }, [theme.pueiCursor]);
+
+  // Migration: ensure key web-app icons exist on the desktop after upgrades.
+  const ensuredRef = useRef(false);
+  useEffect(() => {
+    if (ensuredRef.current || !installed) return;
+    ensuredRef.current = true;
+    setIcons((cur) => {
+      const next = [...cur];
+      const hasBezo = next.some((i) => i.appId === "web-app" && i.webUrl === "https://bezosmp.lovable.app");
+      if (!hasBezo) {
+        next.push({ id: "web-bezosmp", label: "BezoSMP", appId: "web-app", webUrl: "https://bezosmp.lovable.app", iconUrl: "/__l5e/assets-v1/ab765ff9-caae-42cd-8d77-84c7c67d1d68/bezosmp-ladybug.png" });
+      }
+      const hasUpdater = next.some((i) => i.appId === "web-app" && i.webUrl === "puei://updates");
+      if (!hasUpdater) {
+        const updaterIcon = "data:image/svg+xml;utf8," + encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><defs><linearGradient id='g' x1='0' x2='1' y1='0' y2='1'><stop offset='0' stop-color='#22d3ee'/><stop offset='1' stop-color='#2563eb'/></linearGradient></defs><rect width='64' height='64' rx='14' fill='url(#g)'/><path d='M32 14 L50 36 H40 V52 H24 V36 H14 Z' fill='white'/></svg>`);
+        next.push({ id: "web-updates", label: "Puei Updater", appId: "web-app", webUrl: "puei://updates", iconUrl: updaterIcon });
+      }
+      const hasFilms = next.some((i) => i.appId === "puei-films" && !i.fileId && !i.webUrl);
+      if (!hasFilms) {
+        next.push({ id: "native-puei-films", label: "PueiFilms", appId: "puei-films", iconEmoji: "🎬" });
+      }
+      return next;
+    });
+  }, [installed]);
+
 
   // Simpler signature for openers that just need (appId, fileId)
   const openAppSimple = useCallback((appId: AppId, fileId?: string) => {
@@ -1353,6 +1403,35 @@ export function PueiOS() {
             setMascotSpeak(t); setTimeout(() => setMascotSpeak(null), 4000);
           }} />
       )}
+
+      {/* Puei custom cursor follower */}
+      {theme.pueiCursor && cursorVisible && (
+        <div
+          aria-hidden
+          style={{
+            position: "fixed",
+            left: cursorPos.x,
+            top: cursorPos.y,
+            width: 22,
+            height: 28,
+            transform: "translate(-2px, -2px)",
+            pointerEvents: "none",
+            zIndex: 99999,
+            filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.45))",
+          }}>
+          <svg viewBox="0 0 22 28" width="22" height="28" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="puCur" x1="0" x2="1" y1="0" y2="1">
+                <stop offset="0" stopColor="#ffffff"/>
+                <stop offset="1" stopColor={`oklch(0.75 0.18 ${theme.accentH})`}/>
+              </linearGradient>
+            </defs>
+            <path d="M2 2 L2 22 L8 18 L11 26 L14 25 L11 17 L19 17 Z"
+              fill="url(#puCur)" stroke="#0a0a0a" strokeWidth="1.4" strokeLinejoin="round"/>
+          </svg>
+        </div>
+      )}
+
 
       {/* Start menu */}
       {startOpen && (

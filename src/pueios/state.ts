@@ -15,6 +15,7 @@ export type Theme = {
   highContrast: boolean;
   highContrastColor: string; // hex
   iconSize: "small" | "medium" | "large";
+  pueiCursor?: boolean;
   win7Aero: boolean;
   glassOpacity: number;
   glassBlur: number;
@@ -128,7 +129,8 @@ export type AppId =
   | "folder"
   | "web-app"
   | "recycle-bin"
-  | "chess";
+  | "chess"
+  | "puei-films";
 
 export type WindowState = {
   id: string;

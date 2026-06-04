@@ -1,5 +1,5 @@
 ﻿import { useEffect, useRef, useState } from "react";
-import bezosmpIcon from "@/assets/bezosmp.png.asset.json";
+import bezosmpIcon from "@/assets/bezosmp-ladybug.png.asset.json";
 import type { AppId, Theme, User, WallpaperId, SavedFile, ChatMessage, DesktopIcon, SocialPost, SocialComment, SystemVersion, RecycleEntry, MailMessage, MailAttachment, MailFolderId, DownloadEntry } from "./state";
 import {
   blip, loadFiles, upsertFile, deleteFile, getFile, appendChat, loadChat, deleteChatBetween,
@@ -13,6 +13,8 @@ import {
 import { pullAndMergeFiles, pushFile as pushFileToServer, removeFileFromServer } from "./fileSync";
 import { changePasswordRemote } from "./accountSync";
 
+export const BEZOSMP_ICON_URL = bezosmpIcon.url;
+
 // Helper to open a file based on its type. ISO files trigger the Puei Updater
 // app via a global event listener in PueiOS.tsx instead of opening Notepad.
 function openSavedFile(f: SavedFile, openApp: (id: AppId, fileId?: string) => void) {
@@ -20,13 +22,18 @@ function openSavedFile(f: SavedFile, openApp: (id: AppId, fileId?: string) => vo
     window.dispatchEvent(new CustomEvent("pueios-open-updater"));
     return;
   }
-  openSavedFile(f, openApp);
+  if (f.type === "image") {
+    openApp("puei-paint", f.id);
+    return;
+  }
+  openApp("notepad", f.id);
 }
 
 function fileIconFor(f: SavedFile) {
   if (f.type === "iso") return "💿";
   return "📄";
 }
+
 
 
 
@@ -75,6 +82,7 @@ export function AppRenderer(p: AppRendererProps) {
     case "web-app": return <WebAppFrame url={p.webUrl!} currentUser={p.currentUser} startUpgrade={p.startUpgrade} />;
     case "recycle-bin": return <RecycleBinApp />;
     case "chess": return <ChessApp />;
+    case "puei-films": return <PueiFilmsApp currentUser={p.currentUser} />;
   }
 }
 
@@ -296,6 +304,9 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, openWe
               </label>
               <label className="flex items-center gap-2 text-sm">
                 <input type="checkbox" checked={theme.animations} onChange={(e) => setTheme({ ...theme, animations: e.target.checked })} /> Animations & motion
+              </label>
+              <label className="flex items-center gap-2 text-sm">
+                <input type="checkbox" checked={!!theme.pueiCursor} onChange={(e) => setTheme({ ...theme, pueiCursor: e.target.checked })} /> Puei custom cursor <span className="text-xs opacity-60">(hidden over BezoSMP & Google Chrome)</span>
               </label>
             </div>
             <div className="mt-6 p-4 rounded-lg aero-glass-light max-w-xl">
@@ -3413,6 +3424,7 @@ function AppStoreApp({ installWebApp, openApp, openWebApp, systemVersion, addNat
     { name: "Notepad",        icon: "📝", desc: "Write and save text files.",                   appId: "notepad",        preInstalled: true },
     { name: "Calculator",     icon: "🧮", desc: "Glossy arithmetic.",                            appId: "calculator",     preInstalled: true },
     { name: "Chess",          icon: "♟️", desc: "Chess vs Puei Bot AI — fully functional.",     appId: "chess",          preInstalled: false },
+    { name: "PueiFilms",      icon: "🎬", desc: "Netflix-style films posted by PueiOficial.",   appId: "puei-films",     preInstalled: false, by: "Puei Team" },
     { name: "Installer",      icon: "📥", desc: "Install trusted web apps as desktop shortcuts.",appId: "app-store",      preInstalled: true },
   ];
   const isOnDesktop = (a: StoreApp) => {
@@ -3497,7 +3509,8 @@ function AppStoreApp({ installWebApp, openApp, openWebApp, systemVersion, addNat
                             if (isInstalling || onDesktop) return;
                             beginInstall(installKey, () => {
                               if (a.webUrl) {
-                                installWebApp(a.desktopLabel || a.name, a.webUrl, a.webUrl.startsWith("puei://") ? undefined : googleFaviconFor(a.webUrl, 64));
+                                const iconIsUrl = a.icon.startsWith("http") || a.icon.startsWith("/") || a.icon.startsWith("data:");
+                                installWebApp(a.desktopLabel || a.name, a.webUrl, a.webUrl.startsWith("puei://") ? undefined : (iconIsUrl ? a.icon : googleFaviconFor(a.webUrl, 64)));
                               } else if (a.appId) {
                                 addNativeIcon(a.appId, a.name, a.icon);
                               }
@@ -3925,7 +3938,7 @@ function PueiUpdaterApp({ currentUser, startUpgrade }: { currentUser: string; st
   const [draggingIsoId, setDraggingIsoId] = useState<string | null>(null);
   const [dropActive, setDropActive] = useState(false);
   const [mountedIsoId, setMountedIsoId] = useState<string | null>(null);
-  const [codeInput, setCodeInput] = useState("");
+  const [, setCodeInput] = useState("");
   const [codeError, setCodeError] = useState<string | null>(null);
   const [installProgress, setInstallProgress] = useState(0);
   const [isInstalling, setIsInstalling] = useState(false);
@@ -3986,32 +3999,27 @@ function PueiUpdaterApp({ currentUser, startUpgrade }: { currentUser: string; st
     }
   }, [filesVersion, isoFiles, mountedIsoId]);
 
-  const beginInstall = () => {
-    if (!mountedIso) {
+  const beginInstall = (file?: SavedFile) => {
+    const iso = file || mountedIso;
+    if (!iso) {
       blip("error");
-      alert("Drag pueios2-plus.iso into the installer area first.");
+      alert("No ISO available. Download pueios2-plus.iso from PueiWeb → Updates first.");
       return;
     }
-    const expected = (mountedIso.content || "").trim().toUpperCase();
-    const entered = codeInput.trim().toUpperCase();
-    if (!entered) {
-      setCodeError("Enter the installation code that came with your ISO.");
-      blip("error");
-      return;
+    if (!file) {
+      // mount-driven path
+    } else {
+      setMountedIsoId(iso.id);
     }
-    if (entered !== expected) {
-      setCodeError("Incorrect installation code. Check the code from PueiWeb → Updates.");
-      blip("error");
-      return;
-    }
+    if (!confirm(`Install PueiOS 2+ from ${iso.name}? Your device will restart when installation finishes.`)) return;
     setCodeError(null);
-    if (!confirm(`Install PueiOS 2+ from ${mountedIso.name}? Your device will restart when installation finishes.`)) return;
     setInstallStopped(false);
     setRestartQueued(false);
     setInstallProgress(0);
     setIsInstalling(true);
     blip("start");
   };
+
 
   const stopInstall = () => {
     if (!isInstalling) return;
@@ -4053,19 +4061,28 @@ function PueiUpdaterApp({ currentUser, startUpgrade }: { currentUser: string; st
                   <div
                     key={file.id}
                     draggable={!isInstalling}
+                    onClick={() => { setMountedIsoId(file.id); setInstallStopped(false); blip("click"); }}
                     onDragStart={(event) => {
                       event.dataTransfer.effectAllowed = "move";
                       event.dataTransfer.setData("text/plain", file.id);
                       setDraggingIsoId(file.id);
                     }}
                     onDragEnd={() => setDraggingIsoId(null)}
-                    className="rounded-lg px-3 py-3 cursor-grab active:cursor-grabbing border"
+                    className="rounded-lg px-3 py-3 cursor-pointer border flex items-center justify-between gap-3"
                     style={{
                       background: mountedIsoId === file.id ? "rgba(80,200,120,0.16)" : "rgba(255,255,255,0.08)",
                       borderColor: draggingIsoId === file.id ? "rgba(125,211,252,0.8)" : "rgba(255,255,255,0.14)",
                     }}>
-                    <div className="text-sm font-semibold">{file.name}</div>
-                    <div className="text-[11px] opacity-60">Ready in Downloads</div>
+                    <div className="min-w-0">
+                      <div className="text-sm font-semibold truncate">💿 {file.name}</div>
+                      <div className="text-[11px] opacity-60">Click to select · or drag to mount</div>
+                    </div>
+                    <button
+                      className="aero-button rounded px-2 py-1 text-[11px] shrink-0"
+                      disabled={isInstalling || restartQueued}
+                      onClick={(e) => { e.stopPropagation(); beginInstall(file); }}>
+                      ⬆ Upgrade
+                    </button>
                   </div>
                 ))}
               </div>
@@ -4104,28 +4121,14 @@ function PueiUpdaterApp({ currentUser, startUpgrade }: { currentUser: string; st
               </div>
             </div>
 
-            {mountedIso && (
-              <div className="space-y-1">
-                <label className="text-xs opacity-80 font-semibold">Installation code</label>
-                <input
-                  value={codeInput}
-                  onChange={(e) => { setCodeInput(e.target.value.toUpperCase()); setCodeError(null); }}
-                  placeholder="P2PL-XXXX-XXXX-XXXX"
-                  disabled={isInstalling || restartQueued}
-                  spellCheck={false}
-                  className="w-full font-mono text-sm rounded px-3 py-2 outline-none"
-                  style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.18)" }}
-                />
-                {codeError && <div className="text-[11px] text-red-400">{codeError}</div>}
-                <div className="text-[11px] opacity-60">Enter the code shown when you downloaded this ISO in PueiWeb → Updates.</div>
-              </div>
+            {mountedIso && codeError && (
+              <div className="text-[11px] text-red-400">{codeError}</div>
             )}
-
 
             <div className="flex gap-2 flex-wrap">
               <button className="aero-button rounded px-3 py-1.5 text-xs" disabled={!mountedIso || isInstalling || restartQueued}
                 style={{ opacity: (!mountedIso || isInstalling || restartQueued) ? 0.5 : 1 }}
-                onClick={beginInstall}>
+                onClick={() => beginInstall()}>
                 Install PueiOS 2+
               </button>
               <button className="aero-button rounded px-3 py-1.5 text-xs" disabled={!isInstalling}
@@ -4733,3 +4736,158 @@ function ChessApp() {
     </div>
   );
 }
+
+// ---------- PueiFilms (Netflix-like) ----------
+type PueiFilm = {
+  id: string;
+  title: string;
+  poster: string;
+  videoUrl: string;
+  description: string;
+  genre: string;
+  postedAt: number;
+  postedBy: string;
+};
+const PUEI_FILMS_KEY = "pueios2-films-v1";
+const PUEI_OFFICIAL = "PueiOficial";
+function loadFilms(): PueiFilm[] {
+  if (typeof window === "undefined") return [];
+  try { return JSON.parse(localStorage.getItem(PUEI_FILMS_KEY) || "[]"); } catch { return []; }
+}
+function saveFilms(list: PueiFilm[]) {
+  try { localStorage.setItem(PUEI_FILMS_KEY, JSON.stringify(list)); } catch {}
+}
+function toEmbedUrl(raw: string): string {
+  const s = raw.trim();
+  const ytShort = s.match(/youtu\.be\/([\w-]{6,})/);
+  const ytWatch = s.match(/youtube\.com\/watch\?v=([\w-]{6,})/);
+  const id = ytShort?.[1] || ytWatch?.[1];
+  if (id) return `https://www.youtube.com/embed/${id}`;
+  return s;
+}
+function PueiFilmsApp({ currentUser }: { currentUser: string }) {
+  const [films, setFilms] = useState<PueiFilm[]>(() => loadFilms());
+  const [selected, setSelected] = useState<PueiFilm | null>(null);
+  const [showPost, setShowPost] = useState(false);
+  const [form, setForm] = useState({ title: "", poster: "", videoUrl: "", description: "", genre: "Action" });
+  const canPost = currentUser === PUEI_OFFICIAL;
+  const submit = () => {
+    if (!form.title.trim() || !form.videoUrl.trim()) { alert("Title and video URL required."); return; }
+    const film: PueiFilm = {
+      id: `film-${Date.now().toString(36)}`,
+      title: form.title.trim(),
+      poster: form.poster.trim() || "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=400",
+      videoUrl: toEmbedUrl(form.videoUrl),
+      description: form.description.trim(),
+      genre: form.genre,
+      postedAt: Date.now(),
+      postedBy: currentUser,
+    };
+    const next = [film, ...films];
+    setFilms(next); saveFilms(next);
+    setForm({ title: "", poster: "", videoUrl: "", description: "", genre: "Action" });
+    setShowPost(false);
+    blip("notify");
+  };
+  const remove = (id: string) => {
+    if (!canPost) return;
+    if (!confirm("Remove this film?")) return;
+    const next = films.filter((f) => f.id !== id);
+    setFilms(next); saveFilms(next);
+    if (selected?.id === id) setSelected(null);
+  };
+  return (
+    <div className="flex flex-col h-full" style={{ background: "linear-gradient(180deg, #0a0a0f, #14141f)", color: "#fff" }}>
+      <div className="flex items-center justify-between px-5 py-3 border-b border-white/10">
+        <div className="flex items-center gap-3">
+          <div className="text-2xl">🎬</div>
+          <div>
+            <div className="text-xl font-extrabold tracking-wide" style={{ color: "#e50914", letterSpacing: 1 }}>PUEIFILMS</div>
+            <div className="text-[10px] opacity-60">Only PueiOficial can post films · Curated by the Puei Team</div>
+          </div>
+        </div>
+        {canPost ? (
+          <button className="aero-button rounded px-3 py-1 text-xs" onClick={() => setShowPost(true)}>+ Post a film</button>
+        ) : (
+          <div className="text-[10px] opacity-60">Signed in as <strong>{currentUser}</strong></div>
+        )}
+      </div>
+      {selected ? (
+        <div className="flex-1 overflow-auto p-5">
+          <button className="text-xs opacity-70 mb-3 hover:opacity-100" onClick={() => setSelected(null)}>← Back to films</button>
+          <div className="rounded-xl overflow-hidden border border-white/10" style={{ background: "#000" }}>
+            <div className="aspect-video">
+              {selected.videoUrl.includes("/embed/") || selected.videoUrl.includes("youtube") || selected.videoUrl.includes("vimeo") ? (
+                <iframe src={selected.videoUrl} className="w-full h-full" allow="autoplay; encrypted-media; picture-in-picture" allowFullScreen />
+              ) : (
+                <video src={selected.videoUrl} className="w-full h-full" controls autoPlay />
+              )}
+            </div>
+          </div>
+          <div className="mt-4">
+            <div className="flex items-center gap-3">
+              <h2 className="text-2xl font-bold">{selected.title}</h2>
+              <span className="text-[10px] uppercase opacity-70 px-2 py-0.5 rounded" style={{ background: "rgba(229,9,20,0.25)" }}>{selected.genre}</span>
+            </div>
+            <div className="text-[11px] opacity-60 mt-1">Posted by {selected.postedBy} · {new Date(selected.postedAt).toLocaleDateString()}</div>
+            <p className="text-sm opacity-90 mt-3 leading-relaxed whitespace-pre-wrap">{selected.description || "No description."}</p>
+            {canPost && (
+              <button className="mt-4 text-xs px-3 py-1 rounded" style={{ background: "rgba(229,9,20,0.25)", color: "#fca5a5" }}
+                onClick={() => remove(selected.id)}>Remove film</button>
+            )}
+          </div>
+        </div>
+      ) : (
+        <div className="flex-1 overflow-auto p-5">
+          {films.length === 0 ? (
+            <div className="text-center opacity-70 py-16">
+              <div className="text-5xl mb-3">🎞️</div>
+              <div className="text-sm">No films yet. {canPost ? "Post the first one!" : "Check back soon — PueiOficial hasn't posted yet."}</div>
+            </div>
+          ) : (
+            <>
+              <div className="text-xs uppercase opacity-60 mb-2 tracking-widest">Featured</div>
+              <div className="grid gap-4" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))" }}>
+                {films.map((f) => (
+                  <div key={f.id} className="cursor-pointer group" onClick={() => { setSelected(f); blip("click"); }}>
+                    <div className="aspect-[2/3] rounded-lg overflow-hidden border border-white/10 transition-transform group-hover:scale-[1.04]"
+                      style={{ background: "#1a1a24" }}>
+                      <img src={f.poster} alt={f.title} className="w-full h-full object-cover"
+                        onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
+                    </div>
+                    <div className="mt-2 text-sm font-semibold truncate">{f.title}</div>
+                    <div className="text-[10px] opacity-60">{f.genre}</div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      )}
+      {showPost && (
+        <div className="absolute inset-0 flex items-center justify-center z-50" style={{ background: "rgba(0,0,0,0.7)" }}>
+          <div className="rounded-xl p-5 w-[420px] max-w-[92%]" style={{ background: "#1a1a24", border: "1px solid rgba(255,255,255,0.1)" }}>
+            <div className="flex items-center justify-between mb-3">
+              <div className="font-bold">Post a film</div>
+              <button className="opacity-60 hover:opacity-100" onClick={() => setShowPost(false)}>✕</button>
+            </div>
+            <div className="space-y-2 text-xs">
+              <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Title" className="w-full rounded px-3 py-2" style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)" }} />
+              <input value={form.poster} onChange={(e) => setForm({ ...form, poster: e.target.value })} placeholder="Poster image URL (optional)" className="w-full rounded px-3 py-2" style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)" }} />
+              <input value={form.videoUrl} onChange={(e) => setForm({ ...form, videoUrl: e.target.value })} placeholder="Video URL (YouTube, mp4, etc.)" className="w-full rounded px-3 py-2" style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)" }} />
+              <select value={form.genre} onChange={(e) => setForm({ ...form, genre: e.target.value })} className="w-full rounded px-3 py-2" style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)", color: "#fff" }}>
+                {["Action","Drama","Comedy","Documentary","Sci-Fi","Animation","Puei Original"].map((g) => <option key={g} value={g} style={{ color: "#000" }}>{g}</option>)}
+              </select>
+              <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Description" rows={3} className="w-full rounded px-3 py-2" style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)" }} />
+              <div className="flex justify-end gap-2 pt-2">
+                <button className="px-3 py-1.5 rounded text-xs" style={{ background: "rgba(255,255,255,0.08)" }} onClick={() => setShowPost(false)}>Cancel</button>
+                <button className="px-3 py-1.5 rounded text-xs font-semibold" style={{ background: "#e50914", color: "#fff" }} onClick={submit}>Publish</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
