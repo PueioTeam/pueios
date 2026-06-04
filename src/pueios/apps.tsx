@@ -1,5 +1,5 @@
 ﻿import { useEffect, useRef, useState } from "react";
-import bezosmpIcon from "@/assets/bezosmp.png.asset.json";
+import bezosmpIcon from "@/assets/bezosmp-ladybug.png.asset.json";
 import type { AppId, Theme, User, WallpaperId, SavedFile, ChatMessage, DesktopIcon, SocialPost, SocialComment, SystemVersion, RecycleEntry, MailMessage, MailAttachment, MailFolderId, DownloadEntry } from "./state";
 import {
   blip, loadFiles, upsertFile, deleteFile, getFile, appendChat, loadChat, deleteChatBetween,
@@ -13,6 +13,8 @@ import {
 import { pullAndMergeFiles, pushFile as pushFileToServer, removeFileFromServer } from "./fileSync";
 import { changePasswordRemote } from "./accountSync";
 
+export const BEZOSMP_ICON_URL = bezosmpIcon.url;
+
 // Helper to open a file based on its type. ISO files trigger the Puei Updater
 // app via a global event listener in PueiOS.tsx instead of opening Notepad.
 function openSavedFile(f: SavedFile, openApp: (id: AppId, fileId?: string) => void) {
@@ -20,13 +22,18 @@ function openSavedFile(f: SavedFile, openApp: (id: AppId, fileId?: string) => vo
     window.dispatchEvent(new CustomEvent("pueios-open-updater"));
     return;
   }
-  openSavedFile(f, openApp);
+  if (f.type === "image") {
+    openApp("puei-paint", f.id);
+    return;
+  }
+  openApp("notepad", f.id);
 }
 
 function fileIconFor(f: SavedFile) {
   if (f.type === "iso") return "💿";
   return "📄";
 }
+
 
 
 
