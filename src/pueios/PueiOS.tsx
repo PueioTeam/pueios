@@ -498,6 +498,54 @@ export function PueiOS() {
     return () => window.removeEventListener("pueios-open-updater", fn);
   }, [openApp]);
 
+  // Track mouse globally for custom Puei cursor follower.
+  const [cursorVisible, setCursorVisible] = useState(true);
+  useEffect(() => {
+    const onMove = (e: MouseEvent) => { setCursorPos({ x: e.clientX, y: e.clientY }); setCursorVisible(true); };
+    const onLeave = () => setCursorVisible(false);
+    const onEnter = () => setCursorVisible(true);
+    window.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseleave", onLeave);
+    document.addEventListener("mouseenter", onEnter);
+    return () => {
+      window.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseleave", onLeave);
+      document.removeEventListener("mouseenter", onEnter);
+    };
+  }, []);
+
+  // Toggle a class on <html> so the custom cursor CSS applies system-wide.
+  useEffect(() => {
+    const root = document.documentElement;
+    root.classList.toggle("puei-cursor", !!theme.pueiCursor);
+    return () => root.classList.remove("puei-cursor");
+  }, [theme.pueiCursor]);
+
+  // Migration: ensure key web-app icons exist on the desktop after upgrades.
+  const ensuredRef = useRef(false);
+  useEffect(() => {
+    if (ensuredRef.current || !installed) return;
+    ensuredRef.current = true;
+    setIcons((cur) => {
+      const next = [...cur];
+      const hasBezo = next.some((i) => i.appId === "web-app" && i.webUrl === "https://bezosmp.lovable.app");
+      if (!hasBezo) {
+        next.push({ id: "web-bezosmp", label: "BezoSMP", appId: "web-app", webUrl: "https://bezosmp.lovable.app", iconUrl: "/__l5e/assets-v1/ab765ff9-caae-42cd-8d77-84c7c67d1d68/bezosmp-ladybug.png" });
+      }
+      const hasUpdater = next.some((i) => i.appId === "web-app" && i.webUrl === "puei://updates");
+      if (!hasUpdater) {
+        const updaterIcon = "data:image/svg+xml;utf8," + encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><defs><linearGradient id='g' x1='0' x2='1' y1='0' y2='1'><stop offset='0' stop-color='#22d3ee'/><stop offset='1' stop-color='#2563eb'/></linearGradient></defs><rect width='64' height='64' rx='14' fill='url(#g)'/><path d='M32 14 L50 36 H40 V52 H24 V36 H14 Z' fill='white'/></svg>`);
+        next.push({ id: "web-updates", label: "Puei Updater", appId: "web-app", webUrl: "puei://updates", iconUrl: updaterIcon });
+      }
+      const hasFilms = next.some((i) => i.appId === "puei-films" && !i.fileId && !i.webUrl);
+      if (!hasFilms) {
+        next.push({ id: "native-puei-films", label: "PueiFilms", appId: "puei-films", iconEmoji: "🎬" });
+      }
+      return next;
+    });
+  }, [installed]);
+
+
   // Simpler signature for openers that just need (appId, fileId)
   const openAppSimple = useCallback((appId: AppId, fileId?: string) => {
     openApp(appId, { fileId });
