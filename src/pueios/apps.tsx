@@ -4741,3 +4741,158 @@ function ChessApp() {
     </div>
   );
 }
+
+// ---------- PueiFilms (Netflix-like) ----------
+type PueiFilm = {
+  id: string;
+  title: string;
+  poster: string;
+  videoUrl: string;
+  description: string;
+  genre: string;
+  postedAt: number;
+  postedBy: string;
+};
+const PUEI_FILMS_KEY = "pueios2-films-v1";
+const PUEI_OFFICIAL = "PueiOficial";
+function loadFilms(): PueiFilm[] {
+  if (typeof window === "undefined") return [];
+  try { return JSON.parse(localStorage.getItem(PUEI_FILMS_KEY) || "[]"); } catch { return []; }
+}
+function saveFilms(list: PueiFilm[]) {
+  try { localStorage.setItem(PUEI_FILMS_KEY, JSON.stringify(list)); } catch {}
+}
+function toEmbedUrl(raw: string): string {
+  const s = raw.trim();
+  const ytShort = s.match(/youtu\.be\/([\w-]{6,})/);
+  const ytWatch = s.match(/youtube\.com\/watch\?v=([\w-]{6,})/);
+  const id = ytShort?.[1] || ytWatch?.[1];
+  if (id) return `https://www.youtube.com/embed/${id}`;
+  return s;
+}
+function PueiFilmsApp({ currentUser }: { currentUser: string }) {
+  const [films, setFilms] = useState<PueiFilm[]>(() => loadFilms());
+  const [selected, setSelected] = useState<PueiFilm | null>(null);
+  const [showPost, setShowPost] = useState(false);
+  const [form, setForm] = useState({ title: "", poster: "", videoUrl: "", description: "", genre: "Action" });
+  const canPost = currentUser === PUEI_OFFICIAL;
+  const submit = () => {
+    if (!form.title.trim() || !form.videoUrl.trim()) { alert("Title and video URL required."); return; }
+    const film: PueiFilm = {
+      id: `film-${Date.now().toString(36)}`,
+      title: form.title.trim(),
+      poster: form.poster.trim() || "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=400",
+      videoUrl: toEmbedUrl(form.videoUrl),
+      description: form.description.trim(),
+      genre: form.genre,
+      postedAt: Date.now(),
+      postedBy: currentUser,
+    };
+    const next = [film, ...films];
+    setFilms(next); saveFilms(next);
+    setForm({ title: "", poster: "", videoUrl: "", description: "", genre: "Action" });
+    setShowPost(false);
+    blip("notify");
+  };
+  const remove = (id: string) => {
+    if (!canPost) return;
+    if (!confirm("Remove this film?")) return;
+    const next = films.filter((f) => f.id !== id);
+    setFilms(next); saveFilms(next);
+    if (selected?.id === id) setSelected(null);
+  };
+  return (
+    <div className="flex flex-col h-full" style={{ background: "linear-gradient(180deg, #0a0a0f, #14141f)", color: "#fff" }}>
+      <div className="flex items-center justify-between px-5 py-3 border-b border-white/10">
+        <div className="flex items-center gap-3">
+          <div className="text-2xl">🎬</div>
+          <div>
+            <div className="text-xl font-extrabold tracking-wide" style={{ color: "#e50914", letterSpacing: 1 }}>PUEIFILMS</div>
+            <div className="text-[10px] opacity-60">Only PueiOficial can post films · Curated by the Puei Team</div>
+          </div>
+        </div>
+        {canPost ? (
+          <button className="aero-button rounded px-3 py-1 text-xs" onClick={() => setShowPost(true)}>+ Post a film</button>
+        ) : (
+          <div className="text-[10px] opacity-60">Signed in as <strong>{currentUser}</strong></div>
+        )}
+      </div>
+      {selected ? (
+        <div className="flex-1 overflow-auto p-5">
+          <button className="text-xs opacity-70 mb-3 hover:opacity-100" onClick={() => setSelected(null)}>← Back to films</button>
+          <div className="rounded-xl overflow-hidden border border-white/10" style={{ background: "#000" }}>
+            <div className="aspect-video">
+              {selected.videoUrl.includes("/embed/") || selected.videoUrl.includes("youtube") || selected.videoUrl.includes("vimeo") ? (
+                <iframe src={selected.videoUrl} className="w-full h-full" allow="autoplay; encrypted-media; picture-in-picture" allowFullScreen />
+              ) : (
+                <video src={selected.videoUrl} className="w-full h-full" controls autoPlay />
+              )}
+            </div>
+          </div>
+          <div className="mt-4">
+            <div className="flex items-center gap-3">
+              <h2 className="text-2xl font-bold">{selected.title}</h2>
+              <span className="text-[10px] uppercase opacity-70 px-2 py-0.5 rounded" style={{ background: "rgba(229,9,20,0.25)" }}>{selected.genre}</span>
+            </div>
+            <div className="text-[11px] opacity-60 mt-1">Posted by {selected.postedBy} · {new Date(selected.postedAt).toLocaleDateString()}</div>
+            <p className="text-sm opacity-90 mt-3 leading-relaxed whitespace-pre-wrap">{selected.description || "No description."}</p>
+            {canPost && (
+              <button className="mt-4 text-xs px-3 py-1 rounded" style={{ background: "rgba(229,9,20,0.25)", color: "#fca5a5" }}
+                onClick={() => remove(selected.id)}>Remove film</button>
+            )}
+          </div>
+        </div>
+      ) : (
+        <div className="flex-1 overflow-auto p-5">
+          {films.length === 0 ? (
+            <div className="text-center opacity-70 py-16">
+              <div className="text-5xl mb-3">🎞️</div>
+              <div className="text-sm">No films yet. {canPost ? "Post the first one!" : "Check back soon — PueiOficial hasn't posted yet."}</div>
+            </div>
+          ) : (
+            <>
+              <div className="text-xs uppercase opacity-60 mb-2 tracking-widest">Featured</div>
+              <div className="grid gap-4" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))" }}>
+                {films.map((f) => (
+                  <div key={f.id} className="cursor-pointer group" onClick={() => { setSelected(f); blip("click"); }}>
+                    <div className="aspect-[2/3] rounded-lg overflow-hidden border border-white/10 transition-transform group-hover:scale-[1.04]"
+                      style={{ background: "#1a1a24" }}>
+                      <img src={f.poster} alt={f.title} className="w-full h-full object-cover"
+                        onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
+                    </div>
+                    <div className="mt-2 text-sm font-semibold truncate">{f.title}</div>
+                    <div className="text-[10px] opacity-60">{f.genre}</div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      )}
+      {showPost && (
+        <div className="absolute inset-0 flex items-center justify-center z-50" style={{ background: "rgba(0,0,0,0.7)" }}>
+          <div className="rounded-xl p-5 w-[420px] max-w-[92%]" style={{ background: "#1a1a24", border: "1px solid rgba(255,255,255,0.1)" }}>
+            <div className="flex items-center justify-between mb-3">
+              <div className="font-bold">Post a film</div>
+              <button className="opacity-60 hover:opacity-100" onClick={() => setShowPost(false)}>✕</button>
+            </div>
+            <div className="space-y-2 text-xs">
+              <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Title" className="w-full rounded px-3 py-2" style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)" }} />
+              <input value={form.poster} onChange={(e) => setForm({ ...form, poster: e.target.value })} placeholder="Poster image URL (optional)" className="w-full rounded px-3 py-2" style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)" }} />
+              <input value={form.videoUrl} onChange={(e) => setForm({ ...form, videoUrl: e.target.value })} placeholder="Video URL (YouTube, mp4, etc.)" className="w-full rounded px-3 py-2" style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)" }} />
+              <select value={form.genre} onChange={(e) => setForm({ ...form, genre: e.target.value })} className="w-full rounded px-3 py-2" style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)", color: "#fff" }}>
+                {["Action","Drama","Comedy","Documentary","Sci-Fi","Animation","Puei Original"].map((g) => <option key={g} value={g} style={{ color: "#000" }}>{g}</option>)}
+              </select>
+              <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Description" rows={3} className="w-full rounded px-3 py-2" style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)" }} />
+              <div className="flex justify-end gap-2 pt-2">
+                <button className="px-3 py-1.5 rounded text-xs" style={{ background: "rgba(255,255,255,0.08)" }} onClick={() => setShowPost(false)}>Cancel</button>
+                <button className="px-3 py-1.5 rounded text-xs font-semibold" style={{ background: "#e50914", color: "#fff" }} onClick={submit}>Publish</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
