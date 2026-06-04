@@ -31,6 +31,7 @@ const APP_TITLES: Record<AppId, string> = {
   "web-app": "Web App",
   "recycle-bin": "Recycle Bin",
   "chess": "Chess",
+  "puei-films": "PueiFilms",
 };
 const APP_SIZES: Partial<Record<AppId, { w: number; h: number }>> = {
   "calculator": { w: 280, h: 380 },
