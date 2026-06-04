@@ -49,6 +49,7 @@ const APP_SIZES: Partial<Record<AppId, { w: number; h: number }>> = {
   "web-app": { w: 900, h: 600 },
   "recycle-bin": { w: 640, h: 460 },
   "chess": { w: 560, h: 600 },
+  "puei-films": { w: 920, h: 620 },
 };
 
 const GRID_W = 96;
