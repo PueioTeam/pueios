@@ -3999,32 +3999,27 @@ function PueiUpdaterApp({ currentUser, startUpgrade }: { currentUser: string; st
     }
   }, [filesVersion, isoFiles, mountedIsoId]);
 
-  const beginInstall = () => {
-    if (!mountedIso) {
+  const beginInstall = (file?: SavedFile) => {
+    const iso = file || mountedIso;
+    if (!iso) {
       blip("error");
-      alert("Drag pueios2-plus.iso into the installer area first.");
+      alert("No ISO available. Download pueios2-plus.iso from PueiWeb → Updates first.");
       return;
     }
-    const expected = (mountedIso.content || "").trim().toUpperCase();
-    const entered = codeInput.trim().toUpperCase();
-    if (!entered) {
-      setCodeError("Enter the installation code that came with your ISO.");
-      blip("error");
-      return;
+    if (!file) {
+      // mount-driven path
+    } else {
+      setMountedIsoId(iso.id);
     }
-    if (entered !== expected) {
-      setCodeError("Incorrect installation code. Check the code from PueiWeb → Updates.");
-      blip("error");
-      return;
-    }
+    if (!confirm(`Install PueiOS 2+ from ${iso.name}? Your device will restart when installation finishes.`)) return;
     setCodeError(null);
-    if (!confirm(`Install PueiOS 2+ from ${mountedIso.name}? Your device will restart when installation finishes.`)) return;
     setInstallStopped(false);
     setRestartQueued(false);
     setInstallProgress(0);
     setIsInstalling(true);
     blip("start");
   };
+
 
   const stopInstall = () => {
     if (!isInstalling) return;
