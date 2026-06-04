@@ -82,6 +82,7 @@ export function AppRenderer(p: AppRendererProps) {
     case "web-app": return <WebAppFrame url={p.webUrl!} currentUser={p.currentUser} startUpgrade={p.startUpgrade} />;
     case "recycle-bin": return <RecycleBinApp />;
     case "chess": return <ChessApp />;
+    case "puei-films": return <PueiFilmsApp currentUser={p.currentUser} />;
   }
 }
 
