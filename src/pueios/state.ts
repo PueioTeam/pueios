@@ -129,7 +129,8 @@ export type AppId =
   | "folder"
   | "web-app"
   | "recycle-bin"
-  | "chess";
+  | "chess"
+  | "puei-films";
 
 export type WindowState = {
   id: string;
