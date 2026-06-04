@@ -3506,7 +3506,8 @@ function AppStoreApp({ installWebApp, openApp, openWebApp, systemVersion, addNat
                             if (isInstalling || onDesktop) return;
                             beginInstall(installKey, () => {
                               if (a.webUrl) {
-                                installWebApp(a.desktopLabel || a.name, a.webUrl, a.webUrl.startsWith("puei://") ? undefined : googleFaviconFor(a.webUrl, 64));
+                                const iconIsUrl = a.icon.startsWith("http") || a.icon.startsWith("/") || a.icon.startsWith("data:");
+                                installWebApp(a.desktopLabel || a.name, a.webUrl, a.webUrl.startsWith("puei://") ? undefined : (iconIsUrl ? a.icon : googleFaviconFor(a.webUrl, 64)));
                               } else if (a.appId) {
                                 addNativeIcon(a.appId, a.name, a.icon);
                               }
