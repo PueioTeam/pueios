@@ -15,6 +15,7 @@ export type Theme = {
   highContrast: boolean;
   highContrastColor: string; // hex
   iconSize: "small" | "medium" | "large";
+  pueiCursor?: boolean;
   win7Aero: boolean;
   glassOpacity: number;
   glassBlur: number;
