@@ -538,3 +538,10 @@
   user-select: text !important;
   -webkit-user-select: text !important;
 }
+
+/* ── Puei custom cursor ── */
+html.puei-cursor, html.puei-cursor body, html.puei-cursor * {
+  cursor: none !important;
+}
+/* Iframes still show native cursor — that's fine, and exactly what we want over BezoSMP & Google Chrome. */
+html.puei-cursor iframe { cursor: auto !important; }
