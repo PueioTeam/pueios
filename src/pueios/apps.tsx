@@ -4061,19 +4061,28 @@ function PueiUpdaterApp({ currentUser, startUpgrade }: { currentUser: string; st
                   <div
                     key={file.id}
                     draggable={!isInstalling}
+                    onClick={() => { setMountedIsoId(file.id); setInstallStopped(false); blip("click"); }}
                     onDragStart={(event) => {
                       event.dataTransfer.effectAllowed = "move";
                       event.dataTransfer.setData("text/plain", file.id);
                       setDraggingIsoId(file.id);
                     }}
                     onDragEnd={() => setDraggingIsoId(null)}
-                    className="rounded-lg px-3 py-3 cursor-grab active:cursor-grabbing border"
+                    className="rounded-lg px-3 py-3 cursor-pointer border flex items-center justify-between gap-3"
                     style={{
                       background: mountedIsoId === file.id ? "rgba(80,200,120,0.16)" : "rgba(255,255,255,0.08)",
                       borderColor: draggingIsoId === file.id ? "rgba(125,211,252,0.8)" : "rgba(255,255,255,0.14)",
                     }}>
-                    <div className="text-sm font-semibold">{file.name}</div>
-                    <div className="text-[11px] opacity-60">Ready in Downloads</div>
+                    <div className="min-w-0">
+                      <div className="text-sm font-semibold truncate">💿 {file.name}</div>
+                      <div className="text-[11px] opacity-60">Click to select · or drag to mount</div>
+                    </div>
+                    <button
+                      className="aero-button rounded px-2 py-1 text-[11px] shrink-0"
+                      disabled={isInstalling || restartQueued}
+                      onClick={(e) => { e.stopPropagation(); beginInstall(file); }}>
+                      ⬆ Upgrade
+                    </button>
                   </div>
                 ))}
               </div>
