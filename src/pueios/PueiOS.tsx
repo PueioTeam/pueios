@@ -1404,6 +1404,35 @@ export function PueiOS() {
           }} />
       )}
 
+      {/* Puei custom cursor follower */}
+      {theme.pueiCursor && cursorVisible && (
+        <div
+          aria-hidden
+          style={{
+            position: "fixed",
+            left: cursorPos.x,
+            top: cursorPos.y,
+            width: 22,
+            height: 28,
+            transform: "translate(-2px, -2px)",
+            pointerEvents: "none",
+            zIndex: 99999,
+            filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.45))",
+          }}>
+          <svg viewBox="0 0 22 28" width="22" height="28" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="puCur" x1="0" x2="1" y1="0" y2="1">
+                <stop offset="0" stopColor="#ffffff"/>
+                <stop offset="1" stopColor={`oklch(0.75 0.18 ${theme.accentH})`}/>
+              </linearGradient>
+            </defs>
+            <path d="M2 2 L2 22 L8 18 L11 26 L14 25 L11 17 L19 17 Z"
+              fill="url(#puCur)" stroke="#0a0a0a" strokeWidth="1.4" strokeLinejoin="round"/>
+          </svg>
+        </div>
+      )}
+
+
       {/* Start menu */}
       {startOpen && (
         <div className="fixed bottom-12 left-2 rounded-xl w-[440px] z-[9000] overflow-hidden border border-slate-300/80 shadow-2xl"
