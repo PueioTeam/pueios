@@ -305,6 +305,9 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, openWe
               <label className="flex items-center gap-2 text-sm">
                 <input type="checkbox" checked={theme.animations} onChange={(e) => setTheme({ ...theme, animations: e.target.checked })} /> Animations & motion
               </label>
+              <label className="flex items-center gap-2 text-sm">
+                <input type="checkbox" checked={!!theme.pueiCursor} onChange={(e) => setTheme({ ...theme, pueiCursor: e.target.checked })} /> Puei custom cursor <span className="text-xs opacity-60">(hidden over BezoSMP & Google Chrome)</span>
+              </label>
             </div>
             <div className="mt-6 p-4 rounded-lg aero-glass-light max-w-xl">
               <div className="font-semibold text-sm mb-3">Windows 7 Aero Configuration</div>
