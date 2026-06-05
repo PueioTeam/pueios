@@ -313,7 +313,7 @@ export function loadState(): Persisted {
     const p = JSON.parse(raw);
     return {
       installed: !!p.installed,
-      systemVersion: p.systemVersion || "PueiOS 2",
+      systemVersion: p.systemVersion === "PueiOS 2+" ? "PueiOS 2+" : "PueiOS 2",
       theme: { ...defaultTheme, ...(p.theme || {}) },
       icons: p.icons?.length ? p.icons : defaultIcons,
       users: Array.isArray(p.users) ? p.users : [],
