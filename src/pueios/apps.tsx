@@ -535,16 +535,15 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, openWe
             <h2 className="text-xl font-semibold">⬆️ System Upgrade</h2>
             <p className="text-sm opacity-70">Upgrade PueiOS to a newer version. Your files, accounts, messages, and settings are preserved — just like upgrading from Windows XP to Vista to 7.</p>
             <div className="text-xs opacity-60 mb-2">Current version: <strong>{systemVersion}</strong></div>
-            {SYSTEM_ORDER.filter((v) => compareVersion(v, systemVersion) > 0 && v !== "PueiOS 3").length === 0 ? (
+            {SYSTEM_ORDER.filter((v) => compareVersion(v, systemVersion) > 0).length === 0 ? (
               <div className="aero-glass-light rounded-xl p-4 text-sm text-center opacity-70">✅ You are on the latest version of PueiOS. (PueiOS 3 has not been released yet.)</div>
-            ) : SYSTEM_ORDER.filter((v) => compareVersion(v, systemVersion) > 0 && v !== "PueiOS 3").map((v) => (
+            ) : SYSTEM_ORDER.filter((v) => compareVersion(v, systemVersion) > 0).map((v) => (
               <div key={v} className="aero-glass-light rounded-xl p-4 space-y-3">
                 <div className="flex items-center justify-between gap-4">
                   <div>
                     <div className="font-semibold text-base">{v}</div>
                     <div className="text-xs opacity-70 mt-0.5">
                       {v === "PueiOS 2+" && "Pueios2 Plus is the advanced edition with stronger sync, richer customization, and improved AI systems."}
-                      {v === "PueiOS 3" && "Major release: redesigned shell, new AI assistant, expanded app ecosystem, PueiNet 3.0."}
                     </div>
                   </div>
                   <button className="aero-button rounded-lg px-4 py-2 text-sm flex-shrink-0"
