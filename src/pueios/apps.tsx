@@ -1948,7 +1948,7 @@ function PueiMailApp({ currentUser, users }: { currentUser: string; users: User[
     }).catch(() => {});
     // Drop draft if any
     if (draftId) {
-      const updated = msgs.filter((m) => m.id !== draftId);
+      const updated = loadMail(currentUser).filter((m) => m.id !== draftId);
       setMsgs(updated); saveMail(updated);
     }
     setDraft({ to: "", subject: "", body: "" }); setPending([]); setDraftId(null);
