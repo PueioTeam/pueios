@@ -522,9 +522,9 @@ export function PueiOS() {
   // Toggle a class on <html> so the custom cursor CSS applies system-wide.
   useEffect(() => {
     const root = document.documentElement;
-    root.classList.toggle("puei-cursor", !!theme.pueiCursor);
+    root.classList.toggle("puei-cursor", !!theme.pueiCursor && phase === "desktop");
     return () => root.classList.remove("puei-cursor");
-  }, [theme.pueiCursor]);
+  }, [theme.pueiCursor, phase]);
 
   // Migration: ensure key web-app icons exist on the desktop after upgrades.
   const ensuredRef = useRef(false);
@@ -533,9 +533,12 @@ export function PueiOS() {
     ensuredRef.current = true;
     setIcons((cur) => {
       const next = [...cur];
+      for (let i = 0; i < next.length; i += 1) {
+        if (next[i].appId === "web-app" && next[i].webUrl === "https://bezosmp.lovable.app") next[i] = { ...next[i], label: "BezoSMP", iconUrl: BEZOSMP_ICON_URL };
+      }
       const hasBezo = next.some((i) => i.appId === "web-app" && i.webUrl === "https://bezosmp.lovable.app");
       if (!hasBezo) {
-        next.push({ id: "web-bezosmp", label: "BezoSMP", appId: "web-app", webUrl: "https://bezosmp.lovable.app", iconUrl: "/__l5e/assets-v1/ab765ff9-caae-42cd-8d77-84c7c67d1d68/bezosmp-ladybug.png" });
+        next.push({ id: "web-bezosmp", label: "BezoSMP", appId: "web-app", webUrl: "https://bezosmp.lovable.app", iconUrl: BEZOSMP_ICON_URL });
       }
       const hasUpdater = next.some((i) => i.appId === "web-app" && i.webUrl === "puei://updates");
       if (!hasUpdater) {
