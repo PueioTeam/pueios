@@ -2356,6 +2356,7 @@ function PueiCloudChatApp({ user, users, setUsers }: { user: string; users: User
   const [activeId, setActiveId] = useState<string|null>(localContacts[0]?.name ?? null);
   const [activeKind, setActiveKind] = useState<"local"|"external">("local");
   const [text, setText] = useState("");
+  const [pendingChatAttachments, setPendingChatAttachments] = useState<MailAttachment[]>([]);
   const [showNewChat, setShowNewChat] = useState(false);
   const [newInput, setNewInput] = useState("");
   const [newMsg, setNewMsg] = useState<{ok:boolean;text:string}|null>(null);
@@ -2518,19 +2519,32 @@ function PueiCloudChatApp({ user, users, setUsers }: { user: string; users: User
     setActiveId(raw); setActiveKind("external"); setShowNewChat(false); setNewInput(""); blip("click");
   };
 
+  const attachFromFiles = () => {
+    const files = loadFiles().filter((f) => (!f.owner || f.owner === user) && f.type !== "iso");
+    if (!files.length) { alert("No attachable files in Files yet."); return; }
+    const picked = prompt(`Type a file name to attach:\n\n${files.map((f) => f.name).join("\n")}`)?.trim();
+    if (!picked) return;
+    const file = files.find((f) => f.name.toLowerCase() === picked.toLowerCase()) || files.find((f) => f.name.toLowerCase().includes(picked.toLowerCase()));
+    if (!file) { alert("File not found."); return; }
+    setPendingChatAttachments((prev) => [...prev, savedFileToAttachment(file)]);
+    blip("click");
+  };
+
   const send = async () => {
-    if (!text.trim()) return;
+    if (!text.trim() && pendingChatAttachments.length === 0) return;
     if (!myPueiNumber || !/^\d{3}-\d{3}-\d{3}$/.test(myPueiNumber)) {
       blip("error");
       alert("Your Puei Number is not ready yet. Reopen PueiCloudChat and try again.");
       return;
     }
-    const msg=text; setText(""); blip("click");
+    const outgoingAttachments = pendingChatAttachments;
+    const msg=text.trim() || (outgoingAttachments.length ? "Sent attachment" : "");
+    setText(""); setPendingChatAttachments([]); blip("click");
     if (activeKind==="local"&&localPartner) {
-      appendChat({id:`m-${Date.now()}-${Math.random().toString(36).slice(2,6)}`,from:user,to:localPartner.name,text:msg,at:Date.now()});
+      appendChat({id:`m-${Date.now()}-${Math.random().toString(36).slice(2,6)}`,from:user,to:localPartner.name,text:msg,at:Date.now(), attachments: outgoingAttachments});
       setAllMsgs(loadChat());
       if (localPartner.pueiNumber)
-        fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({from:user,fromNumber:myPueiNumber,toNumber:localPartner.pueiNumber,text:msg})}).catch(()=>{});
+        fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({from:user,fromNumber:myPueiNumber,toNumber:localPartner.pueiNumber,text:outgoingAttachments.length ? `${msg}\n📎 ${outgoingAttachments.map((a)=>a.name).join(", ")}` : msg})}).catch(()=>{});
     } else if (activeKind==="external"&&extPartner) {
       try {
         const res = await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({from:user,fromNumber:myPueiNumber,toNumber:extPartner.pueiNumber,text:msg})});
