@@ -3875,6 +3875,14 @@ function PueiBoardApp({ user, users }: { user: string; users: User[] }) {
                     <button className="aero-button rounded px-2 py-1 text-[10px]" onClick={() => toggleLike(p.id)}>
                       {p.likedBy?.includes(user) ? `♥ Liked (${p.likes})` : `♡ Like (${p.likes})`}
                     </button>
+                    <button className="aero-button rounded px-2 py-1 text-[10px]" onClick={() => {
+                      const folder = chooseImageDestination("pictures");
+                      if (folder === null) return;
+                      saveDownloadedImage(user, p.imageName || `pueiboard-${p.id}.png`, p.imageSrc, folder);
+                      blip("notify");
+                    }}>
+                      Save picture
+                    </button>
                     {p.author === user && (
                       <button className="aero-button rounded px-2 py-1 text-[10px]" style={{ color: "#fecaca" }} onClick={() => removePost(p.id)}>
                         Delete pin
