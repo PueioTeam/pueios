@@ -325,7 +325,7 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, openWe
               </label>
             </div>
             <div className="mt-6 p-4 rounded-lg aero-glass-light max-w-xl">
-              <div className="font-semibold text-sm mb-3">Windows 7 Aero Configuration</div>
+              <div className="font-semibold text-sm mb-3">Aero Configuration</div>
               <div className="space-y-3">
                 <label className="block text-xs opacity-70">Glass opacity ({theme.glassOpacity ?? 38}%)</label>
                 <input
@@ -379,7 +379,7 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, openWe
                       aeroGlow: 50,
                     })}
                   >
-                    Apply Windows 7 preset
+                    Apply Aero preset
                   </button>
                 </div>
               </div>
