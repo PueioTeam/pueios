@@ -3970,7 +3970,6 @@ function PueiUpdaterApp({ currentUser, startUpgrade }: { currentUser: string; st
       if (detail?.code) {
         setCodeInput("");
         setCodeError(null);
-        alert(`ISO security code:\n${detail.code}\n\nCopy it from the Puei Updater after the ISO opens.`);
       }
     };
     window.addEventListener("pueios-files-changed", refresh);
