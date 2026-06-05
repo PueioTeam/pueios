@@ -2815,6 +2815,18 @@ function PueiCloudChatApp({ user, users, setUsers }: { user: string; users: User
                         borderRadius:mine?"18px 18px 4px 18px":"18px 18px 18px 4px",
                       }}>
                         {m.text}
+                        {m.attachments?.length ? (
+                          <div className="mt-2 space-y-1">
+                            {m.attachments.map((a) => (
+                              <button key={a.id} className="block rounded px-2 py-1 text-left text-[11px]" style={{ background: "rgba(255,255,255,0.14)" }} onClick={() => {
+                                if (a.kind === "image") saveDownloadedImage(user, a.name, a.dataUrl, SYS_FOLDER_PICTURES);
+                                else { const link = document.createElement("a"); link.href = a.dataUrl; link.download = a.name; link.click(); }
+                              }}>
+                                {a.kind === "image" ? "🖼️" : "📎"} {a.name}
+                              </button>
+                            ))}
+                          </div>
+                        ) : null}
                       </div>
                       <div className="text-[9px] opacity-30 mt-0.5 px-1">
                         {m.at?new Date(m.at).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"}):""}
@@ -2860,15 +2872,25 @@ function PueiCloudChatApp({ user, users, setUsers }: { user: string; users: User
             </div>
             {/* Input */}
             <div className="px-4 py-3 border-t border-white/10 flex-shrink-0" style={{background:"rgba(0,0,0,0.2)"}}>
+              {pendingChatAttachments.length > 0 && (
+                <div className="flex gap-1 flex-wrap mb-2">
+                  {pendingChatAttachments.map((a) => (
+                    <span key={a.id} className="rounded-full px-2 py-0.5 text-[10px]" style={{ background: "rgba(255,255,255,0.12)" }}>
+                      📎 {a.name} <button onClick={() => setPendingChatAttachments((prev) => prev.filter((x) => x.id !== a.id))}>×</button>
+                    </span>
+                  ))}
+                </div>
+              )}
               <div className="flex gap-2 items-center">
+                <button onClick={attachFromFiles} className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 text-lg" style={{background:"rgba(255,255,255,0.1)"}}>📎</button>
                 <input value={text} onChange={e=>setText(e.target.value)}
                   onKeyDown={e=>e.key==="Enter"&&!e.shiftKey&&send()}
                   className="flex-1 px-4 py-2.5 rounded-2xl text-sm outline-none"
                   style={{background:"rgba(255,255,255,0.07)",color:"white",border:"1px solid rgba(255,255,255,0.1)"}}
                   placeholder={localPartner?`Message ${localPartner.name}…`:extPartner?`Message ${extPartner.name || extPartner.pueiNumber}…`:"Message…"}/>
-                <button onClick={send} disabled={!text.trim()}
+                <button onClick={send} disabled={!text.trim() && pendingChatAttachments.length === 0}
                   className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 transition-opacity text-xl"
-                  style={{background:text.trim()?"linear-gradient(135deg,#6d28d9,#4f46e5)":"rgba(255,255,255,0.1)",opacity:text.trim()?1:0.5}}>
+                  style={{background:(text.trim() || pendingChatAttachments.length)?"linear-gradient(135deg,#6d28d9,#4f46e5)":"rgba(255,255,255,0.1)",opacity:(text.trim() || pendingChatAttachments.length)?1:0.5}}>
                   ↑
                 </button>
               </div>
