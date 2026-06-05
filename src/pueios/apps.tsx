@@ -19,6 +19,7 @@ export const BEZOSMP_ICON_URL = bezosmpIcon.url;
 // app via a global event listener in PueiOS.tsx instead of opening Notepad.
 function openSavedFile(f: SavedFile, openApp: (id: AppId, fileId?: string) => void) {
   if (f.type === "iso") {
+    alert(`Opening ${f.name} as an ISO image.\n\nSecurity code:\n${f.content}`);
     window.dispatchEvent(new CustomEvent("pueios-open-updater", { detail: { fileId: f.id, code: f.content, name: f.name } }));
     return;
   }
