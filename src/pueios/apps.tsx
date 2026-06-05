@@ -1897,6 +1897,17 @@ function PueiMailApp({ currentUser, users }: { currentUser: string; users: User[
   const allAttachments = msgs.flatMap((m) => (m.attachments || []).map((a) => ({ ...a, mailId: m.id, from: m.from, subject: m.subject })));
 
   const handleAttachClick = () => fileInput.current?.click();
+  const handleAttachSavedFile = () => {
+    const files = loadFiles().filter((f) => (!f.owner || f.owner === currentUser) && f.type !== "iso");
+    if (!files.length) { setSendStatus("No saved files available to attach."); return; }
+    const picked = prompt(`Type a file name to attach from Files:\n\n${files.map((f) => f.name).join("\n")}`)?.trim();
+    if (!picked) return;
+    const file = files.find((f) => f.name.toLowerCase() === picked.toLowerCase()) || files.find((f) => f.name.toLowerCase().includes(picked.toLowerCase()));
+    if (!file) { setSendStatus("File not found."); return; }
+    setPending((prev) => [...prev, savedFileToAttachment(file)]);
+    setSendStatus("");
+    blip("click");
+  };
   const handleFiles = async (files: FileList | null) => {
     if (!files) return;
     const list = await Promise.all([...files].map(readFileAsAttachment));
@@ -2154,6 +2165,7 @@ function PueiMailApp({ currentUser, users }: { currentUser: string; users: User[
             <div className="flex gap-2 flex-wrap">
               <button className="aero-button rounded-lg px-5 py-2 text-sm font-semibold" onClick={doSend}>📨 Send</button>
               <button className="aero-button rounded-lg px-4 py-2 text-sm" onClick={handleAttachClick}>📎 Attach</button>
+              <button className="aero-button rounded-lg px-4 py-2 text-sm" onClick={handleAttachSavedFile}>🗂️ Attach from Files</button>
               <input type="file" multiple ref={fileInput} className="hidden"
                 accept="image/*,video/*,.pdf,.txt,.doc,.docx,.zip"
                 onChange={(e) => { handleFiles(e.target.files); e.target.value = ""; }} />
