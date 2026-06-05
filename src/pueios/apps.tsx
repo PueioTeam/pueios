@@ -19,7 +19,8 @@ export const BEZOSMP_ICON_URL = bezosmpIcon.url;
 // app via a global event listener in PueiOS.tsx instead of opening Notepad.
 function openSavedFile(f: SavedFile, openApp: (id: AppId, fileId?: string) => void) {
   if (f.type === "iso") {
-    window.dispatchEvent(new CustomEvent("pueios-open-updater"));
+    alert(`Opening ${f.name} as an ISO image.\n\nSecurity code:\n${f.content}`);
+    window.dispatchEvent(new CustomEvent("pueios-open-updater", { detail: { fileId: f.id, code: f.content, name: f.name } }));
     return;
   }
   if (f.type === "image") {
@@ -31,7 +32,22 @@ function openSavedFile(f: SavedFile, openApp: (id: AppId, fileId?: string) => vo
 
 function fileIconFor(f: SavedFile) {
   if (f.type === "iso") return "💿";
+  if (f.type === "image") return "🖼️";
   return "📄";
+}
+
+function savedFileToAttachment(file: SavedFile): MailAttachment {
+  return {
+    id: `att-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    name: file.name,
+    kind: file.type === "image" ? "image" : "file",
+    mime: file.type === "image" ? "image/png" : file.type === "iso" ? "application/x-iso9660-image" : "text/plain",
+    size: Math.round((file.content.length * 3) / 4),
+    dataUrl: file.type === "text"
+      ? `data:text/plain;charset=utf-8,${encodeURIComponent(file.content)}`
+      : file.content,
+    savedAt: Date.now(),
+  };
 }
 
 
@@ -310,7 +326,7 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, openWe
               </label>
             </div>
             <div className="mt-6 p-4 rounded-lg aero-glass-light max-w-xl">
-              <div className="font-semibold text-sm mb-3">Windows 7 Aero Configuration</div>
+              <div className="font-semibold text-sm mb-3">Aero Configuration</div>
               <div className="space-y-3">
                 <label className="block text-xs opacity-70">Glass opacity ({theme.glassOpacity ?? 38}%)</label>
                 <input
@@ -364,7 +380,7 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, openWe
                       aeroGlow: 50,
                     })}
                   >
-                    Apply Windows 7 preset
+                    Apply Aero preset
                   </button>
                 </div>
               </div>
@@ -535,16 +551,15 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, openWe
             <h2 className="text-xl font-semibold">⬆️ System Upgrade</h2>
             <p className="text-sm opacity-70">Upgrade PueiOS to a newer version. Your files, accounts, messages, and settings are preserved — just like upgrading from Windows XP to Vista to 7.</p>
             <div className="text-xs opacity-60 mb-2">Current version: <strong>{systemVersion}</strong></div>
-            {SYSTEM_ORDER.filter((v) => compareVersion(v, systemVersion) > 0 && v !== "PueiOS 3").length === 0 ? (
+            {SYSTEM_ORDER.filter((v) => compareVersion(v, systemVersion) > 0).length === 0 ? (
               <div className="aero-glass-light rounded-xl p-4 text-sm text-center opacity-70">✅ You are on the latest version of PueiOS. (PueiOS 3 has not been released yet.)</div>
-            ) : SYSTEM_ORDER.filter((v) => compareVersion(v, systemVersion) > 0 && v !== "PueiOS 3").map((v) => (
+            ) : SYSTEM_ORDER.filter((v) => compareVersion(v, systemVersion) > 0).map((v) => (
               <div key={v} className="aero-glass-light rounded-xl p-4 space-y-3">
                 <div className="flex items-center justify-between gap-4">
                   <div>
                     <div className="font-semibold text-base">{v}</div>
                     <div className="text-xs opacity-70 mt-0.5">
                       {v === "PueiOS 2+" && "Pueios2 Plus is the advanced edition with stronger sync, richer customization, and improved AI systems."}
-                      {v === "PueiOS 3" && "Major release: redesigned shell, new AI assistant, expanded app ecosystem, PueiNet 3.0."}
                     </div>
                   </div>
                   <button className="aero-button rounded-lg px-4 py-2 text-sm flex-shrink-0"
@@ -1882,6 +1897,17 @@ function PueiMailApp({ currentUser, users }: { currentUser: string; users: User[
   const allAttachments = msgs.flatMap((m) => (m.attachments || []).map((a) => ({ ...a, mailId: m.id, from: m.from, subject: m.subject })));
 
   const handleAttachClick = () => fileInput.current?.click();
+  const handleAttachSavedFile = () => {
+    const files = loadFiles().filter((f) => (!f.owner || f.owner === currentUser) && f.type !== "iso");
+    if (!files.length) { setSendStatus("No saved files available to attach."); return; }
+    const picked = prompt(`Type a file name to attach from Files:\n\n${files.map((f) => f.name).join("\n")}`)?.trim();
+    if (!picked) return;
+    const file = files.find((f) => f.name.toLowerCase() === picked.toLowerCase()) || files.find((f) => f.name.toLowerCase().includes(picked.toLowerCase()));
+    if (!file) { setSendStatus("File not found."); return; }
+    setPending((prev) => [...prev, savedFileToAttachment(file)]);
+    setSendStatus("");
+    blip("click");
+  };
   const handleFiles = async (files: FileList | null) => {
     if (!files) return;
     const list = await Promise.all([...files].map(readFileAsAttachment));
@@ -1913,6 +1939,7 @@ function PueiMailApp({ currentUser, users }: { currentUser: string; users: User[
     const recipientUser = users.find((u) => u.name === resolved);
     const toKey = recipientUser?.pueiNumber || ((/^\d{3}-\d{3}-\d{3}$/.test(raw.replace(/-/g,"").replace(/(\d{3})(\d{3})(\d{3})/,"$1-$2-$3"))) ? raw.replace(/-/g,"").replace(/(\d{3})(\d{3})(\d{3})/,"$1-$2-$3") : resolved);
     sendMail(currentUser, resolved, draft.subject.trim(), draft.body, users, pending);
+    setMsgs(loadMail(currentUser));
     // Deliver to server inbox using Puei Number key
     fetch("/api/mail", {
       method: "POST",
@@ -1921,7 +1948,7 @@ function PueiMailApp({ currentUser, users }: { currentUser: string; users: User[
     }).catch(() => {});
     // Drop draft if any
     if (draftId) {
-      const updated = msgs.filter((m) => m.id !== draftId);
+      const updated = loadMail(currentUser).filter((m) => m.id !== draftId);
       setMsgs(updated); saveMail(updated);
     }
     setDraft({ to: "", subject: "", body: "" }); setPending([]); setDraftId(null);
@@ -2139,6 +2166,7 @@ function PueiMailApp({ currentUser, users }: { currentUser: string; users: User[
             <div className="flex gap-2 flex-wrap">
               <button className="aero-button rounded-lg px-5 py-2 text-sm font-semibold" onClick={doSend}>📨 Send</button>
               <button className="aero-button rounded-lg px-4 py-2 text-sm" onClick={handleAttachClick}>📎 Attach</button>
+              <button className="aero-button rounded-lg px-4 py-2 text-sm" onClick={handleAttachSavedFile}>🗂️ Attach from Files</button>
               <input type="file" multiple ref={fileInput} className="hidden"
                 accept="image/*,video/*,.pdf,.txt,.doc,.docx,.zip"
                 onChange={(e) => { handleFiles(e.target.files); e.target.value = ""; }} />
@@ -2341,6 +2369,7 @@ function PueiCloudChatApp({ user, users, setUsers }: { user: string; users: User
   const [activeId, setActiveId] = useState<string|null>(localContacts[0]?.name ?? null);
   const [activeKind, setActiveKind] = useState<"local"|"external">("local");
   const [text, setText] = useState("");
+  const [pendingChatAttachments, setPendingChatAttachments] = useState<MailAttachment[]>([]);
   const [showNewChat, setShowNewChat] = useState(false);
   const [newInput, setNewInput] = useState("");
   const [newMsg, setNewMsg] = useState<{ok:boolean;text:string}|null>(null);
@@ -2503,19 +2532,32 @@ function PueiCloudChatApp({ user, users, setUsers }: { user: string; users: User
     setActiveId(raw); setActiveKind("external"); setShowNewChat(false); setNewInput(""); blip("click");
   };
 
+  const attachFromFiles = () => {
+    const files = loadFiles().filter((f) => (!f.owner || f.owner === user) && f.type !== "iso");
+    if (!files.length) { alert("No attachable files in Files yet."); return; }
+    const picked = prompt(`Type a file name to attach:\n\n${files.map((f) => f.name).join("\n")}`)?.trim();
+    if (!picked) return;
+    const file = files.find((f) => f.name.toLowerCase() === picked.toLowerCase()) || files.find((f) => f.name.toLowerCase().includes(picked.toLowerCase()));
+    if (!file) { alert("File not found."); return; }
+    setPendingChatAttachments((prev) => [...prev, savedFileToAttachment(file)]);
+    blip("click");
+  };
+
   const send = async () => {
-    if (!text.trim()) return;
+    if (!text.trim() && pendingChatAttachments.length === 0) return;
     if (!myPueiNumber || !/^\d{3}-\d{3}-\d{3}$/.test(myPueiNumber)) {
       blip("error");
       alert("Your Puei Number is not ready yet. Reopen PueiCloudChat and try again.");
       return;
     }
-    const msg=text; setText(""); blip("click");
+    const outgoingAttachments = pendingChatAttachments;
+    const msg=text.trim() || (outgoingAttachments.length ? "Sent attachment" : "");
+    setText(""); setPendingChatAttachments([]); blip("click");
     if (activeKind==="local"&&localPartner) {
-      appendChat({id:`m-${Date.now()}-${Math.random().toString(36).slice(2,6)}`,from:user,to:localPartner.name,text:msg,at:Date.now()});
+      appendChat({id:`m-${Date.now()}-${Math.random().toString(36).slice(2,6)}`,from:user,to:localPartner.name,text:msg,at:Date.now(), attachments: outgoingAttachments});
       setAllMsgs(loadChat());
       if (localPartner.pueiNumber)
-        fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({from:user,fromNumber:myPueiNumber,toNumber:localPartner.pueiNumber,text:msg})}).catch(()=>{});
+        fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({from:user,fromNumber:myPueiNumber,toNumber:localPartner.pueiNumber,text:outgoingAttachments.length ? `${msg}\n📎 ${outgoingAttachments.map((a)=>a.name).join(", ")}` : msg})}).catch(()=>{});
     } else if (activeKind==="external"&&extPartner) {
       try {
         const res = await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({from:user,fromNumber:myPueiNumber,toNumber:extPartner.pueiNumber,text:msg})});
@@ -2786,6 +2828,18 @@ function PueiCloudChatApp({ user, users, setUsers }: { user: string; users: User
                         borderRadius:mine?"18px 18px 4px 18px":"18px 18px 18px 4px",
                       }}>
                         {m.text}
+                        {m.attachments?.length ? (
+                          <div className="mt-2 space-y-1">
+                            {m.attachments.map((a) => (
+                              <button key={a.id} className="block rounded px-2 py-1 text-left text-[11px]" style={{ background: "rgba(255,255,255,0.14)" }} onClick={() => {
+                                if (a.kind === "image") saveDownloadedImage(user, a.name, a.dataUrl, SYS_FOLDER_PICTURES);
+                                else { const link = document.createElement("a"); link.href = a.dataUrl; link.download = a.name; link.click(); }
+                              }}>
+                                {a.kind === "image" ? "🖼️" : "📎"} {a.name}
+                              </button>
+                            ))}
+                          </div>
+                        ) : null}
                       </div>
                       <div className="text-[9px] opacity-30 mt-0.5 px-1">
                         {m.at?new Date(m.at).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"}):""}
@@ -2831,15 +2885,25 @@ function PueiCloudChatApp({ user, users, setUsers }: { user: string; users: User
             </div>
             {/* Input */}
             <div className="px-4 py-3 border-t border-white/10 flex-shrink-0" style={{background:"rgba(0,0,0,0.2)"}}>
+              {pendingChatAttachments.length > 0 && (
+                <div className="flex gap-1 flex-wrap mb-2">
+                  {pendingChatAttachments.map((a) => (
+                    <span key={a.id} className="rounded-full px-2 py-0.5 text-[10px]" style={{ background: "rgba(255,255,255,0.12)" }}>
+                      📎 {a.name} <button onClick={() => setPendingChatAttachments((prev) => prev.filter((x) => x.id !== a.id))}>×</button>
+                    </span>
+                  ))}
+                </div>
+              )}
               <div className="flex gap-2 items-center">
+                <button onClick={attachFromFiles} className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 text-lg" style={{background:"rgba(255,255,255,0.1)"}}>📎</button>
                 <input value={text} onChange={e=>setText(e.target.value)}
                   onKeyDown={e=>e.key==="Enter"&&!e.shiftKey&&send()}
                   className="flex-1 px-4 py-2.5 rounded-2xl text-sm outline-none"
                   style={{background:"rgba(255,255,255,0.07)",color:"white",border:"1px solid rgba(255,255,255,0.1)"}}
                   placeholder={localPartner?`Message ${localPartner.name}…`:extPartner?`Message ${extPartner.name || extPartner.pueiNumber}…`:"Message…"}/>
-                <button onClick={send} disabled={!text.trim()}
+                <button onClick={send} disabled={!text.trim() && pendingChatAttachments.length === 0}
                   className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 transition-opacity text-xl"
-                  style={{background:text.trim()?"linear-gradient(135deg,#6d28d9,#4f46e5)":"rgba(255,255,255,0.1)",opacity:text.trim()?1:0.5}}>
+                  style={{background:(text.trim() || pendingChatAttachments.length)?"linear-gradient(135deg,#6d28d9,#4f46e5)":"rgba(255,255,255,0.1)",opacity:(text.trim() || pendingChatAttachments.length)?1:0.5}}>
                   ↑
                 </button>
               </div>
@@ -2981,7 +3045,7 @@ function FileExplorerApp({ openApp, icons, openFolder, currentUser, users }: { o
         )}
         {folder === "downloads" && (
           <FileGrid files={downloadFiles} emptyHint="No downloads yet. Download from Puei Wallpapers or mail attachments."
-            onOpen={(f) => openApp("puei-paint", f.id)}
+            onOpen={(f) => openSavedFile(f, openApp)}
             onDelete={(id) => { deleteFile(id); setFiles(myFiles()); }}
             onDragStart={(id) => setDragFileId(id)}
             onDragEnd={() => { setDragFileId(null); setDropTarget(null); }} />
@@ -3860,6 +3924,14 @@ function PueiBoardApp({ user, users }: { user: string; users: User[] }) {
                     <button className="aero-button rounded px-2 py-1 text-[10px]" onClick={() => toggleLike(p.id)}>
                       {p.likedBy?.includes(user) ? `♥ Liked (${p.likes})` : `♡ Like (${p.likes})`}
                     </button>
+                    <button className="aero-button rounded px-2 py-1 text-[10px]" onClick={() => {
+                      const folder = chooseImageDestination("pictures");
+                      if (folder === null) return;
+                      saveDownloadedImage(user, p.imageName || `pueiboard-${p.id}.png`, p.imageSrc, folder);
+                      blip("notify");
+                    }}>
+                      Save picture
+                    </button>
                     {p.author === user && (
                       <button className="aero-button rounded px-2 py-1 text-[10px]" style={{ color: "#fecaca" }} onClick={() => removePost(p.id)}>
                         Delete pin
@@ -3938,7 +4010,8 @@ function PueiUpdaterApp({ currentUser, startUpgrade }: { currentUser: string; st
   const [draggingIsoId, setDraggingIsoId] = useState<string | null>(null);
   const [dropActive, setDropActive] = useState(false);
   const [mountedIsoId, setMountedIsoId] = useState<string | null>(null);
-  const [, setCodeInput] = useState("");
+  const [codeInput, setCodeInput] = useState("");
+  const [codeCopied, setCodeCopied] = useState(false);
   const [codeError, setCodeError] = useState<string | null>(null);
   const [installProgress, setInstallProgress] = useState(0);
   const [isInstalling, setIsInstalling] = useState(false);
@@ -3948,11 +4021,21 @@ function PueiUpdaterApp({ currentUser, startUpgrade }: { currentUser: string; st
 
   useEffect(() => {
     const refresh = () => setFilesVersion((value) => value + 1);
+    const openIso = (event: Event) => {
+      const detail = (event as CustomEvent<{ fileId?: string; code?: string }>).detail;
+      if (detail?.fileId) setMountedIsoId(detail.fileId);
+      if (detail?.code) {
+        setCodeInput("");
+        setCodeError(null);
+      }
+    };
     window.addEventListener("pueios-files-changed", refresh);
     window.addEventListener("storage", refresh);
+    window.addEventListener("pueios-open-updater", openIso as EventListener);
     return () => {
       window.removeEventListener("pueios-files-changed", refresh);
       window.removeEventListener("storage", refresh);
+      window.removeEventListener("pueios-open-updater", openIso as EventListener);
     };
   }, []);
 
@@ -4010,6 +4093,11 @@ function PueiUpdaterApp({ currentUser, startUpgrade }: { currentUser: string; st
       // mount-driven path
     } else {
       setMountedIsoId(iso.id);
+    }
+    if (codeInput.trim().toUpperCase() !== iso.content.trim().toUpperCase()) {
+      setCodeError("Enter the ISO security code before upgrading.");
+      blip("error");
+      return;
     }
     if (!confirm(`Install PueiOS 2+ from ${iso.name}? Your device will restart when installation finishes.`)) return;
     setCodeError(null);
@@ -4119,7 +4207,35 @@ function PueiUpdaterApp({ currentUser, startUpgrade }: { currentUser: string; st
               <div className="text-xs opacity-65 mt-1">
                 {mountedIso ? "Puei Updater is ready to install PueiOS 2+ from this ISO." : "Only pueios2-plus.iso from Files/Downloads is accepted."}
               </div>
+              {mountedIso && (
+                <div className="mt-3 inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs" style={{ background: "rgba(0,0,0,0.18)" }}>
+                  <span className="opacity-70">Security code</span>
+                  <code className="select-text font-mono font-bold">{mountedIso.content}</code>
+                  <button
+                    className="aero-button rounded px-2 py-0.5 text-[10px]"
+                    onClick={() => {
+                      navigator.clipboard?.writeText(mountedIso.content).catch(() => {});
+                      setCodeCopied(true);
+                      setTimeout(() => setCodeCopied(false), 1600);
+                    }}>
+                    {codeCopied ? "Copied" : "Copy"}
+                  </button>
+                </div>
+              )}
             </div>
+
+            {mountedIso && (
+              <div>
+                <label className="block text-xs opacity-70 mb-1">Enter ISO security code</label>
+                <input
+                  value={codeInput}
+                  onChange={(e) => { setCodeInput(e.target.value.toUpperCase()); setCodeError(null); }}
+                  placeholder="P2PL-7XK9-A4PN-Q82M"
+                  className="w-full rounded px-3 py-2 text-sm font-mono outline-none"
+                  style={{ background: "white", color: "#111", border: "1px solid var(--border)" }}
+                />
+              </div>
+            )}
 
             {mountedIso && codeError && (
               <div className="text-[11px] text-red-400">{codeError}</div>
@@ -4749,7 +4865,7 @@ type PueiFilm = {
   postedBy: string;
 };
 const PUEI_FILMS_KEY = "pueios2-films-v1";
-const PUEI_OFFICIAL = "PueiOficial";
+const PUEI_OFFICIAL = "pueioficial";
 function loadFilms(): PueiFilm[] {
   if (typeof window === "undefined") return [];
   try { return JSON.parse(localStorage.getItem(PUEI_FILMS_KEY) || "[]"); } catch { return []; }
@@ -4770,7 +4886,7 @@ function PueiFilmsApp({ currentUser }: { currentUser: string }) {
   const [selected, setSelected] = useState<PueiFilm | null>(null);
   const [showPost, setShowPost] = useState(false);
   const [form, setForm] = useState({ title: "", poster: "", videoUrl: "", description: "", genre: "Action" });
-  const canPost = currentUser === PUEI_OFFICIAL;
+  const canPost = currentUser.trim().toLowerCase() === PUEI_OFFICIAL;
   const submit = () => {
     if (!form.title.trim() || !form.videoUrl.trim()) { alert("Title and video URL required."); return; }
     const film: PueiFilm = {

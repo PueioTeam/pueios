@@ -6,7 +6,7 @@ import {
   type Theme, type WallpaperId, type WindowState,
 } from "./state";
 import { AppWindow, ContextMenu, appIcon } from "./Window";
-import { AppRenderer } from "./apps";
+import { AppRenderer, BEZOSMP_ICON_URL } from "./apps";
 import { PueiMascot, PueiLogoSvg } from "./Mascot";
 import { pullAndMergeFiles, pushFile as pushFileToServer, removeFileFromServer } from "./fileSync";
 import { loadFiles, saveFiles } from "./state";
@@ -266,7 +266,7 @@ export function PueiOS() {
   useEffect(() => {
     const s = loadState();
     setThemeState(s.theme); setUsers(s.users);
-    setInstalled(s.installed); setSystemVersion(s.systemVersion);
+    setInstalled(s.installed); setSystemVersion(s.systemVersion === "PueiOS 2+" ? "PueiOS 2+" : "PueiOS 2");
     // Migration: clean up stale icons and ensure PueiCloudChat always exists
     let loadedIcons: DesktopIcon[] = s.icons?.length ? s.icons : defaultIcons;
     // Remove any stale puei-messenger icons
@@ -313,6 +313,11 @@ export function PueiOS() {
       root.style.setProperty("--glass-strong", "#000");
       root.style.setProperty("--accent", theme.highContrastColor || "#ffff00");
       root.style.setProperty("--foreground", theme.highContrastColor || "#ffff00");
+    } else if (theme.dark && theme.transparency) {
+      root.style.setProperty("--glass", "oklch(0.22 0.05 245 / 0.52)");
+      root.style.setProperty("--glass-strong", "oklch(0.18 0.05 245 / 0.66)");
+      root.style.removeProperty("--accent");
+      root.style.removeProperty("--foreground");
     } else if (!theme.transparency) {
       root.style.setProperty("--glass", "oklch(0.96 0.02 220 / 1)");
       root.style.setProperty("--glass-strong", "oklch(0.98 0.01 220 / 1)");
@@ -517,9 +522,11 @@ export function PueiOS() {
   // Toggle a class on <html> so the custom cursor CSS applies system-wide.
   useEffect(() => {
     const root = document.documentElement;
-    root.classList.toggle("puei-cursor", !!theme.pueiCursor);
+    const focused = windows.filter((w) => !w.minimized).sort((a, b) => b.z - a.z)[0];
+    const hiddenForWebApp = focused?.appId === "web-app" && /bezosmp|google/i.test(`${focused.title} ${focused.webUrl}`);
+    root.classList.toggle("puei-cursor", !!theme.pueiCursor && phase === "desktop" && !hiddenForWebApp);
     return () => root.classList.remove("puei-cursor");
-  }, [theme.pueiCursor]);
+  }, [theme.pueiCursor, phase, windows]);
 
   // Migration: ensure key web-app icons exist on the desktop after upgrades.
   const ensuredRef = useRef(false);
@@ -528,9 +535,12 @@ export function PueiOS() {
     ensuredRef.current = true;
     setIcons((cur) => {
       const next = [...cur];
+      for (let i = 0; i < next.length; i += 1) {
+        if (next[i].appId === "web-app" && next[i].webUrl === "https://bezosmp.lovable.app") next[i] = { ...next[i], label: "BezoSMP", iconUrl: BEZOSMP_ICON_URL };
+      }
       const hasBezo = next.some((i) => i.appId === "web-app" && i.webUrl === "https://bezosmp.lovable.app");
       if (!hasBezo) {
-        next.push({ id: "web-bezosmp", label: "BezoSMP", appId: "web-app", webUrl: "https://bezosmp.lovable.app", iconUrl: "/__l5e/assets-v1/ab765ff9-caae-42cd-8d77-84c7c67d1d68/bezosmp-ladybug.png" });
+        next.push({ id: "web-bezosmp", label: "BezoSMP", appId: "web-app", webUrl: "https://bezosmp.lovable.app", iconUrl: BEZOSMP_ICON_URL });
       }
       const hasUpdater = next.some((i) => i.appId === "web-app" && i.webUrl === "puei://updates");
       if (!hasUpdater) {
@@ -609,7 +619,12 @@ export function PueiOS() {
 
   const desktopCtx = (): any[] => [
     { label: "View ▸ Large icons" },
-    { label: "Sort by name", action: () => setIcons([...icons].sort((a, b) => a.label.localeCompare(b.label))) },
+    { label: "Sort by name", action: () => setIcons((prev) => {
+      const desktop = prev.filter((i) => !i.folderId).sort((a, b) => a.label.localeCompare(b.label));
+      const arranged = desktop.map((icon, index) => ({ ...icon, ...iconGridPos(index) }));
+      const byId = new Map(arranged.map((icon) => [icon.id, icon]));
+      return prev.map((icon) => byId.get(icon.id) ?? icon);
+    }) },
     { label: "Refresh", action: () => pushNotif("Desktop", "Refreshed.") },
     { sep: true },
     { label: "New Folder", action: () => createFolder(null) },
@@ -1241,6 +1256,8 @@ export function PueiOS() {
 
   const currentAvatar = users.find(u => u.name === currentUser)?.avatar;
   const hasPueiOSPlusUpgrade = compareVersion("PueiOS 2+", systemVersion) > 0;
+  const focusedWindow = windows.filter((w) => !w.minimized).sort((a, b) => b.z - a.z)[0];
+  const customCursorHiddenForApp = focusedWindow?.appId === "web-app" && /bezosmp|google/i.test(`${focusedWindow.title} ${focusedWindow.webUrl}`);
 
   return (
     <div
@@ -1389,7 +1406,7 @@ export function PueiOS() {
       </div>
 
       {/* Mascot */}
-      {showMascot && windows.some(w => !w.minimized && w.maximized) && (
+      {showMascot && (
         <PueiMascot cursorPos={cursorPos} speak={mascotSpeak}
           onClick={() => {
             const tips = [
@@ -1405,7 +1422,7 @@ export function PueiOS() {
       )}
 
       {/* Puei custom cursor follower */}
-      {theme.pueiCursor && cursorVisible && (
+      {theme.pueiCursor && phase === "desktop" && cursorVisible && !customCursorHiddenForApp && (
         <div
           aria-hidden
           style={{
@@ -1416,7 +1433,7 @@ export function PueiOS() {
             height: 28,
             transform: "translate(-2px, -2px)",
             pointerEvents: "none",
-            zIndex: 99999,
+            zIndex: 8500,
             filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.45))",
           }}>
           <svg viewBox="0 0 22 28" width="22" height="28" xmlns="http://www.w3.org/2000/svg">
@@ -1435,8 +1452,8 @@ export function PueiOS() {
 
       {/* Start menu */}
       {startOpen && (
-        <div className="fixed bottom-12 left-2 rounded-xl w-[440px] z-[9000] overflow-hidden border border-slate-300/80 shadow-2xl"
-          style={{ animation: "fade-scale 0.18s ease-out", background: "linear-gradient(180deg, #f8fbff 0%, #eef4fb 100%)" }} onMouseDown={(e) => e.stopPropagation()}>
+        <div className="fixed bottom-12 left-2 rounded-xl w-[440px] z-[9000] overflow-hidden border shadow-2xl"
+          style={{ animation: "fade-scale 0.18s ease-out", background: theme.dark ? "linear-gradient(180deg, rgba(22,32,56,0.96), rgba(8,15,34,0.98))" : "linear-gradient(180deg, #f8fbff 0%, #eef4fb 100%)", borderColor: "var(--border)" }} onMouseDown={(e) => e.stopPropagation()}>
           <div className="aero-titlebar px-4 py-2 flex items-center gap-2">
             <div className="w-10 h-10 rounded-full flex items-center justify-center text-xl overflow-hidden"
               style={{ background: "var(--gradient-aero)" }}>

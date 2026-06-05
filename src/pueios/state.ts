@@ -1,6 +1,6 @@
 // PueiOS 2 state types and helpers
-export type SystemVersion = "PueiOS 2" | "PueiOS 2+" | "PueiOS 3";
-export const SYSTEM_ORDER: SystemVersion[] = ["PueiOS 2", "PueiOS 2+", "PueiOS 3"];
+export type SystemVersion = "PueiOS 2" | "PueiOS 2+";
+export const SYSTEM_ORDER: SystemVersion[] = ["PueiOS 2", "PueiOS 2+"];
 export function compareVersion(a: SystemVersion, b: SystemVersion): number {
   return SYSTEM_ORDER.indexOf(a) - SYSTEM_ORDER.indexOf(b);
 }
@@ -255,6 +255,7 @@ export type ChatMessage = {
   to: string;
   text: string;
   at: number;
+  attachments?: MailAttachment[];
 };
 
 export type Persisted = {
@@ -312,7 +313,7 @@ export function loadState(): Persisted {
     const p = JSON.parse(raw);
     return {
       installed: !!p.installed,
-      systemVersion: p.systemVersion || "PueiOS 2",
+      systemVersion: p.systemVersion === "PueiOS 2+" ? "PueiOS 2+" : "PueiOS 2",
       theme: { ...defaultTheme, ...(p.theme || {}) },
       icons: p.icons?.length ? p.icons : defaultIcons,
       users: Array.isArray(p.users) ? p.users : [],
@@ -545,14 +546,19 @@ export function sendMail(
 ): MailMessage {
   const existing = loadAllMail();
   const cleanTo = to.trim();
+  const recipient = _users.find((u) => u.name.toLowerCase() === cleanTo.toLowerCase());
   const id = `mail-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
   const at = Date.now();
   const sentCopy: MailMessage = {
     id: id + "-s", from, to: cleanTo, subject, body, at,
     read: true, folder: "sent", owner: from, attachments,
   };
+  const inboxCopy: MailMessage | null = recipient ? {
+    id: id + "-i", from, to: cleanTo, subject, body, at,
+    read: false, folder: isLikelySpam({ subject, body }) ? "spam" : "inbox", owner: recipient.name, attachments,
+  } : null;
   try {
-    localStorage.setItem(MAIL_KEY, JSON.stringify([...existing, sentCopy]));
+    localStorage.setItem(MAIL_KEY, JSON.stringify(inboxCopy ? [...existing, sentCopy, inboxCopy] : [...existing, sentCopy]));
     window.dispatchEvent(new CustomEvent("pueios-mail"));
   } catch {}
   return sentCopy;
