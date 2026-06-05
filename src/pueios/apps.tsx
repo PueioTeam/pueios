@@ -19,7 +19,7 @@ export const BEZOSMP_ICON_URL = bezosmpIcon.url;
 // app via a global event listener in PueiOS.tsx instead of opening Notepad.
 function openSavedFile(f: SavedFile, openApp: (id: AppId, fileId?: string) => void) {
   if (f.type === "iso") {
-    window.dispatchEvent(new CustomEvent("pueios-open-updater"));
+    window.dispatchEvent(new CustomEvent("pueios-open-updater", { detail: { fileId: f.id, code: f.content, name: f.name } }));
     return;
   }
   if (f.type === "image") {
@@ -31,7 +31,22 @@ function openSavedFile(f: SavedFile, openApp: (id: AppId, fileId?: string) => vo
 
 function fileIconFor(f: SavedFile) {
   if (f.type === "iso") return "💿";
+  if (f.type === "image") return "🖼️";
   return "📄";
+}
+
+function savedFileToAttachment(file: SavedFile): MailAttachment {
+  return {
+    id: `att-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    name: file.name,
+    kind: file.type === "image" ? "image" : "file",
+    mime: file.type === "image" ? "image/png" : file.type === "iso" ? "application/x-iso9660-image" : "text/plain",
+    size: Math.round((file.content.length * 3) / 4),
+    dataUrl: file.type === "text"
+      ? `data:text/plain;charset=utf-8,${encodeURIComponent(file.content)}`
+      : file.content,
+    savedAt: Date.now(),
+  };
 }
 
 
