@@ -1939,6 +1939,7 @@ function PueiMailApp({ currentUser, users }: { currentUser: string; users: User[
     const recipientUser = users.find((u) => u.name === resolved);
     const toKey = recipientUser?.pueiNumber || ((/^\d{3}-\d{3}-\d{3}$/.test(raw.replace(/-/g,"").replace(/(\d{3})(\d{3})(\d{3})/,"$1-$2-$3"))) ? raw.replace(/-/g,"").replace(/(\d{3})(\d{3})(\d{3})/,"$1-$2-$3") : resolved);
     sendMail(currentUser, resolved, draft.subject.trim(), draft.body, users, pending);
+    setMsgs(loadMail(currentUser));
     // Deliver to server inbox using Puei Number key
     fetch("/api/mail", {
       method: "POST",
