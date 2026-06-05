@@ -3952,7 +3952,8 @@ function PueiUpdaterApp({ currentUser, startUpgrade }: { currentUser: string; st
   const [draggingIsoId, setDraggingIsoId] = useState<string | null>(null);
   const [dropActive, setDropActive] = useState(false);
   const [mountedIsoId, setMountedIsoId] = useState<string | null>(null);
-  const [, setCodeInput] = useState("");
+  const [codeInput, setCodeInput] = useState("");
+  const [codeCopied, setCodeCopied] = useState(false);
   const [codeError, setCodeError] = useState<string | null>(null);
   const [installProgress, setInstallProgress] = useState(0);
   const [isInstalling, setIsInstalling] = useState(false);
@@ -3962,11 +3963,22 @@ function PueiUpdaterApp({ currentUser, startUpgrade }: { currentUser: string; st
 
   useEffect(() => {
     const refresh = () => setFilesVersion((value) => value + 1);
+    const openIso = (event: Event) => {
+      const detail = (event as CustomEvent<{ fileId?: string; code?: string }>).detail;
+      if (detail?.fileId) setMountedIsoId(detail.fileId);
+      if (detail?.code) {
+        setCodeInput("");
+        setCodeError(null);
+        alert(`ISO security code:\n${detail.code}\n\nCopy it from the Puei Updater after the ISO opens.`);
+      }
+    };
     window.addEventListener("pueios-files-changed", refresh);
     window.addEventListener("storage", refresh);
+    window.addEventListener("pueios-open-updater", openIso as EventListener);
     return () => {
       window.removeEventListener("pueios-files-changed", refresh);
       window.removeEventListener("storage", refresh);
+      window.removeEventListener("pueios-open-updater", openIso as EventListener);
     };
   }, []);
 
@@ -4024,6 +4036,11 @@ function PueiUpdaterApp({ currentUser, startUpgrade }: { currentUser: string; st
       // mount-driven path
     } else {
       setMountedIsoId(iso.id);
+    }
+    if (codeInput.trim().toUpperCase() !== iso.content.trim().toUpperCase()) {
+      setCodeError("Enter the ISO security code before upgrading.");
+      blip("error");
+      return;
     }
     if (!confirm(`Install PueiOS 2+ from ${iso.name}? Your device will restart when installation finishes.`)) return;
     setCodeError(null);
