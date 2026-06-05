@@ -4150,7 +4150,35 @@ function PueiUpdaterApp({ currentUser, startUpgrade }: { currentUser: string; st
               <div className="text-xs opacity-65 mt-1">
                 {mountedIso ? "Puei Updater is ready to install PueiOS 2+ from this ISO." : "Only pueios2-plus.iso from Files/Downloads is accepted."}
               </div>
+              {mountedIso && (
+                <div className="mt-3 inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs" style={{ background: "rgba(0,0,0,0.18)" }}>
+                  <span className="opacity-70">Security code</span>
+                  <code className="select-text font-mono font-bold">{mountedIso.content}</code>
+                  <button
+                    className="aero-button rounded px-2 py-0.5 text-[10px]"
+                    onClick={() => {
+                      navigator.clipboard?.writeText(mountedIso.content).catch(() => {});
+                      setCodeCopied(true);
+                      setTimeout(() => setCodeCopied(false), 1600);
+                    }}>
+                    {codeCopied ? "Copied" : "Copy"}
+                  </button>
+                </div>
+              )}
             </div>
+
+            {mountedIso && (
+              <div>
+                <label className="block text-xs opacity-70 mb-1">Enter ISO security code</label>
+                <input
+                  value={codeInput}
+                  onChange={(e) => { setCodeInput(e.target.value.toUpperCase()); setCodeError(null); }}
+                  placeholder="P2PL-7XK9-A4PN-Q82M"
+                  className="w-full rounded px-3 py-2 text-sm font-mono outline-none"
+                  style={{ background: "white", color: "#111", border: "1px solid var(--border)" }}
+                />
+              </div>
+            )}
 
             {mountedIso && codeError && (
               <div className="text-[11px] text-red-400">{codeError}</div>
