@@ -4808,7 +4808,7 @@ type PueiFilm = {
   postedBy: string;
 };
 const PUEI_FILMS_KEY = "pueios2-films-v1";
-const PUEI_OFFICIAL = "PueiOficial";
+const PUEI_OFFICIAL = "pueioficial";
 function loadFilms(): PueiFilm[] {
   if (typeof window === "undefined") return [];
   try { return JSON.parse(localStorage.getItem(PUEI_FILMS_KEY) || "[]"); } catch { return []; }
@@ -4829,7 +4829,7 @@ function PueiFilmsApp({ currentUser }: { currentUser: string }) {
   const [selected, setSelected] = useState<PueiFilm | null>(null);
   const [showPost, setShowPost] = useState(false);
   const [form, setForm] = useState({ title: "", poster: "", videoUrl: "", description: "", genre: "Action" });
-  const canPost = currentUser === PUEI_OFFICIAL;
+  const canPost = currentUser.trim().toLowerCase() === PUEI_OFFICIAL;
   const submit = () => {
     if (!form.title.trim() || !form.videoUrl.trim()) { alert("Title and video URL required."); return; }
     const film: PueiFilm = {
