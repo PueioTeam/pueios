@@ -2996,7 +2996,7 @@ function FileExplorerApp({ openApp, icons, openFolder, currentUser, users }: { o
         )}
         {folder === "downloads" && (
           <FileGrid files={downloadFiles} emptyHint="No downloads yet. Download from Puei Wallpapers or mail attachments."
-            onOpen={(f) => openApp("puei-paint", f.id)}
+            onOpen={(f) => openSavedFile(f, openApp)}
             onDelete={(id) => { deleteFile(id); setFiles(myFiles()); }}
             onDragStart={(id) => setDragFileId(id)}
             onDragEnd={() => { setDragFileId(null); setDropTarget(null); }} />
