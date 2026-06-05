@@ -522,9 +522,11 @@ export function PueiOS() {
   // Toggle a class on <html> so the custom cursor CSS applies system-wide.
   useEffect(() => {
     const root = document.documentElement;
-    root.classList.toggle("puei-cursor", !!theme.pueiCursor && phase === "desktop");
+    const focused = windows.filter((w) => !w.minimized).sort((a, b) => b.z - a.z)[0];
+    const hiddenForWebApp = focused?.appId === "web-app" && /bezosmp|google/i.test(`${focused.title} ${focused.webUrl}`);
+    root.classList.toggle("puei-cursor", !!theme.pueiCursor && phase === "desktop" && !hiddenForWebApp);
     return () => root.classList.remove("puei-cursor");
-  }, [theme.pueiCursor, phase]);
+  }, [theme.pueiCursor, phase, windows]);
 
   // Migration: ensure key web-app icons exist on the desktop after upgrades.
   const ensuredRef = useRef(false);
