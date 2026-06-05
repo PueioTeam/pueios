@@ -6,7 +6,7 @@ import {
   type Theme, type WallpaperId, type WindowState,
 } from "./state";
 import { AppWindow, ContextMenu, appIcon } from "./Window";
-import { AppRenderer } from "./apps";
+import { AppRenderer, BEZOSMP_ICON_URL } from "./apps";
 import { PueiMascot, PueiLogoSvg } from "./Mascot";
 import { pullAndMergeFiles, pushFile as pushFileToServer, removeFileFromServer } from "./fileSync";
 import { loadFiles, saveFiles } from "./state";
@@ -266,7 +266,7 @@ export function PueiOS() {
   useEffect(() => {
     const s = loadState();
     setThemeState(s.theme); setUsers(s.users);
-    setInstalled(s.installed); setSystemVersion(s.systemVersion);
+    setInstalled(s.installed); setSystemVersion(s.systemVersion === "PueiOS 2+" ? "PueiOS 2+" : "PueiOS 2");
     // Migration: clean up stale icons and ensure PueiCloudChat always exists
     let loadedIcons: DesktopIcon[] = s.icons?.length ? s.icons : defaultIcons;
     // Remove any stale puei-messenger icons
@@ -313,6 +313,11 @@ export function PueiOS() {
       root.style.setProperty("--glass-strong", "#000");
       root.style.setProperty("--accent", theme.highContrastColor || "#ffff00");
       root.style.setProperty("--foreground", theme.highContrastColor || "#ffff00");
+    } else if (theme.dark && theme.transparency) {
+      root.style.setProperty("--glass", "oklch(0.22 0.05 245 / 0.52)");
+      root.style.setProperty("--glass-strong", "oklch(0.18 0.05 245 / 0.66)");
+      root.style.removeProperty("--accent");
+      root.style.removeProperty("--foreground");
     } else if (!theme.transparency) {
       root.style.setProperty("--glass", "oklch(0.96 0.02 220 / 1)");
       root.style.setProperty("--glass-strong", "oklch(0.98 0.01 220 / 1)");
