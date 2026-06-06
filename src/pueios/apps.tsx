@@ -1940,20 +1940,23 @@ function PueiMailApp({ currentUser, users }: { currentUser: string; users: User[
 
   const doSend = () => {
     const raw = draft.to.trim();
-    if (!raw) { setSendStatus("Enter a recipient Puei Number."); return; }
+    if (!raw) { setSendStatus("Enter a recipient username."); return; }
     if (!draft.subject.trim()) { setSendStatus("Enter a subject."); return; }
     // Resolve to a name for local delivery; also get Puei Number for server delivery
-    const resolved = resolveMailRecipient(raw, users) ?? raw;
+    const resolved = resolveMailRecipient(raw, users);
+    if (!resolved) { setSendStatus("User not found. Send mail by username, Pueio Number, or @pueimail address."); return; }
     // Determine server inbox key: prefer Puei Number of recipient
     const recipientUser = users.find((u) => u.name === resolved);
-    const toKey = recipientUser?.pueiNumber || ((/^\d{3}-\d{3}-\d{3}$/.test(raw.replace(/-/g,"").replace(/(\d{3})(\d{3})(\d{3})/,"$1-$2-$3"))) ? raw.replace(/-/g,"").replace(/(\d{3})(\d{3})(\d{3})/,"$1-$2-$3") : resolved);
-    sendMail(currentUser, resolved, draft.subject.trim(), draft.body, users, pending);
+    const toKey = recipientUser?.name || resolved;
+    const aliases = Array.from(new Set([recipientUser?.name, recipientUser?.pueiNumber, mailAddressFor(resolved), raw].filter(Boolean) as string[]));
+    const messageId = `mail-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
+    sendMail(currentUser, resolved, draft.subject.trim(), draft.body, users, pending, messageId);
     setMsgs(loadMail(currentUser));
-    // Deliver to server inbox using Puei Number key
+    // Deliver to web/cloud inbox by username and aliases so mail sent in PueiWeb appears in the Mail app too.
     fetch("/api/mail", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ from: myMailKey || currentUser, to: toKey, subject: draft.subject.trim(), body: draft.body, attachments: pending }),
+      body: JSON.stringify({ id: messageId + "-i", from: currentUser, to: toKey, aliases, subject: draft.subject.trim(), body: draft.body, attachments: pending }),
     }).catch(() => {});
     // Drop draft if any
     if (draftId) {
