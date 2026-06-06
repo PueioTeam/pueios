@@ -37,6 +37,13 @@ async function pushInbox(owner: string, msg: ApiMail) {
   else inboxStore.set(owner.toLowerCase(), next);
 }
 
+function normalizeOwners(owner: string, aliases?: string[]): string[] {
+  const values = [owner, ...(Array.isArray(aliases) ? aliases : [])]
+    .map((v) => String(v || "").trim().toLowerCase())
+    .filter(Boolean);
+  return Array.from(new Set(values));
+}
+
 async function fetchMailbox(owner: string): Promise<unknown> {
   const kv = getKV();
   if (kv) { const raw = await kv.get(`mailbox:${owner.toLowerCase()}`, "text"); return raw ? JSON.parse(raw) : null; }
@@ -65,7 +72,7 @@ export const Route = createFileRoute("/api/mail")({
       POST: async ({ request }) => {
         const body = (await request.json()) as {
           from: string; to: string; subject: string; body: string;
-          attachments?: unknown[];
+          attachments?: unknown[]; aliases?: string[];
         };
         if (!body.from || !body.to || !body.subject) return json({ error: "Missing fields" }, 400);
         const msg: ApiMail = {
@@ -74,14 +81,14 @@ export const Route = createFileRoute("/api/mail")({
           subject: body.subject, body: body.body || "", at: Date.now(),
           attachments: body.attachments,
         };
-        await pushInbox(msg.to, msg);
+        await Promise.all(normalizeOwners(msg.to, body.aliases).map((owner) => pushInbox(owner, msg)));
         return json({ ok: true, id: msg.id });
       },
       // PUT: full mailbox sync (entire owner's mailbox state)
       PUT: async ({ request }) => {
-        const body = (await request.json()) as { owner: string; mailbox: unknown };
+        const body = (await request.json()) as { owner: string; mailbox: unknown; aliases?: string[] };
         if (!body.owner) return json({ error: "Missing owner" }, 400);
-        await saveMailbox(body.owner, body.mailbox);
+        await Promise.all(normalizeOwners(body.owner, body.aliases).map((owner) => saveMailbox(owner, body.mailbox)));
         return json({ ok: true });
       },
     },
