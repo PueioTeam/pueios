@@ -534,11 +534,9 @@ export function PueiOS() {
     return () => root.classList.remove("puei-cursor");
   }, [theme.pueiCursor, phase, windows]);
 
-  // Migration: ensure key web-app icons exist on the desktop after upgrades.
-  const ensuredRef = useRef(false);
+  // Migration: ensure key desktop icons exist after upgrades.
   useEffect(() => {
-    if (ensuredRef.current || !installed) return;
-    ensuredRef.current = true;
+    if (!installed) return;
     setIcons((cur) => {
       const next = [...cur];
       for (let i = 0; i < next.length; i += 1) {
