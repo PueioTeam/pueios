@@ -76,7 +76,7 @@ export const Route = createFileRoute("/api/mail")({
         };
         if (!body.from || !body.to || !body.subject) return json({ error: "Missing fields" }, 400);
         const msg: ApiMail = {
-          id: `mail-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+          id: String((body as { id?: string }).id || `mail-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`),
           from: body.from.trim(), to: body.to.trim(),
           subject: body.subject, body: body.body || "", at: Date.now(),
           attachments: body.attachments,
