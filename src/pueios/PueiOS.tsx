@@ -1276,7 +1276,7 @@ export function PueiOS() {
       className={`fixed inset-0 ${typeof theme.wallpaper === "string" && theme.wallpaper.startsWith("custom:") ? "" : `wallpaper-${theme.wallpaper}`}`}
       style={{ overflow: "hidden", ...wallpaperStyle }}
       onMouseDown={() => { setCtxMenu(null); setStartOpen(false); setShowCalendar(false); setSelectedIcon(null); setShowVolume(false); setShowNetwork(false); }}
-      onContextMenu={(e) => { e.preventDefault(); setCtxMenu({ x: e.clientX, y: e.clientY, items: desktopCtx() }); }}
+      onContextMenu={(e) => { e.preventDefault(); setCursorPos({ x: e.clientX, y: e.clientY }); setCursorVisible(true); setCtxMenu({ x: e.clientX, y: e.clientY, items: desktopCtx() }); }}
       onTouchStart={(e) => onTouchStart(e, desktopCtx())}
       onTouchEnd={onTouchEnd}
     >
@@ -1314,6 +1314,7 @@ export function PueiOS() {
               onMouseDown={(e) => startIconDrag(e, ic, idx)}
               onContextMenu={(e) => {
                 e.preventDefault(); e.stopPropagation();
+                setCursorPos({ x: e.clientX, y: e.clientY }); setCursorVisible(true);
                 setSelectedIcon(ic.id);
                 setCtxMenu({ x: e.clientX, y: e.clientY, items: iconCtx(ic) });
               }}
@@ -1531,7 +1532,7 @@ export function PueiOS() {
       {/* Taskbar */}
       <div className="taskbar-bg fixed bottom-0 left-0 right-0 h-12 flex items-center px-1 gap-1 z-[8000]"
         onMouseDown={(e) => e.stopPropagation()}
-        onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); setCtxMenu({ x: e.clientX, y: e.clientY, items: taskbarCtx() }); }}>
+        onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); setCursorPos({ x: e.clientX, y: e.clientY }); setCursorVisible(true); setCtxMenu({ x: e.clientX, y: e.clientY, items: taskbarCtx() }); }}>
         <button className="aero-start-orb w-10 h-10 rounded-full flex items-center justify-center mx-1 overflow-hidden"
           title="Start"
           onClick={(e) => { e.stopPropagation(); blip("click"); setStartOpen(!startOpen); setShowCalendar(false); }}>
