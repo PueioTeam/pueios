@@ -557,9 +557,17 @@ export function PueiOS() {
       if (!hasFilms) {
         next.push({ id: "native-puei-films", label: "PueiFilms", appId: "puei-films", iconEmoji: "🎬" });
       }
+      const hasMail = next.some((i) => i.appId === "puei-mail" && !i.fileId && !i.webUrl);
+      if (systemVersion === "PueiOS 2+" && !hasMail) {
+        next.push({ id: "native-puei-mail", label: "PueiMail", appId: "puei-mail", iconEmoji: "✉️" });
+      }
+      const hasWallpapersPlus = next.some((i) => i.appId === "web-app" && i.webUrl === "puei://wallpapers");
+      if (systemVersion === "PueiOS 2+" && !hasWallpapersPlus) {
+        next.push({ id: "web-plus-wallpapers", label: "Puei Wallpapers+", appId: "web-app", webUrl: "puei://wallpapers", iconEmoji: "🖼️" });
+      }
       return next;
     });
-  }, [installed]);
+  }, [installed, systemVersion]);
 
 
   // Simpler signature for openers that just need (appId, fileId)
