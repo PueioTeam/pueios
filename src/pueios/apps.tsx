@@ -1943,8 +1943,9 @@ function PueiMailApp({ currentUser, users }: { currentUser: string; users: User[
     if (!raw) { setSendStatus("Enter a recipient username."); return; }
     if (!draft.subject.trim()) { setSendStatus("Enter a subject."); return; }
     // Resolve to a name for local delivery; also get Puei Number for server delivery
-    const resolved = resolveMailRecipient(raw, users);
-    if (!resolved) { setSendStatus("User not found. Send mail by username, Pueio Number, or @pueimail address."); return; }
+    const emailUser = raw.match(/^([a-z0-9._-]+)@pueimail\.puei$/i)?.[1];
+    const resolved = resolveMailRecipient(raw, users) ?? emailUser ?? (/^[a-z0-9._-]{1,40}$/i.test(raw) ? raw : null);
+    if (!resolved) { setSendStatus("Use a username, Pueio Number, or @pueimail address."); return; }
     // Determine server inbox key: prefer Puei Number of recipient
     const recipientUser = users.find((u) => u.name === resolved);
     const toKey = recipientUser?.name || resolved;
