@@ -1447,7 +1447,7 @@ export function PueiOS() {
             height: 28,
             transform: "translate(-2px, -2px)",
             pointerEvents: "none",
-            zIndex: 8500,
+            zIndex: 100000,
             filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.45))",
           }}>
           <svg viewBox="0 0 22 28" width="22" height="28" xmlns="http://www.w3.org/2000/svg">
@@ -1537,9 +1537,12 @@ export function PueiOS() {
         <button className="aero-start-orb w-10 h-10 rounded-full flex items-center justify-center mx-1 overflow-hidden"
           title="Start"
           onClick={(e) => { e.stopPropagation(); blip("click"); setStartOpen(!startOpen); setShowCalendar(false); }}>
-          <PueiLogoSvg size={26} bigEyes />
+          <svg width="25" height="25" viewBox="0 0 64 64" aria-hidden>
+            <path d="M8 12 29 8v23H8V12Zm27-5 21-4v28H35V7ZM8 36h21v20L8 52V36Zm27 0h21v27l-21-4V36Z" fill="white" opacity="0.96" />
+            <path d="M8 12 29 8v23H8V12Zm27-5 21-4v28H35V7ZM8 36h21v20L8 52V36Zm27 0h21v27l-21-4V36Z" fill="none" stroke="rgba(0,70,150,0.45)" strokeWidth="2" />
+          </svg>
         </button>
-        {(["file-explorer", "app-store", "puei-social", "pueinet", "puei-cloud-chat"] as AppId[]).map((id) => (
+        {(["file-explorer", "app-store", "puei-mail", "puei-social", "pueinet", "puei-cloud-chat"] as AppId[]).map((id) => (
           <button key={id} onClick={(e) => { e.stopPropagation(); openApp(id); }}
             onMouseEnter={() => blip("hover")}
             title={APP_TITLES[id]}
