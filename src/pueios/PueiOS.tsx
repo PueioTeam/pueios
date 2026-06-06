@@ -413,9 +413,13 @@ export function PueiOS() {
           glassSaturation: 195,
           aeroGlow: 68,
         }));
-        setIcons((cur) => cur.some((i) => i.appId === "puei-board" && !i.fileId && !i.webUrl)
-          ? cur
-          : [...cur, { id: "native-puei-board", label: "PueiBoard", appId: "puei-board", iconEmoji: "📌" }]);
+        setIcons((cur) => {
+          const next = [...cur];
+          if (!next.some((i) => i.appId === "puei-board" && !i.fileId && !i.webUrl)) next.push({ id: "native-puei-board", label: "PueiBoard", appId: "puei-board", iconEmoji: "📌" });
+          if (!next.some((i) => i.appId === "puei-mail" && !i.fileId && !i.webUrl)) next.push({ id: "native-puei-mail", label: "PueiMail", appId: "puei-mail", iconEmoji: "✉️" });
+          if (!next.some((i) => i.appId === "web-app" && i.webUrl === "puei://wallpapers")) next.push({ id: "web-plus-wallpapers", label: "Puei Wallpapers+", appId: "web-app", webUrl: "puei://wallpapers", iconEmoji: "🖼️" });
+          return next;
+        });
       }
       setPhase("boot");
       setBootProgress(0);
