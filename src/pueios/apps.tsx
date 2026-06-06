@@ -94,6 +94,7 @@ export function AppRenderer(p: AppRendererProps) {
     case "file-explorer": return <FileExplorerApp openApp={p.openApp} icons={p.icons} openFolder={p.openFolder} currentUser={p.currentUser} users={p.users} />;
     case "app-store": return <AppStoreApp installWebApp={p.installWebApp} openApp={p.openApp} openWebApp={p.openWebApp} systemVersion={p.systemVersion} addNativeIcon={p.addNativeIcon} uninstallApp={p.uninstallApp} uninstallWebApp={p.uninstallWebApp} icons={p.icons} />;
     case "puei-social": return <PueiSocialApp user={p.currentUser} users={p.users} />;
+    case "puei-mail": return <PueiMailApp currentUser={p.currentUser} users={p.users} />;
     case "folder": return <FolderApp folderIconId={p.folderIconId!} icons={p.icons} openApp={p.openApp} openWebApp={p.openWebApp} />;
     case "web-app": return <WebAppFrame url={p.webUrl!} currentUser={p.currentUser} startUpgrade={p.startUpgrade} />;
     case "recycle-bin": return <RecycleBinApp />;
