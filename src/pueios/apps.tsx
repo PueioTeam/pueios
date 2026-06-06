@@ -1851,7 +1851,7 @@ function PueiMailApp({ currentUser, users }: { currentUser: string; users: User[
           if (!res.ok || cancelled) return [] as Array<{ id: string; from: string; to: string; subject: string; body: string; at: number; attachments?: MailAttachment[] }>;
           return await res.json();
         }));
-        const remote = batches.flat();
+        const remote = Array.from(new Map(batches.flat().map((m) => [m.id, m])).values());
         const fresh = remote.filter((m) => !seen.has(m.id));
         if (!fresh.length) return;
         fresh.forEach((m) => seen.add(m.id));
