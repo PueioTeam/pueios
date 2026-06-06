@@ -126,6 +126,7 @@ export type AppId =
   | "calculator"
   | "app-store"
   | "puei-social"
+  | "puei-mail"
   | "folder"
   | "web-app"
   | "recycle-bin"
@@ -289,6 +290,7 @@ export const defaultIcons: DesktopIcon[] = [
   { id: "i-fe", label: "Computer", appId: "file-explorer" },
   { id: "i-store", label: "App Store", appId: "app-store" },
   { id: "i-social", label: "PueiSocial", appId: "puei-social" },
+  { id: "i-mail", label: "PueiMail", appId: "puei-mail" },
   { id: "i-board", label: "PueiBoard", appId: "puei-board" },
   { id: "i-paint", label: "Puei Paint 2", appId: "puei-paint" },
   { id: "i-net", label: "PueiWeb", appId: "pueinet" },
@@ -541,20 +543,23 @@ export function sendMail(
   to: string,
   subject: string,
   body: string,
-  _users: { name: string }[],
+  _users: { name: string; pueiNumber?: string }[],
   attachments?: MailAttachment[],
+  idBase?: string,
 ): MailMessage {
   const existing = loadAllMail();
   const cleanTo = to.trim();
-  const recipient = _users.find((u) => u.name.toLowerCase() === cleanTo.toLowerCase());
-  const id = `mail-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
+  const resolved = resolveMailRecipient(cleanTo, _users);
+  const recipient = resolved ? _users.find((u) => u.name.toLowerCase() === resolved.toLowerCase()) : null;
+  const displayTo = recipient?.name ?? cleanTo;
+  const id = idBase || `mail-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
   const at = Date.now();
   const sentCopy: MailMessage = {
-    id: id + "-s", from, to: cleanTo, subject, body, at,
+    id: id + "-s", from, to: displayTo, subject, body, at,
     read: true, folder: "sent", owner: from, attachments,
   };
   const inboxCopy: MailMessage | null = recipient ? {
-    id: id + "-i", from, to: cleanTo, subject, body, at,
+    id: id + "-i", from, to: displayTo, subject, body, at,
     read: false, folder: isLikelySpam({ subject, body }) ? "spam" : "inbox", owner: recipient.name, attachments,
   } : null;
   try {

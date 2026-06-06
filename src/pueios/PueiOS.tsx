@@ -27,6 +27,7 @@ const APP_TITLES: Record<AppId, string> = {
   "calculator": "Calculator",
   "app-store": "App Store",
   "puei-social": "PueiSocial",
+  "puei-mail": "PueiMail",
   "folder": "Folder",
   "web-app": "Web App",
   "recycle-bin": "Recycle Bin",
@@ -45,6 +46,7 @@ const APP_SIZES: Partial<Record<AppId, { w: number; h: number }>> = {
   "file-explorer": { w: 760, h: 500 },
   "app-store": { w: 760, h: 560 },
   "puei-social": { w: 720, h: 600 },
+  "puei-mail": { w: 920, h: 620 },
   "folder": { w: 520, h: 400 },
   "web-app": { w: 900, h: 600 },
   "recycle-bin": { w: 640, h: 460 },
@@ -411,9 +413,13 @@ export function PueiOS() {
           glassSaturation: 195,
           aeroGlow: 68,
         }));
-        setIcons((cur) => cur.some((i) => i.appId === "puei-board" && !i.fileId && !i.webUrl)
-          ? cur
-          : [...cur, { id: "native-puei-board", label: "PueiBoard", appId: "puei-board", iconEmoji: "📌" }]);
+        setIcons((cur) => {
+          const next = [...cur];
+          if (!next.some((i) => i.appId === "puei-board" && !i.fileId && !i.webUrl)) next.push({ id: "native-puei-board", label: "PueiBoard", appId: "puei-board", iconEmoji: "📌" });
+          if (!next.some((i) => i.appId === "puei-mail" && !i.fileId && !i.webUrl)) next.push({ id: "native-puei-mail", label: "PueiMail", appId: "puei-mail", iconEmoji: "✉️" });
+          if (!next.some((i) => i.appId === "web-app" && i.webUrl === "puei://wallpapers")) next.push({ id: "web-plus-wallpapers", label: "Puei Wallpapers+", appId: "web-app", webUrl: "puei://wallpapers", iconEmoji: "🖼️" });
+          return next;
+        });
       }
       setPhase("boot");
       setBootProgress(0);
@@ -528,11 +534,9 @@ export function PueiOS() {
     return () => root.classList.remove("puei-cursor");
   }, [theme.pueiCursor, phase, windows]);
 
-  // Migration: ensure key web-app icons exist on the desktop after upgrades.
-  const ensuredRef = useRef(false);
+  // Migration: ensure key desktop icons exist after upgrades.
   useEffect(() => {
-    if (ensuredRef.current || !installed) return;
-    ensuredRef.current = true;
+    if (!installed) return;
     setIcons((cur) => {
       const next = [...cur];
       for (let i = 0; i < next.length; i += 1) {
@@ -551,9 +555,17 @@ export function PueiOS() {
       if (!hasFilms) {
         next.push({ id: "native-puei-films", label: "PueiFilms", appId: "puei-films", iconEmoji: "🎬" });
       }
+      const hasMail = next.some((i) => i.appId === "puei-mail" && !i.fileId && !i.webUrl);
+      if (systemVersion === "PueiOS 2+" && !hasMail) {
+        next.push({ id: "native-puei-mail", label: "PueiMail", appId: "puei-mail", iconEmoji: "✉️" });
+      }
+      const hasWallpapersPlus = next.some((i) => i.appId === "web-app" && i.webUrl === "puei://wallpapers");
+      if (systemVersion === "PueiOS 2+" && !hasWallpapersPlus) {
+        next.push({ id: "web-plus-wallpapers", label: "Puei Wallpapers+", appId: "web-app", webUrl: "puei://wallpapers", iconEmoji: "🖼️" });
+      }
       return next;
     });
-  }, [installed]);
+  }, [installed, systemVersion]);
 
 
   // Simpler signature for openers that just need (appId, fileId)
@@ -1264,7 +1276,7 @@ export function PueiOS() {
       className={`fixed inset-0 ${typeof theme.wallpaper === "string" && theme.wallpaper.startsWith("custom:") ? "" : `wallpaper-${theme.wallpaper}`}`}
       style={{ overflow: "hidden", ...wallpaperStyle }}
       onMouseDown={() => { setCtxMenu(null); setStartOpen(false); setShowCalendar(false); setSelectedIcon(null); setShowVolume(false); setShowNetwork(false); }}
-      onContextMenu={(e) => { e.preventDefault(); setCtxMenu({ x: e.clientX, y: e.clientY, items: desktopCtx() }); }}
+      onContextMenu={(e) => { e.preventDefault(); setCursorPos({ x: e.clientX, y: e.clientY }); setCursorVisible(true); setCtxMenu({ x: e.clientX, y: e.clientY, items: desktopCtx() }); }}
       onTouchStart={(e) => onTouchStart(e, desktopCtx())}
       onTouchEnd={onTouchEnd}
     >
@@ -1302,6 +1314,7 @@ export function PueiOS() {
               onMouseDown={(e) => startIconDrag(e, ic, idx)}
               onContextMenu={(e) => {
                 e.preventDefault(); e.stopPropagation();
+                setCursorPos({ x: e.clientX, y: e.clientY }); setCursorVisible(true);
                 setSelectedIcon(ic.id);
                 setCtxMenu({ x: e.clientX, y: e.clientY, items: iconCtx(ic) });
               }}
@@ -1433,7 +1446,7 @@ export function PueiOS() {
             height: 28,
             transform: "translate(-2px, -2px)",
             pointerEvents: "none",
-            zIndex: 8500,
+            zIndex: 100000,
             filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.45))",
           }}>
           <svg viewBox="0 0 22 28" width="22" height="28" xmlns="http://www.w3.org/2000/svg">
@@ -1519,13 +1532,16 @@ export function PueiOS() {
       {/* Taskbar */}
       <div className="taskbar-bg fixed bottom-0 left-0 right-0 h-12 flex items-center px-1 gap-1 z-[8000]"
         onMouseDown={(e) => e.stopPropagation()}
-        onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); setCtxMenu({ x: e.clientX, y: e.clientY, items: taskbarCtx() }); }}>
+        onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); setCursorPos({ x: e.clientX, y: e.clientY }); setCursorVisible(true); setCtxMenu({ x: e.clientX, y: e.clientY, items: taskbarCtx() }); }}>
         <button className="aero-start-orb w-10 h-10 rounded-full flex items-center justify-center mx-1 overflow-hidden"
           title="Start"
           onClick={(e) => { e.stopPropagation(); blip("click"); setStartOpen(!startOpen); setShowCalendar(false); }}>
-          <PueiLogoSvg size={26} bigEyes />
+          <svg width="25" height="25" viewBox="0 0 64 64" aria-hidden>
+            <path d="M8 12 29 8v23H8V12Zm27-5 21-4v28H35V7ZM8 36h21v20L8 52V36Zm27 0h21v27l-21-4V36Z" fill="white" opacity="0.96" />
+            <path d="M8 12 29 8v23H8V12Zm27-5 21-4v28H35V7ZM8 36h21v20L8 52V36Zm27 0h21v27l-21-4V36Z" fill="none" stroke="rgba(0,70,150,0.45)" strokeWidth="2" />
+          </svg>
         </button>
-        {(["file-explorer", "app-store", "puei-social", "pueinet", "puei-cloud-chat"] as AppId[]).map((id) => (
+        {(["file-explorer", "app-store", "puei-mail", "puei-social", "pueinet", "puei-cloud-chat"] as AppId[]).map((id) => (
           <button key={id} onClick={(e) => { e.stopPropagation(); openApp(id); }}
             onMouseEnter={() => blip("hover")}
             title={APP_TITLES[id]}

@@ -245,6 +245,7 @@ export function appIcon(appId: AppId, size = 32, override?: string, iconUrl?: st
     "calculator": "🧮",
     "app-store": "🛍️",
     "puei-social": "📣",
+    "puei-mail": "✉️",
     "folder": "📁",
     "web-app": "🔗",
     "recycle-bin": "🗑️",

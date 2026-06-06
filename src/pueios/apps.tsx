@@ -94,6 +94,7 @@ export function AppRenderer(p: AppRendererProps) {
     case "file-explorer": return <FileExplorerApp openApp={p.openApp} icons={p.icons} openFolder={p.openFolder} currentUser={p.currentUser} users={p.users} />;
     case "app-store": return <AppStoreApp installWebApp={p.installWebApp} openApp={p.openApp} openWebApp={p.openWebApp} systemVersion={p.systemVersion} addNativeIcon={p.addNativeIcon} uninstallApp={p.uninstallApp} uninstallWebApp={p.uninstallWebApp} icons={p.icons} />;
     case "puei-social": return <PueiSocialApp user={p.currentUser} users={p.users} />;
+    case "puei-mail": return <PueiMailApp currentUser={p.currentUser} users={p.users} />;
     case "folder": return <FolderApp folderIconId={p.folderIconId!} icons={p.icons} openApp={p.openApp} openWebApp={p.openWebApp} />;
     case "web-app": return <WebAppFrame url={p.webUrl!} currentUser={p.currentUser} startUpgrade={p.startUpgrade} />;
     case "recycle-bin": return <RecycleBinApp />;
@@ -1794,24 +1795,29 @@ function PueiMailApp({ currentUser, users }: { currentUser: string; users: User[
 
   const me = users.find((u) => u.name === currentUser);
   const myPueiNum = me?.pueiNumber || "";
-  const myMailKey = myPueiNum || currentUser;
+  const myMailKey = currentUser;
+  const myMailAliases = Array.from(new Set([currentUser, myPueiNum, mailAddressFor(currentUser)].filter(Boolean)));
 
   // Cloud sync: pull full mailbox snapshot for this user (cross-device sync)
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch(`/api/mail?owner=${encodeURIComponent(myMailKey)}&mode=full`);
-        if (!res.ok || cancelled) return;
-        const remote = await res.json();
-        if (remote && Array.isArray(remote)) {
+        const remotes = await Promise.all(myMailAliases.map(async (key) => {
+          const res = await fetch(`/api/mail?owner=${encodeURIComponent(key)}&mode=full`);
+          if (!res.ok || cancelled) return [] as MailMessage[];
+          const remote = await res.json();
+          return Array.isArray(remote) ? remote as MailMessage[] : [];
+        }));
+        const remoteMessages = remotes.flat();
+        if (remoteMessages.length) {
           // Merge: server wins for entries with later `at`; keep local-only too
           const local = loadMail(currentUser);
           const byId = new Map<string, MailMessage>();
           for (const m of local) byId.set(m.id, m);
-          for (const m of remote as MailMessage[]) {
+          for (const m of remoteMessages) {
             const ex = byId.get(m.id);
-            if (!ex || (m.at >= ex.at)) byId.set(m.id, m);
+            if (!ex || (m.at >= ex.at)) byId.set(m.id, { ...m, owner: currentUser });
           }
           replaceMailFor(currentUser, [...byId.values()]);
           reload();
@@ -1827,11 +1833,11 @@ function PueiMailApp({ currentUser, users }: { currentUser: string; users: User[
       fetch("/api/mail", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ owner: myMailKey, mailbox: loadMail(currentUser) }),
+        body: JSON.stringify({ owner: myMailKey, aliases: myMailAliases, mailbox: loadMail(currentUser) }),
       }).catch(() => {});
     }, 600);
     return () => clearTimeout(t);
-  }, [msgs, currentUser, myMailKey]);
+  }, [msgs, currentUser, myMailKey, myMailAliases.join("|")]);
 
   // Poll inbox for new mail every 4s
   useEffect(() => {
@@ -1840,9 +1846,12 @@ function PueiMailApp({ currentUser, users }: { currentUser: string; users: User[
     const seen = new Set<string>(loadMail(currentUser).map((m) => m.id));
     const poll = async () => {
       try {
-        const res = await fetch(`/api/mail?owner=${encodeURIComponent(myMailKey)}`);
-        if (!res.ok || cancelled) return;
-        const remote = (await res.json()) as Array<{ id: string; from: string; to: string; subject: string; body: string; at: number; attachments?: MailAttachment[] }>;
+        const batches = await Promise.all(myMailAliases.map(async (key) => {
+          const res = await fetch(`/api/mail?owner=${encodeURIComponent(key)}`);
+          if (!res.ok || cancelled) return [] as Array<{ id: string; from: string; to: string; subject: string; body: string; at: number; attachments?: MailAttachment[] }>;
+          return await res.json();
+        }));
+        const remote = Array.from(new Map(batches.flat().map((m) => [m.id, m])).values());
         const fresh = remote.filter((m) => !seen.has(m.id));
         if (!fresh.length) return;
         fresh.forEach((m) => seen.add(m.id));
@@ -1931,20 +1940,24 @@ function PueiMailApp({ currentUser, users }: { currentUser: string; users: User[
 
   const doSend = () => {
     const raw = draft.to.trim();
-    if (!raw) { setSendStatus("Enter a recipient Puei Number."); return; }
+    if (!raw) { setSendStatus("Enter a recipient username."); return; }
     if (!draft.subject.trim()) { setSendStatus("Enter a subject."); return; }
     // Resolve to a name for local delivery; also get Puei Number for server delivery
-    const resolved = resolveMailRecipient(raw, users) ?? raw;
+    const emailUser = raw.match(/^([a-z0-9._-]+)@pueimail\.puei$/i)?.[1];
+    const resolved = resolveMailRecipient(raw, users) ?? emailUser ?? (/^[a-z0-9._-]{1,40}$/i.test(raw) ? raw : null);
+    if (!resolved) { setSendStatus("Use a username, Pueio Number, or @pueimail address."); return; }
     // Determine server inbox key: prefer Puei Number of recipient
     const recipientUser = users.find((u) => u.name === resolved);
-    const toKey = recipientUser?.pueiNumber || ((/^\d{3}-\d{3}-\d{3}$/.test(raw.replace(/-/g,"").replace(/(\d{3})(\d{3})(\d{3})/,"$1-$2-$3"))) ? raw.replace(/-/g,"").replace(/(\d{3})(\d{3})(\d{3})/,"$1-$2-$3") : resolved);
-    sendMail(currentUser, resolved, draft.subject.trim(), draft.body, users, pending);
+    const toKey = recipientUser?.name || resolved;
+    const aliases = Array.from(new Set([recipientUser?.name, recipientUser?.pueiNumber, mailAddressFor(resolved), raw].filter(Boolean) as string[]));
+    const messageId = `mail-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
+    sendMail(currentUser, resolved, draft.subject.trim(), draft.body, users, pending, messageId);
     setMsgs(loadMail(currentUser));
-    // Deliver to server inbox using Puei Number key
+    // Deliver to web/cloud inbox by username and aliases so mail sent in PueiWeb appears in the Mail app too.
     fetch("/api/mail", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ from: myMailKey || currentUser, to: toKey, subject: draft.subject.trim(), body: draft.body, attachments: pending }),
+      body: JSON.stringify({ id: messageId + "-i", from: currentUser, to: toKey, aliases, subject: draft.subject.trim(), body: draft.body, attachments: pending }),
     }).catch(() => {});
     // Drop draft if any
     if (draftId) {
@@ -2116,7 +2129,7 @@ function PueiMailApp({ currentUser, users }: { currentUser: string; users: User[
             <div className="flex items-center gap-2">
               <span className="text-xs w-20 opacity-60">To:</span>
               <input value={draft.to} onChange={(e) => setDraft({ ...draft, to: e.target.value })}
-                placeholder="Pueio Number (e.g. 123-456-789)"
+                placeholder="Username, Pueio Number, or @pueimail address"
                 className="flex-1 px-3 py-1.5 rounded text-sm outline-none"
                 style={{ background: "white", color: "#111", border: "1px solid var(--border)" }}
                 list="mail-contacts" />
