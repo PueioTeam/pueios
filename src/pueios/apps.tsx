@@ -1795,24 +1795,29 @@ function PueiMailApp({ currentUser, users }: { currentUser: string; users: User[
 
   const me = users.find((u) => u.name === currentUser);
   const myPueiNum = me?.pueiNumber || "";
-  const myMailKey = myPueiNum || currentUser;
+  const myMailKey = currentUser;
+  const myMailAliases = Array.from(new Set([currentUser, myPueiNum, mailAddressFor(currentUser)].filter(Boolean)));
 
   // Cloud sync: pull full mailbox snapshot for this user (cross-device sync)
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch(`/api/mail?owner=${encodeURIComponent(myMailKey)}&mode=full`);
-        if (!res.ok || cancelled) return;
-        const remote = await res.json();
-        if (remote && Array.isArray(remote)) {
+        const remotes = await Promise.all(myMailAliases.map(async (key) => {
+          const res = await fetch(`/api/mail?owner=${encodeURIComponent(key)}&mode=full`);
+          if (!res.ok || cancelled) return [] as MailMessage[];
+          const remote = await res.json();
+          return Array.isArray(remote) ? remote as MailMessage[] : [];
+        }));
+        const remoteMessages = remotes.flat();
+        if (remoteMessages.length) {
           // Merge: server wins for entries with later `at`; keep local-only too
           const local = loadMail(currentUser);
           const byId = new Map<string, MailMessage>();
           for (const m of local) byId.set(m.id, m);
-          for (const m of remote as MailMessage[]) {
+          for (const m of remoteMessages) {
             const ex = byId.get(m.id);
-            if (!ex || (m.at >= ex.at)) byId.set(m.id, m);
+            if (!ex || (m.at >= ex.at)) byId.set(m.id, { ...m, owner: currentUser });
           }
           replaceMailFor(currentUser, [...byId.values()]);
           reload();
@@ -1828,11 +1833,11 @@ function PueiMailApp({ currentUser, users }: { currentUser: string; users: User[
       fetch("/api/mail", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ owner: myMailKey, mailbox: loadMail(currentUser) }),
+        body: JSON.stringify({ owner: myMailKey, aliases: myMailAliases, mailbox: loadMail(currentUser) }),
       }).catch(() => {});
     }, 600);
     return () => clearTimeout(t);
-  }, [msgs, currentUser, myMailKey]);
+  }, [msgs, currentUser, myMailKey, myMailAliases.join("|")]);
 
   // Poll inbox for new mail every 4s
   useEffect(() => {
@@ -1841,9 +1846,12 @@ function PueiMailApp({ currentUser, users }: { currentUser: string; users: User[
     const seen = new Set<string>(loadMail(currentUser).map((m) => m.id));
     const poll = async () => {
       try {
-        const res = await fetch(`/api/mail?owner=${encodeURIComponent(myMailKey)}`);
-        if (!res.ok || cancelled) return;
-        const remote = (await res.json()) as Array<{ id: string; from: string; to: string; subject: string; body: string; at: number; attachments?: MailAttachment[] }>;
+        const batches = await Promise.all(myMailAliases.map(async (key) => {
+          const res = await fetch(`/api/mail?owner=${encodeURIComponent(key)}`);
+          if (!res.ok || cancelled) return [] as Array<{ id: string; from: string; to: string; subject: string; body: string; at: number; attachments?: MailAttachment[] }>;
+          return await res.json();
+        }));
+        const remote = batches.flat();
         const fresh = remote.filter((m) => !seen.has(m.id));
         if (!fresh.length) return;
         fresh.forEach((m) => seen.add(m.id));
