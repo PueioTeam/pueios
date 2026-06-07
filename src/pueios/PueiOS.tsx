@@ -413,13 +413,19 @@ export function PueiOS() {
           glassSaturation: 195,
           aeroGlow: 68,
         }));
-        setIcons((cur) => {
-          const next = [...cur];
-          if (!next.some((i) => i.appId === "puei-board" && !i.fileId && !i.webUrl)) next.push({ id: "native-puei-board", label: "PueiBoard", appId: "puei-board", iconEmoji: "📌" });
-          if (!next.some((i) => i.appId === "puei-mail" && !i.fileId && !i.webUrl)) next.push({ id: "native-puei-mail", label: "PueiMail", appId: "puei-mail", iconEmoji: "✉️" });
-          if (!next.some((i) => i.appId === "web-app" && i.webUrl === "puei://wallpapers")) next.push({ id: "web-plus-wallpapers", label: "Puei Wallpapers+", appId: "web-app", webUrl: "puei://wallpapers", iconEmoji: "🖼️" });
-          return next;
-        });
+      } else if (upgradeTarget === "PueiOS 3") {
+        // PueiOS 3 changes interface only — no new apps installed.
+        setThemeState((prev) => ({
+          ...prev,
+          accentH: 280,
+          transparency: true,
+          fullWindowTransparency: true,
+          win7Aero: false,
+          glassOpacity: 60,
+          glassSaturation: 210,
+          aeroGlow: 78,
+          dark: true,
+        }));
       }
       setPhase("boot");
       setBootProgress(0);
@@ -529,7 +535,7 @@ export function PueiOS() {
   useEffect(() => {
     const root = document.documentElement;
     const focused = windows.filter((w) => !w.minimized).sort((a, b) => b.z - a.z)[0];
-    const hiddenForWebApp = focused?.appId === "web-app" && /bezosmp|google/i.test(`${focused.title} ${focused.webUrl}`);
+    const hiddenForWebApp = focused?.appId === "web-app" && /bezosmp/i.test(`${focused.title} ${focused.webUrl}`);
     root.classList.toggle("puei-cursor", !!theme.pueiCursor && phase === "desktop" && !hiddenForWebApp);
     return () => root.classList.remove("puei-cursor");
   }, [theme.pueiCursor, phase, windows]);
@@ -555,13 +561,9 @@ export function PueiOS() {
       if (!hasFilms) {
         next.push({ id: "native-puei-films", label: "PueiFilms", appId: "puei-films", iconEmoji: "🎬" });
       }
-      const hasMail = next.some((i) => i.appId === "puei-mail" && !i.fileId && !i.webUrl);
-      if (systemVersion === "PueiOS 2+" && !hasMail) {
-        next.push({ id: "native-puei-mail", label: "PueiMail", appId: "puei-mail", iconEmoji: "✉️" });
-      }
-      const hasWallpapersPlus = next.some((i) => i.appId === "web-app" && i.webUrl === "puei://wallpapers");
-      if (systemVersion === "PueiOS 2+" && !hasWallpapersPlus) {
-        next.push({ id: "web-plus-wallpapers", label: "Puei Wallpapers+", appId: "web-app", webUrl: "puei://wallpapers", iconEmoji: "🖼️" });
+      // Remove legacy "Puei Wallpapers+" desktop shortcut (no longer added by upgrades).
+      for (let i = next.length - 1; i >= 0; i -= 1) {
+        if (next[i].appId === "web-app" && next[i].webUrl === "puei://wallpapers") next.splice(i, 1);
       }
       return next;
     });
@@ -1267,9 +1269,10 @@ export function PueiOS() {
   })();
 
   const currentAvatar = users.find(u => u.name === currentUser)?.avatar;
-  const hasPueiOSPlusUpgrade = compareVersion("PueiOS 2+", systemVersion) > 0;
+  const hasPueiOSPlusUpgrade = compareVersion("PueiOS 3", systemVersion) > 0;
+  const nextUpgradeTarget: SystemVersion = "PueiOS 3";
   const focusedWindow = windows.filter((w) => !w.minimized).sort((a, b) => b.z - a.z)[0];
-  const customCursorHiddenForApp = focusedWindow?.appId === "web-app" && /bezosmp|google/i.test(`${focusedWindow.title} ${focusedWindow.webUrl}`);
+  const customCursorHiddenForApp = focusedWindow?.appId === "web-app" && /bezosmp/i.test(`${focusedWindow.title} ${focusedWindow.webUrl}`);
 
   return (
     <div
@@ -1488,14 +1491,14 @@ export function PueiOS() {
             ))}
             {hasPueiOSPlusUpgrade && (
               <button onClick={() => {
-                if (!confirm("Start upgrade to PueiOS 2+ now?")) return;
+                if (!confirm(`Start upgrade to ${nextUpgradeTarget} now?`)) return;
                 setStartOpen(false);
-                startSystemUpgrade("PueiOS 2+");
+                startSystemUpgrade(nextUpgradeTarget);
               }}
                 className="flex items-center gap-2 px-3 py-2 rounded text-sm text-left"
-                style={{ background: "linear-gradient(135deg, rgba(90,160,255,0.22), rgba(30,90,220,0.30))", border: "1px solid rgba(60,120,240,0.35)" }}>
+                style={{ background: "linear-gradient(135deg, rgba(180,120,255,0.22), rgba(90,40,200,0.30))", border: "1px solid rgba(140,90,240,0.35)" }}>
                 <div className="w-[26px] h-[26px] rounded flex items-center justify-center text-lg" style={{ background: "rgba(255,255,255,0.55)" }}>⬆️</div>
-                <span>Update to PueiOS 2+</span>
+                <span>Update to {nextUpgradeTarget}</span>
               </button>
             )}
           </div>
@@ -1536,9 +1539,24 @@ export function PueiOS() {
         <button className="aero-start-orb w-10 h-10 rounded-full flex items-center justify-center mx-1 overflow-hidden"
           title="Start"
           onClick={(e) => { e.stopPropagation(); blip("click"); setStartOpen(!startOpen); setShowCalendar(false); }}>
-          <svg width="25" height="25" viewBox="0 0 64 64" aria-hidden>
-            <path d="M8 12 29 8v23H8V12Zm27-5 21-4v28H35V7ZM8 36h21v20L8 52V36Zm27 0h21v27l-21-4V36Z" fill="white" opacity="0.96" />
-            <path d="M8 12 29 8v23H8V12Zm27-5 21-4v28H35V7ZM8 36h21v20L8 52V36Zm27 0h21v27l-21-4V36Z" fill="none" stroke="rgba(0,70,150,0.45)" strokeWidth="2" />
+          <svg width="26" height="26" viewBox="0 0 64 64" aria-hidden>
+            <defs>
+              <radialGradient id="puBody" cx="35%" cy="35%" r="75%">
+                <stop offset="0%" stopColor="#ffe89a"/>
+                <stop offset="55%" stopColor="#ff8a3d"/>
+                <stop offset="100%" stopColor="#c4202b"/>
+              </radialGradient>
+            </defs>
+            <circle cx="32" cy="34" r="22" fill="url(#puBody)" stroke="rgba(0,0,0,0.55)" strokeWidth="1.5"/>
+            <path d="M32 12 V 56" stroke="rgba(0,0,0,0.6)" strokeWidth="1.6" fill="none"/>
+            <circle cx="22" cy="26" r="2.4" fill="#1a1a1a"/>
+            <circle cx="42" cy="26" r="2.4" fill="#1a1a1a"/>
+            <circle cx="20" cy="40" r="2.8" fill="#1a1a1a"/>
+            <circle cx="44" cy="40" r="2.8" fill="#1a1a1a"/>
+            <circle cx="32" cy="48" r="2.4" fill="#1a1a1a"/>
+            <ellipse cx="32" cy="14" rx="6" ry="4" fill="#1a1a1a"/>
+            <circle cx="29" cy="13.5" r="1.1" fill="#fff"/>
+            <circle cx="35" cy="13.5" r="1.1" fill="#fff"/>
           </svg>
         </button>
         {(["file-explorer", "app-store", "puei-mail", "puei-social", "pueinet", "puei-cloud-chat"] as AppId[]).map((id) => (
@@ -1552,16 +1570,16 @@ export function PueiOS() {
         {hasPueiOSPlusUpgrade && (
           <button
             className="taskbar-item h-9 px-3 rounded flex items-center gap-2 text-xs"
-            title="Update to PueiOS 2+"
-            style={{ background: "linear-gradient(180deg, rgba(120,190,255,0.95), rgba(60,120,240,0.9))", color: "white", border: "1px solid rgba(255,255,255,0.35)" }}
+            title={`Update to ${nextUpgradeTarget}`}
+            style={{ background: "linear-gradient(180deg, rgba(190,140,255,0.95), rgba(110,60,220,0.9))", color: "white", border: "1px solid rgba(255,255,255,0.35)" }}
             onClick={(e) => {
               e.stopPropagation();
-              if (!confirm("Start upgrade to PueiOS 2+ now?")) return;
+              if (!confirm(`Start upgrade to ${nextUpgradeTarget} now?`)) return;
               setStartOpen(false);
-              startSystemUpgrade("PueiOS 2+");
+              startSystemUpgrade(nextUpgradeTarget);
             }}>
             <span>⬆️</span>
-            <span className="font-semibold">PueiOS 2+</span>
+            <span className="font-semibold">{nextUpgradeTarget}</span>
           </button>
         )}
         <div className="w-px h-7 bg-white/20 mx-1" />

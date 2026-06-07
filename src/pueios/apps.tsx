@@ -213,60 +213,7 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, openWe
     ["upgrade", "⬆️ Upgrade"],
     ["about", "ℹ️ About"],
   ];
-  const plusReleaseUrl = "https://github.com/PueioTeam/pueios/releases/tag/pueios2plus";
-  const plusLatestUrl = "https://github.com/PueioTeam/pueios/releases/latest";
-  const plusIncludes = [
-    "advanced cloud synchronization",
-    "improved PueiCloud Chat",
-    "faster file restoration",
-    "enhanced Puei Copilot AI",
-    "customizable High Contrast themes",
-    "expanded personalization settings",
-    "advanced multitasking",
-    "upgraded file management",
-    "smoother animations",
-    "improved desktop rendering",
-    "enhanced security systems",
-    "cross-browser account restoration",
-    "faster PueiWeb performance",
-  ];
-  const plusSync = [
-    "files",
-    "profile pictures",
-    "Messenger chats",
-    "settings",
-    "apps",
-    "desktop layouts",
-    "themes",
-    "uploaded videos and images",
-  ];
-  const plusSetup = [
-    "extended Windows-style setup",
-    "animated installation stages",
-    "account recovery during setup",
-    "cloud restore options",
-    "upgrade preservation systems",
-  ];
-  const plusCopilot = [
-    "gathering information from multiple sources",
-    "summarizing web content",
-    "suggesting apps",
-    "helping manage files",
-    "assisting with system tasks",
-  ];
-  const plusKeeps = [
-    "dark mode",
-    "Recycle Bin",
-    "drag & drop support",
-    "Base44 app support",
-    "Pueio Numbers",
-    "Puei Mail",
-    "PueiSocial",
-    "Pueio Videos",
-    "PueiWeb",
-    "Installer",
-    "Pueio Control",
-  ];
+  // Upgrade information now refers to PueiOS 3 (interface-only update).
   return (
     <div className="flex h-full">
       <div className="w-48 p-2 border-r" style={{ background: "var(--background)" }}>
@@ -550,77 +497,30 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, openWe
         {tab === "upgrade" && (
           <div className="space-y-4 max-w-lg">
             <h2 className="text-xl font-semibold">⬆️ System Upgrade</h2>
-            <p className="text-sm opacity-70">Upgrade PueiOS to a newer version. Your files, accounts, messages, and settings are preserved — just like upgrading from Windows XP to Vista to 7.</p>
+            <p className="text-sm opacity-70">Upgrade PueiOS to a newer version. Your files, accounts, messages, and settings are preserved — PueiOS 3 only changes the interface (start menu, taskbar, theme), it doesn't install or remove apps.</p>
             <div className="text-xs opacity-60 mb-2">Current version: <strong>{systemVersion}</strong></div>
-            {SYSTEM_ORDER.filter((v) => compareVersion(v, systemVersion) > 0).length === 0 ? (
-              <div className="aero-glass-light rounded-xl p-4 text-sm text-center opacity-70">✅ You are on the latest version of PueiOS. (PueiOS 3 has not been released yet.)</div>
-            ) : SYSTEM_ORDER.filter((v) => compareVersion(v, systemVersion) > 0).map((v) => (
-              <div key={v} className="aero-glass-light rounded-xl p-4 space-y-3">
+
+            <div className="aero-glass-light rounded-xl p-4 text-xs space-y-2" style={{ borderLeft: "3px solid #f59e0b" }}>
+              <div className="font-semibold text-amber-400">⚠️ End of Support</div>
+              <div className="opacity-80">As of <strong>June 6, 2026</strong>, your device cannot be downgraded to PueiOS 2 or PueiOS 2+ — those versions are end of support and will no longer be updated by the Puei Team.</div>
+            </div>
+
+            {compareVersion("PueiOS 3", systemVersion) > 0 ? (
+              <div className="aero-glass-light rounded-xl p-4 space-y-3">
                 <div className="flex items-center justify-between gap-4">
                   <div>
-                    <div className="font-semibold text-base">{v}</div>
-                    <div className="text-xs opacity-70 mt-0.5">
-                      {v === "PueiOS 2+" && "Pueios2 Plus is the advanced edition with stronger sync, richer customization, and improved AI systems."}
-                    </div>
+                    <div className="font-semibold text-base">PueiOS 3</div>
+                    <div className="text-xs opacity-70 mt-0.5">A redesigned interface — new start menu, taskbar and window chrome. Your apps, files and settings stay exactly as they are.</div>
                   </div>
                   <button className="aero-button rounded-lg px-4 py-2 text-sm flex-shrink-0"
                     onClick={() => { blip("click"); openWebApp("puei://updates", "Puei Updater"); }}>
                     Open Updater →
                   </button>
                 </div>
-
-                {v === "PueiOS 2+" && (
-                  <div className="text-xs space-y-3 opacity-90">
-                    <div className="flex flex-wrap gap-2">
-                      <a href={plusReleaseUrl} target="_blank" rel="noreferrer" className="aero-button rounded px-3 py-1">pueiOS2 plus</a>
-                      <a href={plusLatestUrl} target="_blank" rel="noreferrer" className="aero-button rounded px-3 py-1">Latest</a>
-                    </div>
-                    <p>
-                      Pueios2 Plus is the advanced edition of Pueios2 designed for users who want more customization,
-                      stronger cloud features, enhanced AI systems, and a more powerful desktop experience.
-                    </p>
-                    <p>
-                      Built on the core Pueios2 architecture, Pueios2 Plus expands the operating system with premium features,
-                      deeper personalization, smarter synchronization, and improved performance systems while keeping the same familiar Pueios environment.
-                    </p>
-                    <div>
-                      <div className="font-semibold mb-1">Pueios2 Plus includes:</div>
-                      <ul className="list-disc pl-5 space-y-0.5">
-                        {plusIncludes.map((x) => <li key={x}>{x}</li>)}
-                      </ul>
-                    </div>
-                    <div>
-                      <div className="font-semibold mb-1">Fully synchronized across browsers/devices:</div>
-                      <ul className="list-disc pl-5 space-y-0.5">
-                        {plusSync.map((x) => <li key={x}>{x}</li>)}
-                      </ul>
-                    </div>
-                    <div>
-                      <div className="font-semibold mb-1">Improved installation experience:</div>
-                      <ul className="list-disc pl-5 space-y-0.5">
-                        {plusSetup.map((x) => <li key={x}>{x}</li>)}
-                      </ul>
-                    </div>
-                    <div>
-                      <div className="font-semibold mb-1">Advanced Puei Copilot can:</div>
-                      <ul className="list-disc pl-5 space-y-0.5">
-                        {plusCopilot.map((x) => <li key={x}>{x}</li>)}
-                      </ul>
-                    </div>
-                    <div>
-                      <div className="font-semibold mb-1">Still includes core Pueios features:</div>
-                      <ul className="list-disc pl-5 space-y-0.5">
-                        {plusKeeps.map((x) => <li key={x}>{x}</li>)}
-                      </ul>
-                    </div>
-                    <p className="opacity-80">
-                      Pueios2 Plus is designed for advanced puei users who want a more complete, connected,
-                      and customizable operating system experience.
-                    </p>
-                  </div>
-                )}
               </div>
-            ))}
+            ) : (
+              <div className="aero-glass-light rounded-xl p-4 text-sm text-center opacity-70">✅ You are on the latest version of PueiOS.</div>
+            )}
           </div>
         )}
         {tab === "about" && (
@@ -1439,26 +1339,26 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
     f.type === "iso" &&
     (!f.owner || f.owner === currentUser) &&
     f.folder === SYS_FOLDER_DOWNLOADS &&
-    ["pueios2-plus.iso", "pueios2plus.iso"].includes(f.name.trim().toLowerCase())
+    ["pueios3.iso", "pueios-3.iso"].includes(f.name.trim().toLowerCase())
   );
   const updaterInstalled = icons.some((i) => i.appId === "web-app" && i.webUrl === "puei://updates" && i.label.trim().toLowerCase() === "puei updater");
 
   const generateInstallCode = () => {
     const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
     const block = () => Array.from({ length: 4 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
-    return `P2PL-${block()}-${block()}-${block()}`;
+    return `P3PL-${block()}-${block()}-${block()}`;
   };
 
   const downloadPlusIso = () => {
     if (isoFile) {
       blip("click");
-      alert(`Pueios2 Plus ISO is already in Files/Downloads.\nInstallation code: ${isoFile.content}`);
+      alert(`pueios3.iso is already in Files/Downloads.\nInstallation code: ${isoFile.content}`);
       return;
     }
     const code = generateInstallCode();
     upsertFile({
       id: `iso-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`,
-      name: "pueios2-plus.iso",
+      name: "pueios3.iso",
       type: "iso",
       content: code,
       updatedAt: Date.now(),
@@ -1467,7 +1367,7 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
     });
     setIsoRefresh((v) => v + 1);
     blip("notify");
-    alert(`pueios2-plus.iso downloaded.\n\nYour installation code is:\n${code}\n\nDrag the ISO into Puei Updater and enter this code to install.`);
+    alert(`pueios3.iso downloaded.\n\nYour installation code is:\n${code}\n\nDrag the ISO into Puei Updater and enter this code to install.`);
   };
 
   const makeWaveWallpaper = (name: string, left: string, right: string, glow: string, stars = false) => {
@@ -1534,7 +1434,6 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
             ["puei://search", "✦ Puei Copilot"],
             ["puei://forum", "💬 PueiForum"],
             ["puei://mail", "✉️ PueiMail"],
-            ["puei://wallpapers", "🖼️ Puei Wallpapers"],
             ["puei://about", "ℹ️ About"],
           ].map(([u, l]) => (
             <button key={u} onClick={() => navigate(u)} className="aero-button rounded-lg p-4">{l}</button>
@@ -1614,9 +1513,11 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
     "puei://updates": (
       <div className="p-6 space-y-4">
         <h2 className="text-2xl font-bold">⬆️ Puei Updates</h2>
-        <p className="text-sm opacity-75">Update flow: 1) Download ISO into Files, 2) Install Puei Updater from App Store, 3) Open Puei Updater and drag the ISO into it, 4) wait for restart into PueiOS 2+.</p>
+        <p className="text-sm opacity-75">Update flow: 1) Download pueios3.iso into Files, 2) Install Puei Updater from App Store, 3) Open Puei Updater and drag the ISO into it, 4) wait for restart into PueiOS 3.</p>
 
         <div className="aero-glass-light rounded-xl p-4 space-y-3 max-w-xl">
+          <div className="text-sm font-semibold">Latest: PueiOS 3</div>
+          <div className="text-xs opacity-75">PueiOS 3 reimagines the interface — new start menu, taskbar, window chrome and theme. No apps are added or removed; your files, accounts and settings are preserved.</div>
           <div className="text-sm">
             ISO status: {isoFile ? <span className="font-semibold text-green-500">Downloaded ({isoFile.name})</span> : <span className="font-semibold text-amber-500">Not downloaded</span>}
           </div>
@@ -1624,7 +1525,7 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
             Puei Updater status: {updaterInstalled ? <span className="font-semibold text-green-500">Installed</span> : <span className="font-semibold text-amber-500">Not installed from App Store</span>}
           </div>
           <div className="flex gap-2 flex-wrap">
-            <button className="aero-button rounded px-3 py-1.5 text-xs" onClick={downloadPlusIso}>⬇ Download pueios2-plus.iso to Files</button>
+            <button className="aero-button rounded px-3 py-1.5 text-xs" onClick={downloadPlusIso}>⬇ Download pueios3.iso to Files</button>
           </div>
 
           {isoFile && (
@@ -1641,6 +1542,11 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
               Puei Updater is installed. Open it from your desktop and drag the ISO from its Downloads list into the install zone.
             </div>
           )}
+        </div>
+
+        <div className="aero-glass-light rounded-xl p-4 max-w-xl text-xs space-y-2" style={{ borderLeft: "3px solid #f59e0b" }}>
+          <div className="font-semibold text-amber-400">⚠️ End of Support Notice</div>
+          <div className="opacity-80">As of <strong>June 6, 2026</strong>, PueiOS 2 and PueiOS 2+ are end of support and will no longer be updated by the Puei Team. Devices on these versions can still upgrade directly to PueiOS 3, but downgrade ISOs (pueios2.iso, pueios2-plus.iso) are no longer published.</div>
         </div>
       </div>
     ),
@@ -1795,8 +1701,8 @@ function PueiMailApp({ currentUser, users }: { currentUser: string; users: User[
 
   const me = users.find((u) => u.name === currentUser);
   const myPueiNum = me?.pueiNumber || "";
-  const myMailKey = currentUser;
-  const myMailAliases = Array.from(new Set([currentUser, myPueiNum, mailAddressFor(currentUser)].filter(Boolean)));
+  const myMailKey = myPueiNum || currentUser;
+  const myMailAliases = Array.from(new Set([myPueiNum].filter(Boolean)));
 
   // Cloud sync: pull full mailbox snapshot for this user (cross-device sync)
   useEffect(() => {
@@ -1939,27 +1845,28 @@ function PueiMailApp({ currentUser, users }: { currentUser: string; users: User[
   };
 
   const doSend = () => {
-    const raw = draft.to.trim();
-    if (!raw) { setSendStatus("Enter a recipient username."); return; }
+    const raw = draft.to.trim().replace(/\s/g, "");
+    if (!raw) { setSendStatus("Enter a recipient Puei Number."); return; }
+    // Accept 9 digits or NNN-NNN-NNN format
+    const cleaned = raw.replace(/-/g, "");
+    if (!/^\d{9}$/.test(cleaned)) { setSendStatus("PueiMail works with Puei Numbers only (e.g. 123-456-789)."); return; }
+    const recipientNumber = `${cleaned.slice(0,3)}-${cleaned.slice(3,6)}-${cleaned.slice(6,9)}`;
+    if (recipientNumber === myPueiNum) { setSendStatus("That's your own Puei Number."); return; }
     if (!draft.subject.trim()) { setSendStatus("Enter a subject."); return; }
-    // Resolve to a name for local delivery; also get Puei Number for server delivery
-    const emailUser = raw.match(/^([a-z0-9._-]+)@pueimail\.puei$/i)?.[1];
-    const resolved = resolveMailRecipient(raw, users) ?? emailUser ?? (/^[a-z0-9._-]{1,40}$/i.test(raw) ? raw : null);
-    if (!resolved) { setSendStatus("Use a username, Pueio Number, or @pueimail address."); return; }
-    // Determine server inbox key: prefer Puei Number of recipient
-    const recipientUser = users.find((u) => u.name === resolved);
-    const toKey = recipientUser?.name || resolved;
-    const aliases = Array.from(new Set([recipientUser?.name, recipientUser?.pueiNumber, mailAddressFor(resolved), raw].filter(Boolean) as string[]));
+    // Resolve recipient display name by Puei Number (local users or directory)
+    const recipientUser = users.find((u) => u.pueiNumber === recipientNumber);
+    const dirHit = lookupPueiNumber(recipientNumber);
+    const resolvedName = recipientUser?.name || dirHit?.name || recipientNumber;
+    const aliases = [recipientNumber];
     const messageId = `mail-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
-    sendMail(currentUser, resolved, draft.subject.trim(), draft.body, users, pending, messageId);
+    sendMail(currentUser, resolvedName, draft.subject.trim(), draft.body, users, pending, messageId);
     setMsgs(loadMail(currentUser));
-    // Deliver to web/cloud inbox by username and aliases so mail sent in PueiWeb appears in the Mail app too.
+    // Deliver to cloud inbox keyed by Puei Number only
     fetch("/api/mail", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: messageId + "-i", from: currentUser, to: toKey, aliases, subject: draft.subject.trim(), body: draft.body, attachments: pending }),
+      body: JSON.stringify({ id: messageId + "-i", from: myPueiNum || currentUser, to: recipientNumber, aliases, subject: draft.subject.trim(), body: draft.body, attachments: pending }),
     }).catch(() => {});
-    // Drop draft if any
     if (draftId) {
       const updated = loadMail(currentUser).filter((m) => m.id !== draftId);
       setMsgs(updated); saveMail(updated);
@@ -2129,14 +2036,11 @@ function PueiMailApp({ currentUser, users }: { currentUser: string; users: User[
             <div className="flex items-center gap-2">
               <span className="text-xs w-20 opacity-60">To:</span>
               <input value={draft.to} onChange={(e) => setDraft({ ...draft, to: e.target.value })}
-                placeholder="Username, Pueio Number, or @pueimail address"
+                placeholder="Recipient Puei Number (e.g. 123-456-789)"
                 className="flex-1 px-3 py-1.5 rounded text-sm outline-none"
                 style={{ background: "white", color: "#111", border: "1px solid var(--border)" }}
                 list="mail-contacts" />
               <datalist id="mail-contacts">
-                {users.filter((u) => u.name !== currentUser).map((u) => (
-                  <option key={u.name} value={mailAddressFor(u.name)} label={u.name} />
-                ))}
                 {users.filter((u) => u.name !== currentUser && u.pueiNumber).map((u) => (
                   <option key={u.name + "-num"} value={u.pueiNumber!} label={u.name} />
                 ))}
@@ -3493,7 +3397,7 @@ function AppStoreApp({ installWebApp, openApp, openWebApp, systemVersion, addNat
     { name: "PueiCloudChat", icon: "💬", desc: "Chat by PueiNumber — cross-device, real-time.",           appId: "puei-cloud-chat", preInstalled: true },
     { name: "PueiBoard",     icon: "📌", desc: "Pinterest-style boards where Pueis post Gallery images.", appId: "puei-board", preInstalled: true },
     { name: "PueiWeb",        icon: "🌐", desc: "System browser + AI search engine.",           appId: "pueinet",        preInstalled: true },
-    { name: "Google Chrome",  icon: "🌐", desc: "Install Google Chrome as a fast browser shortcut from App Store.", webUrl: "https://www.google.com/", desktopLabel: "Google Chrome", preInstalled: false, by: "Google" },
+    // Google Chrome removed — browse the web inside PueiWeb instead.
     { name: "BezoSMP", icon: bezosmpIcon.url, desc: "Social network — share posts, follow people, like Bluesky or X.", webUrl: "https://bezosmp.lovable.app", desktopLabel: "BezoSMP", preInstalled: false, by: "Bazicioschi" },
     { name: "Puei Paint 2",   icon: "🎨", desc: "Paint and save images as wallpapers.",         appId: "puei-paint",     preInstalled: true },
     { name: "Settings",       icon: "⚙️", desc: "Personalize, dark mode, accessibility.",       appId: "settings",       preInstalled: true },
@@ -4072,7 +3976,7 @@ function PueiUpdaterApp({ currentUser, startUpgrade }: { currentUser: string; st
         blip("notify");
         restartTimer.current = window.setTimeout(() => {
           blip("start");
-          startUpgrade("PueiOS 2+");
+          startUpgrade("PueiOS 3");
         }, 900);
       }
     }, 250);
@@ -4083,7 +3987,7 @@ function PueiUpdaterApp({ currentUser, startUpgrade }: { currentUser: string; st
     f.type === "iso" &&
     (!f.owner || f.owner === currentUser) &&
     f.folder === SYS_FOLDER_DOWNLOADS &&
-    ["pueios2-plus.iso", "pueios2plus.iso"].includes(f.name.trim().toLowerCase())
+    ["pueios3.iso", "pueios-3.iso"].includes(f.name.trim().toLowerCase())
   );
   const mountedIso = isoFiles.find((file) => file.id === mountedIsoId) || null;
 
@@ -4099,7 +4003,7 @@ function PueiUpdaterApp({ currentUser, startUpgrade }: { currentUser: string; st
     const iso = file || mountedIso;
     if (!iso) {
       blip("error");
-      alert("No ISO available. Download pueios2-plus.iso from PueiWeb → Updates first.");
+      alert("No ISO available. Download pueios3.iso from PueiWeb → Updates first.");
       return;
     }
     if (!file) {
@@ -4112,7 +4016,7 @@ function PueiUpdaterApp({ currentUser, startUpgrade }: { currentUser: string; st
       blip("error");
       return;
     }
-    if (!confirm(`Install PueiOS 2+ from ${iso.name}? Your device will restart when installation finishes.`)) return;
+    if (!confirm(`Install PueiOS 3 from ${iso.name}? Your device will restart when installation finishes.`)) return;
     setCodeError(null);
     setInstallStopped(false);
     setRestartQueued(false);
@@ -4154,7 +4058,7 @@ function PueiUpdaterApp({ currentUser, startUpgrade }: { currentUser: string; st
             <div className="text-[11px] opacity-60">Drag the ISO from here into the install zone.</div>
             {isoFiles.length === 0 ? (
               <div className="text-xs rounded-lg px-3 py-3" style={{ background: "rgba(255,255,255,0.08)" }}>
-                No ISO found. Go to PueiWeb, download pueios2-plus.iso, then come back here.
+                No ISO found. Go to PueiWeb, download pueios3.iso, then come back here.
               </div>
             ) : (
               <div className="space-y-2">
@@ -4218,7 +4122,7 @@ function PueiUpdaterApp({ currentUser, startUpgrade }: { currentUser: string; st
               }}>
               <div className="text-sm font-semibold">{mountedIso ? `${mountedIso.name} mounted` : "Drop ISO here to prepare installation"}</div>
               <div className="text-xs opacity-65 mt-1">
-                {mountedIso ? "Puei Updater is ready to install PueiOS 2+ from this ISO." : "Only pueios2-plus.iso from Files/Downloads is accepted."}
+                {mountedIso ? "Puei Updater is ready to install PueiOS 3 from this ISO." : "Only pueios3.iso from Files/Downloads is accepted."}
               </div>
               {mountedIso && (
                 <div className="mt-3 inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs" style={{ background: "rgba(0,0,0,0.18)" }}>
@@ -4243,7 +4147,7 @@ function PueiUpdaterApp({ currentUser, startUpgrade }: { currentUser: string; st
                 <input
                   value={codeInput}
                   onChange={(e) => { setCodeInput(e.target.value.toUpperCase()); setCodeError(null); }}
-                  placeholder="P2PL-7XK9-A4PN-Q82M"
+                  placeholder="P3PL-7XK9-A4PN-Q82M"
                   className="w-full rounded px-3 py-2 text-sm font-mono outline-none"
                   style={{ background: "white", color: "#111", border: "1px solid var(--border)" }}
                 />
@@ -4258,7 +4162,7 @@ function PueiUpdaterApp({ currentUser, startUpgrade }: { currentUser: string; st
               <button className="aero-button rounded px-3 py-1.5 text-xs" disabled={!mountedIso || isInstalling || restartQueued}
                 style={{ opacity: (!mountedIso || isInstalling || restartQueued) ? 0.5 : 1 }}
                 onClick={() => beginInstall()}>
-                Install PueiOS 2+
+                Install PueiOS 3
               </button>
               <button className="aero-button rounded px-3 py-1.5 text-xs" disabled={!isInstalling}
                 style={{ opacity: isInstalling ? 1 : 0.5, color: "#fca5a5" }}
@@ -4285,7 +4189,7 @@ function PueiUpdaterApp({ currentUser, startUpgrade }: { currentUser: string; st
 
             {restartQueued && !isInstalling && (
               <div className="text-xs rounded px-3 py-2" style={{ background: "rgba(80,200,120,0.2)" }}>
-                Installation finished. Restarting now into PueiOS 2+...
+                Installation finished. Restarting now into PueiOS 3...
               </div>
             )}
           </div>
