@@ -550,77 +550,30 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, openWe
         {tab === "upgrade" && (
           <div className="space-y-4 max-w-lg">
             <h2 className="text-xl font-semibold">⬆️ System Upgrade</h2>
-            <p className="text-sm opacity-70">Upgrade PueiOS to a newer version. Your files, accounts, messages, and settings are preserved — just like upgrading from Windows XP to Vista to 7.</p>
+            <p className="text-sm opacity-70">Upgrade PueiOS to a newer version. Your files, accounts, messages, and settings are preserved — PueiOS 3 only changes the interface (start menu, taskbar, theme), it doesn't install or remove apps.</p>
             <div className="text-xs opacity-60 mb-2">Current version: <strong>{systemVersion}</strong></div>
-            {SYSTEM_ORDER.filter((v) => compareVersion(v, systemVersion) > 0).length === 0 ? (
-              <div className="aero-glass-light rounded-xl p-4 text-sm text-center opacity-70">✅ You are on the latest version of PueiOS. (PueiOS 3 has not been released yet.)</div>
-            ) : SYSTEM_ORDER.filter((v) => compareVersion(v, systemVersion) > 0).map((v) => (
-              <div key={v} className="aero-glass-light rounded-xl p-4 space-y-3">
+
+            <div className="aero-glass-light rounded-xl p-4 text-xs space-y-2" style={{ borderLeft: "3px solid #f59e0b" }}>
+              <div className="font-semibold text-amber-400">⚠️ End of Support</div>
+              <div className="opacity-80">As of <strong>June 6, 2026</strong>, your device cannot be downgraded to PueiOS 2 or PueiOS 2+ — those versions are end of support and will no longer be updated by the Puei Team.</div>
+            </div>
+
+            {compareVersion("PueiOS 3", systemVersion) > 0 ? (
+              <div className="aero-glass-light rounded-xl p-4 space-y-3">
                 <div className="flex items-center justify-between gap-4">
                   <div>
-                    <div className="font-semibold text-base">{v}</div>
-                    <div className="text-xs opacity-70 mt-0.5">
-                      {v === "PueiOS 2+" && "Pueios2 Plus is the advanced edition with stronger sync, richer customization, and improved AI systems."}
-                    </div>
+                    <div className="font-semibold text-base">PueiOS 3</div>
+                    <div className="text-xs opacity-70 mt-0.5">A redesigned interface — new start menu, taskbar and window chrome. Your apps, files and settings stay exactly as they are.</div>
                   </div>
                   <button className="aero-button rounded-lg px-4 py-2 text-sm flex-shrink-0"
                     onClick={() => { blip("click"); openWebApp("puei://updates", "Puei Updater"); }}>
                     Open Updater →
                   </button>
                 </div>
-
-                {v === "PueiOS 2+" && (
-                  <div className="text-xs space-y-3 opacity-90">
-                    <div className="flex flex-wrap gap-2">
-                      <a href={plusReleaseUrl} target="_blank" rel="noreferrer" className="aero-button rounded px-3 py-1">pueiOS2 plus</a>
-                      <a href={plusLatestUrl} target="_blank" rel="noreferrer" className="aero-button rounded px-3 py-1">Latest</a>
-                    </div>
-                    <p>
-                      Pueios2 Plus is the advanced edition of Pueios2 designed for users who want more customization,
-                      stronger cloud features, enhanced AI systems, and a more powerful desktop experience.
-                    </p>
-                    <p>
-                      Built on the core Pueios2 architecture, Pueios2 Plus expands the operating system with premium features,
-                      deeper personalization, smarter synchronization, and improved performance systems while keeping the same familiar Pueios environment.
-                    </p>
-                    <div>
-                      <div className="font-semibold mb-1">Pueios2 Plus includes:</div>
-                      <ul className="list-disc pl-5 space-y-0.5">
-                        {plusIncludes.map((x) => <li key={x}>{x}</li>)}
-                      </ul>
-                    </div>
-                    <div>
-                      <div className="font-semibold mb-1">Fully synchronized across browsers/devices:</div>
-                      <ul className="list-disc pl-5 space-y-0.5">
-                        {plusSync.map((x) => <li key={x}>{x}</li>)}
-                      </ul>
-                    </div>
-                    <div>
-                      <div className="font-semibold mb-1">Improved installation experience:</div>
-                      <ul className="list-disc pl-5 space-y-0.5">
-                        {plusSetup.map((x) => <li key={x}>{x}</li>)}
-                      </ul>
-                    </div>
-                    <div>
-                      <div className="font-semibold mb-1">Advanced Puei Copilot can:</div>
-                      <ul className="list-disc pl-5 space-y-0.5">
-                        {plusCopilot.map((x) => <li key={x}>{x}</li>)}
-                      </ul>
-                    </div>
-                    <div>
-                      <div className="font-semibold mb-1">Still includes core Pueios features:</div>
-                      <ul className="list-disc pl-5 space-y-0.5">
-                        {plusKeeps.map((x) => <li key={x}>{x}</li>)}
-                      </ul>
-                    </div>
-                    <p className="opacity-80">
-                      Pueios2 Plus is designed for advanced puei users who want a more complete, connected,
-                      and customizable operating system experience.
-                    </p>
-                  </div>
-                )}
               </div>
-            ))}
+            ) : (
+              <div className="aero-glass-light rounded-xl p-4 text-sm text-center opacity-70">✅ You are on the latest version of PueiOS.</div>
+            )}
           </div>
         )}
         {tab === "about" && (
