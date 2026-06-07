@@ -4160,7 +4160,7 @@ function PueiUpdaterApp({ currentUser, startUpgrade }: { currentUser: string; st
             <div className="text-[11px] opacity-60">Drag the ISO from here into the install zone.</div>
             {isoFiles.length === 0 ? (
               <div className="text-xs rounded-lg px-3 py-3" style={{ background: "rgba(255,255,255,0.08)" }}>
-                No ISO found. Go to PueiWeb, download pueios2-plus.iso, then come back here.
+                No ISO found. Go to PueiWeb, download pueios3.iso, then come back here.
               </div>
             ) : (
               <div className="space-y-2">
