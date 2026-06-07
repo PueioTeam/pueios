@@ -1269,9 +1269,10 @@ export function PueiOS() {
   })();
 
   const currentAvatar = users.find(u => u.name === currentUser)?.avatar;
-  const hasPueiOSPlusUpgrade = compareVersion("PueiOS 2+", systemVersion) > 0;
+  const hasPueiOSPlusUpgrade = compareVersion("PueiOS 3", systemVersion) > 0;
+  const nextUpgradeTarget: SystemVersion = "PueiOS 3";
   const focusedWindow = windows.filter((w) => !w.minimized).sort((a, b) => b.z - a.z)[0];
-  const customCursorHiddenForApp = focusedWindow?.appId === "web-app" && /bezosmp|google/i.test(`${focusedWindow.title} ${focusedWindow.webUrl}`);
+  const customCursorHiddenForApp = focusedWindow?.appId === "web-app" && /bezosmp/i.test(`${focusedWindow.title} ${focusedWindow.webUrl}`);
 
   return (
     <div
