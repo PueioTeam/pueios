@@ -1534,7 +1534,6 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
             ["puei://search", "✦ Puei Copilot"],
             ["puei://forum", "💬 PueiForum"],
             ["puei://mail", "✉️ PueiMail"],
-            ["puei://wallpapers", "🖼️ Puei Wallpapers"],
             ["puei://about", "ℹ️ About"],
           ].map(([u, l]) => (
             <button key={u} onClick={() => navigate(u)} className="aero-button rounded-lg p-4">{l}</button>
