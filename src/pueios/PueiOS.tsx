@@ -535,7 +535,7 @@ export function PueiOS() {
   useEffect(() => {
     const root = document.documentElement;
     const focused = windows.filter((w) => !w.minimized).sort((a, b) => b.z - a.z)[0];
-    const hiddenForWebApp = focused?.appId === "web-app" && /bezosmp|google/i.test(`${focused.title} ${focused.webUrl}`);
+    const hiddenForWebApp = focused?.appId === "web-app" && /bezosmp/i.test(`${focused.title} ${focused.webUrl}`);
     root.classList.toggle("puei-cursor", !!theme.pueiCursor && phase === "desktop" && !hiddenForWebApp);
     return () => root.classList.remove("puei-cursor");
   }, [theme.pueiCursor, phase, windows]);
