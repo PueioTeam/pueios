@@ -4291,7 +4291,7 @@ function PueiUpdaterApp({ currentUser, startUpgrade }: { currentUser: string; st
 
             {restartQueued && !isInstalling && (
               <div className="text-xs rounded px-3 py-2" style={{ background: "rgba(80,200,120,0.2)" }}>
-                Installation finished. Restarting now into PueiOS 2+...
+                Installation finished. Restarting now into PueiOS 3...
               </div>
             )}
           </div>
