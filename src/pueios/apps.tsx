@@ -213,60 +213,7 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, openWe
     ["upgrade", "⬆️ Upgrade"],
     ["about", "ℹ️ About"],
   ];
-  const plusReleaseUrl = "https://github.com/PueioTeam/pueios/releases/tag/pueios2plus";
-  const plusLatestUrl = "https://github.com/PueioTeam/pueios/releases/latest";
-  const plusIncludes = [
-    "advanced cloud synchronization",
-    "improved PueiCloud Chat",
-    "faster file restoration",
-    "enhanced Puei Copilot AI",
-    "customizable High Contrast themes",
-    "expanded personalization settings",
-    "advanced multitasking",
-    "upgraded file management",
-    "smoother animations",
-    "improved desktop rendering",
-    "enhanced security systems",
-    "cross-browser account restoration",
-    "faster PueiWeb performance",
-  ];
-  const plusSync = [
-    "files",
-    "profile pictures",
-    "Messenger chats",
-    "settings",
-    "apps",
-    "desktop layouts",
-    "themes",
-    "uploaded videos and images",
-  ];
-  const plusSetup = [
-    "extended Windows-style setup",
-    "animated installation stages",
-    "account recovery during setup",
-    "cloud restore options",
-    "upgrade preservation systems",
-  ];
-  const plusCopilot = [
-    "gathering information from multiple sources",
-    "summarizing web content",
-    "suggesting apps",
-    "helping manage files",
-    "assisting with system tasks",
-  ];
-  const plusKeeps = [
-    "dark mode",
-    "Recycle Bin",
-    "drag & drop support",
-    "Base44 app support",
-    "Pueio Numbers",
-    "Puei Mail",
-    "PueiSocial",
-    "Pueio Videos",
-    "PueiWeb",
-    "Installer",
-    "Pueio Control",
-  ];
+  // Upgrade information now refers to PueiOS 3 (interface-only update).
   return (
     <div className="flex h-full">
       <div className="w-48 p-2 border-r" style={{ background: "var(--background)" }}>
