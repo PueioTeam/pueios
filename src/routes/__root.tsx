@@ -82,8 +82,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:site", content: "@Lovable" },
       { name: "twitter:title", content: "pueios softweare" },
       { name: "twitter:description", content: "PueiOS simulates a nostalgic, interactive operating system with a glossy, retro-futuristic UI." },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/e06c6a35-5918-4405-a65c-a250ff0a78ba/id-preview-606b0f85--f6547351-485b-477b-b5ed-69cd769ca194.lovable.app-1779607897794.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/e06c6a35-5918-4405-a65c-a250ff0a78ba/id-preview-606b0f85--f6547351-485b-477b-b5ed-69cd769ca194.lovable.app-1779607897794.png" },
+      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/acbb1983-70ba-407f-95dd-86ef0819e1cc" },
+      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/acbb1983-70ba-407f-95dd-86ef0819e1cc" },
     ],
     links: [
       {
