@@ -1539,9 +1539,24 @@ export function PueiOS() {
         <button className="aero-start-orb w-10 h-10 rounded-full flex items-center justify-center mx-1 overflow-hidden"
           title="Start"
           onClick={(e) => { e.stopPropagation(); blip("click"); setStartOpen(!startOpen); setShowCalendar(false); }}>
-          <svg width="25" height="25" viewBox="0 0 64 64" aria-hidden>
-            <path d="M8 12 29 8v23H8V12Zm27-5 21-4v28H35V7ZM8 36h21v20L8 52V36Zm27 0h21v27l-21-4V36Z" fill="white" opacity="0.96" />
-            <path d="M8 12 29 8v23H8V12Zm27-5 21-4v28H35V7ZM8 36h21v20L8 52V36Zm27 0h21v27l-21-4V36Z" fill="none" stroke="rgba(0,70,150,0.45)" strokeWidth="2" />
+          <svg width="26" height="26" viewBox="0 0 64 64" aria-hidden>
+            <defs>
+              <radialGradient id="puBody" cx="35%" cy="35%" r="75%">
+                <stop offset="0%" stopColor="#ffe89a"/>
+                <stop offset="55%" stopColor="#ff8a3d"/>
+                <stop offset="100%" stopColor="#c4202b"/>
+              </radialGradient>
+            </defs>
+            <circle cx="32" cy="34" r="22" fill="url(#puBody)" stroke="rgba(0,0,0,0.55)" strokeWidth="1.5"/>
+            <path d="M32 12 V 56" stroke="rgba(0,0,0,0.6)" strokeWidth="1.6" fill="none"/>
+            <circle cx="22" cy="26" r="2.4" fill="#1a1a1a"/>
+            <circle cx="42" cy="26" r="2.4" fill="#1a1a1a"/>
+            <circle cx="20" cy="40" r="2.8" fill="#1a1a1a"/>
+            <circle cx="44" cy="40" r="2.8" fill="#1a1a1a"/>
+            <circle cx="32" cy="48" r="2.4" fill="#1a1a1a"/>
+            <ellipse cx="32" cy="14" rx="6" ry="4" fill="#1a1a1a"/>
+            <circle cx="29" cy="13.5" r="1.1" fill="#fff"/>
+            <circle cx="35" cy="13.5" r="1.1" fill="#fff"/>
           </svg>
         </button>
         {(["file-explorer", "app-store", "puei-mail", "puei-social", "pueinet", "puei-cloud-chat"] as AppId[]).map((id) => (
