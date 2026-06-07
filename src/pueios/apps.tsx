@@ -4089,7 +4089,7 @@ function PueiUpdaterApp({ currentUser, startUpgrade }: { currentUser: string; st
     f.type === "iso" &&
     (!f.owner || f.owner === currentUser) &&
     f.folder === SYS_FOLDER_DOWNLOADS &&
-    ["pueios2-plus.iso", "pueios2plus.iso"].includes(f.name.trim().toLowerCase())
+    ["pueios3.iso", "pueios-3.iso"].includes(f.name.trim().toLowerCase())
   );
   const mountedIso = isoFiles.find((file) => file.id === mountedIsoId) || null;
 
