@@ -1613,9 +1613,11 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
     "puei://updates": (
       <div className="p-6 space-y-4">
         <h2 className="text-2xl font-bold">⬆️ Puei Updates</h2>
-        <p className="text-sm opacity-75">Update flow: 1) Download ISO into Files, 2) Install Puei Updater from App Store, 3) Open Puei Updater and drag the ISO into it, 4) wait for restart into PueiOS 2+.</p>
+        <p className="text-sm opacity-75">Update flow: 1) Download pueios3.iso into Files, 2) Install Puei Updater from App Store, 3) Open Puei Updater and drag the ISO into it, 4) wait for restart into PueiOS 3.</p>
 
         <div className="aero-glass-light rounded-xl p-4 space-y-3 max-w-xl">
+          <div className="text-sm font-semibold">Latest: PueiOS 3</div>
+          <div className="text-xs opacity-75">PueiOS 3 reimagines the interface — new start menu, taskbar, window chrome and theme. No apps are added or removed; your files, accounts and settings are preserved.</div>
           <div className="text-sm">
             ISO status: {isoFile ? <span className="font-semibold text-green-500">Downloaded ({isoFile.name})</span> : <span className="font-semibold text-amber-500">Not downloaded</span>}
           </div>
@@ -1623,7 +1625,7 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
             Puei Updater status: {updaterInstalled ? <span className="font-semibold text-green-500">Installed</span> : <span className="font-semibold text-amber-500">Not installed from App Store</span>}
           </div>
           <div className="flex gap-2 flex-wrap">
-            <button className="aero-button rounded px-3 py-1.5 text-xs" onClick={downloadPlusIso}>⬇ Download pueios2-plus.iso to Files</button>
+            <button className="aero-button rounded px-3 py-1.5 text-xs" onClick={downloadPlusIso}>⬇ Download pueios3.iso to Files</button>
           </div>
 
           {isoFile && (
@@ -1640,6 +1642,11 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
               Puei Updater is installed. Open it from your desktop and drag the ISO from its Downloads list into the install zone.
             </div>
           )}
+        </div>
+
+        <div className="aero-glass-light rounded-xl p-4 max-w-xl text-xs space-y-2" style={{ borderLeft: "3px solid #f59e0b" }}>
+          <div className="font-semibold text-amber-400">⚠️ End of Support Notice</div>
+          <div className="opacity-80">As of <strong>June 6, 2026</strong>, PueiOS 2 and PueiOS 2+ are end of support and will no longer be updated by the Puei Team. Devices on these versions can still upgrade directly to PueiOS 3, but downgrade ISOs (pueios2.iso, pueios2-plus.iso) are no longer published.</div>
         </div>
       </div>
     ),
