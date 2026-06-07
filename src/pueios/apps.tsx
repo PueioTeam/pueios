@@ -3493,7 +3493,7 @@ function AppStoreApp({ installWebApp, openApp, openWebApp, systemVersion, addNat
     { name: "PueiCloudChat", icon: "💬", desc: "Chat by PueiNumber — cross-device, real-time.",           appId: "puei-cloud-chat", preInstalled: true },
     { name: "PueiBoard",     icon: "📌", desc: "Pinterest-style boards where Pueis post Gallery images.", appId: "puei-board", preInstalled: true },
     { name: "PueiWeb",        icon: "🌐", desc: "System browser + AI search engine.",           appId: "pueinet",        preInstalled: true },
-    { name: "Google Chrome",  icon: "🌐", desc: "Install Google Chrome as a fast browser shortcut from App Store.", webUrl: "https://www.google.com/", desktopLabel: "Google Chrome", preInstalled: false, by: "Google" },
+    // Google Chrome removed — browse the web inside PueiWeb instead.
     { name: "BezoSMP", icon: bezosmpIcon.url, desc: "Social network — share posts, follow people, like Bluesky or X.", webUrl: "https://bezosmp.lovable.app", desktopLabel: "BezoSMP", preInstalled: false, by: "Bazicioschi" },
     { name: "Puei Paint 2",   icon: "🎨", desc: "Paint and save images as wallpapers.",         appId: "puei-paint",     preInstalled: true },
     { name: "Settings",       icon: "⚙️", desc: "Personalize, dark mode, accessibility.",       appId: "settings",       preInstalled: true },
