@@ -4249,7 +4249,7 @@ function PueiUpdaterApp({ currentUser, startUpgrade }: { currentUser: string; st
                 <input
                   value={codeInput}
                   onChange={(e) => { setCodeInput(e.target.value.toUpperCase()); setCodeError(null); }}
-                  placeholder="P2PL-7XK9-A4PN-Q82M"
+                  placeholder="P3PL-7XK9-A4PN-Q82M"
                   className="w-full rounded px-3 py-2 text-sm font-mono outline-none"
                   style={{ background: "white", color: "#111", border: "1px solid var(--border)" }}
                 />
