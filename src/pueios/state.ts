@@ -1,6 +1,6 @@
 // PueiOS 2 state types and helpers
-export type SystemVersion = "PueiOS 2" | "PueiOS 2+";
-export const SYSTEM_ORDER: SystemVersion[] = ["PueiOS 2", "PueiOS 2+"];
+export type SystemVersion = "PueiOS 2" | "PueiOS 2+" | "PueiOS 3";
+export const SYSTEM_ORDER: SystemVersion[] = ["PueiOS 2", "PueiOS 2+", "PueiOS 3"];
 export function compareVersion(a: SystemVersion, b: SystemVersion): number {
   return SYSTEM_ORDER.indexOf(a) - SYSTEM_ORDER.indexOf(b);
 }
