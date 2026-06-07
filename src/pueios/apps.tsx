@@ -4105,7 +4105,7 @@ function PueiUpdaterApp({ currentUser, startUpgrade }: { currentUser: string; st
     const iso = file || mountedIso;
     if (!iso) {
       blip("error");
-      alert("No ISO available. Download pueios2-plus.iso from PueiWeb → Updates first.");
+      alert("No ISO available. Download pueios3.iso from PueiWeb → Updates first.");
       return;
     }
     if (!file) {
@@ -4118,7 +4118,7 @@ function PueiUpdaterApp({ currentUser, startUpgrade }: { currentUser: string; st
       blip("error");
       return;
     }
-    if (!confirm(`Install PueiOS 2+ from ${iso.name}? Your device will restart when installation finishes.`)) return;
+    if (!confirm(`Install PueiOS 3 from ${iso.name}? Your device will restart when installation finishes.`)) return;
     setCodeError(null);
     setInstallStopped(false);
     setRestartQueued(false);
