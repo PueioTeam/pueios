@@ -413,13 +413,19 @@ export function PueiOS() {
           glassSaturation: 195,
           aeroGlow: 68,
         }));
-        setIcons((cur) => {
-          const next = [...cur];
-          if (!next.some((i) => i.appId === "puei-board" && !i.fileId && !i.webUrl)) next.push({ id: "native-puei-board", label: "PueiBoard", appId: "puei-board", iconEmoji: "📌" });
-          if (!next.some((i) => i.appId === "puei-mail" && !i.fileId && !i.webUrl)) next.push({ id: "native-puei-mail", label: "PueiMail", appId: "puei-mail", iconEmoji: "✉️" });
-          if (!next.some((i) => i.appId === "web-app" && i.webUrl === "puei://wallpapers")) next.push({ id: "web-plus-wallpapers", label: "Puei Wallpapers+", appId: "web-app", webUrl: "puei://wallpapers", iconEmoji: "🖼️" });
-          return next;
-        });
+      } else if (upgradeTarget === "PueiOS 3") {
+        // PueiOS 3 changes interface only — no new apps installed.
+        setThemeState((prev) => ({
+          ...prev,
+          accentH: 280,
+          transparency: true,
+          fullWindowTransparency: true,
+          win7Aero: false,
+          glassOpacity: 60,
+          glassSaturation: 210,
+          aeroGlow: 78,
+          dark: true,
+        }));
       }
       setPhase("boot");
       setBootProgress(0);
