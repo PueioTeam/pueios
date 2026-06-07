@@ -1491,14 +1491,14 @@ export function PueiOS() {
             ))}
             {hasPueiOSPlusUpgrade && (
               <button onClick={() => {
-                if (!confirm("Start upgrade to PueiOS 2+ now?")) return;
+                if (!confirm(`Start upgrade to ${nextUpgradeTarget} now?`)) return;
                 setStartOpen(false);
-                startSystemUpgrade("PueiOS 2+");
+                startSystemUpgrade(nextUpgradeTarget);
               }}
                 className="flex items-center gap-2 px-3 py-2 rounded text-sm text-left"
-                style={{ background: "linear-gradient(135deg, rgba(90,160,255,0.22), rgba(30,90,220,0.30))", border: "1px solid rgba(60,120,240,0.35)" }}>
+                style={{ background: "linear-gradient(135deg, rgba(180,120,255,0.22), rgba(90,40,200,0.30))", border: "1px solid rgba(140,90,240,0.35)" }}>
                 <div className="w-[26px] h-[26px] rounded flex items-center justify-center text-lg" style={{ background: "rgba(255,255,255,0.55)" }}>⬆️</div>
-                <span>Update to PueiOS 2+</span>
+                <span>Update to {nextUpgradeTarget}</span>
               </button>
             )}
           </div>
