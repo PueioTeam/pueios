@@ -4224,7 +4224,7 @@ function PueiUpdaterApp({ currentUser, startUpgrade }: { currentUser: string; st
               }}>
               <div className="text-sm font-semibold">{mountedIso ? `${mountedIso.name} mounted` : "Drop ISO here to prepare installation"}</div>
               <div className="text-xs opacity-65 mt-1">
-                {mountedIso ? "Puei Updater is ready to install PueiOS 2+ from this ISO." : "Only pueios2-plus.iso from Files/Downloads is accepted."}
+                {mountedIso ? "Puei Updater is ready to install PueiOS 3 from this ISO." : "Only pueios3.iso from Files/Downloads is accepted."}
               </div>
               {mountedIso && (
                 <div className="mt-3 inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs" style={{ background: "rgba(0,0,0,0.18)" }}>
