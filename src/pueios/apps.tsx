@@ -1701,8 +1701,8 @@ function PueiMailApp({ currentUser, users }: { currentUser: string; users: User[
 
   const me = users.find((u) => u.name === currentUser);
   const myPueiNum = me?.pueiNumber || "";
-  const myMailKey = currentUser;
-  const myMailAliases = Array.from(new Set([currentUser, myPueiNum, mailAddressFor(currentUser)].filter(Boolean)));
+  const myMailKey = myPueiNum || currentUser;
+  const myMailAliases = Array.from(new Set([myPueiNum].filter(Boolean)));
 
   // Cloud sync: pull full mailbox snapshot for this user (cross-device sync)
   useEffect(() => {
