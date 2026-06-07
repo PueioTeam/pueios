@@ -1570,16 +1570,16 @@ export function PueiOS() {
         {hasPueiOSPlusUpgrade && (
           <button
             className="taskbar-item h-9 px-3 rounded flex items-center gap-2 text-xs"
-            title="Update to PueiOS 2+"
-            style={{ background: "linear-gradient(180deg, rgba(120,190,255,0.95), rgba(60,120,240,0.9))", color: "white", border: "1px solid rgba(255,255,255,0.35)" }}
+            title={`Update to ${nextUpgradeTarget}`}
+            style={{ background: "linear-gradient(180deg, rgba(190,140,255,0.95), rgba(110,60,220,0.9))", color: "white", border: "1px solid rgba(255,255,255,0.35)" }}
             onClick={(e) => {
               e.stopPropagation();
-              if (!confirm("Start upgrade to PueiOS 2+ now?")) return;
+              if (!confirm(`Start upgrade to ${nextUpgradeTarget} now?`)) return;
               setStartOpen(false);
-              startSystemUpgrade("PueiOS 2+");
+              startSystemUpgrade(nextUpgradeTarget);
             }}>
             <span>⬆️</span>
-            <span className="font-semibold">PueiOS 2+</span>
+            <span className="font-semibold">{nextUpgradeTarget}</span>
           </button>
         )}
         <div className="w-px h-7 bg-white/20 mx-1" />
