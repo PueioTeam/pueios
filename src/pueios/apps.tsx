@@ -1845,27 +1845,28 @@ function PueiMailApp({ currentUser, users }: { currentUser: string; users: User[
   };
 
   const doSend = () => {
-    const raw = draft.to.trim();
-    if (!raw) { setSendStatus("Enter a recipient username."); return; }
+    const raw = draft.to.trim().replace(/\s/g, "");
+    if (!raw) { setSendStatus("Enter a recipient Puei Number."); return; }
+    // Accept 9 digits or NNN-NNN-NNN format
+    const cleaned = raw.replace(/-/g, "");
+    if (!/^\d{9}$/.test(cleaned)) { setSendStatus("PueiMail works with Puei Numbers only (e.g. 123-456-789)."); return; }
+    const recipientNumber = `${cleaned.slice(0,3)}-${cleaned.slice(3,6)}-${cleaned.slice(6,9)}`;
+    if (recipientNumber === myPueiNum) { setSendStatus("That's your own Puei Number."); return; }
     if (!draft.subject.trim()) { setSendStatus("Enter a subject."); return; }
-    // Resolve to a name for local delivery; also get Puei Number for server delivery
-    const emailUser = raw.match(/^([a-z0-9._-]+)@pueimail\.puei$/i)?.[1];
-    const resolved = resolveMailRecipient(raw, users) ?? emailUser ?? (/^[a-z0-9._-]{1,40}$/i.test(raw) ? raw : null);
-    if (!resolved) { setSendStatus("Use a username, Pueio Number, or @pueimail address."); return; }
-    // Determine server inbox key: prefer Puei Number of recipient
-    const recipientUser = users.find((u) => u.name === resolved);
-    const toKey = recipientUser?.name || resolved;
-    const aliases = Array.from(new Set([recipientUser?.name, recipientUser?.pueiNumber, mailAddressFor(resolved), raw].filter(Boolean) as string[]));
+    // Resolve recipient display name by Puei Number (local users or directory)
+    const recipientUser = users.find((u) => u.pueiNumber === recipientNumber);
+    const dirHit = lookupPueiNumber(recipientNumber);
+    const resolvedName = recipientUser?.name || dirHit?.name || recipientNumber;
+    const aliases = [recipientNumber];
     const messageId = `mail-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
-    sendMail(currentUser, resolved, draft.subject.trim(), draft.body, users, pending, messageId);
+    sendMail(currentUser, resolvedName, draft.subject.trim(), draft.body, users, pending, messageId);
     setMsgs(loadMail(currentUser));
-    // Deliver to web/cloud inbox by username and aliases so mail sent in PueiWeb appears in the Mail app too.
+    // Deliver to cloud inbox keyed by Puei Number only
     fetch("/api/mail", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: messageId + "-i", from: currentUser, to: toKey, aliases, subject: draft.subject.trim(), body: draft.body, attachments: pending }),
+      body: JSON.stringify({ id: messageId + "-i", from: myPueiNum || currentUser, to: recipientNumber, aliases, subject: draft.subject.trim(), body: draft.body, attachments: pending }),
     }).catch(() => {});
-    // Drop draft if any
     if (draftId) {
       const updated = loadMail(currentUser).filter((m) => m.id !== draftId);
       setMsgs(updated); saveMail(updated);
