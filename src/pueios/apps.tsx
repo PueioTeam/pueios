@@ -1439,26 +1439,26 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
     f.type === "iso" &&
     (!f.owner || f.owner === currentUser) &&
     f.folder === SYS_FOLDER_DOWNLOADS &&
-    ["pueios2-plus.iso", "pueios2plus.iso"].includes(f.name.trim().toLowerCase())
+    ["pueios3.iso", "pueios-3.iso"].includes(f.name.trim().toLowerCase())
   );
   const updaterInstalled = icons.some((i) => i.appId === "web-app" && i.webUrl === "puei://updates" && i.label.trim().toLowerCase() === "puei updater");
 
   const generateInstallCode = () => {
     const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
     const block = () => Array.from({ length: 4 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
-    return `P2PL-${block()}-${block()}-${block()}`;
+    return `P3PL-${block()}-${block()}-${block()}`;
   };
 
   const downloadPlusIso = () => {
     if (isoFile) {
       blip("click");
-      alert(`Pueios2 Plus ISO is already in Files/Downloads.\nInstallation code: ${isoFile.content}`);
+      alert(`pueios3.iso is already in Files/Downloads.\nInstallation code: ${isoFile.content}`);
       return;
     }
     const code = generateInstallCode();
     upsertFile({
       id: `iso-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`,
-      name: "pueios2-plus.iso",
+      name: "pueios3.iso",
       type: "iso",
       content: code,
       updatedAt: Date.now(),
@@ -1467,7 +1467,7 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
     });
     setIsoRefresh((v) => v + 1);
     blip("notify");
-    alert(`pueios2-plus.iso downloaded.\n\nYour installation code is:\n${code}\n\nDrag the ISO into Puei Updater and enter this code to install.`);
+    alert(`pueios3.iso downloaded.\n\nYour installation code is:\n${code}\n\nDrag the ISO into Puei Updater and enter this code to install.`);
   };
 
   const makeWaveWallpaper = (name: string, left: string, right: string, glow: string, stars = false) => {
