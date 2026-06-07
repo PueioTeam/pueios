@@ -4078,7 +4078,7 @@ function PueiUpdaterApp({ currentUser, startUpgrade }: { currentUser: string; st
         blip("notify");
         restartTimer.current = window.setTimeout(() => {
           blip("start");
-          startUpgrade("PueiOS 2+");
+          startUpgrade("PueiOS 3");
         }, 900);
       }
     }, 250);
