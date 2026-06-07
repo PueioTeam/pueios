@@ -4264,7 +4264,7 @@ function PueiUpdaterApp({ currentUser, startUpgrade }: { currentUser: string; st
               <button className="aero-button rounded px-3 py-1.5 text-xs" disabled={!mountedIso || isInstalling || restartQueued}
                 style={{ opacity: (!mountedIso || isInstalling || restartQueued) ? 0.5 : 1 }}
                 onClick={() => beginInstall()}>
-                Install PueiOS 2+
+                Install PueiOS 3
               </button>
               <button className="aero-button rounded px-3 py-1.5 text-xs" disabled={!isInstalling}
                 style={{ opacity: isInstalling ? 1 : 0.5, color: "#fca5a5" }}
