@@ -1072,9 +1072,8 @@ export function PueiOS() {
               ))}
               {!locked && (
                 <button onClick={() => { setCreating(true); setPwError(""); }}
-                  className="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-dashed border-white/30 hover:border-white/60">
-                  <div className="w-20 h-20 rounded-xl flex items-center justify-center text-4xl text-white/70">＋</div>
-                  <div className="text-white/80 text-sm font-medium">New account</div>
+                  className="flex flex-col items-center justify-center p-4 rounded-xl text-white/70 hover:text-white/90 text-sm font-medium hover:underline">
+                  + Add account
                 </button>
               )}
             </div>
