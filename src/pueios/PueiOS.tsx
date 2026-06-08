@@ -1067,12 +1067,13 @@ export function PueiOS() {
                       ? <img src={u.avatar} alt="" className="w-full h-full object-cover" />
                       : u.avatar}
                   </div>
-                  <div className="text-white text-sm font-medium">{u.name}</div>
+                  <div className="text-sm font-medium" style={{ color: "rgba(220,230,255,0.9)" }}>{u.name}</div>
                 </button>
               ))}
               {!locked && (
                 <button onClick={() => { setCreating(true); setPwError(""); }}
-                  className="flex flex-col items-center justify-center p-4 rounded-xl text-white/70 hover:text-white/90 text-sm font-medium hover:underline">
+                  className="flex flex-col items-center justify-center p-4 rounded-xl text-sm font-medium hover:underline"
+                  style={{ color: "rgba(180,200,240,0.85)" }}>
                   + Add account
                 </button>
               )}
@@ -1101,7 +1102,8 @@ export function PueiOS() {
                 <button className="aero-button rounded px-3 py-1 text-sm" onClick={() => setPhase("recovery")}>Recovery</button>
               </div>
               {!locked && users.length > 0 && (
-                <button className="text-xs text-white/60 underline hover:text-white/90 mt-2 w-full text-center block"
+                <button className="text-xs underline mt-2 w-full text-center block"
+                  style={{ color: "var(--muted-foreground)" }}
                   onClick={() => { setSwitching(true); setSwitchName(""); setSwitchPw(""); setSwitchErr(""); }}>
                   Switch to a different account
                 </button>
@@ -1351,8 +1353,8 @@ export function PueiOS() {
 
       {/* Start menu */}
       {startOpen && (
-        <div className="fixed bottom-12 left-2 rounded-xl w-[440px] z-[9000] overflow-hidden border border-slate-300/80 shadow-2xl"
-          style={{ animation: "fade-scale 0.18s ease-out", background: "linear-gradient(180deg, #f8fbff 0%, #eef4fb 100%)" }} onMouseDown={(e) => e.stopPropagation()}>
+        <div className="fixed bottom-12 left-2 rounded-xl w-[440px] z-[9000] overflow-hidden shadow-2xl"
+          style={{ animation: "fade-scale 0.18s ease-out", background: "var(--background)", border: "1px solid var(--border)" }} onMouseDown={(e) => e.stopPropagation()}>
           <div className="aero-titlebar px-4 py-2 flex items-center gap-2">
             <div className="w-10 h-10 rounded-full flex items-center justify-center text-xl overflow-hidden"
               style={{ background: "var(--gradient-aero)" }}>
@@ -1368,7 +1370,10 @@ export function PueiOS() {
               "settings" as const, "about" as const,
             ])].map((id) => (
               <button key={id} onClick={() => { openApp(id); setStartOpen(false); }}
-                className="flex items-center gap-2 px-3 py-2 rounded hover:bg-white/40 text-sm text-left">
+                className="flex items-center gap-2 px-3 py-2 rounded text-sm text-left"
+                style={{ color: "var(--foreground)" }}
+                onMouseEnter={e => (e.currentTarget.style.background = "var(--glass-strong)")}
+                onMouseLeave={e => (e.currentTarget.style.background = "")}>
                 {appIcon(id, 26)}<span>{APP_TITLES[id]}</span>
               </button>
             ))}
