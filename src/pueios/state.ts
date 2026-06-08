@@ -118,6 +118,7 @@ export type AppId =
   | "puei-board"
   | "pueinet"
   | "puei-cloud-chat"
+  | "puei-mail"
   | "file-explorer"
   | "settings"
   | "about"
@@ -290,6 +291,7 @@ export const defaultIcons: DesktopIcon[] = [
   { id: "i-paint", label: "Puei Paint 2", appId: "puei-paint" },
   { id: "i-net", label: "PueiWeb", appId: "pueinet" },
   { id: "i-msg", label: "PueiCloudChat", appId: "puei-cloud-chat" },
+  { id: "i-mail", label: "Puei Mail", appId: "puei-mail" },
   { id: "i-set", label: "Settings", appId: "settings" },
   { id: "i-recycle", label: "Recycle Bin", appId: "recycle-bin" },
   { id: "i-note", label: "Notepad", appId: "notepad" },

@@ -275,6 +275,10 @@ export function PueiOS() {
     if (!loadedIcons.some((i: any) => i.appId === "puei-cloud-chat" && !i.fileId && !i.webUrl)) {
       loadedIcons = [...loadedIcons, { id: "i-msg", label: "PueiCloudChat", appId: "puei-cloud-chat" as const }];
     }
+    // Add Puei Mail if missing
+    if (!loadedIcons.some((i: any) => i.appId === "puei-mail" && !i.fileId && !i.webUrl)) {
+      loadedIcons = [...loadedIcons, { id: "i-mail", label: "Puei Mail", appId: "puei-mail" as const }];
+    }
     setIcons(loadedIcons);
     if (!s.installed) { setPhase("install"); return; }
     if (s.lastUser && s.remember) { setLoginUser(s.lastUser); setRemember(true); }
