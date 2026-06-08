@@ -1489,7 +1489,6 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
             ["puei://updates", "⬆️ Puei Updates"],
             ["puei://search", "✨ Puei Copilot"],
             ["puei://forum", "💼 PueiForum"],
-            ["puei://mail", "✉️ PueiMail"],
             ["puei://wallpapers", "🖼️ Puei Wallpapers"],
             ["puei://about", "ℹ️ About"],
           ].map(([u, l]) => (
@@ -1623,17 +1622,20 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
   let content: React.ReactNode;
   if (navUrl === "puei://search") {
     content = <PueiCopilotPage />;
-  } else if (navUrl === "puei://mail") {
-    content = null; // rendered below as PueiMailApp
   } else if (navUrl.startsWith("puei://")) {
     content = fakeSites[navUrl] || <div className="p-6">404 — page not found in this universe.</div>;
   } else {
-    // Allow all https:// URLs
     let loadUrl = navUrl.trim();
     if (!/^https?:\/\//i.test(loadUrl)) loadUrl = "https://" + loadUrl;
+    let hostname = "";
+    try { hostname = new URL(loadUrl).hostname; } catch {}
     content = (
-      <div className="flex flex-col h-full relative" className="panel-light">
-        <iframe src={loadUrl} title={loadUrl} className="w-full flex-1 border-0" />
+      <div className="flex flex-col items-center justify-center h-full gap-4 text-center px-8">
+        <div className="text-4xl">🌍</div>
+        <div className="font-semibold text-base">{hostname}</div>
+        <div className="text-sm opacity-70">Most websites block embedding inside other apps.<br />Open it in your browser instead.</div>
+        <button className="aero-button rounded-lg px-5 py-2 text-sm font-semibold"
+          onClick={() => window.open(loadUrl, "_blank")}>Open {hostname} ↗</button>
       </div>
     );
   }
@@ -1664,9 +1666,7 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
 
       </div>
       <div className="flex-1 overflow-auto">
-        {navUrl === "puei://mail"
-          ? <PueiMailApp currentUser={currentUser} users={users} />
-          : content}
+        {content}
       </div>
     </div>
   );
@@ -3381,10 +3381,10 @@ function AppStoreApp({ installWebApp, openApp, openWebApp, systemVersion, addNat
   const official: StoreApp[] = [
     { name: "Puei Updater",   icon: "⬆️", desc: "Required for installing ISO system updates.",           webUrl: "puei://updates", desktopLabel: "Puei Updater", preInstalled: false },
     { name: "PueiSocial",     icon: "📢", desc: "The official PueiOS social network.",          appId: "puei-social",    preInstalled: true },
-    { name: "PueiCloudChat", icon: "💼", desc: "Chat by PueiNumber — cross-device, real-time.",           appId: "puei-cloud-chat", preInstalled: true },
-    { name: "PueiBoard",     icon: "📌", desc: "Pinterest-style boards where Pueis post Gallery images.", appId: "puei-board", preInstalled: true },
+    { name: "PueiCloudChat",  icon: "💬", desc: "Chat by PueiNumber — cross-device, real-time.", appId: "puei-cloud-chat", preInstalled: true },
+    { name: "Puei Mail",      icon: "✉️", desc: "Send and receive mail with other Puei users.",  appId: "puei-mail",      preInstalled: true },
+    { name: "PueiBoard",      icon: "📌", desc: "Pinterest-style boards where Pueis post Gallery images.", appId: "puei-board", preInstalled: true },
     { name: "PueiWeb",        icon: "🌍", desc: "System browser + AI search engine.",           appId: "pueinet",        preInstalled: true },
-    { name: "Google Chrome",  icon: "🌍", desc: "Install Google Chrome as a fast browser shortcut from App Store.", webUrl: "https://www.google.com/", desktopLabel: "Google Chrome", preInstalled: false },
     { name: "Puei Paint 2",   icon: "🎨", desc: "Paint and save images as wallpapers.",         appId: "puei-paint",     preInstalled: true },
     { name: "Settings",       icon: "⚙️", desc: "Personalize, dark mode, accessibility.",       appId: "settings",       preInstalled: true },
     { name: "Computer",       icon: "🖥️", desc: "File system explorer.",                        appId: "file-explorer",  preInstalled: true },
@@ -3877,19 +3877,29 @@ function WebAppFrame({ url, currentUser, startUpgrade }: { url: string; currentU
   if (url === "puei://updates") {
     return <PueiUpdaterApp currentUser={currentUser} startUpgrade={startUpgrade} />;
   }
+  const isExternal = url.startsWith("http://") || url.startsWith("https://");
   return (
     <div className="flex flex-col h-full">
       <div className="aero-titlebar text-xs px-3 py-1 flex items-center gap-2">
         <span className="opacity-60">🔗</span>
         <span className="truncate flex-1">{url}</span>
+        {isExternal && (
+          <button className="aero-button rounded px-2 py-0.5 text-xs shrink-0"
+            onClick={() => window.open(url, "_blank")}>Open in browser ↗</button>
+        )}
       </div>
-      <div className="flex-1 relative" className="panel-light">
-        <iframe src={url} title={url} className="w-full h-full border-0"
-          onError={() => setFailed(true)} />
-        {failed && (
-          <div className="absolute inset-0 flex items-center justify-center text-sm opacity-70 bg-white">
-            This site refused to load in a frame.
+      <div className="flex-1 relative panel-light">
+        {failed || isExternal ? (
+          <div className="flex flex-col items-center justify-center h-full gap-4 text-center px-8">
+            <div className="text-4xl">🌍</div>
+            <div className="font-semibold text-base">{new URL(url.startsWith("http") ? url : "https://" + url).hostname}</div>
+            <div className="text-sm opacity-70">This site can't be shown inside PueiOS because it blocks embedding.<br />Open it in your browser instead.</div>
+            <button className="aero-button rounded-lg px-5 py-2 text-sm font-semibold"
+              onClick={() => window.open(url, "_blank")}>Open {new URL(url.startsWith("http") ? url : "https://" + url).hostname} ↗</button>
           </div>
+        ) : (
+          <iframe src={url} title={url} className="w-full h-full border-0"
+            onError={() => setFailed(true)} />
         )}
       </div>
     </div>
