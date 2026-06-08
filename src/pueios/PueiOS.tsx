@@ -1312,9 +1312,12 @@ export function PueiOS() {
               signOut={() => { blip("shutdown"); setWindows([]); setCurrentUser(""); setPhase("login"); setPwInput(""); }}
               lockScreen={() => { blip("click"); setLocked(true); setPwInput(""); }}
               deleteAccount={(name) => {
-                setUsers((prev) => prev.filter((u) => u.name !== name));
+                const nextUsers = users.filter((u) => u.name !== name);
+                setUsers(nextUsers);
+                saveState({ installed, systemVersion, theme, icons, users: nextUsers, lastUser: "", remember: false });
                 setWindows([]);
                 setCurrentUser("");
+                setLoginUser("");
                 setPhase("login");
                 setPwInput("");
               }}
