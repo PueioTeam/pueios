@@ -1714,7 +1714,7 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
           </div>
         ))}
         <button className="aero-button rounded px-2 py-0.5 text-xs ml-1"
-          onClick={() => { const id = Date.now(); setTabs([...tabs, { id, title: "New Tab", url: "puei://home" }]); setActive(id); navigate("puei://home"); }}>+</button>
+          onClick={() => { const id = Date.now(); setTabs((t) => [...t, { id, title: "Home", url: "puei://home" }]); setActive(id); setNavUrl("puei://home"); setUrlBar("puei://home"); }}>+</button>
       </div>
       <div className="aero-titlebar flex items-center gap-2 px-2 py-1">
         <button className="aero-button rounded px-2 py-0.5 text-xs" onClick={() => navigate("puei://home")}>🏠</button>
