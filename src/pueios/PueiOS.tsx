@@ -266,7 +266,9 @@ export function PueiOS() {
   useEffect(() => {
     const s = loadState();
     setThemeState(s.theme); setUsers(s.users);
-    setInstalled(s.installed); setSystemVersion(s.systemVersion);
+    setInstalled(s.installed);
+    // PueiOS 2 is EOL — auto-upgrade stored version to 2+ so old installs aren't stuck
+    setSystemVersion(s.systemVersion === "PueiOS 2" ? "PueiOS 2+" : s.systemVersion);
     // Migration: clean up stale icons and ensure PueiCloudChat always exists
     let loadedIcons: DesktopIcon[] = s.icons?.length ? s.icons : defaultIcons;
     // Remove any stale puei-messenger icons

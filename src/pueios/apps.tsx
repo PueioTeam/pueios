@@ -507,6 +507,11 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, curren
             <h2 className="text-xl font-semibold">⬆️ System Upgrade</h2>
             <p className="text-sm opacity-70">Upgrade PueiOS to a newer version. Your files, accounts, messages, and settings are preserved — just like upgrading from Windows XP to Vista to 7.</p>
             <div className="text-xs opacity-60 mb-2">Current version: <strong>{systemVersion}</strong></div>
+            {(systemVersion === "PueiOS 2" || systemVersion === "PueiOS 2+") && (
+              <div className="rounded-xl p-3 text-sm" style={{ background: "rgba(220,50,50,0.12)", border: "1px solid rgba(220,50,50,0.35)", color: "var(--foreground)" }}>
+                ⚠️ <strong>As of June 6th, PueiOS 2 is no longer supported.</strong> Security updates and new features are only available on PueiOS 3.
+              </div>
+            )}
             {SYSTEM_ORDER.filter((v) => compareVersion(v, systemVersion) > 0).length === 0 ? (
               <div className="aero-glass-light rounded-xl p-4 text-sm text-center opacity-70">✔ You are on the latest version of PueiOS.</div>
             ) : SYSTEM_ORDER.filter((v) => compareVersion(v, systemVersion) > 0).map((v) => (
@@ -3907,6 +3912,7 @@ function WebAppFrame({ url, currentUser, startUpgrade }: { url: string; currentU
 }
 
 function PueiUpdaterApp({ currentUser, startUpgrade }: { currentUser: string; startUpgrade: (target: SystemVersion) => void }) {
+  const [eolMsg, setEolMsg] = useState<string | null>(null);
   const [filesVersion, setFilesVersion] = useState(0);
   const [draggingIsoId, setDraggingIsoId] = useState<string | null>(null);
   const [dropActive, setDropActive] = useState(false);
@@ -3996,6 +4002,12 @@ function PueiUpdaterApp({ currentUser, startUpgrade }: { currentUser: string; st
     blip("click");
   };
 
+  const versions: { v: SystemVersion; desc: string; eol?: boolean }[] = [
+    { v: "PueiOS 2",  desc: "The original PueiOS 2 release.", eol: true },
+    { v: "PueiOS 2+", desc: "Advanced edition with stronger sync and AI systems.", eol: true },
+    { v: "PueiOS 3",  desc: "Major release: redesigned shell, new AI assistant, PueiNet 3.0." },
+  ];
+
   return (
     <div className="flex flex-col h-full">
       <div className="aero-titlebar text-xs px-3 py-1 flex items-center gap-2">
@@ -4005,7 +4017,42 @@ function PueiUpdaterApp({ currentUser, startUpgrade }: { currentUser: string; st
       <div className="flex-1 overflow-auto p-5 space-y-4">
         <div>
           <h2 className="text-2xl font-bold">Puei Updater</h2>
-          <p className="text-sm opacity-70 mt-1">Installation is only available here. Download the ISO in Files first, then drag it into the installer zone below.</p>
+          <p className="text-sm opacity-70 mt-1">Select a version to install. PueiOS 2 and 2+ are no longer supported as of June 6th.</p>
+        </div>
+
+        {/* Version list */}
+        <div className="space-y-2">
+          {versions.map(({ v, desc, eol }) => (
+            <div key={v} className="aero-glass-light rounded-xl p-4 flex items-center justify-between gap-4">
+              <div>
+                <div className="font-semibold flex items-center gap-2">
+                  {v}
+                  {eol && <span className="text-[10px] rounded px-1.5 py-0.5 font-normal" style={{ background: "rgba(220,50,50,0.2)", color: "#f87171" }}>End of Life</span>}
+                </div>
+                <div className="text-xs opacity-70 mt-0.5">{desc}</div>
+              </div>
+              <button
+                className="aero-button rounded-lg px-4 py-2 text-sm flex-shrink-0"
+                onClick={() => {
+                  if (eol) { setEolMsg(`As of June 6th, ${v} is no longer supported. Please install PueiOS 3 instead.`); return; }
+                  setEolMsg(null);
+                  startUpgrade(v);
+                }}>
+                {eol ? "Info" : "Install →"}
+              </button>
+            </div>
+          ))}
+        </div>
+
+        {eolMsg && (
+          <div className="rounded-xl p-4 text-sm" style={{ background: "rgba(220,50,50,0.12)", border: "1px solid rgba(220,50,50,0.4)" }}>
+            ⚠️ {eolMsg}
+          </div>
+        )}
+
+        <div className="border-t pt-4" style={{ borderColor: "var(--border)" }}>
+          <h3 className="font-semibold mb-1 text-sm">Install from ISO</h3>
+          <p className="text-sm opacity-70 mt-1">Download the ISO in Files first, then drag it into the installer zone below.</p>
         </div>
 
         <div className="grid grid-cols-[minmax(0,240px)_minmax(0,1fr)] gap-4">
