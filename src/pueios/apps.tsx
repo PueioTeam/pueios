@@ -4051,6 +4051,11 @@ function PueiUpdaterApp({ currentUser, startUpgrade }: { currentUser: string; st
       alert("Drag an ISO into the installer area first.");
       return;
     }
+    if (mountedVersion !== "PueiOS 3") {
+      blip("error");
+      alert(`As of June 6th, ${mountedVersion} is no longer supported and cannot be installed. Please download pueios3.iso from puei://updates instead.`);
+      return;
+    }
     if (!confirm(`Install ${mountedVersion} from ${mountedIso.name}? Your device will restart when installation finishes.`)) return;
     setInstallStopped(false);
     setRestartQueued(false);

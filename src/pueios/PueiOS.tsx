@@ -1093,7 +1093,17 @@ export function PueiOS() {
                     className="input-field" />
                 </div>
               ) : (
-                <div className="text-sm font-medium mb-2">{loginUser || "Select an account"}</div>
+                <div className="flex items-center gap-3 mb-3">
+                  {activeUser && (
+                    <div className="w-12 h-12 rounded-xl flex items-center justify-center text-3xl overflow-hidden flex-shrink-0"
+                      style={{ background: `linear-gradient(135deg, oklch(0.7 0.18 ${activeUser.color}), oklch(0.45 0.2 ${activeUser.color}))`, boxShadow: "0 4px 12px rgba(0,0,0,0.3)" }}>
+                      {activeUser.avatar?.startsWith("data:")
+                        ? <img src={activeUser.avatar} alt="" className="w-full h-full object-cover" />
+                        : (activeUser.avatar || "👤")}
+                    </div>
+                  )}
+                  <div className="text-sm font-medium">{loginUser || "Select an account"}</div>
+                </div>
               )}
               <input type="password" value={pwInput} onChange={(e) => setPwInput(e.target.value)}
                 onKeyDown={(e) => { if (e.key === "Enter") trySignIn(); }}
