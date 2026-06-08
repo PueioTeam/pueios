@@ -1400,25 +1400,38 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
     };
   }, []);
 
-  const isoFile = loadFiles().find((f) =>
+  const allIsoFiles = loadFiles().filter((f) =>
     f.type === "text" &&
     (!f.owner || f.owner === currentUser) &&
     f.folder === SYS_FOLDER_DOWNLOADS &&
-    ["pueios2-plus.iso", "pueios2plus.iso"].includes(f.name.trim().toLowerCase())
+    ["pueios2-plus.iso", "pueios2plus.iso", "pueios3.iso"].includes(f.name.trim().toLowerCase())
   );
+  const isoFile = allIsoFiles.find((f) => ["pueios2-plus.iso", "pueios2plus.iso"].includes(f.name.trim().toLowerCase()));
+  const iso3File = allIsoFiles.find((f) => f.name.trim().toLowerCase() === "pueios3.iso");
   const updaterInstalled = icons.some((i) => i.appId === "web-app" && i.webUrl === "puei://updates" && i.label.trim().toLowerCase() === "puei updater");
 
   const downloadPlusIso = () => {
-    if (isoFile) {
-      blip("click");
-      alert("Pueios2 Plus ISO is already downloaded in Files.");
-      return;
-    }
+    if (isoFile) { blip("click"); alert("PueiOS 2+ ISO is already downloaded in Files."); return; }
     upsertFile({
       id: `iso-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`,
       name: "pueios2-plus.iso",
       type: "text",
-      content: "PueiOS2 Plus installation ISO image placeholder. Keep this file in Files/Downloads, then install Puei Updater from App Store and drag the ISO into that app.",
+      content: "PueiOS 2+ installation ISO image placeholder.",
+      updatedAt: Date.now(),
+      owner: currentUser,
+      folder: SYS_FOLDER_DOWNLOADS,
+    });
+    setIsoRefresh((v) => v + 1);
+    blip("notify");
+  };
+
+  const downloadOs3Iso = () => {
+    if (iso3File) { blip("click"); alert("PueiOS 3 ISO is already downloaded in Files."); return; }
+    upsertFile({
+      id: `iso3-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`,
+      name: "pueios3.iso",
+      type: "text",
+      content: "PueiOS 3 installation ISO image placeholder. Keep this file in Files/Downloads, then open Puei Updater and drag the ISO into it.",
       updatedAt: Date.now(),
       owner: currentUser,
       folder: SYS_FOLDER_DOWNLOADS,
@@ -1428,9 +1441,10 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
   };
 
   const deleteIsoAfterUpdate = () => {
-    if (!isoFile) return;
-    if (!confirm("Delete pueios2-plus.iso? Updates will remain installed.")) return;
-    deleteFile(isoFile.id);
+    const target = iso3File || isoFile;
+    if (!target) return;
+    if (!confirm(`Delete ${target.name}? Updates will remain installed.`)) return;
+    deleteFile(target.id);
     setIsoRefresh((v) => v + 1);
     blip("click");
   };
@@ -1576,29 +1590,66 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
       </div>
     ),
     "puei://updates": (
-      <div className="p-6 space-y-4">
+      <div className="p-6 space-y-4 max-w-2xl">
         <h2 className="text-2xl font-bold">⬆️ Puei Updates</h2>
-        <p className="text-sm opacity-75">Update flow: 1) Download ISO into Files, 2) Install Puei Updater from App Store, 3) Open Puei Updater and drag the ISO into it, 4) wait for restart into PueiOS 2+.</p>
+        <p className="text-sm opacity-75">Download an ISO, install Puei Updater from the App Store, then open it and drag the ISO in.</p>
 
-        <div className="aero-glass-light rounded-xl p-4 space-y-3 max-w-xl">
-          <div className="text-sm">
-            ISO status: {isoFile ? <span className="font-semibold text-green-500">Downloaded ({isoFile.name})</span> : <span className="font-semibold text-amber-500">Not downloaded</span>}
-          </div>
-          <div className="text-sm">
-            Puei Updater status: {updaterInstalled ? <span className="font-semibold text-green-500">Installed</span> : <span className="font-semibold text-amber-500">Not installed from App Store</span>}
-          </div>
-          <div className="flex gap-2 flex-wrap">
-            <button className="aero-button rounded px-3 py-1.5 text-xs" onClick={downloadPlusIso}>⬇ Download pueios2-plus.iso to Files</button>
-            <button className="aero-button rounded px-3 py-1.5 text-xs" disabled={!isoFile}
-              style={{ opacity: isoFile ? 1 : 0.5 }} onClick={deleteIsoAfterUpdate}>🖦️ Delete ISO</button>
-          </div>
+        <div className="text-sm">
+          Puei Updater: {updaterInstalled ? <span className="font-semibold text-green-500">Installed</span> : <span className="font-semibold text-amber-500">Not installed</span>}
+        </div>
 
-          <div className="text-xs rounded px-3 py-2" style={{ background: "rgba(255,255,255,0.08)" }}>
-            PueiWeb can only download the ISO now. Installation only works inside the installed Puei Updater app.
+        {/* PueiOS 2 */}
+        <div className="aero-glass-light rounded-xl p-4 space-y-2">
+          <div className="flex items-center gap-2">
+            <span className="font-semibold">PueiOS 2</span>
+            <span className="text-xs px-2 py-0.5 rounded" style={{ background: "rgba(220,50,50,0.18)", color: "#f87171" }}>End of Life</span>
           </div>
-          {updaterInstalled && (
-            <div className="text-xs rounded px-3 py-2" style={{ background: "rgba(80,200,120,0.16)" }}>
-              Puei Updater is installed. Open it from your desktop and drag the ISO from its Downloads list into the install zone.
+          <p className="text-xs opacity-60">The original PueiOS 2 release.</p>
+          <p className="text-xs" style={{ color: "#f87171" }}>As of June 6th, PueiOS 2 is no longer supported. No download available.</p>
+        </div>
+
+        {/* PueiOS 2+ */}
+        <div className="aero-glass-light rounded-xl p-4 space-y-2">
+          <div className="flex items-center gap-2">
+            <span className="font-semibold">PueiOS 2+</span>
+            <span className="text-xs px-2 py-0.5 rounded" style={{ background: "rgba(220,50,50,0.18)", color: "#f87171" }}>End of Life</span>
+            {isoFile && <span className="text-xs px-2 py-0.5 rounded" style={{ background: "rgba(80,200,120,0.2)", color: "#4ade80" }}>Downloaded</span>}
+          </div>
+          <p className="text-xs opacity-60">Advanced edition with stronger sync and AI systems.</p>
+          <p className="text-xs" style={{ color: "#f87171" }}>As of June 6th, PueiOS 2+ is no longer supported. We recommend upgrading to PueiOS 3.</p>
+          <div className="flex gap-2">
+            <button className="aero-button rounded px-3 py-1.5 text-xs" onClick={downloadPlusIso} style={{ opacity: 0.65 }}>
+              ⬇ {isoFile ? "Re-download pueios2-plus.iso" : "Download pueios2-plus.iso"}
+            </button>
+            {isoFile && (
+              <button className="aero-button rounded px-3 py-1.5 text-xs" onClick={() => { if(confirm("Delete pueios2-plus.iso?")) { deleteFile(isoFile.id); setIsoRefresh(v => v+1); blip("click"); } }}>
+                Delete ISO
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* PueiOS 3 */}
+        <div className="aero-glass-light rounded-xl p-4 space-y-2" style={{ border: "1px solid rgba(80,180,255,0.3)" }}>
+          <div className="flex items-center gap-2">
+            <span className="font-semibold">PueiOS 3</span>
+            <span className="text-xs px-2 py-0.5 rounded" style={{ background: "rgba(80,180,255,0.2)", color: "#60a5fa" }}>Latest</span>
+            {iso3File && <span className="text-xs px-2 py-0.5 rounded" style={{ background: "rgba(80,200,120,0.2)", color: "#4ade80" }}>Downloaded</span>}
+          </div>
+          <p className="text-xs opacity-60">Major release: redesigned shell, new AI assistant, PueiNet 3.0.</p>
+          <div className="flex gap-2">
+            <button className="aero-button rounded px-3 py-1.5 text-xs" onClick={downloadOs3Iso}>
+              ⬇ {iso3File ? "Re-download pueios3.iso" : "Download pueios3.iso"}
+            </button>
+            {iso3File && (
+              <button className="aero-button rounded px-3 py-1.5 text-xs" onClick={() => { if(confirm("Delete pueios3.iso?")) { deleteFile(iso3File.id); setIsoRefresh(v => v+1); blip("click"); } }}>
+                Delete ISO
+              </button>
+            )}
+          </div>
+          {updaterInstalled && iso3File && (
+            <div className="text-xs rounded px-3 py-2 mt-1" style={{ background: "rgba(80,200,120,0.16)" }}>
+              Ready to install! Open Puei Updater from your desktop and drag pueios3.iso into the install zone.
             </div>
           )}
         </div>
@@ -3964,22 +4015,30 @@ function PueiUpdaterApp({ currentUser, startUpgrade }: { currentUser: string; st
         setIsInstalling(false);
         setRestartQueued(true);
         blip("notify");
+        const isoFiles = loadFiles().filter((f) =>
+          f.type === "text" && (!f.owner || f.owner === currentUser) &&
+          f.folder === SYS_FOLDER_DOWNLOADS &&
+          ["pueios2-plus.iso", "pueios2plus.iso", "pueios3.iso"].includes(f.name.trim().toLowerCase())
+        );
+        const iso = isoFiles.find((file) => file.id === mountedIsoId);
+        const targetVersion: SystemVersion = iso && iso.name.trim().toLowerCase() === "pueios3.iso" ? "PueiOS 3" : "PueiOS 2+";
         restartTimer.current = window.setTimeout(() => {
           blip("start");
-          startUpgrade("PueiOS 2+");
+          startUpgrade(targetVersion);
         }, 900);
       }
     }, 250);
     return () => window.clearInterval(timer);
-  }, [isInstalling, startUpgrade]);
+  }, [isInstalling, startUpgrade, mountedIsoId, currentUser]);
 
   const isoFiles = loadFiles().filter((f) =>
     f.type === "text" &&
     (!f.owner || f.owner === currentUser) &&
     f.folder === SYS_FOLDER_DOWNLOADS &&
-    ["pueios2-plus.iso", "pueios2plus.iso"].includes(f.name.trim().toLowerCase())
+    ["pueios2-plus.iso", "pueios2plus.iso", "pueios3.iso"].includes(f.name.trim().toLowerCase())
   );
   const mountedIso = isoFiles.find((file) => file.id === mountedIsoId) || null;
+  const mountedVersion: SystemVersion = mountedIso && mountedIso.name.trim().toLowerCase() === "pueios3.iso" ? "PueiOS 3" : "PueiOS 2+";
 
   useEffect(() => {
     if (mountedIsoId && !isoFiles.some((file) => file.id === mountedIsoId)) {
@@ -3990,10 +4049,10 @@ function PueiUpdaterApp({ currentUser, startUpgrade }: { currentUser: string; st
   const beginInstall = () => {
     if (!mountedIso) {
       blip("error");
-      alert("Drag pueios2-plus.iso into the installer area first.");
+      alert("Drag an ISO into the installer area first.");
       return;
     }
-    if (!confirm(`Install PueiOS 2+ from ${mountedIso.name}? Your device will restart when installation finishes.`)) return;
+    if (!confirm(`Install ${mountedVersion} from ${mountedIso.name}? Your device will restart when installation finishes.`)) return;
     setInstallStopped(false);
     setRestartQueued(false);
     setInstallProgress(0);
@@ -4074,7 +4133,7 @@ function PueiUpdaterApp({ currentUser, startUpgrade }: { currentUser: string; st
             <div className="text-[11px] opacity-60">Drag the ISO from here into the install zone.</div>
             {isoFiles.length === 0 ? (
               <div className="text-xs rounded-lg px-3 py-3" style={{ background: "rgba(255,255,255,0.08)" }}>
-                No ISO found. Go to PueiWeb, download pueios2-plus.iso, then come back here.
+                No ISO found. Go to puei://updates in PueiWeb, download an ISO, then come back here.
               </div>
             ) : (
               <div className="space-y-2">
@@ -4129,7 +4188,7 @@ function PueiUpdaterApp({ currentUser, startUpgrade }: { currentUser: string; st
               }}>
               <div className="text-sm font-semibold">{mountedIso ? `${mountedIso.name} mounted` : "Drop ISO here to prepare installation"}</div>
               <div className="text-xs opacity-65 mt-1">
-                {mountedIso ? "Puei Updater is ready to install PueiOS 2+ from this ISO." : "Only pueios2-plus.iso from Files/Downloads is accepted."}
+                {mountedIso ? `Puei Updater is ready to install ${mountedVersion} from this ISO.` : "Drag pueios2-plus.iso or pueios3.iso from Files/Downloads."}
               </div>
             </div>
 
@@ -4137,7 +4196,7 @@ function PueiUpdaterApp({ currentUser, startUpgrade }: { currentUser: string; st
               <button className="aero-button rounded px-3 py-1.5 text-xs" disabled={!mountedIso || isInstalling || restartQueued}
                 style={{ opacity: (!mountedIso || isInstalling || restartQueued) ? 0.5 : 1 }}
                 onClick={beginInstall}>
-                Install PueiOS 2+
+                Install {mountedIso ? mountedVersion : "…"}
               </button>
               <button className="aero-button rounded px-3 py-1.5 text-xs" disabled={!isInstalling}
                 style={{ opacity: isInstalling ? 1 : 0.5, color: "#fca5a5" }}
