@@ -20,7 +20,6 @@ const APP_TITLES: Record<AppId, string> = {
   "puei-board": "PueiBoard",
   "pueinet": "PueiWeb",
   "puei-cloud-chat": "PueiCloudChat",
-  "puei-mail": "Puei Mail",
   "file-explorer": "Computer",
   "settings": "Settings",
   "about": "About PueiOS 2",
@@ -40,7 +39,6 @@ const APP_SIZES: Partial<Record<AppId, { w: number; h: number }>> = {
   "settings": { w: 820, h: 560 },
   "puei-board": { w: 860, h: 620 },
   "puei-cloud-chat": { w: 720, h: 500 },
-  "puei-mail": { w: 860, h: 580 },
   "pueinet": { w: 820, h: 560 },
   "puei-paint": { w: 820, h: 560 },
   "file-explorer": { w: 760, h: 500 },
@@ -188,7 +186,7 @@ export function PueiOS() {
     window.addEventListener("mousemove", onMove);
     window.addEventListener("mouseup", onUp);
   };
-  const startIconTouchDrag = (e: React.TouchEvent, ic: DesktopIcon, idx: number, onTap?: () => void) => {
+  const startIconTouchDrag = (e: React.TouchEvent, ic: DesktopIcon, idx: number) => {
     if (e.touches.length !== 1) return;
     wasDragged.current = false;
     const t = e.touches[0];
@@ -241,13 +239,6 @@ export function PueiOS() {
         const p = clampPixelPos(origLeft, origTop);
         de.style.left = p.left + "px";
         de.style.top = p.top + "px";
-        if (!touchTimer.current) {
-          // long-press fired context menu — don't open app
-        } else {
-          clearTimeout(touchTimer.current);
-          touchTimer.current = null;
-          onTap?.();
-        }
       }
       dragRef.current = null;
     };
@@ -281,9 +272,6 @@ export function PueiOS() {
     // Add PueiCloudChat if missing
     if (!loadedIcons.some((i: any) => i.appId === "puei-cloud-chat" && !i.fileId && !i.webUrl)) {
       loadedIcons = [...loadedIcons, { id: "i-msg", label: "PueiCloudChat", appId: "puei-cloud-chat" as const }];
-    }
-    if (!loadedIcons.some((i: any) => i.appId === "puei-mail" && !i.fileId && !i.webUrl)) {
-      loadedIcons = [...loadedIcons, { id: "i-mail", label: "Puei Mail", appId: "puei-mail" as const }];
     }
     setIcons(loadedIcons);
     if (!s.installed) { setPhase("install"); return; }
@@ -541,7 +529,7 @@ export function PueiOS() {
     touchStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
     touchTimer.current = window.setTimeout(() => {
       if (touchStart.current) setCtxMenu({ x: touchStart.current.x, y: touchStart.current.y, items });
-    }, 600);
+    }, 8000);
   };
   const onTouchEnd = () => {
     if (touchTimer.current) { clearTimeout(touchTimer.current); touchTimer.current = null; }
@@ -1100,22 +1088,9 @@ export function PueiOS() {
                     className="w-full px-3 py-2 rounded text-sm outline-none"
                     style={{ background: "white", color: "#111" }} />
                 </div>
-              ) : (() => {
-                const selUser = users.find((u) => u.name === loginUser);
-                return (
-                  <div className="flex items-center gap-2 mb-2">
-                    {selUser && (
-                      <div className="w-8 h-8 rounded-full flex items-center justify-center text-xl overflow-hidden flex-shrink-0"
-                        style={{ background: `linear-gradient(135deg, oklch(0.7 0.18 ${selUser.color}), oklch(0.45 0.2 ${selUser.color}))` }}>
-                        {selUser.avatar.startsWith("data:")
-                          ? <img src={selUser.avatar} alt="" className="w-full h-full object-cover" />
-                          : selUser.avatar}
-                      </div>
-                    )}
-                    <div className="text-sm font-medium">{loginUser || "Select an account"}</div>
-                  </div>
-                );
-              })()}
+              ) : (
+                <div className="text-sm font-medium mb-2">{loginUser || "Select an account"}</div>
+              )}
               <input type="password" value={pwInput} onChange={(e) => setPwInput(e.target.value)}
                 onKeyDown={(e) => { if (e.key === "Enter") trySignIn(); }}
                 placeholder={activeUser?.password ? "Password" : "Press Enter (no password)"}
@@ -1259,7 +1234,7 @@ export function PueiOS() {
               onTouchStart={(e) => {
                 e.stopPropagation();
                 setSelectedIcon(ic.id);
-                startIconTouchDrag(e, ic, idx, dbl);
+                startIconTouchDrag(e, ic, idx);
                 onTouchStart(e, iconCtx(ic));
               }}
               onTouchEnd={onTouchEnd}
@@ -1312,12 +1287,9 @@ export function PueiOS() {
               signOut={() => { blip("shutdown"); setWindows([]); setCurrentUser(""); setPhase("login"); setPwInput(""); }}
               lockScreen={() => { blip("click"); setLocked(true); setPwInput(""); }}
               deleteAccount={(name) => {
-                const nextUsers = users.filter((u) => u.name !== name);
-                setUsers(nextUsers);
-                saveState({ installed, systemVersion, theme, icons, users: nextUsers, lastUser: "", remember: false });
+                setUsers((prev) => prev.filter((u) => u.name !== name));
                 setWindows([]);
                 setCurrentUser("");
-                setLoginUser("");
                 setPhase("login");
                 setPwInput("");
               }}
@@ -1377,35 +1349,24 @@ export function PueiOS() {
 
       {/* Start menu */}
       {startOpen && (
-        <div className="fixed bottom-12 left-2 rounded-xl w-[440px] z-[9000] overflow-hidden shadow-2xl"
-          style={{ animation: "fade-scale 0.18s ease-out", border: "1px solid rgba(217,168,120,0.6)" }} onMouseDown={(e) => e.stopPropagation()}>
-          {/* Mascot-skin header */}
-          <div className="px-4 py-3 flex items-center gap-3"
-            style={{ background: "linear-gradient(135deg, #ffe0bd 0%, #f5c89a 55%, #d9a878 100%)" }}>
-            <PueiLogoSvg size={56} glow />
-            <div>
-              <div className="font-bold text-base" style={{ color: "#5a3520", textShadow: "0 1px 2px rgba(255,255,255,0.5)" }}>{currentUser}</div>
-              <div className="text-xs" style={{ color: "#7a4f30" }}>PueiOS</div>
-            </div>
-            <div className="ml-auto w-10 h-10 rounded-full overflow-hidden flex items-center justify-center text-xl flex-shrink-0"
-              style={{ background: "rgba(255,255,255,0.35)", border: "2px solid rgba(255,255,255,0.6)" }}>
+        <div className="fixed bottom-12 left-2 rounded-xl w-[440px] z-[9000] overflow-hidden border border-slate-300/80 shadow-2xl"
+          style={{ animation: "fade-scale 0.18s ease-out", background: "linear-gradient(180deg, #f8fbff 0%, #eef4fb 100%)" }} onMouseDown={(e) => e.stopPropagation()}>
+          <div className="aero-titlebar px-4 py-2 flex items-center gap-2">
+            <div className="w-10 h-10 rounded-full flex items-center justify-center text-xl overflow-hidden"
+              style={{ background: "var(--gradient-aero)" }}>
               {currentAvatar?.startsWith("data:")
                 ? <img src={currentAvatar} alt="" className="w-full h-full object-cover" />
                 : (currentAvatar || "👤")}
             </div>
+            <div className="font-semibold">{currentUser}</div>
           </div>
-          {/* App grid */}
-          <div className="grid grid-cols-2 gap-1 p-2"
-            style={{ background: "linear-gradient(180deg, #f8f4ee 0%, #f0e8dc 100%)" }}>
+          <div className="grid grid-cols-2 gap-1 p-2">
             {[...new Set([
               ...icons.filter(i => !i.fileId && !i.webUrl && i.appId !== "folder" && i.appId !== "web-app" && i.appId !== "recycle-bin").map(i => i.appId),
               "settings" as const, "about" as const,
             ])].map((id) => (
               <button key={id} onClick={() => { openApp(id); setStartOpen(false); }}
-                className="flex items-center gap-2 px-3 py-2 rounded text-sm text-left"
-                style={{ color: "#3a2010" }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(217,168,120,0.35)")}
-                onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}>
+                className="flex items-center gap-2 px-3 py-2 rounded hover:bg-white/40 text-sm text-left">
                 {appIcon(id, 26)}<span>{APP_TITLES[id]}</span>
               </button>
             ))}
@@ -1422,16 +1383,12 @@ export function PueiOS() {
               </button>
             )}
           </div>
-          {/* Footer */}
-          <div className="flex justify-between p-2" style={{ background: "linear-gradient(135deg, #d9a878 0%, #c49060 100%)", borderTop: "1px solid rgba(255,255,255,0.3)" }}>
-            <button className="rounded px-3 py-1 text-xs font-semibold"
-              style={{ background: "rgba(255,255,255,0.25)", color: "#3a2010", border: "1px solid rgba(255,255,255,0.4)" }}
+          <div className="border-t flex justify-between p-2" style={{ background: "var(--glass)" }}>
+            <button className="aero-button rounded px-3 py-1 text-xs"
               onClick={() => { setLocked(true); setStartOpen(false); setPwInput(""); }}>🔒 Lock</button>
-            <button className="rounded px-3 py-1 text-xs font-semibold"
-              style={{ background: "rgba(255,255,255,0.25)", color: "#3a2010", border: "1px solid rgba(255,255,255,0.4)" }}
+            <button className="aero-button rounded px-3 py-1 text-xs"
               onClick={() => { setStartOpen(false); setPhase("login"); setPwInput(""); }}>🔄 Switch User</button>
-            <button className="rounded px-3 py-1 text-xs font-semibold"
-              style={{ background: "rgba(255,255,255,0.25)", color: "#3a2010", border: "1px solid rgba(255,255,255,0.4)" }}
+            <button className="aero-button rounded px-3 py-1 text-xs"
               onClick={() => { blip("shutdown"); setStartOpen(false); setPhase("shutdown"); setWindows([]); }}>⏻ Shut down</button>
           </div>
         </div>
