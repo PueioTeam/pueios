@@ -524,10 +524,14 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, curren
                       {v === "PueiOS 3" && "Major release: redesigned shell, new AI assistant, expanded app ecosystem, PueiNet 3.0."}
                     </div>
                   </div>
-                  <button className="aero-button rounded-lg px-4 py-2 text-sm flex-shrink-0"
-                    onClick={() => { blip("notify"); startUpgrade(v); }}>
-                    Upgrade →
-                  </button>
+                  {(v === "PueiOS 2" || v === "PueiOS 2+") ? (
+                    <span className="text-xs px-3 py-2 rounded-lg flex-shrink-0" style={{ background: "rgba(220,50,50,0.15)", color: "#f87171" }}>End of Life</span>
+                  ) : (
+                    <button className="aero-button rounded-lg px-4 py-2 text-sm flex-shrink-0"
+                      onClick={() => { blip("notify"); startUpgrade(v); }}>
+                      Upgrade →
+                    </button>
+                  )}
                 </div>
 
                 {v === "PueiOS 2+" && (

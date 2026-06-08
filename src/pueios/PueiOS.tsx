@@ -1192,7 +1192,7 @@ export function PueiOS() {
   })();
 
   const currentAvatar = users.find(u => u.name === currentUser)?.avatar;
-  const hasPueiOSPlusUpgrade = compareVersion("PueiOS 2+", systemVersion) > 0;
+  const hasPueiOS3Upgrade = compareVersion("PueiOS 3", systemVersion) > 0;
 
   return (
     <div
@@ -1385,16 +1385,16 @@ export function PueiOS() {
                 {appIcon(id, 26)}<span>{APP_TITLES[id]}</span>
               </button>
             ))}
-            {hasPueiOSPlusUpgrade && (
+            {hasPueiOS3Upgrade && (
               <button onClick={() => {
-                if (!confirm("Start upgrade to PueiOS 2+ now?")) return;
+                if (!confirm("Start upgrade to PueiOS 3 now?")) return;
                 setStartOpen(false);
-                startSystemUpgrade("PueiOS 2+");
+                startSystemUpgrade("PueiOS 3");
               }}
                 className="flex items-center gap-2 px-3 py-2 rounded text-sm text-left"
-                style={{ background: "linear-gradient(135deg, rgba(90,160,255,0.22), rgba(30,90,220,0.30))", border: "1px solid rgba(60,120,240,0.35)" }}>
+                style={{ background: "linear-gradient(135deg, rgba(90,160,255,0.22), rgba(30,90,220,0.30))", border: "1px solid rgba(60,120,240,0.35)", color: "var(--foreground)" }}>
                 <div className="w-[26px] h-[26px] rounded flex items-center justify-center text-lg" style={{ background: "rgba(255,255,255,0.55)" }}>⬆️</div>
-                <span>Update to PueiOS 2+</span>
+                <span>Update to PueiOS 3</span>
               </button>
             )}
           </div>
@@ -1445,19 +1445,19 @@ export function PueiOS() {
             {appIcon(id, 22)}
           </button>
         ))}
-        {hasPueiOSPlusUpgrade && (
+        {hasPueiOS3Upgrade && (
           <button
             className="taskbar-item h-9 px-3 rounded flex items-center gap-2 text-xs"
-            title="Update to PueiOS 2+"
+            title="Update to PueiOS 3"
             style={{ background: "linear-gradient(180deg, rgba(120,190,255,0.95), rgba(60,120,240,0.9))", color: "white", border: "1px solid rgba(255,255,255,0.35)" }}
             onClick={(e) => {
               e.stopPropagation();
-              if (!confirm("Start upgrade to PueiOS 2+ now?")) return;
+              if (!confirm("Start upgrade to PueiOS 3 now?")) return;
               setStartOpen(false);
-              startSystemUpgrade("PueiOS 2+");
+              startSystemUpgrade("PueiOS 3");
             }}>
             <span>⬆️</span>
-            <span className="font-semibold">PueiOS 2+</span>
+            <span className="font-semibold">PueiOS 3</span>
           </button>
         )}
         <div className="w-px h-7 bg-white/20 mx-1" />
