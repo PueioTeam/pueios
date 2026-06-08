@@ -20,7 +20,6 @@ const APP_TITLES: Record<AppId, string> = {
   "puei-board": "PueiBoard",
   "pueinet": "PueiWeb",
   "puei-cloud-chat": "PueiCloudChat",
-  "puei-mail": "Puei Mail",
   "file-explorer": "Computer",
   "settings": "Settings",
   "about": "About PueiOS 2",
@@ -40,7 +39,6 @@ const APP_SIZES: Partial<Record<AppId, { w: number; h: number }>> = {
   "settings": { w: 820, h: 560 },
   "puei-board": { w: 860, h: 620 },
   "puei-cloud-chat": { w: 720, h: 500 },
-  "puei-mail": { w: 860, h: 580 },
   "pueinet": { w: 820, h: 560 },
   "puei-paint": { w: 820, h: 560 },
   "file-explorer": { w: 760, h: 500 },
@@ -277,10 +275,8 @@ export function PueiOS() {
     if (!loadedIcons.some((i: any) => i.appId === "puei-cloud-chat" && !i.fileId && !i.webUrl)) {
       loadedIcons = [...loadedIcons, { id: "i-msg", label: "PueiCloudChat", appId: "puei-cloud-chat" as const }];
     }
-    // Add Puei Mail if missing
-    if (!loadedIcons.some((i: any) => i.appId === "puei-mail" && !i.fileId && !i.webUrl)) {
-      loadedIcons = [...loadedIcons, { id: "i-mail", label: "Puei Mail", appId: "puei-mail" as const }];
-    }
+    // Remove any stale puei-mail icons from existing installs
+    loadedIcons = loadedIcons.filter((i: any) => i.appId !== "puei-mail");
     setIcons(loadedIcons);
     if (!s.installed) { setPhase("install"); return; }
     if (s.lastUser && s.remember) { setLoginUser(s.lastUser); setRemember(true); }
@@ -1385,18 +1381,6 @@ export function PueiOS() {
                 {appIcon(id, 26)}<span>{APP_TITLES[id]}</span>
               </button>
             ))}
-            {hasPueiOS3Upgrade && (
-              <button onClick={() => {
-                if (!confirm("Start upgrade to PueiOS 3 now?")) return;
-                setStartOpen(false);
-                startSystemUpgrade("PueiOS 3");
-              }}
-                className="flex items-center gap-2 px-3 py-2 rounded text-sm text-left"
-                style={{ background: "linear-gradient(135deg, rgba(90,160,255,0.22), rgba(30,90,220,0.30))", border: "1px solid rgba(60,120,240,0.35)", color: "var(--foreground)" }}>
-                <div className="w-[26px] h-[26px] rounded flex items-center justify-center text-lg" style={{ background: "rgba(255,255,255,0.55)" }}>⬆️</div>
-                <span>Update to PueiOS 3</span>
-              </button>
-            )}
           </div>
           <div className="border-t flex justify-between p-2" style={{ background: "var(--glass)" }}>
             <button className="aero-button rounded px-3 py-1 text-xs"
@@ -1445,21 +1429,6 @@ export function PueiOS() {
             {appIcon(id, 22)}
           </button>
         ))}
-        {hasPueiOS3Upgrade && (
-          <button
-            className="taskbar-item h-9 px-3 rounded flex items-center gap-2 text-xs"
-            title="Update to PueiOS 3"
-            style={{ background: "linear-gradient(180deg, rgba(120,190,255,0.95), rgba(60,120,240,0.9))", color: "white", border: "1px solid rgba(255,255,255,0.35)" }}
-            onClick={(e) => {
-              e.stopPropagation();
-              if (!confirm("Start upgrade to PueiOS 3 now?")) return;
-              setStartOpen(false);
-              startSystemUpgrade("PueiOS 3");
-            }}>
-            <span>⬆️</span>
-            <span className="font-semibold">PueiOS 3</span>
-          </button>
-        )}
         <div className="w-px h-7 bg-white/20 mx-1" />
         {windows.map((w) => (
           <button key={w.id}
