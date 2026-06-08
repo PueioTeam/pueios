@@ -2289,7 +2289,16 @@ function PueiCloudChatApp({ user, users, setUsers }: { user: string; users: User
   };
 
   // Contacts: local users + external by Puei Number
-  const localContacts = users.filter((u) => u.name !== user);
+  const hiddenKey = `pcc2-hidden-${user}`;
+  const [hiddenContacts, setHiddenContacts] = useState<string[]>(() => {
+    try { return JSON.parse(localStorage.getItem(hiddenKey) || "[]"); } catch { return []; }
+  });
+  const hideContact = (name: string) => {
+    const next = [...hiddenContacts, name];
+    setHiddenContacts(next);
+    localStorage.setItem(hiddenKey, JSON.stringify(next));
+  };
+  const localContacts = users.filter((u) => u.name !== user && !hiddenContacts.includes(u.name));
   const [extContacts, setExtContacts] = useState<ExtContact[]>(() => {
     try { return parseExtContacts(JSON.parse(localStorage.getItem("pcc2-contacts") || "[]")); } catch { return []; }
   });
@@ -2697,8 +2706,8 @@ function PueiCloudChatApp({ user, users, setUsers }: { user: string; users: User
                     <div className="text-[10px] opacity-40 font-mono">#{localPartner.pueiNumber||"—"}</div>
                   </div>
                   <button className="text-xs opacity-40 hover:opacity-100 hover:text-red-400 transition-all px-2 py-1 rounded-lg"
-                    onClick={()=>{if(confirm(`Delete conversation with ${localPartner.name}?`)){deleteChatBetween(user,localPartner.name);setAllMsgs(loadChat());blip("click");}}}>
-                    🖦️
+                    onClick={()=>{if(confirm(`Remove ${localPartner.name} from your contacts?`)){deleteChatBetween(user,localPartner.name);hideContact(localPartner.name);setAllMsgs(loadChat());setActiveId(null);blip("click");}}}>
+                    🗑️
                   </button>
                   <button className="text-xs opacity-40 hover:opacity-100 hover:text-red-400 transition-all px-2 py-1 rounded-lg"
                     onClick={()=>{const num=localPartner.pueiNumber||pueiNumberFor(localPartner.name+":seed");blockNum(num,localPartner.name);}}>
