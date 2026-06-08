@@ -58,6 +58,7 @@ export function AppRenderer(p: AppRendererProps) {
     case "web-app": return <WebAppFrame url={p.webUrl!} currentUser={p.currentUser} startUpgrade={p.startUpgrade} />;
     case "recycle-bin": return <RecycleBinApp />;
     case "chess": return <ChessApp />;
+    case "puei-mail": return <PueiMailApp currentUser={p.currentUser} users={p.users} />;
   }
 }
 
@@ -524,6 +525,47 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, curren
                     Upgrade ΓåÆ
                   </button>
                 </div>
+
+                {v === "PueiOS 3" && (
+                  <div className="text-xs space-y-3 opacity-90">
+                    <p>PueiOS 3 is a major release with an entirely redesigned desktop, new exclusive features, and a smarter AI-powered experience.</p>
+                    <div>
+                      <div className="font-semibold mb-1">🤖 Puei AI Assistant Desktop Integration</div>
+                      <p className="opacity-80">Talk to Puei AI from anywhere on the desktop. Searches your files, chats, mails, and apps — all from a single shortcut.</p>
+                    </div>
+                    <div>
+                      <div className="font-semibold mb-1">🧩 Puei Widgets</div>
+                      <ul className="list-disc pl-5 space-y-0.5">
+                        <li>Clock widget</li><li>Weather widget</li><li>Notes widget</li>
+                        <li>Pueio Numbers widget</li><li>Recent Messages widget</li>
+                      </ul>
+                    </div>
+                    <div>
+                      <div className="font-semibold mb-1">🖥️ Virtual Desktops</div>
+                      <p className="opacity-80">Separate workspaces: Work, Gaming, and School — switch instantly.</p>
+                    </div>
+                    <div>
+                      <div className="font-semibold mb-1">🎨 Puei Themes Store</div>
+                      <p className="opacity-80">Download community themes or choose from built-in classics: Windows 7, Vista, Retro PueiOS 2.</p>
+                    </div>
+                    <div>
+                      <div className="font-semibold mb-1">♻️ Puei Recovery</div>
+                      <p className="opacity-80">Restore previous system versions and recover permanently deleted files.</p>
+                    </div>
+                    <div>
+                      <div className="font-semibold mb-1">🏆 Puei Achievements</div>
+                      <p className="opacity-80">Hidden badges earned by using the system in special ways. Discover them all.</p>
+                    </div>
+                    <div>
+                      <div className="font-semibold mb-1">🎬 Puei Live Wallpapers</div>
+                      <p className="opacity-80">Animated wallpapers — flying Puei, particle effects, and more.</p>
+                    </div>
+                    <div>
+                      <div className="font-semibold mb-1">👤 Puei Account Dashboard</div>
+                      <p className="opacity-80">Manage synced devices, storage quota, and security from one place.</p>
+                    </div>
+                  </div>
+                )}
 
                 {v === "PueiOS 2+" && (
                   <div className="text-xs space-y-3 opacity-90">
@@ -1489,7 +1531,6 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
             ["puei://updates", "Γ¼å∩╕Å Puei Updates"],
             ["puei://search", "Γ£ª Puei Copilot"],
             ["puei://forum", "≡ƒÆ¼ PueiForum"],
-            ["puei://mail", "Γ£ë∩╕Å PueiMail"],
             ["puei://wallpapers", "≡ƒû╝∩╕Å Puei Wallpapers"],
             ["puei://about", "Γä╣∩╕Å About"],
           ].map(([u, l]) => (
@@ -1596,7 +1637,6 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
         </div>
       </div>
     ),
-    "puei://mail": null, // handled below as PueiMailApp
     "puei://wallpapers": (
       <div className="p-6">
         <div className="mb-4">
@@ -1623,8 +1663,6 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
   let content: React.ReactNode;
   if (navUrl === "puei://search") {
     content = <PueiCopilotPage />;
-  } else if (navUrl === "puei://mail") {
-    content = null; // rendered below as PueiMailApp
   } else if (navUrl.startsWith("puei://")) {
     content = fakeSites[navUrl] || <div className="p-6">404 ΓÇö page not found in this universe.</div>;
   } else {
@@ -1652,7 +1690,7 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
           </div>
         ))}
         <button className="aero-button rounded px-2 py-0.5 text-xs ml-1"
-          onClick={() => { const id = Date.now(); setTabs([...tabs, { id, title: "New Tab", url: "puei://home" }]); setActive(id); navigate("puei://home"); }}>+</button>
+          onClick={() => { const id = Date.now(); setTabs([...tabs, { id, title: "New Tab", url: "puei://home" }]); setActive(id); setNavUrl("puei://home"); setUrlBar("puei://home"); }}>+</button>
       </div>
       <div className="aero-titlebar flex items-center gap-2 px-2 py-1">
         <button className="aero-button rounded px-2 py-0.5 text-xs" onClick={() => navigate("puei://home")}>Γîé</button>
@@ -1664,9 +1702,7 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
 
       </div>
       <div className="flex-1 overflow-auto">
-        {navUrl === "puei://mail"
-          ? <PueiMailApp currentUser={currentUser} users={users} />
-          : content}
+        {content}
       </div>
     </div>
   );

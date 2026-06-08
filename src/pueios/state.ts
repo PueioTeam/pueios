@@ -118,6 +118,7 @@ export type AppId =
   | "puei-board"
   | "pueinet"
   | "puei-cloud-chat"
+  | "puei-mail"
   | "file-explorer"
   | "settings"
   | "about"
@@ -295,6 +296,7 @@ export const defaultIcons: DesktopIcon[] = [
   { id: "i-note", label: "Notepad", appId: "notepad" },
   { id: "i-calc", label: "Calculator", appId: "calculator" },
   { id: "i-about", label: "About PueiOS 2", appId: "about" },
+  { id: "i-mail", label: "Puei Mail", appId: "puei-mail" },
 ];
 
 export function iconGridPos(index: number) {
