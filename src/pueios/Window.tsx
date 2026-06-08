@@ -238,6 +238,7 @@ export function appIcon(appId: AppId, size = 32, override?: string, iconUrl?: st
     "puei-board": "📌",
     "pueinet": "🌐",
     "puei-cloud-chat": "💬",
+    "puei-mail": "✉️",
     "file-explorer": "🗂️",
     "settings": "⚙️",
     "about": "ℹ️",
