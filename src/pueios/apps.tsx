@@ -631,7 +631,7 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, curren
                     <div>
                       <label className="text-xs opacity-70">New password</label>
                       <input type="password" value={pcNewPw} onChange={(e) => setPcNewPw(e.target.value)}
-                        className="w-full px-3 py-2 rounded text-sm outline-none mt-1" style={{ background: "white", color: "#111" }} />
+                        className="w-full px-3 py-2 rounded text-sm outline-none mt-1" className="input-field" />
                     </div>
                     <div>
                       <label className="text-xs opacity-70">Confirm password</label>
@@ -646,7 +646,7 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, curren
                           setPcMsg({ kind: "ok", text: "✔ Password created! Full access enabled." });
                           blip("notify");
                         }}}
-                        className="w-full px-3 py-2 rounded text-sm outline-none mt-1" style={{ background: "white", color: "#111" }} />
+                        className="w-full px-3 py-2 rounded text-sm outline-none mt-1" className="input-field" />
                     </div>
                     {pcMsg && (
                       <div className={`text-xs rounded px-2 py-1.5 ${pcMsg.kind === "ok" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>{pcMsg.text}</div>
@@ -668,12 +668,12 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, curren
                     <div>
                       <label className="text-xs opacity-70">Current password</label>
                       <input type="password" value={pcCurPw} onChange={(e) => setPcCurPw(e.target.value)}
-                        className="w-full px-3 py-2 rounded text-sm outline-none mt-1" style={{ background: "white", color: "#111" }} />
+                        className="w-full px-3 py-2 rounded text-sm outline-none mt-1" className="input-field" />
                     </div>
                     <div>
                       <label className="text-xs opacity-70">New password</label>
                       <input type="password" value={pcNewPw} onChange={(e) => setPcNewPw(e.target.value)}
-                        className="w-full px-3 py-2 rounded text-sm outline-none mt-1" style={{ background: "white", color: "#111" }} />
+                        className="w-full px-3 py-2 rounded text-sm outline-none mt-1" className="input-field" />
                     </div>
                     <div>
                       <label className="text-xs opacity-70">Confirm new password</label>
@@ -690,7 +690,7 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, curren
                           setPcMsg({ kind: "ok", text: "✔ Password changed." });
                           blip("notify");
                         }}}
-                        className="w-full px-3 py-2 rounded text-sm outline-none mt-1" style={{ background: "white", color: "#111" }} />
+                        className="w-full px-3 py-2 rounded text-sm outline-none mt-1" className="input-field" />
                     </div>
                     {pcMsg && (
                       <div className={`text-xs rounded px-2 py-1.5 ${pcMsg.kind === "ok" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>{pcMsg.text}</div>
@@ -800,7 +800,7 @@ function NotepadApp({ fileId, onCreateShortcut, currentUser }: { fileId?: string
     <div className="flex flex-col h-full" style={{ overflow: "hidden" }}>
       <div className="aero-titlebar text-xs px-2 py-1 flex items-center gap-2 flex-shrink-0">
         <input value={name} onChange={(e) => setName(e.target.value)} disabled={docLocked}
-          className="px-2 py-0.5 rounded text-xs" style={{ background: "white", color: "#111", width: 180 }} />
+          className="px-2 py-0.5 rounded text-xs" className="input-field" style={{ width: 180 }} />
         {!docLocked && <button className="aero-button rounded px-2 py-0.5" onClick={save}>💾 Save</button>}
         {docLocked && <span className="opacity-60 text-xs">🔒 Read-only</span>}
         <button className="aero-button rounded px-2 py-0.5" onClick={open}>📂 Open</button>
@@ -811,7 +811,7 @@ function NotepadApp({ fileId, onCreateShortcut, currentUser }: { fileId?: string
       <textarea value={text} onChange={(e) => { if (!docLocked) setText(e.target.value); }}
         readOnly={docLocked}
         className="flex-1 p-3 font-mono text-sm outline-none resize-none"
-        style={{ background: "white", color: "#111", overflow: "auto", boxSizing: "border-box", userSelect: "text" }} />
+        className="input-field" style={{ overflow: "auto", boxSizing: "border-box", userSelect: "text" }} />
     </div>
   );
 }
@@ -972,7 +972,7 @@ function PaintApp({ fileId, onCreateShortcut, currentUser }: { fileId?: string; 
   return (
     <div className="flex flex-col h-full">
       <div className="aero-titlebar flex flex-wrap gap-2 px-2 py-1 items-center text-xs">
-        <input value={name} onChange={(e) => setName(e.target.value)} disabled={locked} className="px-2 py-0.5 rounded" style={{ background: locked ? "rgba(255,255,255,0.4)" : "white", color: "#111", width: 140 }} />
+        <input value={name} onChange={(e) => setName(e.target.value)} disabled={locked} className="px-2 py-0.5 rounded" className="input-field" style={{ width: 140 }} />
         {locked ? (
           <span className="opacity-60 text-xs">🔒 Read-only</span>
         ) : (
@@ -1007,7 +1007,7 @@ function PaintApp({ fileId, onCreateShortcut, currentUser }: { fileId?: string; 
       <div className="relative flex-1">
         <canvas ref={cv} width={800} height={500}
           onPointerDown={start} onPointerMove={move} onPointerUp={end} onPointerLeave={end}
-          style={{ width: "100%", height: "100%", background: "white", touchAction: "none", cursor: locked ? "not-allowed" : tool === "bucket" ? "copy" : "crosshair" }} />
+          className="browser-content" style={{ width: "100%", height: "100%", touchAction: "none", cursor: locked ? "not-allowed" : tool === "bucket" ? "copy" : "crosshair" }} />
         {locked && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             <div className="bg-black/30 text-white text-sm px-4 py-2 rounded-lg">🔒 Read-only</div>
@@ -1304,7 +1304,7 @@ function PueiCopilotPage() {
         <input value={query} onChange={(e) => setQuery(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && doSearch(query)}
           className="flex-1 px-4 py-2.5 rounded-full text-sm outline-none"
-          style={{ background: "white", color: "#111", border: "2px solid oklch(0.65 0.18 var(--accent-h))" }}
+          className="input-field" style={{ border: "2px solid oklch(0.65 0.18 var(--accent-h))" }}
           placeholder="Ask Puei Copilot or search anything…" />
         <button className="aero-button rounded-full px-5 py-2 text-sm font-semibold" onClick={() => doSearch(query)}>Search</button>
       </div>
@@ -1632,7 +1632,7 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
     let loadUrl = navUrl.trim();
     if (!/^https?:\/\//i.test(loadUrl)) loadUrl = "https://" + loadUrl;
     content = (
-      <div className="flex flex-col h-full relative" style={{ background: "white" }}>
+      <div className="flex flex-col h-full relative" className="panel-light">
         <iframe src={loadUrl} title={loadUrl} className="w-full flex-1 border-0" />
       </div>
     );
@@ -1975,7 +1975,7 @@ function PueiMailApp({ currentUser, users }: { currentUser: string; users: User[
         <div className="p-2 border-b">
           <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="🔍 Search mail…"
             className="w-full px-2 py-1 text-xs rounded outline-none"
-            style={{ background: "white", color: "#111", border: "1px solid var(--border)" }} />
+            className="input-field" style={{ border: "1px solid var(--border)" }} />
         </div>
         {showAttachmentsView ? (
           <div className="px-3 py-2 text-xs font-semibold opacity-70 border-b">Saved attachments · {allAttachments.length}</div>
@@ -2059,7 +2059,7 @@ function PueiMailApp({ currentUser, users }: { currentUser: string; users: User[
               <input value={draft.to} onChange={(e) => setDraft({ ...draft, to: e.target.value })}
                 placeholder="Pueio Number (e.g. 123-456-789)"
                 className="flex-1 px-3 py-1.5 rounded text-sm outline-none"
-                style={{ background: "white", color: "#111", border: "1px solid var(--border)" }}
+                className="input-field" style={{ border: "1px solid var(--border)" }}
                 list="mail-contacts" />
               <datalist id="mail-contacts">
                 {users.filter((u) => u.name !== currentUser).map((u) => (
@@ -2075,12 +2075,12 @@ function PueiMailApp({ currentUser, users }: { currentUser: string; users: User[
               <input value={draft.subject} onChange={(e) => setDraft({ ...draft, subject: e.target.value })}
                 placeholder="Subject"
                 className="flex-1 px-3 py-1.5 rounded text-sm outline-none"
-                style={{ background: "white", color: "#111", border: "1px solid var(--border)" }} />
+                className="input-field" style={{ border: "1px solid var(--border)" }} />
             </div>
             <textarea value={draft.body} onChange={(e) => setDraft({ ...draft, body: e.target.value })}
               placeholder="Write your message…"
               className="flex-1 px-3 py-2 rounded text-sm outline-none resize-none min-h-[160px]"
-              style={{ background: "white", color: "#111", border: "1px solid var(--border)" }} />
+              className="input-field" style={{ border: "1px solid var(--border)" }} />
 
             {pending.length > 0 && (
               <div className="flex flex-wrap gap-2">
@@ -2138,7 +2138,7 @@ function PueiMailApp({ currentUser, users }: { currentUser: string; users: User[
                   <button className="aero-button rounded px-2 py-1 text-xs" onClick={() => deleteMsg(selected.id)}>🖦️ Trash</button>
                 )}
                 {customFolders.length > 0 && (
-                  <select className="text-xs rounded px-1 py-0.5" style={{ background: "white", color: "#111" }}
+                  <select className="text-xs rounded px-1 py-0.5" className="input-field"
                     value="" onChange={(e) => e.target.value && moveToFolder(selected.id, e.target.value)}>
                     <option value="">Move to…</option>
                     {customFolders.map((c) => { const [id, name] = c.split("|"); return <option key={id} value={id}>{name}</option>; })}
@@ -3597,13 +3597,13 @@ function InstallerPane({ installWebApp }: { installWebApp: (label: string, url: 
           <label className="text-xs opacity-70">Website URL</label>
           <input value={url} onChange={(e) => setUrl(e.target.value)}
             placeholder="https://yourapp.lovable.app"
-            className="w-full px-3 py-2 rounded text-sm outline-none" style={{ background: "white", color: "#111" }} />
+            className="w-full px-3 py-2 rounded text-sm outline-none" className="input-field" />
         </div>
         <div>
           <label className="text-xs opacity-70">App name (optional)</label>
           <input value={name} onChange={(e) => setName(e.target.value)}
             placeholder="Auto from domain"
-            className="w-full px-3 py-2 rounded text-sm outline-none" style={{ background: "white", color: "#111" }} />
+            className="w-full px-3 py-2 rounded text-sm outline-none" className="input-field" />
         </div>
         <button className="aero-button rounded px-4 py-2 w-full" onClick={install} disabled={installing}
           style={{ opacity: installing ? 0.7 : 1 }}>
@@ -3736,7 +3736,7 @@ function PueiBoardApp({ user, users }: { user: string; users: User[] }) {
         <label className="text-xs opacity-70">Choose image from Gallery</label>
         <select
           className="w-full mt-1 px-2 py-1.5 rounded text-sm"
-          style={{ background: "white", color: "#111", border: "1px solid var(--border)" }}
+          className="input-field" style={{ border: "1px solid var(--border)" }}
           value={selectedImageId}
           onChange={(e) => setSelectedImageId(e.target.value)}
         >
@@ -3756,7 +3756,7 @@ function PueiBoardApp({ user, users }: { user: string; users: User[] }) {
           onChange={(e) => setCaption(e.target.value)}
           placeholder="Add a caption for your post..."
           className="w-full mt-1 px-2 py-2 rounded text-sm outline-none resize-none"
-          style={{ background: "white", color: "#111", minHeight: 70, border: "1px solid var(--border)" }}
+          className="input-field" style={{ minHeight: 70, border: "1px solid var(--border)" }}
         />
 
         <button
@@ -3883,7 +3883,7 @@ function WebAppFrame({ url, currentUser, startUpgrade }: { url: string; currentU
         <span className="opacity-60">🔗</span>
         <span className="truncate flex-1">{url}</span>
       </div>
-      <div className="flex-1 relative" style={{ background: "white" }}>
+      <div className="flex-1 relative" className="panel-light">
         <iframe src={url} title={url} className="w-full h-full border-0"
           onError={() => setFailed(true)} />
         {failed && (
@@ -4244,7 +4244,7 @@ function PueiSocialApp({ user, users }: { user: string; users: User[] }) {
             <textarea value={text} onChange={(e) => setText(e.target.value)}
               placeholder={`What's on your mind, ${user}?`}
               className="flex-1 p-2 rounded outline-none text-sm resize-none"
-              style={{ background: "white", color: "#111", minHeight: 60 }} />
+              className="input-field" style={{ minHeight: 60 }} />
           </div>
           {media && (
             <div className="mt-2 relative">
@@ -4291,7 +4291,7 @@ function PueiSocialApp({ user, users }: { user: string; users: User[] }) {
                 <div className="mb-2">
                   <textarea value={editText} onChange={(e) => setEditText(e.target.value)}
                     className="w-full p-2 rounded text-sm outline-none resize-none"
-                    style={{ background: "white", color: "#111", minHeight: 60 }} />
+                    className="input-field" style={{ minHeight: 60 }} />
                   <div className="flex gap-2 mt-1">
                     <button className="aero-button rounded px-3 py-1 text-xs" onClick={() => saveEdit(p.id)}>Save</button>
                     <button className="aero-button rounded px-3 py-1 text-xs" onClick={() => setEditingPostId(null)}>Cancel</button>
@@ -4346,7 +4346,7 @@ function PueiSocialApp({ user, users }: { user: string; users: User[] }) {
                       onKeyDown={(e) => { if (e.key === "Enter") addComment(p.id); }}
                       placeholder="Write a comment…"
                       className="flex-1 px-2 py-1 rounded text-xs outline-none"
-                      style={{ background: "white", color: "#111", border: "1px solid var(--border)" }} />
+                      className="input-field" style={{ border: "1px solid var(--border)" }} />
                     <button className="aero-button rounded px-3 py-1 text-xs" onClick={() => addComment(p.id)}>Reply</button>
                   </div>
                 </div>

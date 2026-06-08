@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+﻿import { useCallback, useEffect, useRef, useState } from "react";
 import {
   blip, compareVersion, defaultIcons, defaultTheme, iconGridPos, googleFaviconFor, pueiNumberFor,
   loadState, saveState, registerInDirectory, SYSTEM_ORDER,
@@ -637,7 +637,7 @@ export function PueiOS() {
         <div className="aero-glass-light rounded px-3 py-2 font-mono text-sm mb-3">{SECURITY_KEY}</div>
         <input value={installKey} onChange={(e) => setInstallKey(e.target.value)}
           placeholder="Type the security key"
-          className="w-full px-3 py-2 rounded text-sm outline-none" style={{ background: "white", color: "#111" }} />
+          className="w-full px-3 py-2 rounded text-sm outline-none" className="input-field" />
         {installErr && <div className="text-red-300 text-xs mt-2">{installErr}</div>}
         <div className="flex gap-2 mt-4">
           <button className="aero-button rounded px-4 py-2" onClick={() => setInstallStep(1)}>← Back</button>
@@ -711,13 +711,13 @@ export function PueiOS() {
           <div>
             <label className="text-xs opacity-70">Username</label>
             <input value={newAcc.name} onChange={(e) => setNewAcc({ ...newAcc, name: e.target.value })}
-              className="w-full px-3 py-2 rounded text-sm outline-none" style={{ background: "white", color: "#111" }} />
+              className="w-full px-3 py-2 rounded text-sm outline-none" className="input-field" />
           </div>
           {pwOption === "have" && (
             <div>
               <label className="text-xs opacity-70">Password</label>
               <input type="password" value={newAcc.password} onChange={(e) => setNewAcc({ ...newAcc, password: e.target.value })}
-                className="w-full px-3 py-2 rounded text-sm outline-none" style={{ background: "white", color: "#111" }} />
+                className="w-full px-3 py-2 rounded text-sm outline-none" className="input-field" />
             </div>
           )}
           {pwOption === "none" && (
@@ -741,7 +741,7 @@ export function PueiOS() {
             <div>
               <label className="text-xs opacity-70">New password</label>
               <input type="password" value={newAcc.password} onChange={(e) => setNewAcc({ ...newAcc, password: e.target.value })}
-                className="w-full px-3 py-2 rounded text-sm outline-none" style={{ background: "white", color: "#111" }} />
+                className="w-full px-3 py-2 rounded text-sm outline-none" className="input-field" />
             </div>
           )}
           {pwOption !== "none" && (
@@ -784,12 +784,12 @@ export function PueiOS() {
         <div>
           <label className="text-xs opacity-70">Account name</label>
           <input value={newAcc.name} onChange={(e) => setNewAcc({ ...newAcc, name: e.target.value })}
-            className="w-full px-3 py-2 rounded text-sm outline-none" style={{ background: "white", color: "#111" }} />
+            className="w-full px-3 py-2 rounded text-sm outline-none" className="input-field" />
         </div>
         <div>
           <label className="text-xs opacity-70">Password (optional)</label>
           <input type="password" value={newAcc.password} onChange={(e) => setNewAcc({ ...newAcc, password: e.target.value })}
-            className="w-full px-3 py-2 rounded text-sm outline-none" style={{ background: "white", color: "#111" }} />
+            className="w-full px-3 py-2 rounded text-sm outline-none" className="input-field" />
           <div className="text-[10px] opacity-60 mt-1">Leave empty for limited access mode (you can enable a password later in Settings → Pueio Control).</div>
         </div>
         <div>
@@ -1037,13 +1037,13 @@ export function PueiOS() {
               <input value={switchName} onChange={(e) => { setSwitchName(e.target.value); setSwitchErr(""); }}
                 onKeyDown={(e) => { if (e.key === "Enter") switchToAccount(); }}
                 autoFocus
-                className="w-full px-3 py-2 rounded text-sm outline-none mt-1" style={{ background: "white", color: "#111" }} />
+                className="w-full px-3 py-2 rounded text-sm outline-none mt-1" className="input-field" />
             </div>
             <div>
               <label className="text-xs opacity-70">Password</label>
               <input type="password" value={switchPw} onChange={(e) => setSwitchPw(e.target.value)}
                 onKeyDown={(e) => { if (e.key === "Enter") switchToAccount(); }}
-                className="w-full px-3 py-2 rounded text-sm outline-none mt-1" style={{ background: "white", color: "#111" }} />
+                className="w-full px-3 py-2 rounded text-sm outline-none mt-1" className="input-field" />
             </div>
             {switchErr && <div className="text-red-400 text-xs">{switchErr}</div>}
             <div className="flex gap-2">
@@ -1085,7 +1085,7 @@ export function PueiOS() {
                     onKeyDown={(e) => { if (e.key === "Enter") trySignIn(); }}
                     placeholder="Your PueiOS username"
                     className="w-full px-3 py-2 rounded text-sm outline-none"
-                    style={{ background: "white", color: "#111" }} />
+                    className="input-field" />
                 </div>
               ) : (
                 <div className="text-sm font-medium mb-2">{loginUser || "Select an account"}</div>
@@ -1094,7 +1094,7 @@ export function PueiOS() {
                 onKeyDown={(e) => { if (e.key === "Enter") trySignIn(); }}
                 placeholder={activeUser?.password ? "Password" : "Press Enter (no password)"}
                 className="w-full px-3 py-2 rounded text-sm outline-none"
-                style={{ background: "white", color: "#111" }} />
+                className="input-field" />
               {pwError && <div className="text-red-400 text-xs mt-1">{pwError}</div>}
               <div className="flex gap-2 mt-3">
                 <button className="aero-button rounded px-3 py-1 text-sm flex-1" onClick={trySignIn}>Sign in →</button>
@@ -1114,12 +1114,12 @@ export function PueiOS() {
             <div>
               <label className="text-xs opacity-70">Account name</label>
               <input value={newAcc.name} onChange={(e) => setNewAcc({ ...newAcc, name: e.target.value })}
-                className="w-full px-3 py-2 rounded text-sm outline-none" style={{ background: "white", color: "#111" }} />
+                className="w-full px-3 py-2 rounded text-sm outline-none" className="input-field" />
             </div>
             <div>
               <label className="text-xs opacity-70">Password (optional)</label>
               <input type="password" value={newAcc.password} onChange={(e) => setNewAcc({ ...newAcc, password: e.target.value })}
-                className="w-full px-3 py-2 rounded text-sm outline-none" style={{ background: "white", color: "#111" }} />
+                className="w-full px-3 py-2 rounded text-sm outline-none" className="input-field" />
             </div>
             <div>
               <label className="text-xs opacity-70">Avatar</label>
