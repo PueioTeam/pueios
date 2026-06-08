@@ -439,7 +439,7 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, curren
             <div className="space-y-2">
               {["start", "click", "hover", "notify", "error", "shutdown"].map((s) => (
                 <button key={s} className="aero-button rounded-md px-4 py-2 mr-2 capitalize"
-                  onClick={() => blip(s as any)}>Γû╢ Test {s}</button>
+                  onClick={() => blip(s as any)}>▶ Test {s}</button>
               ))}
             </div>
           </div>
@@ -521,7 +521,7 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, curren
                   </div>
                   <button className="aero-button rounded-lg px-4 py-2 text-sm flex-shrink-0"
                     onClick={() => { blip("notify"); startUpgrade(v); }}>
-                    Upgrade ΓåÆ
+                    Upgrade →
                   </button>
                 </div>
 
@@ -580,7 +580,7 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, curren
           </div>
         )}
         {tab === "about" && (
-          <div><button className="aero-button rounded-md px-4 py-2" onClick={() => openApp("about")}>Open About PueiOS 2 ΓåÆ</button></div>
+          <div><button className="aero-button rounded-md px-4 py-2" onClick={() => openApp("about")}>Open About PueiOS 2 →</button></div>
         )}
         {tab === "pueio-control" && (
           <div className="space-y-6 max-w-lg">
@@ -1022,7 +1022,7 @@ function PaintApp({ fileId, onCreateShortcut, currentUser }: { fileId?: string; 
 
 /** General knowledge base for Puei Copilot. Returns a real answer or null if unknown. */
 const KNOWLEDGE: Array<{ match: (q: string) => boolean; answer: (q: string) => string }> = [
-  // ΓöÇΓöÇ Machines & vehicles ΓöÇΓöÇ
+  // ── Machines & vehicles ──
   {
     match: (q) => q.includes("bulldozer") || q.includes("bull dozer"),
     answer: () =>
@@ -1066,7 +1066,7 @@ const KNOWLEDGE: Array<{ match: (q: string) => boolean; answer: (q: string) => s
     answer: () =>
       `A tractor is a vehicle designed to deliver high tractive effort at slow speed for hauling equipment or pulling trailers. In farming it pulls plows, seeders, and harvesters. Construction tractors pull scrapers or compactors. They typically run on diesel engines and use large rear wheels (or tracks) for traction on soft ground.`,
   },
-  // ΓöÇΓöÇ Science ΓöÇΓöÇ
+  // ── Science ──
   {
     match: (q) => q.includes("black hole"),
     answer: () =>
@@ -1080,14 +1080,14 @@ const KNOWLEDGE: Array<{ match: (q: string) => boolean; answer: (q: string) => s
   {
     match: (q) => q.includes("photosynthesis"),
     answer: () =>
-      `Photosynthesis is the process by which plants, algae, and some bacteria convert sunlight, water, and carbon dioxide into glucose (sugar) and oxygen. The formula is:\n\n6COΓéé + 6HΓééO + light energy ΓåÆ CΓéåHΓéüΓééOΓéå + 6OΓéé\n\nIt happens mainly in the chloroplasts of plant cells, using the green pigment chlorophyll to absorb light. The oxygen released is what makes Earth's atmosphere breathable.`,
+      `Photosynthesis is the process by which plants, algae, and some bacteria convert sunlight, water, and carbon dioxide into glucose (sugar) and oxygen. The formula is:\n\n6CO₂ + 6H₂O + light energy → C₆H₁₂O₆ + 6O₂\n\nIt happens mainly in the chloroplasts of plant cells, using the green pigment chlorophyll to absorb light. The oxygen released is what makes Earth's atmosphere breathable.`,
   },
   {
     match: (q) => q.includes("dna"),
     answer: () =>
       `DNA (deoxyribonucleic acid) is the molecule that carries genetic instructions for the development, functioning, and reproduction of all living organisms. It's shaped like a double helix — two strands twisted around each other. The sequence of four chemical bases (adenine, thymine, guanine, cytosine) encodes genetic information. Humans have about 3 billion base pairs of DNA packed into 46 chromosomes inside each cell's nucleus.`,
   },
-  // ΓöÇΓöÇ History ΓöÇΓöÇ
+  // ── History ──
   {
     match: (q) => q.includes("world war 2") || q.includes("world war ii") || q.includes("ww2") || q.includes("wwii"),
     answer: () =>
@@ -1098,7 +1098,7 @@ const KNOWLEDGE: Array<{ match: (q: string) => boolean; answer: (q: string) => s
     answer: () =>
       `World War I (1914–1918) was a global conflict mainly fought in Europe between the Allied Powers (France, UK, Russia, later USA) and the Central Powers (Germany, Austria-Hungary, Ottoman Empire). It was triggered by the assassination of Archduke Franz Ferdinand of Austria in 1914. The war introduced trench warfare, chemical weapons, and tanks. Around 20 million people died. It ended with the Armistice of 11 November 1918 and the Treaty of Versailles (1919).`,
   },
-  // ΓöÇΓöÇ Geography ΓöÇΓöÇ
+  // ── Geography ──
   {
     match: (q) => q.includes("mount everest") || q.includes("everest"),
     answer: () =>
@@ -1109,7 +1109,7 @@ const KNOWLEDGE: Array<{ match: (q: string) => boolean; answer: (q: string) => s
     answer: () =>
       `The Amazon is the world's largest tropical rainforest and home to the Amazon River, the largest river by water discharge. The rainforest covers about 5.5 million km┬▓ across Brazil, Peru, Colombia, and other South American countries. It holds around 10% of all species on Earth and produces roughly 20% of the world's oxygen. The Amazon River flows about 6,400 km into the Atlantic Ocean.`,
   },
-  // ΓöÇΓöÇ Technology ΓöÇΓöÇ
+  // ── Technology ──
   {
     match: (q) => q.includes("internet") && !q.includes("pueios"),
     answer: () =>
@@ -1125,7 +1125,7 @@ const KNOWLEDGE: Array<{ match: (q: string) => boolean; answer: (q: string) => s
     answer: () =>
       `Bitcoin is a decentralised digital currency created in 2009 by the pseudonymous Satoshi Nakamoto. It operates on a blockchain — a public, distributed ledger that records all transactions. New bitcoins are created through "mining" (solving cryptographic puzzles). There will only ever be 21 million bitcoins. Cryptocurrency broadly refers to any digital currency using cryptography for security, including Ethereum, Litecoin, and thousands of others.`,
   },
-  // ΓöÇΓöÇ Animals ΓöÇΓöÇ
+  // ── Animals ──
   {
     match: (q) => q.includes("shark"),
     answer: () =>
@@ -1136,7 +1136,7 @@ const KNOWLEDGE: Array<{ match: (q: string) => boolean; answer: (q: string) => s
     answer: () =>
       `Dinosaurs were a diverse group of reptiles that dominated terrestrial ecosystems for about 165 million years, from the Triassic period (~230 million years ago) until a mass extinction event ~66 million years ago (likely caused by an asteroid impact). They ranged from chicken-sized feathered creatures to the massive Argentinosaurus (~80 tonnes). Birds are the living descendants of theropod dinosaurs.`,
   },
-  // ΓöÇΓöÇ Math ΓöÇΓöÇ
+  // ── Math ──
   {
     match: (q) => /what is \d+[\s]*[+\-*/├ù├╖][\s]*\d+/.test(q),
     answer: (q) => {
@@ -1153,7 +1153,7 @@ const KNOWLEDGE: Array<{ match: (q: string) => boolean; answer: (q: string) => s
       return `${a} ${op} ${b} = **${result}**\n\nCalculated directly by Puei Copilot's math engine. All four search sources confirmed the result.`;
     },
   },
-  // ΓöÇΓöÇ Food ΓöÇΓöÇ
+  // ── Food ──
   {
     match: (q) => q.includes("pizza"),
     answer: () =>
@@ -1164,7 +1164,7 @@ const KNOWLEDGE: Array<{ match: (q: string) => boolean; answer: (q: string) => s
     answer: () =>
       `Pasta is an Italian food made from durum wheat semolina dough shaped into various forms — spaghetti (long thin strands), penne, rigatoni, fusilli, lasagne, and hundreds more. It is typically boiled in salted water and served with a sauce. Spaghetti is commonly paired with tomato-based sauces (like bolognese or marinara), carbonara (eggs, cheese, pancetta), or aglio e olio (garlic, olive oil, chilli).`,
   },
-  // ΓöÇΓöÇ Sports ΓöÇΓöÇ
+  // ── Sports ──
   {
     match: (q) => q.includes("football") || q.includes("soccer"),
     answer: () =>
@@ -1175,7 +1175,7 @@ const KNOWLEDGE: Array<{ match: (q: string) => boolean; answer: (q: string) => s
     answer: () =>
       `Basketball is a sport invented by Dr. James Naismith in 1891 in the USA. Two teams of 5 players try to score by shooting a ball through the opposing team's hoop (10 feet/3 m high). Games have four 12-minute quarters (NBA) or two 20-minute halves (FIBA). The NBA (National Basketball Association) is the premier professional league. Famous players include Michael Jordan, LeBron James, and Kobe Bryant.`,
   },
-  // ΓöÇΓöÇ PueiOS-specific ΓöÇΓöÇ
+  // ── PueiOS-specific ──
   {
     match: (q) => q.includes("pueios") || q.includes("puei os"),
     answer: () =>
@@ -1194,7 +1194,7 @@ const KNOWLEDGE: Array<{ match: (q: string) => boolean; answer: (q: string) => s
   {
     match: (q) => q.includes("puei paint"),
     answer: () =>
-      `Puei Paint 2 is the built-in drawing app. Draw with different brush sizes and colors, save artwork as image files, and set a painting as your desktop wallpaper via Settings ΓåÆ Wallpaper.`,
+      `Puei Paint 2 is the built-in drawing app. Draw with different brush sizes and colors, save artwork as image files, and set a painting as your desktop wallpaper via Settings → Wallpaper.`,
   },
 ];
 
@@ -1489,7 +1489,7 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
             ["puei://updates", "⬆️ Puei Updates"],
             ["puei://search", "✨ Puei Copilot"],
             ["puei://forum", "💼 PueiForum"],
-            ["puei://mail", "Γ£ë∩╕Å PueiMail"],
+            ["puei://mail", "✉️ PueiMail"],
             ["puei://wallpapers", "🖼️ Puei Wallpapers"],
             ["puei://about", "ℹ️ About"],
           ].map(([u, l]) => (
@@ -1580,7 +1580,7 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
             Puei Updater status: {updaterInstalled ? <span className="font-semibold text-green-500">Installed</span> : <span className="font-semibold text-amber-500">Not installed from App Store</span>}
           </div>
           <div className="flex gap-2 flex-wrap">
-            <button className="aero-button rounded px-3 py-1.5 text-xs" onClick={downloadPlusIso}>Γ¼ç Download pueios2-plus.iso to Files</button>
+            <button className="aero-button rounded px-3 py-1.5 text-xs" onClick={downloadPlusIso}>⬇ Download pueios2-plus.iso to Files</button>
             <button className="aero-button rounded px-3 py-1.5 text-xs" disabled={!isoFile}
               style={{ opacity: isoFile ? 1 : 0.5 }} onClick={deleteIsoAfterUpdate}>🖦️ Delete ISO</button>
           </div>
@@ -1610,7 +1610,7 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
               <div className="mt-2 text-sm font-semibold">{w.name}</div>
               <button className="aero-button rounded-md px-3 py-1 text-xs mt-2"
                 onClick={() => downloadWallpaper(w)}>
-                Γ¼ç Download
+                ⬇ Download
               </button>
             </div>
           ))}
@@ -1655,7 +1655,7 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
           onClick={() => { const id = Date.now(); setTabs([...tabs, { id, title: "New Tab", url: "puei://home" }]); setActive(id); navigate("puei://home"); }}>+</button>
       </div>
       <div className="aero-titlebar flex items-center gap-2 px-2 py-1">
-        <button className="aero-button rounded px-2 py-0.5 text-xs" onClick={() => navigate("puei://home")}>Γîé</button>
+        <button className="aero-button rounded px-2 py-0.5 text-xs" onClick={() => navigate("puei://home")}>🏠</button>
         <button className="aero-button rounded px-2 py-0.5 text-xs" onClick={() => navigate("puei://search")}>✨</button>
         <input value={urlBar} onChange={(e) => setUrlBar(e.target.value)}
           onKeyDown={(e) => { if (e.key === "Enter") navigate(urlBar); }}
@@ -1675,10 +1675,10 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
 // ---------- PueiMail ----------
 const SYSTEM_FOLDERS: { id: MailFolderId; label: string; icon: string }[] = [
   { id: "inbox", label: "Inbox", icon: "📑" },
-  { id: "important", label: "Important", icon: "Γ¡É" },
+  { id: "important", label: "Important", icon: "⭐" },
   { id: "drafts", label: "Drafts", icon: "📝" },
-  { id: "sent", label: "Sent", icon: "≡ƒôñ" },
-  { id: "spam", label: "Spam", icon: "≡ƒÜ½" },
+  { id: "sent", label: "Sent", icon: "📧" },
+  { id: "spam", label: "Spam", icon: "🚫" },
   { id: "trash", label: "Trash", icon: "🖦️" },
 ];
 
@@ -1927,7 +1927,7 @@ function PueiMailApp({ currentUser, users }: { currentUser: string; users: User[
       {/* Sidebar */}
       <div className="w-52 flex-shrink-0 p-3 border-r flex flex-col gap-1 overflow-y-auto" style={{ background: "var(--glass)" }}>
         <button className="aero-button rounded-lg px-3 py-2 text-sm font-semibold mb-2 w-full"
-          onClick={() => openCompose()}>Γ£Å∩╕Å Compose</button>
+          onClick={() => openCompose()}>✅ Compose</button>
         {SYSTEM_FOLDERS.map((f) => (
           <div key={f.id} onClick={() => { setFolder(f.id); setSelected(null); setShowAttachmentsView(false); setShowDownloadsView(false); }}
             className="px-3 py-2 rounded-md cursor-pointer text-sm flex justify-between items-center"
@@ -1945,7 +1945,7 @@ function PueiMailApp({ currentUser, users }: { currentUser: string; users: User[
             <div key={id} onClick={() => { setFolder(id); setSelected(null); setShowAttachmentsView(false); setShowDownloadsView(false); }}
               className="px-3 py-2 rounded-md cursor-pointer text-sm flex justify-between items-center"
               style={{ background: folder === id ? "var(--gradient-aero)" : "transparent", color: folder === id ? "white" : "inherit" }}>
-              <span>≡ƒôü {name}</span>
+              <span>📁 {name}</span>
             </div>
           );
         })}
@@ -1955,12 +1955,12 @@ function PueiMailApp({ currentUser, users }: { currentUser: string; users: User[
           <div onClick={() => { setShowAttachmentsView(true); setShowDownloadsView(false); setSelected(null); setComposing(false); }}
             className="px-3 py-2 rounded-md cursor-pointer text-sm"
             style={{ background: showAttachmentsView ? "var(--gradient-aero)" : "transparent", color: showAttachmentsView ? "white" : "inherit" }}>
-            ≡ƒôÄ Saved attachments
+            📎 Saved attachments
           </div>
           <div onClick={() => { setShowDownloadsView(true); setShowAttachmentsView(false); setSelected(null); setComposing(false); }}
             className="px-3 py-2 rounded-md cursor-pointer text-sm"
             style={{ background: showDownloadsView ? "var(--gradient-aero)" : "transparent", color: showDownloadsView ? "white" : "inherit" }}>
-            Γ¼ç∩╕Å Download history
+            ⬇️ Download history
           </div>
         </div>
 
@@ -1973,7 +1973,7 @@ function PueiMailApp({ currentUser, users }: { currentUser: string; users: User[
       {/* Center column */}
       <div className="w-64 flex-shrink-0 border-r flex flex-col overflow-hidden">
         <div className="p-2 border-b">
-          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="≡ƒöì Search mail…"
+          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="🔍 Search mail…"
             className="w-full px-2 py-1 text-xs rounded outline-none"
             style={{ background: "white", color: "#111", border: "1px solid var(--border)" }} />
         </div>
@@ -2005,7 +2005,7 @@ function PueiMailApp({ currentUser, users }: { currentUser: string; users: User[
                     });
                   }
                 }}>
-                <div className="font-semibold truncate">{a.kind === "image" ? "🖼️" : a.kind === "video" ? "≡ƒÄ¼" : "≡ƒôÄ"} {a.name}</div>
+                <div className="font-semibold truncate">{a.kind === "image" ? "🖼️" : a.kind === "video" ? "🎬" : "📎"} {a.name}</div>
                 <div className="opacity-60 truncate">{a.from} · {a.subject}</div>
               </div>
             ))
@@ -2034,7 +2034,7 @@ function PueiMailApp({ currentUser, users }: { currentUser: string; users: User[
               style={{ background: selected?.id === msg.id ? "rgba(255,255,255,0.25)" : undefined }}>
               <div className="flex justify-between items-center">
                 <span className="text-xs truncate max-w-[140px]" style={{ fontWeight: !msg.read && msg.folder === "inbox" ? 700 : 400 }}>
-                  {msg.important && "Γ¡É "}{folder === "sent" || msg.folder === "sent" ? `ΓåÆ ${msg.to}` : msg.from}
+                  {msg.important && "⭐ "}{folder === "sent" || msg.folder === "sent" ? `→ ${msg.to}` : msg.from}
                 </span>
                 <span className="text-[10px] opacity-50 flex-shrink-0">{formatDate(msg.at)}</span>
               </div>
@@ -2042,7 +2042,7 @@ function PueiMailApp({ currentUser, users }: { currentUser: string; users: User[
                 {msg.subject || "(no subject)"}
               </div>
               <div className="text-[10px] truncate opacity-50">
-                {msg.attachments?.length ? `≡ƒôÄ${msg.attachments.length} ` : ""}{msg.body.slice(0, 60)}
+                {msg.attachments?.length ? `📎${msg.attachments.length} ` : ""}{msg.body.slice(0, 60)}
               </div>
             </div>
           ))}
@@ -2086,7 +2086,7 @@ function PueiMailApp({ currentUser, users }: { currentUser: string; users: User[
               <div className="flex flex-wrap gap-2">
                 {pending.map((a) => (
                   <div key={a.id} className="aero-glass-light rounded px-2 py-1 text-xs flex items-center gap-2">
-                    <span>{a.kind === "image" ? "🖼️" : a.kind === "video" ? "≡ƒÄ¼" : "≡ƒôÄ"} {a.name}</span>
+                    <span>{a.kind === "image" ? "🖼️" : a.kind === "video" ? "🎬" : "📎"} {a.name}</span>
                     <button className="opacity-60 hover:opacity-100" onClick={() => setPending(pending.filter((x) => x.id !== a.id))}>├ù</button>
                   </div>
                 ))}
@@ -2105,8 +2105,8 @@ function PueiMailApp({ currentUser, users }: { currentUser: string; users: User[
 
             {sendStatus && <div className="text-red-400 text-xs">{sendStatus}</div>}
             <div className="flex gap-2 flex-wrap">
-              <button className="aero-button rounded-lg px-5 py-2 text-sm font-semibold" onClick={doSend}>≡ƒô¿ Send</button>
-              <button className="aero-button rounded-lg px-4 py-2 text-sm" onClick={handleAttachClick}>≡ƒôÄ Attach</button>
+              <button className="aero-button rounded-lg px-5 py-2 text-sm font-semibold" onClick={doSend}>📩 Send</button>
+              <button className="aero-button rounded-lg px-4 py-2 text-sm" onClick={handleAttachClick}>📎 Attach</button>
               <input type="file" multiple ref={fileInput} className="hidden"
                 accept="image/*,video/*,.pdf,.txt,.doc,.docx,.zip"
                 onChange={(e) => { handleFiles(e.target.files); e.target.value = ""; }} />
@@ -2117,21 +2117,21 @@ function PueiMailApp({ currentUser, users }: { currentUser: string; users: User[
         ) : selected ? (
           <div className="max-w-2xl">
             <div className="flex justify-between items-start mb-4 flex-wrap gap-2">
-              <h2 className="text-xl font-semibold">{selected.important && "Γ¡É "}{selected.subject || "(no subject)"}</h2>
+              <h2 className="text-xl font-semibold">{selected.important && "⭐ "}{selected.subject || "(no subject)"}</h2>
               <div className="flex gap-1 flex-wrap">
                 <button className="aero-button rounded px-2 py-1 text-xs"
                   onClick={() => openCompose({ to: selected.from === currentUser ? selected.to : selected.from, subject: `Re: ${selected.subject}`, body: `\n\n--- Original from ${selected.from} ---\n${selected.body}` })}>
-                  Γå⌐ Reply
+                  ↩ Reply
                 </button>
                 <button className="aero-button rounded px-2 py-1 text-xs" onClick={() => updateMsg((m) => ({ ...m, important: !m.important }), selected.id)}>
-                  {selected.important ? "Γÿå Unstar" : "Γ¡É Important"}
+                  {selected.important ? "🌟 Unstar" : "⭐ Important"}
                 </button>
                 <button className="aero-button rounded px-2 py-1 text-xs" onClick={() => moveToFolder(selected.id, selected.folder === "spam" ? "inbox" : "spam")}>
-                  {selected.folder === "spam" ? "✔ Not spam" : "≡ƒÜ½ Spam"}
+                  {selected.folder === "spam" ? "✔ Not spam" : "🚫 Spam"}
                 </button>
                 {selected.folder === "trash" ? (
                   <>
-                    <button className="aero-button rounded px-2 py-1 text-xs" onClick={() => moveToFolder(selected.id, "inbox")}>ΓÖ╗∩╕Å Restore</button>
+                    <button className="aero-button rounded px-2 py-1 text-xs" onClick={() => moveToFolder(selected.id, "inbox")}>⚛️ Restore</button>
                     <button className="aero-button rounded px-2 py-1 text-xs" onClick={() => deleteMsg(selected.id, true)}>🖦️ Delete forever</button>
                   </>
                 ) : (
@@ -2154,7 +2154,7 @@ function PueiMailApp({ currentUser, users }: { currentUser: string; users: User[
             </div>
             {selected.attachments && selected.attachments.length > 0 && (
               <div className="space-y-2">
-                <div className="text-xs font-semibold opacity-70">≡ƒôÄ Attachments ({selected.attachments.length})</div>
+                <div className="text-xs font-semibold opacity-70">📎 Attachments ({selected.attachments.length})</div>
                 {selected.attachments.map((a) => (
                   <div key={a.id} className="aero-glass-light rounded p-2 flex items-center gap-3">
                     {a.kind === "image" && <img src={a.dataUrl} alt={a.name} className="w-16 h-16 object-cover rounded" />}
@@ -2167,11 +2167,11 @@ function PueiMailApp({ currentUser, users }: { currentUser: string; users: User[
                     <div className="flex flex-col gap-1">
                       {a.kind === "image" && (
                         <button className="aero-button rounded px-2 py-1 text-xs"
-                          onClick={() => window.open(a.dataUrl, "_blank")}>≡ƒöì Open</button>
+                          onClick={() => window.open(a.dataUrl, "_blank")}>🔍 Open</button>
                       )}
                       <button className="aero-button rounded px-2 py-1 text-xs"
                         onClick={() => { downloadAttachment(a); recordDownload(currentUser, { id: `dl-${Date.now()}`, name: a.name, kind: a.kind, size: a.size, at: Date.now(), mailId: selected.id }); }}>
-                        Γ¼ç∩╕Å Download
+                        ⬇️ Download
                       </button>
                     </div>
                   </div>
@@ -2202,14 +2202,14 @@ function PueiMailApp({ currentUser, users }: { currentUser: string; users: User[
             {downloads.length === 0 ? <div className="opacity-50 text-sm">Nothing downloaded yet.</div>
             : downloads.map((d) => (
               <div key={d.id} className="aero-glass-light rounded p-2 text-sm flex justify-between">
-                <span>{d.kind === "image" ? "🖼️" : d.kind === "video" ? "≡ƒÄ¼" : "≡ƒôÄ"} {d.name}</span>
+                <span>{d.kind === "image" ? "🖼️" : d.kind === "video" ? "🎬" : "📎"} {d.name}</span>
                 <span className="text-xs opacity-60">{new Date(d.at).toLocaleString()}</span>
               </div>
             ))}
           </div>
         ) : (
           <div className="h-full flex flex-col items-center justify-center opacity-50 text-sm gap-2">
-            <div className="text-5xl">Γ£ë∩╕Å</div>
+            <div className="text-5xl">✉️</div>
             <div>Puei Mail · {myAddress}</div>
             <div className="text-xs">Select a message to read, or compose a new one.</div>
           </div>
@@ -2534,7 +2534,7 @@ function PueiCloudChatApp({ user, users, setUsers }: { user: string; users: User
   if (showSettings) return (
     <div className="flex flex-col h-full" style={{background:MAIN_BG,color:"white"}}>
       <div className="flex items-center gap-2 px-4 py-3 border-b border-white/10">
-        <button onClick={()=>setShowSettings(false)} className="text-sm px-3 py-1 rounded-full hover:bg-white/10">ΓåÉ Back</button>
+        <button onClick={()=>setShowSettings(false)} className="text-sm px-3 py-1 rounded-full hover:bg-white/10">← Back</button>
         <span className="font-semibold">My Profile</span>
       </div>
       <div className="flex-1 p-6 flex flex-col items-center gap-5">
@@ -2655,7 +2655,7 @@ function PueiCloudChatApp({ user, users, setUsers }: { user: string; users: User
                   style={{background:"linear-gradient(135deg,#6d28d9,#4f46e5)"}}>Start Chat</button>
                 <button onClick={()=>{setShowNewChat(false);setNewInput("");setNewMsg(null);}}
                   className="px-3 rounded-xl text-xs opacity-50 hover:opacity-80"
-                  style={{background:"rgba(255,255,255,0.08)"}}>Γ£ò</button>
+                  style={{background:"rgba(255,255,255,0.08)"}}>✒</button>
               </div>
             </div>
           ):(
@@ -2697,7 +2697,7 @@ function PueiCloudChatApp({ user, users, setUsers }: { user: string; users: User
                   </button>
                   <button className="text-xs opacity-40 hover:opacity-100 hover:text-red-400 transition-all px-2 py-1 rounded-lg"
                     onClick={()=>{const num=localPartner.pueiNumber||pueiNumberFor(localPartner.name+":seed");blockNum(num,localPartner.name);}}>
-                    ≡ƒÜ½
+                    🚫
                   </button>
                 </>
               )}
@@ -2714,7 +2714,7 @@ function PueiCloudChatApp({ user, users, setUsers }: { user: string; users: User
                   <button className="text-xs opacity-40 hover:opacity-100 transition-all px-2 py-1 rounded-lg"
                     title="Edit contact name"
                     onClick={()=>editExtName(extPartner.pueiNumber)}>
-                    Γ£Å∩╕Å
+                    ✅
                   </button>
                   <button className="text-xs opacity-40 hover:opacity-100 hover:text-red-400 transition-all px-2 py-1 rounded-lg"
                     onClick={()=>{if(confirm(`Remove ${extPartner.pueiNumber}?`)){saveExtContacts(extContacts.filter(c=>c.pueiNumber!==extPartner.pueiNumber));setApiMsgs(p=>{const n={...p};delete n[extPartner.pueiNumber];return n;});setActiveId(null);blip("click");}}}>
@@ -2722,7 +2722,7 @@ function PueiCloudChatApp({ user, users, setUsers }: { user: string; users: User
                   </button>
                   <button className="text-xs opacity-40 hover:opacity-100 hover:text-red-400 transition-all px-2 py-1 rounded-lg"
                     onClick={()=>blockNum(extPartner.pueiNumber)}>
-                    ≡ƒÜ½
+                    🚫
                   </button>
                 </>
               )}
@@ -2732,7 +2732,7 @@ function PueiCloudChatApp({ user, users, setUsers }: { user: string; users: User
               {activeKind==="local"&&localMsgs.length===0&&(
                 <div className="flex-1 flex items-center justify-center">
                   <div className="text-center opacity-20">
-                    <div className="text-4xl mb-2">≡ƒæï</div>
+                    <div className="text-4xl mb-2">👏</div>
                     <div className="text-sm">Say hello to {localPartner?.name}!</div>
                   </div>
                 </div>
@@ -2808,7 +2808,7 @@ function PueiCloudChatApp({ user, users, setUsers }: { user: string; users: User
                 <button onClick={send} disabled={!text.trim()}
                   className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 transition-opacity text-xl"
                   style={{background:text.trim()?"linear-gradient(135deg,#6d28d9,#4f46e5)":"rgba(255,255,255,0.1)",opacity:text.trim()?1:0.5}}>
-                  Γåæ
+                  ↑
                 </button>
               </div>
             </div>
@@ -2838,11 +2838,11 @@ function FileExplorerApp({ openApp, icons, openFolder, currentUser, users }: { o
   }, [currentUser]);
 
   const folders = [
-    { id: "documents" as const, name: "Documents", icon: "≡ƒôü" },
+    { id: "documents" as const, name: "Documents", icon: "📁" },
     { id: "pictures" as const, name: "Pictures", icon: "🖼️" },
-    { id: "downloads" as const, name: "Downloads", icon: "Γ¼ç∩╕Å" },
-    { id: "apps" as const, name: "Apps", icon: "≡ƒº⌐" },
-    { id: "folders" as const, name: "My Folders", icon: "≡ƒùâ∩╕Å" },
+    { id: "downloads" as const, name: "Downloads", icon: "⬇️" },
+    { id: "apps" as const, name: "Apps", icon: "🧩" },
+    { id: "folders" as const, name: "My Folders", icon: "🖿️" },
   ];
   const apps: { name: string; appId: AppId; icon: string }[] = [
     { name: "Puei Paint 2", appId: "puei-paint", icon: "🎨" },
@@ -2852,7 +2852,7 @@ function FileExplorerApp({ openApp, icons, openFolder, currentUser, users }: { o
     { name: "Settings", appId: "settings", icon: "⚙️" },
     { name: "PueiNet", appId: "pueinet", icon: "🌍" },
     { name: "PueiCloudChat", appId: "puei-cloud-chat", icon: "💼" },
-    { name: "App Store", appId: "app-store", icon: "≡ƒ¢ì∩╕Å" },
+    { name: "App Store", appId: "app-store", icon: "🛍️" },
     { name: "PueiSocial", appId: "puei-social", icon: "📢" },
   ];
 
@@ -2874,8 +2874,8 @@ function FileExplorerApp({ openApp, icons, openFolder, currentUser, users }: { o
       <div className="w-48 p-2 border-r text-sm" style={{ background: "var(--glass)" }}>
         <div className="font-semibold mb-2 opacity-70 text-xs">FAVORITES</div>
         {[
-          ["home","≡ƒÅá Home"],["documents","≡ƒôü Documents"],["pictures","🖼️ Pictures"],
-          ["downloads","Γ¼ç∩╕Å Downloads"],["folders","≡ƒùâ∩╕Å My Folders"],["apps","≡ƒº⌐ Apps"],
+          ["home","🏡 Home"],["documents","📁 Documents"],["pictures","🖼️ Pictures"],
+          ["downloads","⬇️ Downloads"],["folders","🖿️ My Folders"],["apps","🧩 Apps"],
         ].map(([k, l]) => (
           <div key={k} onClick={() => { setFolder(k as any); setOpenFolderId(null); }}
             className="px-2 py-1 rounded hover:bg-white/30 cursor-pointer"
@@ -2884,10 +2884,10 @@ function FileExplorerApp({ openApp, icons, openFolder, currentUser, users }: { o
         <div className="font-semibold mt-3 mb-2 opacity-70 text-xs">COMPUTER</div>
         <div className="px-2 py-1 rounded hover:bg-white/30 cursor-pointer"
           onClick={() => setFolder("home")}
-          style={{ background: folder === "home" ? "rgba(255,255,255,0.4)" : undefined }}>≡ƒÆ╜ C:\ PueiDrive</div>
+          style={{ background: folder === "home" ? "rgba(255,255,255,0.4)" : undefined }}>💽 C:\ PueiDrive</div>
         <div className="px-2 py-1 rounded hover:bg-white/30 cursor-pointer flex items-center gap-1"
           onClick={() => setFolder("puei-drive")}
-          style={{ background: folder === "puei-drive" ? "rgba(255,255,255,0.4)" : undefined }}>Γÿü∩╕Å Puei Disk</div>
+          style={{ background: folder === "puei-drive" ? "rgba(255,255,255,0.4)" : undefined }}>☁️ Puei Disk</div>
         <div className="px-2 py-1 rounded hover:bg-white/30 cursor-pointer"
           onClick={() => { setFolder("recycle-bin"); setOpenFolderId(null); }}
           style={{ background: folder === "recycle-bin" ? "rgba(255,255,255,0.4)" : undefined }}>🖦️ Recycle Bin</div>
@@ -2906,11 +2906,11 @@ function FileExplorerApp({ openApp, icons, openFolder, currentUser, users }: { o
               background: dropTarget === f.id ? "rgba(80,200,160,0.35)" : "rgba(255,255,255,0.15)",
               border: dropTarget === f.id ? "1px dashed rgba(80,200,160,0.8)" : "1px dashed transparent",
             }}>
-            ≡ƒôü {f.label}
+            📁 {f.label}
           </div>
         ))}
         <div className="mt-4 text-[10px] opacity-40 px-2 leading-snug">
-          Γÿü∩╕Å Cloud Sync: Files saved while logged into your account sync automatically across supported browsers and apps using the same Pueio account.
+          ☁️ Cloud Sync: Files saved while logged into your account sync automatically across supported browsers and apps using the same Pueio account.
         </div>
       </div>
       <div className="flex-1 p-4 overflow-auto">
@@ -2919,8 +2919,8 @@ function FileExplorerApp({ openApp, icons, openFolder, currentUser, users }: { o
             <button className="hover:underline" onClick={() => setOpenFolderId(null)}>My Folders</button>
           )}
           {openFolderId ? (
-            <> ΓÇ║ {myFolders.find(f => f.id === openFolderId)?.label ?? openFolderId}</>
-          ) : folder === "puei-drive" ? "Γÿü∩╕Å Puei Disk" : folder === "recycle-bin" ? "🖦️ Recycle Bin" : `Computer ΓÇ║ PueiDrive ΓÇ║ Users ΓÇ║ You ΓÇ║ ${folder}`}
+            <> › {myFolders.find(f => f.id === openFolderId)?.label ?? openFolderId}</>
+          ) : folder === "puei-drive" ? "☁️ Puei Disk" : folder === "recycle-bin" ? "🖦️ Recycle Bin" : `Computer › PueiDrive › Users › You › ${folder}`}
         </div>
         {folder === "home" && (
           <div className="grid grid-cols-5 gap-3">
@@ -2971,7 +2971,7 @@ function FileExplorerApp({ openApp, icons, openFolder, currentUser, users }: { o
         {folder === "recycle-bin" && <RecycleBinApp />}
         {folder === "folders" && !openFolderId && (
           myFolders.length === 0
-            ? <div className="text-sm opacity-70 p-6 text-center">No folders yet. Right-click the desktop ΓåÆ New Folder.</div>
+            ? <div className="text-sm opacity-70 p-6 text-center">No folders yet. Right-click the desktop → New Folder.</div>
             : <div className="grid grid-cols-5 gap-3">
                 {myFolders.map((f) => {
                   const folderFiles = files.filter((fi) => fi.folder === f.id);
@@ -2986,7 +2986,7 @@ function FileExplorerApp({ openApp, icons, openFolder, currentUser, users }: { o
                         background: dropTarget === f.id ? "rgba(80,200,160,0.25)" : undefined,
                         outline: dropTarget === f.id ? "2px dashed rgba(80,200,160,0.8)" : undefined,
                       }}>
-                      <div className="text-4xl">≡ƒôü</div>
+                      <div className="text-4xl">📁</div>
                       <div className="text-xs mt-1 truncate">{f.label}</div>
                       {folderFiles.length > 0 && <div className="text-[10px] opacity-50">{folderFiles.length} file{folderFiles.length !== 1 ? "s" : ""}</div>}
                     </div>
@@ -3064,7 +3064,7 @@ function FolderFileGrid({ files, icons, onOpen, onDelete, onOpenIcon }: {
           <div key={ic.id}
             onDoubleClick={() => onOpenIcon(ic)}
             className="text-center p-2 rounded hover:bg-white/30 cursor-pointer select-none">
-            <div className="text-4xl">{ic.appId === "web-app" ? "≡ƒöù" : "📄"}</div>
+            <div className="text-4xl">{ic.appId === "web-app" ? "🔗" : "📄"}</div>
             <div className="text-xs mt-1 truncate">{ic.label}</div>
           </div>
         ))}
@@ -3237,7 +3237,7 @@ function PueiDrivePane({ files, icons, currentUser, users, openApp, onDelete }: 
     <div className="flex flex-col h-full">
       {/* Drive header */}
       <div className="flex items-center gap-4 mb-4 p-3 rounded-xl" style={{ background: "rgba(80,140,255,0.12)", border: "1px solid rgba(80,140,255,0.2)" }}>
-        <div className="text-4xl">Γÿü∩╕Å</div>
+        <div className="text-4xl">☁️</div>
         <div>
           <div className="font-semibold">Puei Disk</div>
           <div className="text-xs opacity-60">{myFiles.length} file{myFiles.length !== 1 ? "s" : ""} · {usedKB} KB used</div>
@@ -3293,8 +3293,8 @@ function PueiDrivePane({ files, icons, currentUser, users, openApp, onDelete }: 
         : <>
           {driveSection !== "all" && (
             <div className="flex items-center gap-2 mb-3 text-xs opacity-70">
-              <button className="hover:underline" onClick={() => { setDriveSection("all"); setShowRootEntries(true); }}>Γÿü∩╕Å Puei Disk</button>
-              {" ΓÇ║ "}
+              <button className="hover:underline" onClick={() => { setDriveSection("all"); setShowRootEntries(true); }}>☁️ Puei Disk</button>
+              {" › "}
               {sectionLabel[driveSection]}
             </div>
           )}
@@ -3327,7 +3327,7 @@ function PueiDrivePane({ files, icons, currentUser, users, openApp, onDelete }: 
                       const folderFiles = myFiles.filter((f) => f.folder === folder.id);
                       return (
                         <div key={folder.id} className="rounded-xl p-3" style={{ background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.2)" }}>
-                          <div className="text-3xl">≡ƒôü</div>
+                          <div className="text-3xl">📁</div>
                           <div className="text-sm font-semibold mt-1 truncate">{folder.label}</div>
                           <div className="text-[11px] opacity-65 mt-1">{folderFiles.length} file{folderFiles.length !== 1 ? "s" : ""}</div>
                         </div>
@@ -3343,7 +3343,7 @@ function PueiDrivePane({ files, icons, currentUser, users, openApp, onDelete }: 
                 <div className="flex flex-wrap gap-2">
                   <button className="aero-button rounded px-3 py-1 text-xs" onClick={() => openApp("settings")}>⚙️ Open Settings</button>
                   <button className="aero-button rounded px-3 py-1 text-xs" onClick={() => openApp("about")}>ℹ️ System Info</button>
-                  <button className="aero-button rounded px-3 py-1 text-xs" onClick={() => openApp("app-store")}>≡ƒº⌐ Program Manager</button>
+                  <button className="aero-button rounded px-3 py-1 text-xs" onClick={() => openApp("app-store")}>🧩 Program Manager</button>
                   <button className="aero-button rounded px-3 py-1 text-xs" onClick={() => openApp("recycle-bin")}>🖦️ Recovery</button>
                 </div>
               </div>
@@ -3456,7 +3456,7 @@ function AppStoreApp({ installWebApp, openApp, openWebApp, systemVersion, addNat
                       <div className="text-3xl">{a.icon}</div>
                       <div>
                         <div className="font-semibold">{a.name}</div>
-                        <div className="text-[10px] opacity-60">{a.preInstalled ? "✔ Pre-installed" : "Γ¼ç Installable"} · Puei Team</div>
+                        <div className="text-[10px] opacity-60">{a.preInstalled ? "✔ Pre-installed" : "⬇ Installable"} · Puei Team</div>
                       </div>
                     </div>
                     <div className="text-xs opacity-70 mt-1 flex-1">{a.desc}</div>
@@ -3480,7 +3480,7 @@ function AppStoreApp({ installWebApp, openApp, openWebApp, systemVersion, addNat
                               blip("notify");
                             });
                           }}>
-                          {isInstalling ? `Installing ${Math.floor(installPct)}%` : onDesktop ? "✔ Installed" : "Γ¼ç Install"}
+                          {isInstalling ? `Installing ${Math.floor(installPct)}%` : onDesktop ? "✔ Installed" : "⬇ Install"}
                         </button>
                       ) : (
                         <button
@@ -3821,7 +3821,7 @@ function PueiBoardApp({ user, users }: { user: string; users: User[] }) {
                   <div className="text-[10px] opacity-55 mt-1 truncate">Source: {p.imageName}</div>
                   <div className="flex gap-1 mt-2 flex-wrap">
                     <button className="aero-button rounded px-2 py-1 text-[10px]" onClick={() => toggleLike(p.id)}>
-                      {p.likedBy?.includes(user) ? `ΓÖÑ Liked (${p.likes})` : `ΓÖí Like (${p.likes})`}
+                      {p.likedBy?.includes(user) ? `♥ Liked (${p.likes})` : `♡ Like (${p.likes})`}
                     </button>
                     {p.author === user && (
                       <button className="aero-button rounded px-2 py-1 text-[10px]" style={{ color: "#fecaca" }} onClick={() => removePost(p.id)}>
@@ -3880,7 +3880,7 @@ function WebAppFrame({ url, currentUser, startUpgrade }: { url: string; currentU
   return (
     <div className="flex flex-col h-full">
       <div className="aero-titlebar text-xs px-3 py-1 flex items-center gap-2">
-        <span className="opacity-60">≡ƒöù</span>
+        <span className="opacity-60">🔗</span>
         <span className="truncate flex-1">{url}</span>
       </div>
       <div className="flex-1 relative" style={{ background: "white" }}>
@@ -4192,19 +4192,19 @@ function PueiSocialApp({ user, users }: { user: string; users: User[] }) {
           <button className="aero-button rounded px-3 py-1 text-xs" style={socialTab === "feed" ? { background: "var(--gradient-aero)", color: "white" } : undefined}
             onClick={() => setSocialTab("feed")}>Feed</button>
           <button className="aero-button rounded px-3 py-1 text-xs" style={socialTab === "history" ? { background: "var(--gradient-aero)", color: "white" } : undefined}
-            onClick={() => setSocialTab("history")}>≡ƒô£ History</button>
+            onClick={() => setSocialTab("history")}>📣 History</button>
         </div>
         <div className="flex flex-col gap-0.5 items-end">
           <div className="text-xs opacity-70 flex items-center gap-1.5">
             Available on:
-            <span title="iOS">≡ƒô▒</span>
+            <span title="iOS">📱</span>
             <span title="Android">🐛</span>
-            <span title="Windows">≡ƒ¬ƒ</span>
+            <span title="Windows">🪟</span>
             <span title="macOS"></span>
-            <span title="Linux">≡ƒÉº</span>
+            <span title="Linux">🐧</span>
           </div>
           <div className="text-[10px] opacity-60 flex items-center gap-1">
-            ≡ƒÄ¼ <span className="font-semibold">Pueio Videos</span> · Supported Softwares:
+            🎬 <span className="font-semibold">Pueio Videos</span> · Supported Softwares:
             <span className="bg-cyan-500/20 rounded px-1 font-semibold">Pueios2</span>
             <span className="bg-purple-500/20 rounded px-1 font-semibold">Pueios2+</span>
           </div>
@@ -4213,7 +4213,7 @@ function PueiSocialApp({ user, users }: { user: string; users: User[] }) {
       <div className="p-4 overflow-auto flex-1 space-y-3" style={{ background: "var(--glass)" }}>
         {socialTab === "history" && (
           <div className="aero-glass-light rounded-xl p-5 max-w-lg mx-auto">
-            <h2 className="text-xl font-bold mb-3">≡ƒô£ The History of Puei</h2>
+            <h2 className="text-xl font-bold mb-3">📣 The History of Puei</h2>
             <p className="text-sm leading-relaxed opacity-90">
               The <strong>Puei</strong> was created in <strong>2020</strong> by three siblings while playing outside. It quickly became a beloved character among them — full of personality and charm.
             </p>
@@ -4227,8 +4227,8 @@ function PueiSocialApp({ user, users }: { user: string; users: User[] }) {
               A few months later, the official <strong>PueiOS</strong> operating system was released — a full web-based OS built in tribute to the Puei, featuring a Windows 7 Aero-inspired glass UI, cloud-synced accounts, and a whole suite of Puei-themed apps.
             </p>
             <div className="mt-4 pt-3 border-t border-white/20 text-xs opacity-60 space-y-1">
-              <div>≡ƒôà 2020 — Puei is born, created by three siblings</div>
-              <div>≡ƒÆñ 2021–2025 — The Forgotten Years</div>
+              <div>📸 2020 — Puei is born, created by three siblings</div>
+              <div>💡 2021–2025 — The Forgotten Years</div>
               <div>📢 2026 — Puei revival on BezoSMP</div>
               <div>💻 2026 — PueiOS officially released</div>
             </div>
@@ -4252,12 +4252,12 @@ function PueiSocialApp({ user, users }: { user: string; users: User[] }) {
                 ? <img src={media.src} className="max-h-60 rounded" alt="" />
                 : <video src={media.src} controls className="max-h-60 rounded" />}
               <button onClick={() => setMedia(undefined)}
-                className="absolute top-1 right-1 aero-button rounded-full w-6 h-6 text-xs">Γ£ò</button>
+                className="absolute top-1 right-1 aero-button rounded-full w-6 h-6 text-xs">✒</button>
             </div>
           )}
           <div className="flex items-center gap-2 mt-2">
             <label className="aero-button rounded px-3 py-1 text-xs cursor-pointer">
-              🖼️ Image / ≡ƒÄ¼ Video
+              🖼️ Image / 🎬 Video
               <input type="file" accept="image/*,video/*" className="hidden" onChange={onFile} />
             </label>
             <button className="aero-button rounded px-4 py-1 text-xs ml-auto" onClick={post}>Post</button>
@@ -4282,7 +4282,7 @@ function PueiSocialApp({ user, users }: { user: string; users: User[] }) {
                 </div>
                 {p.author === user && (
                   <div className="flex gap-1">
-                    <button onClick={() => startEdit(p)} className="text-xs opacity-50 hover:opacity-100 hover:text-blue-400" title="Edit post">Γ£Å∩╕Å</button>
+                    <button onClick={() => startEdit(p)} className="text-xs opacity-50 hover:opacity-100 hover:text-blue-400" title="Edit post">✅</button>
                     <button onClick={() => deletePost(p.id)} className="text-xs opacity-50 hover:opacity-100 hover:text-red-500" title="Delete post">🖦️</button>
                   </div>
                 )}
@@ -4306,7 +4306,7 @@ function PueiSocialApp({ user, users }: { user: string; users: User[] }) {
                 <button onClick={() => toggleLike(p.id)}
                   className="aero-button rounded px-2 py-0.5 flex items-center gap-1"
                   style={liked ? { background: "var(--gradient-aero)", color: "white" } : undefined}>
-                  {liked ? "≡ƒÆÖ" : "≡ƒæì"} {p.likes}
+                  {liked ? "💖" : "👍"} {p.likes}
                 </button>
                 <button onClick={() => setOpenComments({ ...openComments, [p.id]: !commentsOpen })}
                   className="aero-button rounded px-2 py-0.5">
@@ -4335,7 +4335,7 @@ function PueiSocialApp({ user, users }: { user: string; users: User[] }) {
                         <div className="text-xs whitespace-pre-wrap">{c.text}</div>
                       </div>
                       {c.author === user && (
-                        <button onClick={() => deleteComment(p.id, c.id)} className="text-xs opacity-40 hover:opacity-100 hover:text-red-500" title="Delete">Γ£ò</button>
+                        <button onClick={() => deleteComment(p.id, c.id)} className="text-xs opacity-40 hover:opacity-100 hover:text-red-500" title="Delete">✒</button>
                       )}
                     </div>
                   ))}
@@ -4414,7 +4414,7 @@ function ChessApp() {
     return b;
   };
 
-  const GLYPHS: Record<string,string> = {wK:"ΓÖö",wQ:"ΓÖò",wR:"ΓÖû",wB:"ΓÖù",wN:"ΓÖÿ",wP:"ΓÖÖ",bK:"ΓÖÜ",bQ:"ΓÖ¢",bR:"ΓÖ£",bB:"ΓÖ¥",bN:"ΓÖ₧",bP:"ΓÖƒ"};
+  const GLYPHS: Record<string,string> = {wK:"♔",wQ:"♕",wR:"♖",wB:"♗",wN:"♘",wP:"♙",bK:"♚",bQ:"♛",bR:"♜",bB:"♝",bN:"♞",bP:"♟"};
 
   const inBounds = (r:number,c:number) => r>=0&&r<8&&c>=0&&c<8;
 
@@ -4572,7 +4572,7 @@ function ChessApp() {
           setStatus(isInCheck(nb,"w")?"⚠️ Check! Get your king to safety.":"Your turn (white)");
         }
       } else {
-        setStatus(isInCheck(b,"b")?"Checkmate! You win ≡ƒÄë":"Stalemate — draw!");
+        setStatus(isInCheck(b,"b")?"Checkmate! You win 🎉":"Stalemate — draw!");
       }
       setTurn("w"); setThinking(false);
     }, 300);
@@ -4588,7 +4588,7 @@ function ChessApp() {
         setBoard(nb); setLastMove([selected,[r,c]]);
         setSelected(null); setLegalMoves([]);
         const bMoves=allLegalMoves(nb,"b");
-        if(!bMoves.length){setStatus(isInCheck(nb,"b")?"Checkmate! You win ≡ƒÄë":"Stalemate — draw!");return;}
+        if(!bMoves.length){setStatus(isInCheck(nb,"b")?"Checkmate! You win 🎉":"Stalemate — draw!");return;}
         setStatus("Puei Bot is thinking…"); setTurn("b");
         botMove(nb);
       } else if(piece?.color==="w"){
@@ -4612,7 +4612,7 @@ function ChessApp() {
       style={{background:"linear-gradient(135deg,#1a0a00 0%,#2d1a08 100%)"}}>
       {/* Status bar */}
       <div className={`text-sm font-semibold mb-3 px-4 py-1.5 rounded-full ${whiteInCheck?"bg-red-500/80 text-white animate-pulse":"bg-black/30 text-white/80"}`}>
-        {thinking ? <span className="opacity-70">ΓÖƒ Puei Bot is thinking…</span> : status}
+        {thinking ? <span className="opacity-70">♟ Puei Bot is thinking…</span> : status}
       </div>
       {/* Board container */}
       <div className="flex">
