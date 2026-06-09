@@ -290,6 +290,9 @@ export function PueiOS() {
     if (!loadedIcons.some((i: any) => i.appId === "puei-studio" && !i.fileId && !i.webUrl)) {
       loadedIcons = [...loadedIcons, { id: "i-studio", label: "Puei Studio", appId: "puei-studio" as const }];
     }
+    // Strip any icons with unknown appIds (stale from old versions)
+    const VALID_APP_IDS = new Set(["puei-paint","puei-board","pueinet","puei-cloud-chat","puei-studio","file-explorer","settings","about","notepad","calculator","app-store","puei-social","folder","web-app","recycle-bin","chess"]);
+    loadedIcons = loadedIcons.filter((i: any) => i.webUrl || VALID_APP_IDS.has(i.appId));
     setIcons(loadedIcons);
     if (!s.installed) { setPhase("install"); return; }
     if (s.lastUser && s.remember) { setLoginUser(s.lastUser); setRemember(true); }
@@ -1462,7 +1465,7 @@ export function PueiOS() {
             {[...new Set([
               ...icons.filter(i => !i.fileId && !i.webUrl && i.appId !== "folder" && i.appId !== "web-app" && i.appId !== "recycle-bin").map(i => i.appId),
               "settings" as const, "about" as const,
-            ])].map((id) => (
+            ])].filter(id => id in APP_TITLES).map((id) => (
               <button key={id} onClick={() => { openApp(id); setStartOpen(false); }}
                 className="flex items-center gap-2 px-3 py-2 rounded text-sm text-left"
                 style={{ color: "var(--foreground)" }}
