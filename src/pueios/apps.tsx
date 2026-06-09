@@ -838,18 +838,18 @@ function CalculatorApp() {
     if (k === "=") {
       if (op && acc !== null) {
         const b = parseFloat(d);
-        const r = op === "+" ? acc + b : op === "-" ? acc - b : op === "├ù" ? acc * b : acc / b;
+        const r = op === "+" ? acc + b : op === "-" ? acc - b : op === "×" ? acc * b : acc / b;
         setD(String(r)); setAcc(null); setOp(null); setFresh(true);
       }
       return;
     }
     setAcc(acc === null ? parseFloat(d) : (() => {
       const b = parseFloat(d);
-      return op === "+" ? acc + b : op === "-" ? acc - b : op === "├ù" ? acc * b : op === "├╖" ? acc / b : b;
+      return op === "+" ? acc + b : op === "-" ? acc - b : op === "×" ? acc * b : op === "÷" ? acc / b : b;
     })());
     setOp(k); setFresh(true);
   };
-  const keys = ["C", "├╖", "├ù", "-", "7", "8", "9", "+", "4", "5", "6", "=", "1", "2", "3", "0", "."];
+  const keys = ["C", "÷", "×", "-", "7", "8", "9", "+", "4", "5", "6", "=", "1", "2", "3", "0", "."];
   return (
     <div className="p-3">
       <div className="aero-glass-light rounded text-right p-3 text-2xl font-mono mb-2 overflow-hidden">{d}</div>
@@ -1147,16 +1147,16 @@ const KNOWLEDGE: Array<{ match: (q: string) => boolean; answer: (q: string) => s
   },
   // ── Math ──
   {
-    match: (q) => /what is \d+[\s]*[+\-*/├ù├╖][\s]*\d+/.test(q),
+    match: (q) => /what is \d+[\s]*[+\-*/×÷][\s]*\d+/.test(q),
     answer: (q) => {
-      const m = q.match(/(\d+(?:\.\d+)?)\s*([+\-*/├ù├╖])\s*(\d+(?:\.\d+)?)/);
+      const m = q.match(/(\d+(?:\.\d+)?)\s*([+\-*/×÷])\s*(\d+(?:\.\d+)?)/);
       if (!m) return "";
       const a = parseFloat(m[1]), op = m[2], b = parseFloat(m[3]);
       let result: number;
       if (op === "+" ) result = a + b;
       else if (op === "-") result = a - b;
-      else if (op === "*" || op === "├ù") result = a * b;
-      else if (op === "/" || op === "├╖") result = b !== 0 ? a / b : NaN;
+      else if (op === "*" || op === "×") result = a * b;
+      else if (op === "/" || op === "÷") result = b !== 0 ? a / b : NaN;
       else return "";
       if (isNaN(result)) return `Cannot divide by zero.`;
       return `${a} ${op} ${b} = **${result}**\n\nCalculated directly by Puei Copilot's math engine. All four search sources confirmed the result.`;
@@ -1249,14 +1249,14 @@ function generateCopilotAnswer(q: string): string {
   }
 
   // Math quick-calc fallback
-  const mathMatch = q.match(/(\d+(?:\.\d+)?)\s*([+\-*/├ù├╖])\s*(\d+(?:\.\d+)?)/);
+  const mathMatch = q.match(/(\d+(?:\.\d+)?)\s*([+\-*/×÷])\s*(\d+(?:\.\d+)?)/);
   if (mathMatch) {
     const a = parseFloat(mathMatch[1]), op = mathMatch[2], b = parseFloat(mathMatch[3]);
     let result: number;
     if (op === "+") result = a + b;
     else if (op === "-") result = a - b;
-    else if (op === "*" || op === "├ù") result = a * b;
-    else if (op === "/" || op === "├╖") result = b !== 0 ? a / b : NaN;
+    else if (op === "*" || op === "×") result = a * b;
+    else if (op === "/" || op === "÷") result = b !== 0 ? a / b : NaN;
     else result = NaN;
     if (!isNaN(result)) return `${a} ${op} ${b} = **${result}**\n\nCalculated by Puei Copilot's built-in math engine.`;
   }
@@ -1494,11 +1494,17 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
     alert(`Saved ${w.name} to ${destinationFolderLabel(folder)}.`);
   };
 
+  const pageTitles: Record<string, string> = {
+    "puei://home": "Home", "puei://search": "Puei Copilot", "puei://about": "About",
+    "puei://updates": "Updates", "puei://social": "PueiSocial", "puei://board": "PueiBoard",
+    "puei://wallpapers": "Wallpapers", "puei://chat": "Chat", "puei://mail": "Mail",
+  };
   const navigate = (target: string) => {
     let u = target.trim();
     if (!u.startsWith("puei://") && !/^https?:\/\//i.test(u)) u = "https://" + u;
+    const title = pageTitles[u] || (u.startsWith("http") ? (() => { try { return new URL(u).hostname; } catch { return u; } })() : u.replace("puei://", "").replace(/^\w/, (c) => c.toUpperCase()) || "Page");
     setNavUrl(u); setUrlBar(u);
-    setTabs((t) => t.map((tab) => tab.id === active ? { ...tab, url: u, title: u.replace("puei://", "").replace(/^\w/, (c) => c.toUpperCase()) || "Page" } : tab));
+    setTabs((t) => t.map((tab) => tab.id === active ? { ...tab, url: u, title } : tab));
   };
 
   const fakeSites: Record<string, React.ReactNode> = {
@@ -1710,7 +1716,7 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
               background: active === t.id ? "var(--glass-strong)" : "var(--glass)",
               border: "1px solid var(--border)", borderBottom: "none",
             }}>
-            {t.title} <span onClick={(e) => { e.stopPropagation(); setTabs(tabs.filter(x => x.id !== t.id)); }} className="ml-2 opacity-60 hover:opacity-100">├ù</span>
+            {t.title} <span onClick={(e) => { e.stopPropagation(); setTabs(tabs.filter(x => x.id !== t.id)); }} className="ml-2 opacity-60 hover:opacity-100">✕</span>
           </div>
         ))}
         <button className="aero-button rounded px-2 py-0.5 text-xs ml-1"
@@ -2147,7 +2153,7 @@ function PueiMailApp({ currentUser, users }: { currentUser: string; users: User[
                 {pending.map((a) => (
                   <div key={a.id} className="aero-glass-light rounded px-2 py-1 text-xs flex items-center gap-2">
                     <span>{a.kind === "image" ? "🖼️" : a.kind === "video" ? "🎬" : "📎"} {a.name}</span>
-                    <button className="opacity-60 hover:opacity-100" onClick={() => setPending(pending.filter((x) => x.id !== a.id))}>├ù</button>
+                    <button className="opacity-60 hover:opacity-100" onClick={() => setPending(pending.filter((x) => x.id !== a.id))}>✕</button>
                   </div>
                 ))}
               </div>

@@ -265,8 +265,7 @@ export function PueiOS() {
     const s = loadState();
     setThemeState(s.theme); setUsers(s.users);
     setInstalled(s.installed);
-    // PueiOS 2 is EOL — auto-upgrade stored version to 2+ so old installs aren't stuck
-    setSystemVersion(s.systemVersion === "PueiOS 2" ? "PueiOS 2+" : s.systemVersion);
+    setSystemVersion(s.systemVersion);
     // Migration: clean up stale icons and ensure PueiCloudChat always exists
     let loadedIcons: DesktopIcon[] = s.icons?.length ? s.icons : defaultIcons;
     // Remove any stale puei-messenger icons
@@ -888,6 +887,39 @@ export function PueiOS() {
         <div className="absolute top-4 right-4 text-xs opacity-60">Build 2020.1138</div>
         {steps[installStep]}
         <div className="fixed bottom-4 right-4 text-[10px] opacity-40">pueios-2020-puei</div>
+      </div>
+    );
+  }
+
+  // ============ EOL WALL
+  if (systemVersion === "PueiOS 2" || systemVersion === "PueiOS 2+") {
+    return (
+      <div className="fixed inset-0 flex flex-col items-center justify-center text-white"
+        style={{ background: "#000", fontFamily: "monospace" }}>
+        <div className="text-center max-w-lg px-8">
+          <div className="text-6xl mb-6 opacity-30">⛔</div>
+          <h1 className="text-2xl font-bold mb-3" style={{ color: "#f87171" }}>
+            {systemVersion} is no longer supported
+          </h1>
+          <p className="text-sm opacity-70 mb-2">
+            As of June 6th, 2026, {systemVersion} has reached End of Life and is no longer supported.
+          </p>
+          <p className="text-sm opacity-50 mb-8">
+            To continue using PueiOS, you must upgrade to PueiOS 3.
+          </p>
+          <button
+            className="px-6 py-3 rounded-lg text-sm font-semibold"
+            style={{ background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.25)", cursor: "pointer" }}
+            onClick={() => { setSystemVersion("PueiOS 3"); setPhase("boot"); setBootProgress(0); }}>
+            Upgrade to PueiOS 3 and continue →
+          </button>
+          <div className="mt-4">
+            <button className="text-xs underline opacity-40 hover:opacity-70"
+              onClick={() => { localStorage.clear(); location.reload(); }}>
+              Wipe device and reinstall
+            </button>
+          </div>
+        </div>
       </div>
     );
   }
