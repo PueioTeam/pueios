@@ -4517,7 +4517,12 @@ function PueiStudioApp({ currentUser, users, icons, setWallpaper }: { currentUse
               ref={canvasRef}
               width={800} height={520}
               className="flex-1 block"
-              style={{ touchAction: "none", cursor: tool === "eyedropper" ? "crosshair" : "default", width: "100%", height: "100%", objectFit: "contain", background: "#fff" }}
+              style={{ touchAction: "none", cursor: (() => {
+                if (tool === "eyedropper") return "crosshair";
+                const r = brushSize; const c = encodeURIComponent(color);
+                const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='${r+10}' height='${r+10}' viewBox='0 0 ${r+10} ${r+10}'><circle cx='${(r+10)/2}' cy='${(r+10)/2}' r='${r/2}' fill='${color}' stroke='white' stroke-width='1.5'/><circle cx='${(r+10)/2}' cy='${(r+10)/2}' r='${r/2}' fill='none' stroke='black' stroke-width='0.5' opacity='0.5'/></svg>`;
+                return `url("data:image/svg+xml,${encodeURIComponent(svg)}") ${Math.round((r+10)/2)} ${Math.round((r+10)/2)}, crosshair`;
+              })(), width: "100%", height: "100%", objectFit: "contain", background: "#fff" }}
               onMouseDown={onDown} onMouseMove={onMove} onMouseUp={onUp} onMouseLeave={onUp}
               onTouchStart={onDown} onTouchMove={onMove} onTouchEnd={onUp}
             />
