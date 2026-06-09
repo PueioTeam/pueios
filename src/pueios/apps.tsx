@@ -61,6 +61,7 @@ export function AppRenderer(p: AppRendererProps) {
     case "recycle-bin": return <RecycleBinApp />;
     case "chess": return <ChessApp />;
     case "puei-mansion": return <PueiMansionApp />;
+    case "iso-viewer": return <IsoViewerApp fileId={p.fileId} />;
   }
 }
 
@@ -2905,9 +2906,13 @@ function FileExplorerApp({ openApp, icons, openFolder, currentUser, users, setWa
         )}
         {folder === "downloads" && (
           <FileGrid files={downloadFiles} emptyHint="No downloads yet. Download from Puei Wallpapers or mail attachments."
-            onOpen={(f) => openApp("puei-paint", f.id)}
+            onOpen={(f) => {
+              if (f.name.trim().toLowerCase().endsWith(".iso")) { openApp("iso-viewer", f.id); return; }
+              if (f.type === "image") { openApp("puei-paint", f.id); return; }
+              openApp("notepad", f.id);
+            }}
             onDelete={(id) => { deleteFile(id); setFiles(myFiles()); }}
-            onMoveToPictures={setWallpaper ? (f) => { moveFile(f.id, SYS_FOLDER_PICTURES); setFiles(myFiles()); blip("notify"); } : undefined}
+            onMoveToPictures={(f) => { moveFile(f.id, SYS_FOLDER_PICTURES); setFiles(myFiles()); blip("notify"); }}
             onDragStart={(id) => setDragFileId(id)}
             onDragEnd={() => { setDragFileId(null); setDropTarget(null); }} />
         )}
@@ -2960,7 +2965,7 @@ function FileExplorerApp({ openApp, icons, openFolder, currentUser, users, setWa
             <FolderFileGrid
               files={folderFiles}
               icons={folderIcons}
-              onOpen={(f) => openApp(f.type === "image" ? "puei-paint" : "notepad", f.id)}
+              onOpen={(f) => { if (f.name.trim().toLowerCase().endsWith(".iso")) { openApp("iso-viewer", f.id); return; } openApp(f.type === "image" ? "puei-paint" : "notepad", f.id); }}
               onDelete={(id) => { deleteFile(id); setFiles(myFiles()); }}
               onOpenIcon={(ic) => { if (ic.appId !== "web-app") openApp(ic.appId, ic.fileId); }}
               onMoveToPictures={(f) => { moveFile(f.id, SYS_FOLDER_PICTURES); setFiles(myFiles()); blip("notify"); }}
@@ -3182,8 +3187,9 @@ function PueiDrivePane({ files, icons, currentUser, users, openApp, onDelete }: 
       case "media":
         return myFiles.filter((f) => f.type === "image" && (!f.folder || f.folder === SYS_FOLDER_PICTURES));
       case "dev":
-      case "projects":
         return myFiles.filter((f) => f.type === "text");
+      case "projects":
+        return myFiles.filter((f) => f.folder === "__studio__");
       case "logs":
         return myFiles.filter((f) => /log|trace|debug/i.test(f.name));
       case "temp":
@@ -3262,7 +3268,7 @@ function PueiDrivePane({ files, icons, currentUser, users, openApp, onDelete }: 
         <div className="flex items-center gap-2 mb-3 pb-2 border-b">
           <button className="aero-button rounded px-3 py-1 text-xs"
             disabled={!selectedFile} style={{ opacity: selectedFile ? 1 : 0.4 }}
-            onClick={() => { if (selectedFile) openApp(selectedFile.type === "image" ? "puei-paint" : "notepad", selectedFile.id); }}>
+            onClick={() => { if (selectedFile) { if (selectedFile.name.trim().toLowerCase().endsWith(".iso")) { openApp("iso-viewer", selectedFile.id); return; } openApp(selectedFile.type === "image" ? "puei-paint" : "notepad", selectedFile.id); } }}>
             📂 Open
           </button>
           <button className="aero-button rounded px-3 py-1 text-xs text-red-400"
@@ -3340,7 +3346,7 @@ function PueiDrivePane({ files, icons, currentUser, users, openApp, onDelete }: 
                 {shownFiles.map(f => (
                   <div key={f.id}
                     onClick={() => setSelectedId(f.id === selectedId ? null : f.id)}
-                    onDoubleClick={() => openApp(f.type === "image" ? "puei-paint" : "notepad", f.id)}
+                    onDoubleClick={() => { if (f.name.trim().toLowerCase().endsWith(".iso")) { openApp("iso-viewer", f.id); return; } openApp(f.type === "image" ? "puei-paint" : "notepad", f.id); }}
                     className="text-center p-2 rounded cursor-pointer select-none transition-all"
                     style={{
                       background: f.id === selectedId ? "rgba(80,160,255,0.35)" : "transparent",
@@ -3940,7 +3946,7 @@ function FolderApp({ folderIconId, icons, openApp, openWebApp }: {
         : <FolderFileGrid
             files={savedFiles}
             icons={children}
-            onOpen={(f) => openApp(f.type === "image" ? "puei-paint" : "notepad", f.id)}
+            onOpen={(f) => { if (f.name.trim().toLowerCase().endsWith(".iso")) { openApp("iso-viewer", f.id); return; } openApp(f.type === "image" ? "puei-paint" : "notepad", f.id); }}
             onDelete={(id) => { deleteFile(id); setSavedFiles(loadFiles().filter((f) => f.folder === folderIconId)); }}
             onOpenIcon={(ic) => ic.appId === "web-app" ? openWebApp(ic.webUrl!, ic.label) : openApp(ic.appId, ic.fileId)}
             onMoveToPictures={(f) => { moveFile(f.id, SYS_FOLDER_PICTURES); setSavedFiles(loadFiles().filter((fi) => fi.folder === folderIconId)); blip("notify"); }}
@@ -4599,6 +4605,10 @@ function PueiStudioApp({ currentUser, users, icons, setWallpaper }: { currentUse
               <span className="text-xl">🖼️</span>
               <div><div className="font-semibold">Export to Pictures</div><div className="text-xs opacity-60">Save as PNG to your Files / Pictures folder</div></div>
             </button>
+            <button onClick={saveProject} className="aero-button rounded-xl px-4 py-3 text-sm text-left flex items-center gap-3">
+              <span className="text-xl">📁</span>
+              <div><div className="font-semibold">Save to Projects</div><div className="text-xs opacity-60">Save to Puei Disk › C:\Projects</div></div>
+            </button>
           </div>
           {savedMsg && <div className="mt-4 text-sm text-green-400 font-semibold">{savedMsg}</div>}
         </div>
@@ -4958,6 +4968,45 @@ function PueiSocialApp({ user, users }: { user: string; users: User[] }) {
         })}
         </>)}
       </div>
+    </div>
+  );
+}
+
+// ---------- ISO Viewer ----------
+function IsoViewerApp({ fileId }: { fileId?: string }) {
+  const file = fileId ? loadFiles().find(f => f.id === fileId) : null;
+  const name = file?.name?.trim().toLowerCase() ?? "";
+  const isLegacy = name === "pueios2-plus.iso" || name === "pueios2plus.iso";
+  const isPueiOS3 = name === "pueios3.iso";
+
+  return (
+    <div className="flex flex-col items-center justify-center h-full p-8 text-center gap-4">
+      <div className="text-5xl">💿</div>
+      <div className="font-bold text-lg">{file?.name ?? "ISO Image"}</div>
+      {isLegacy && (
+        <div className="aero-glass-light rounded-xl p-5 max-w-sm space-y-2">
+          <div className="text-2xl">⛔</div>
+          <div className="font-semibold text-base">End of Support</div>
+          <div className="text-sm opacity-70">
+            This version of PueiOS has reached end of support and can no longer be installed.
+            Please download <strong>pueios3.iso</strong> from the Puei Updater app to upgrade to the latest version.
+          </div>
+        </div>
+      )}
+      {isPueiOS3 && (
+        <div className="aero-glass-light rounded-xl p-5 max-w-sm space-y-2">
+          <div className="text-2xl">✅</div>
+          <div className="font-semibold text-base">PueiOS 3 Installation Image</div>
+          <div className="text-sm opacity-70">
+            Open <strong>Puei Updater</strong> from your desktop and drag this ISO into the install zone to upgrade.
+          </div>
+        </div>
+      )}
+      {!isLegacy && !isPueiOS3 && (
+        <div className="aero-glass-light rounded-xl p-5 max-w-sm">
+          <div className="text-sm opacity-70">This ISO cannot be mounted in PueiOS.</div>
+        </div>
+      )}
     </div>
   );
 }

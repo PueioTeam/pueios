@@ -130,7 +130,8 @@ export type AppId =
   | "web-app"
   | "recycle-bin"
   | "chess"
-  | "puei-mansion";
+  | "puei-mansion"
+  | "iso-viewer";
 
 export type WindowState = {
   id: string;
