@@ -486,8 +486,6 @@ canvas[style*="crosshair"] { cursor: url("data:image/svg+xml,%3Csvg xmlns='http:
 /* Progress / working in background */
 .cursor-progress, .cursor-progress * { cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='24' viewBox='0 0 28 24'%3E%3Cdefs%3E%3ClinearGradient id='a' x1='0.2' y1='0' x2='0.8' y2='1'%3E%3Cstop offset='0%25' stop-color='%23fff'/%3E%3Cstop offset='100%25' stop-color='%23c8e8ff'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d='M3 2 L3 18 L7 14 L10.5 21 L12.5 20 L9 13 L15 13 Z' fill='url(%23a)' stroke='%235b9bd5' stroke-width='0.7'/%3E%3Ccircle cx='21' cy='17' r='6' fill='%23e8f4ff' stroke='%234fa8e0' stroke-width='1.5'/%3E%3Cpath d='M21 12 A5 5 0 0 1 26 17' fill='none' stroke='%234fa8e0' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E") 3 2, progress !important; }
 
-/* Hide cursor when a window is maximized */
-.cursor-hidden * { cursor: none !important; }
 
 .loading-bar-inner {
   background: linear-gradient(90deg,

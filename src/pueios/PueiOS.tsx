@@ -1299,7 +1299,7 @@ export function PueiOS() {
 
   return (
     <div
-      className={`fixed inset-0 ${typeof theme.wallpaper === "string" && (theme.wallpaper.startsWith("custom:") || theme.wallpaper.startsWith("data:")) ? "" : `wallpaper-${theme.wallpaper}`} ${windows.some(w => w.maximized && !w.minimized) ? "cursor-hidden" : ""}`}
+      className={`fixed inset-0 ${typeof theme.wallpaper === "string" && (theme.wallpaper.startsWith("custom:") || theme.wallpaper.startsWith("data:")) ? "" : `wallpaper-${theme.wallpaper}`}`}
       style={{ overflow: "hidden", ...wallpaperStyle }}
       onMouseDown={() => { setCtxMenu(null); setStartOpen(false); setShowCalendar(false); setSelectedIcon(null); setShowVolume(false); setShowNetwork(false); }}
       onContextMenu={(e) => { e.preventDefault(); setCtxMenu({ x: e.clientX, y: e.clientY, items: desktopCtx() }); }}
