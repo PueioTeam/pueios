@@ -598,8 +598,6 @@ export function PueiOS() {
       }},
       { label: "🗑️ Delete shortcut", action: () => {
         if (icon.appId === "folder") {
-          const confirmed = confirm(`Delete folder "${icon.label}"? Files and shortcuts inside it will be moved back to the desktop.`);
-          if (!confirmed) return;
           const allFiles = loadFiles();
           saveFiles(allFiles.map((file) => file.folder === icon.id ? { ...file, folder: undefined } : file));
           setIcons((prev) => prev
@@ -607,7 +605,6 @@ export function PueiOS() {
             .filter((i) => i.id !== icon.id));
           return;
         }
-        if (!confirm(`Delete shortcut "${icon.label}"?`)) return;
         setIcons((prev) => prev.filter((i) => i.id !== icon.id));
       }},
       ...(icon.appId === "folder" ? [{ label: "New shortcut here", action: () => {
