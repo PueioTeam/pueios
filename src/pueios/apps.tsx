@@ -1579,12 +1579,13 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
       </div>
     ),
     "puei://about": <div className="p-6"><h2 className="text-2xl font-bold">About PueiNet</h2><p className="text-sm opacity-70 mt-2">A browser for an alternate 2020. Only https://&lt;app&gt;.base44.app external URLs are trusted.</p></div>,
-    "puei://films": <PueiFilmsPage currentUser={currentUser} />,
   };
 
   let content: React.ReactNode;
   if (navUrl === "puei://search") {
     content = <PueiCopilotPage />;
+  } else if (navUrl === "puei://films") {
+    content = <PueiFilmsPage currentUser={currentUser} />;
   } else if (navUrl.startsWith("puei://")) {
     content = fakeSites[navUrl] || <div className="p-6">404 — page not found in this universe.</div>;
   } else {
@@ -3409,7 +3410,7 @@ function AppStoreApp({ installWebApp, openApp, openWebApp, systemVersion, addNat
     { name: "Puei Mansion",  icon: "👻", desc: "Funny spooky adventure. Solve puzzles, find hidden secrets, and meet weird Puei creatures.", appId: "puei-mansion", preInstalled: false },
   ];
   const community: StoreApp[] = [
-    { name: "bezosmp", icon: "🌍", desc: "A community Minecraft SMP server project. Made by bazicioschi and catotherat.", webUrl: "https://bezosmp.pages.dev", desktopLabel: "bezosmp", preInstalled: false },
+    { name: "bezosmp", icon: "🐞", desc: "A community Minecraft SMP server project. Made by bazicioschi and catotherat.", webUrl: "https://bezosmp.lovable.app", desktopLabel: "bezosmp", preInstalled: false },
   ];
   const isOnDesktop = (a: StoreApp) => {
     if (a.webUrl) return icons.some((i) => i.appId === "web-app" && i.webUrl === a.webUrl);
