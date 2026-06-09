@@ -3363,7 +3363,7 @@ function PueiDrivePane({ files, icons, currentUser, users, openApp, onDelete }: 
 
 // ---------- App Store ----------
 function AppStoreApp({ installWebApp, openApp, openWebApp, systemVersion, addNativeIcon, uninstallApp, uninstallWebApp, icons }: { installWebApp: (label: string, url: string, iconUrl?: string) => void; openApp: (id: AppId) => void; openWebApp: (url: string, title: string) => void; systemVersion: SystemVersion; addNativeIcon: (appId: AppId, label: string, icon: string) => void; uninstallApp: (appId: AppId) => void; uninstallWebApp: (url: string) => void; icons: DesktopIcon[] }) {
-  const [tab, setTab] = useState<"official" | "installer">("official");
+  const [tab, setTab] = useState<"official" | "community" | "installer">("official");
   const [installing, setInstalling] = useState<Record<string, number>>({});
   const installTimers = useRef<Record<string, number>>({});
   type StoreApp = { name: string; icon: string; desc: string; appId?: AppId; preInstalled?: boolean; webUrl?: string; desktopLabel?: string };
@@ -3385,6 +3385,9 @@ function AppStoreApp({ installWebApp, openApp, openWebApp, systemVersion, addNat
   ];
   const games: StoreApp[] = [
     { name: "Puei Mansion",  icon: "👻", desc: "Funny spooky adventure. Solve puzzles, find hidden secrets, and meet weird Puei creatures.", appId: "puei-mansion", preInstalled: false },
+  ];
+  const community: StoreApp[] = [
+    { name: "bezosmp", icon: "🌍", desc: "A community Minecraft SMP server project. Made by bazicioschi and catotherat.", webUrl: "https://bezosmp.pages.dev", desktopLabel: "bezosmp", preInstalled: false },
   ];
   const isOnDesktop = (a: StoreApp) => {
     if (a.webUrl) return icons.some((i) => i.appId === "web-app" && i.webUrl === a.webUrl);
@@ -3423,7 +3426,7 @@ function AppStoreApp({ installWebApp, openApp, openWebApp, systemVersion, addNat
     <div className="flex h-full">
       <div className="w-44 p-2 border-r text-sm overflow-auto" style={{ background: "var(--glass)" }}>
         <div className="font-semibold opacity-70 text-xs mb-2 px-2">PUEI APP STORE</div>
-        {([["official","✿ Official apps"],["installer","📑 Installer"]] as const).map(([k, l]) => (
+        {([["official","✿ Official apps"],["community","🌍 Community"],["installer","📑 Installer"]] as const).map(([k, l]) => (
           <div key={k} onClick={() => { setTab(k); blip("click"); }}
             className="px-3 py-2 rounded cursor-pointer text-sm mb-0.5"
             style={{ background: tab === k ? "var(--gradient-aero)" : "transparent", color: tab === k ? "white" : undefined }}>{l}</div>
@@ -3433,7 +3436,42 @@ function AppStoreApp({ installWebApp, openApp, openWebApp, systemVersion, addNat
         </div>
       </div>
       <div className="flex-1 p-5 overflow-auto">
-        {tab === "installer" ? <InstallerPane installWebApp={installWebApp} /> : (
+        {tab === "installer" ? <InstallerPane installWebApp={installWebApp} /> : tab === "community" ? (
+          <div>
+            <h2 className="text-2xl font-bold mb-1">🌍 Community Apps</h2>
+            <p className="text-sm opacity-70 mb-4">Apps made by the Pueio community. Not affiliated with the Puei Team.</p>
+            <div className="grid grid-cols-3 gap-3">
+              {community.map((a) => {
+                const onDesktop = isOnDesktop(a);
+                const installKey = appInstallKey(a);
+                const installPct = installing[installKey];
+                const isInstalling = installPct !== undefined;
+                return (
+                  <div key={a.name} className="aero-glass-light rounded-lg p-3 flex flex-col">
+                    <div className="text-3xl mb-2">{a.icon}</div>
+                    <div className="font-semibold text-sm">{a.name}</div>
+                    <div className="text-xs opacity-60 mt-1 flex-1">{a.desc}</div>
+                    <div className="grid grid-cols-2 gap-1 mt-2">
+                      <button className="aero-button rounded px-2 py-1 text-xs w-full"
+                        onClick={() => a.webUrl ? openWebApp(a.webUrl, a.desktopLabel || a.name) : openApp(a.appId ?? "pueinet")}>Open</button>
+                      {!onDesktop ? (
+                        <button className="aero-button rounded px-2 py-1 text-xs w-full"
+                          disabled={isInstalling}
+                          onClick={() => !isInstalling && beginInstall(installKey, () => {
+                            if (a.webUrl) installWebApp(a.desktopLabel || a.name, a.webUrl);
+                          })}>
+                          {isInstalling ? `${Math.round(installPct!)}%` : "Install"}
+                        </button>
+                      ) : (
+                        <button className="aero-button rounded px-2 py-1 text-xs w-full opacity-50" disabled>Installed</button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ) : (
           <div>
             <h2 className="text-2xl font-bold mb-1">PueiOS App Store</h2>
             <p className="text-sm opacity-70 mb-4">Verified, first-party apps built by the Puei Team.</p>
