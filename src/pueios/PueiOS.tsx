@@ -894,31 +894,68 @@ export function PueiOS() {
   // ============ EOL WALL
   if (systemVersion === "PueiOS 2" || systemVersion === "PueiOS 2+") {
     return (
-      <div className="fixed inset-0 flex flex-col items-center justify-center text-white"
-        style={{ background: "#000", fontFamily: "monospace" }}>
-        <div className="text-center max-w-lg px-8">
-          <div className="text-6xl mb-6 opacity-30">⛔</div>
-          <h1 className="text-2xl font-bold mb-3" style={{ color: "#f87171" }}>
-            {systemVersion} is no longer supported
-          </h1>
-          <p className="text-sm opacity-70 mb-2">
-            As of June 6th, 2026, {systemVersion} has reached End of Life and is no longer supported.
-          </p>
-          <p className="text-sm opacity-50 mb-8">
-            To continue using PueiOS, you must upgrade to PueiOS 3.
-          </p>
-          <button
-            className="px-6 py-3 rounded-lg text-sm font-semibold"
-            style={{ background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.25)", cursor: "pointer" }}
-            onClick={() => { setSystemVersion("PueiOS 3"); setPhase("boot"); setBootProgress(0); }}>
-            Upgrade to PueiOS 3 and continue →
-          </button>
-          <div className="mt-4">
-            <button className="text-xs underline opacity-40 hover:opacity-70"
-              onClick={() => { localStorage.clear(); location.reload(); }}>
-              Wipe device and reinstall
-            </button>
+      <div className="fixed inset-0 flex flex-col text-white select-none"
+        style={{ background: "#0a2a6e", fontFamily: "'Segoe UI', Tahoma, Arial, sans-serif" }}>
+        {/* Top bar */}
+        <div className="flex items-center gap-4 px-10 py-5" style={{ background: "rgba(0,0,0,0.25)", borderBottom: "2px solid rgba(255,255,255,0.12)" }}>
+          <PueiLogoSvg size={48} glow />
+          <div>
+            <div className="text-2xl font-bold tracking-wide">PueiOS</div>
+            <div className="text-xs opacity-60 tracking-widest uppercase">System Notice</div>
           </div>
+        </div>
+
+        {/* Body */}
+        <div className="flex flex-1">
+          {/* Left accent stripe */}
+          <div className="w-2 flex-shrink-0" style={{ background: "linear-gradient(180deg, #1e90ff, #0050c8)" }} />
+
+          <div className="flex-1 flex flex-col justify-center px-16 py-12 max-w-3xl">
+            <div className="text-xs font-bold tracking-widest uppercase mb-4" style={{ color: "#7ab8ff" }}>
+              End of Support Notice
+            </div>
+            <h1 className="text-4xl font-bold mb-6 leading-tight" style={{ color: "#ffffff", textShadow: "0 2px 12px rgba(0,80,200,0.8)" }}>
+              {systemVersion} is no longer<br />supported
+            </h1>
+            <div className="w-16 h-0.5 mb-6" style={{ background: "#1e90ff" }} />
+            <p className="text-base mb-4 leading-relaxed" style={{ color: "rgba(200,220,255,0.9)" }}>
+              As of <strong>June 6th, 2026</strong>, {systemVersion} has reached its End of Life. PueiTeam no longer provides security updates, bug fixes, or technical support for this version.
+            </p>
+            <p className="text-sm mb-10" style={{ color: "rgba(160,190,255,0.7)" }}>
+              Your device will not receive further updates. To continue using PueiOS safely, upgrade to <strong style={{ color: "#ffffff" }}>PueiOS 3</strong>.
+            </p>
+
+            <div className="flex flex-col gap-3 max-w-sm">
+              <button
+                onClick={() => { setSystemVersion("PueiOS 3"); setPhase("boot"); setBootProgress(0); }}
+                style={{
+                  background: "linear-gradient(180deg, #2e7fd8 0%, #1455b0 100%)",
+                  border: "1px solid rgba(255,255,255,0.35)",
+                  boxShadow: "0 2px 8px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.25)",
+                  borderRadius: 4, padding: "10px 24px", cursor: "pointer",
+                  color: "#fff", fontWeight: 600, fontSize: 14, textAlign: "left",
+                  display: "flex", alignItems: "center", justifyContent: "space-between",
+                }}>
+                <span>Upgrade to PueiOS 3</span>
+                <span style={{ fontSize: 18, opacity: 0.8 }}>›</span>
+              </button>
+              <button
+                onClick={() => { if (confirm("Wipe all accounts and files and reinstall?")) { localStorage.clear(); location.reload(); } }}
+                style={{
+                  background: "transparent", border: "1px solid rgba(255,255,255,0.2)",
+                  borderRadius: 4, padding: "8px 24px", cursor: "pointer",
+                  color: "rgba(180,200,255,0.7)", fontSize: 13, textAlign: "left",
+                }}>
+                Wipe device and reinstall
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom bar */}
+        <div className="px-10 py-3 text-xs flex items-center justify-between" style={{ background: "rgba(0,0,0,0.3)", borderTop: "1px solid rgba(255,255,255,0.08)", color: "rgba(160,190,255,0.5)" }}>
+          <span>© PueiTeam. {systemVersion} · End of Life June 6, 2026</span>
+          <span>puei.system/eol</span>
         </div>
       </div>
     );
