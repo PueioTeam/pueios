@@ -233,13 +233,22 @@ export function PueiOS() {
           Math.round((origLeft + dx - DESKTOP_OX) / GRID_W),
           Math.round((origTop + dy - DESKTOP_OY) / GRID_H),
         );
-        const col = p.col;
-        const row = p.row;
-        setIcons((prev) => prev.map((i) => i.id === id ? { ...i, col, row } : i));
+        setIcons((prev) => prev.map((i) => i.id === id ? { ...i, col: p.col, row: p.row } : i));
       } else {
         const p = clampPixelPos(origLeft, origTop);
         de.style.left = p.left + "px";
         de.style.top = p.top + "px";
+        // Tap (not drag, not long-press) = open the app
+        if (touchTimer.current) {
+          clearTimeout(touchTimer.current);
+          touchTimer.current = null;
+          const tapped = icons.find((i) => i.id === id);
+          if (tapped) {
+            if (tapped.appId === "folder") openApp("folder", { folderIconId: tapped.id, title: tapped.label });
+            else if (tapped.appId === "web-app") openApp("web-app", { webUrl: tapped.webUrl, title: tapped.label });
+            else openApp(tapped.appId, { fileId: tapped.fileId });
+          }
+        }
       }
       dragRef.current = null;
     };
@@ -533,7 +542,7 @@ export function PueiOS() {
     touchStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
     touchTimer.current = window.setTimeout(() => {
       if (touchStart.current) setCtxMenu({ x: touchStart.current.x, y: touchStart.current.y, items });
-    }, 8000);
+    }, 600);
   };
   const onTouchEnd = () => {
     if (touchTimer.current) { clearTimeout(touchTimer.current); touchTimer.current = null; }
@@ -1173,16 +1182,14 @@ export function PueiOS() {
                     className="input-field" />
                 </div>
               ) : (
-                <div className="flex items-center gap-3 mb-3">
-                  {activeUser && (
-                    <div className="w-12 h-12 rounded-xl flex items-center justify-center text-3xl overflow-hidden flex-shrink-0"
-                      style={{ background: `linear-gradient(135deg, oklch(0.7 0.18 ${activeUser.color}), oklch(0.45 0.2 ${activeUser.color}))`, boxShadow: "0 4px 12px rgba(0,0,0,0.3)" }}>
-                      {activeUser.avatar?.startsWith("data:")
-                        ? <img src={activeUser.avatar} alt="" className="w-full h-full object-cover" />
-                        : (activeUser.avatar || "👤")}
-                    </div>
-                  )}
-                  <div className="text-sm font-medium">{loginUser || "Select an account"}</div>
+                <div className="flex flex-col items-center gap-2 mb-3">
+                  <div className="w-16 h-16 rounded-xl flex items-center justify-center text-4xl overflow-hidden flex-shrink-0"
+                    style={{ background: `linear-gradient(135deg, oklch(0.7 0.18 ${activeUser?.color || "220"}), oklch(0.45 0.2 ${activeUser?.color || "220"}))`, boxShadow: "0 4px 16px rgba(0,0,0,0.4)" }}>
+                    {activeUser?.avatar?.startsWith("data:")
+                      ? <img src={activeUser.avatar} alt="" className="w-full h-full object-cover" />
+                      : (activeUser?.avatar || "👤")}
+                  </div>
+                  <div className="text-sm font-semibold" style={{ color: "rgba(220,230,255,0.95)" }}>{loginUser || "Select an account"}</div>
                 </div>
               )}
               <input type="password" value={pwInput} onChange={(e) => setPwInput(e.target.value)}
@@ -1430,18 +1437,12 @@ export function PueiOS() {
       </div>
 
       {/* Mascot */}
-      {showMascot && windows.some(w => !w.minimized && w.maximized) && (
+      {showMascot && (
         <PueiMascot cursorPos={cursorPos} speak={mascotSpeak}
           onClick={() => {
-            const tips = [
-              "Tip: Drag a window to the top to maximize!",
-              "Long-press on touch = right click.",
-              "Try the App Store → Installer to install any website as an app.",
-              "Right-click the desktop → New Folder.",
-              "Settings → Wallpaper: use any image you painted!",
-            ];
-            const t = tips[Math.floor(Math.random() * tips.length)];
-            setMascotSpeak(t); setTimeout(() => setMascotSpeak(null), 4000);
+            openApp("pueinet", { webUrl: "puei://search", title: "Puei Copilot" });
+            setMascotSpeak("Opening Puei Copilot… ask me anything! ✦");
+            setTimeout(() => setMascotSpeak(null), 3000);
           }} />
       )}
 
