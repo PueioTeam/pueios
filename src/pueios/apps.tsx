@@ -53,7 +53,7 @@ export function AppRenderer(p: AppRendererProps) {
     case "pueinet": return <PueiWebApp currentUser={p.currentUser} users={p.users} icons={p.icons} />;
     case "puei-cloud-chat": return <PueiCloudChatApp user={p.currentUser} users={p.users} setUsers={p.setUsers} />;
     case "puei-studio": return <PueiStudioApp currentUser={p.currentUser} users={p.users} icons={p.icons} setWallpaper={p.setWallpaper} />;
-    case "file-explorer": return <FileExplorerApp openApp={p.openApp} icons={p.icons} openFolder={p.openFolder} currentUser={p.currentUser} users={p.users} />;
+    case "file-explorer": return <FileExplorerApp openApp={p.openApp} icons={p.icons} openFolder={p.openFolder} currentUser={p.currentUser} users={p.users} setWallpaper={p.setWallpaper} />;
     case "app-store": return <AppStoreApp installWebApp={p.installWebApp} openApp={p.openApp} openWebApp={p.openWebApp} systemVersion={p.systemVersion} addNativeIcon={p.addNativeIcon} uninstallApp={p.uninstallApp} uninstallWebApp={p.uninstallWebApp} icons={p.icons} />;
     case "puei-social": return <PueiSocialApp user={p.currentUser} users={p.users} />;
     case "folder": return <FolderApp folderIconId={p.folderIconId!} icons={p.icons} openApp={p.openApp} openWebApp={p.openWebApp} />;
@@ -137,9 +137,9 @@ function saveDownloadedImage(owner: string, name: string, dataUrl: string, folde
 
 function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, currentUser, users, setUsers, systemVersion, startUpgrade, uninstallApp, icons, signOut, lockScreen, deleteAccount }: any) {
   const [tab, setTab] = useState("personalize");
-  const [paintImages, setPaintImages] = useState<SavedFile[]>(() => loadFiles().filter((f) => f.type === "image" && (!f.owner || f.owner === currentUser)));
+  const [paintImages, setPaintImages] = useState<SavedFile[]>(() => loadFiles().filter((f) => f.type === "image" && f.folder === SYS_FOLDER_PICTURES && (!f.owner || f.owner === currentUser)));
   useEffect(() => {
-    const fn = () => setPaintImages(loadFiles().filter((f) => f.type === "image" && (!f.owner || f.owner === currentUser)));
+    const fn = () => setPaintImages(loadFiles().filter((f) => f.type === "image" && f.folder === SYS_FOLDER_PICTURES && (!f.owner || f.owner === currentUser)));
     window.addEventListener("pueios-files-changed", fn);
     return () => window.removeEventListener("pueios-files-changed", fn);
   }, [currentUser]);
@@ -303,22 +303,19 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, curren
                 </button>
               ))}
             </div>
-            <div className="text-xs opacity-70 mt-5 mb-2">From Puei Paint 2</div>
+            <div className="text-xs opacity-70 mt-5 mb-2">From Pictures</div>
             {paintImages.length === 0 ? (
-              <div className="text-sm opacity-60">No Paint files yet. Save an image in Puei Paint 2 and it will appear here.</div>
+              <div className="text-sm opacity-60">No pictures yet. Save images to your Pictures folder and they will appear here.</div>
             ) : (
               <div className="grid grid-cols-3 gap-3">
-                {paintImages.map((f) => {
-                  const id = `custom:${f.id}`;
-                  return (
-                    <button key={f.id} onClick={() => setWallpaper(id)}
-                      className="h-24 rounded-lg border-2 overflow-hidden relative"
-                      style={{ borderColor: wallpaper === id ? "white" : "transparent", boxShadow: wallpaper === id ? "0 0 0 3px var(--accent)" : undefined }}>
-                      <img src={f.content} alt={f.name} className="w-full h-full object-cover" />
-                      <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-[10px] px-1 truncate">{f.name}</div>
-                    </button>
-                  );
-                })}
+                {paintImages.map((f) => (
+                  <button key={f.id} onClick={() => setWallpaper(f.content)}
+                    className="h-24 rounded-lg border-2 overflow-hidden relative"
+                    style={{ borderColor: wallpaper === f.content ? "white" : "transparent", boxShadow: wallpaper === f.content ? "0 0 0 3px var(--accent)" : undefined }}>
+                    <img src={f.content} alt={f.name} className="w-full h-full object-cover" />
+                    <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-[10px] px-1 truncate">{f.name}</div>
+                  </button>
+                ))}
               </div>
             )}
           </div>
@@ -2862,7 +2859,7 @@ function PueiCloudChatApp({ user, users, setUsers }: { user: string; users: User
   );
 }
 
-function FileExplorerApp({ openApp, icons, openFolder, currentUser, users }: { openApp: (id: AppId, fileId?: string) => void; icons: DesktopIcon[]; openFolder: (id: string, title: string) => void; currentUser: string; users: User[] }) {
+function FileExplorerApp({ openApp, icons, openFolder, currentUser, users, setWallpaper }: { openApp: (id: AppId, fileId?: string) => void; icons: DesktopIcon[]; openFolder: (id: string, title: string) => void; currentUser: string; users: User[]; setWallpaper?: (w: WallpaperId) => void }) {
   const myFiles = () => loadFiles().filter((f) => !f.owner || f.owner === currentUser);
   const [files, setFiles] = useState<SavedFile[]>(() => myFiles());
   const [folder, setFolder] = useState<"home" | "documents" | "pictures" | "downloads" | "apps" | "folders" | "puei-drive" | "recycle-bin">("home");
@@ -2987,6 +2984,7 @@ function FileExplorerApp({ openApp, icons, openFolder, currentUser, users }: { o
           <FileGrid files={imgFiles} emptyHint="No saved pictures. Open Puei Paint 2 and click Save to create one."
             onOpen={(f) => openApp("puei-paint", f.id)}
             onDelete={(id) => { deleteFile(id); setFiles(myFiles()); }}
+            onSetWallpaper={setWallpaper ? (f) => { setWallpaper(f.content); blip("notify"); } : undefined}
             onDragStart={(id) => setDragFileId(id)}
             onDragEnd={() => { setDragFileId(null); setDropTarget(null); }} />
         )}
@@ -3116,10 +3114,11 @@ function FolderFileGrid({ files, icons, onOpen, onDelete, onOpenIcon }: {
   );
 }
 
-function FileGrid({ files, emptyHint, onOpen, onDelete, onDragStart, onDragEnd }: {
+function FileGrid({ files, emptyHint, onOpen, onDelete, onSetWallpaper, onDragStart, onDragEnd }: {
   files: SavedFile[]; emptyHint: string;
   onOpen?: (f: SavedFile) => void;
   onDelete: (id: string) => void;
+  onSetWallpaper?: (f: SavedFile) => void;
   onDragStart?: (id: string) => void; onDragEnd?: () => void;
 }) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -3137,6 +3136,11 @@ function FileGrid({ files, emptyHint, onOpen, onDelete, onDragStart, onDragEnd }
           onClick={() => {
             if (selectedId && confirm("Delete this file?")) { onDelete(selectedId); setSelectedId(null); }
           }}>🖦️ Delete</button>
+        {onSetWallpaper && (
+          <button className="aero-button rounded px-3 py-1 text-xs"
+            disabled={!selectedFile || selectedFile.type !== "image"} style={{ opacity: (selectedFile && selectedFile.type === "image") ? 1 : 0.4 }}
+            onClick={() => { if (selectedFile) { onSetWallpaper(selectedFile); } }}>🖼️ Set as Wallpaper</button>
+        )}
         {selectedFile
           ? <span className="text-xs opacity-50 ml-1">Selected: {selectedFile.name}</span>
           : <span className="text-xs opacity-40 ml-1">Click a file to select it</span>}

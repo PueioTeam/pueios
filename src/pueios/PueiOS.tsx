@@ -1280,9 +1280,11 @@ export function PueiOS() {
 
   // ============ DESKTOP
   const wallpaperStyle: React.CSSProperties = (() => {
+    if (typeof theme.wallpaper === "string" && theme.wallpaper.startsWith("data:")) {
+      return { backgroundImage: `url(${theme.wallpaper})`, backgroundSize: "cover", backgroundPosition: "center" };
+    }
     if (typeof theme.wallpaper === "string" && theme.wallpaper.startsWith("custom:")) {
       const id = theme.wallpaper.slice(7);
-      // Lazy import via require would fail SSR; read straight from localStorage
       try {
         const files = JSON.parse(localStorage.getItem("pueios2-files-v1") || "[]");
         const f = files.find((x: any) => x.id === id);
@@ -1297,7 +1299,7 @@ export function PueiOS() {
 
   return (
     <div
-      className={`fixed inset-0 ${typeof theme.wallpaper === "string" && theme.wallpaper.startsWith("custom:") ? "" : `wallpaper-${theme.wallpaper}`} ${windows.some(w => w.maximized && !w.minimized) ? "cursor-hidden" : ""}`}
+      className={`fixed inset-0 ${typeof theme.wallpaper === "string" && (theme.wallpaper.startsWith("custom:") || theme.wallpaper.startsWith("data:")) ? "" : `wallpaper-${theme.wallpaper}`} ${windows.some(w => w.maximized && !w.minimized) ? "cursor-hidden" : ""}`}
       style={{ overflow: "hidden", ...wallpaperStyle }}
       onMouseDown={() => { setCtxMenu(null); setStartOpen(false); setShowCalendar(false); setSelectedIcon(null); setShowVolume(false); setShowNetwork(false); }}
       onContextMenu={(e) => { e.preventDefault(); setCtxMenu({ x: e.clientX, y: e.clientY, items: desktopCtx() }); }}
