@@ -1283,7 +1283,6 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
   const deleteIsoAfterUpdate = () => {
     const target = iso3File || isoFile;
     if (!target) return;
-    if (!confirm(`Delete ${target.name}? Updates will remain installed.`)) return;
     deleteFile(target.id);
     setIsoRefresh((v) => v + 1);
     blip("click");
@@ -1338,6 +1337,7 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
     "puei://home": "Home", "puei://search": "Puei Copilot", "puei://about": "About",
     "puei://updates": "Updates", "puei://social": "PueiSocial", "puei://board": "PueiBoard",
     "puei://wallpapers": "Wallpapers", "puei://chat": "Chat", "puei://os3": "PueiOS 3",
+    "puei://films": "Puei Films",
   };
   const navigate = (target: string) => {
     let u = target.trim();
@@ -1359,6 +1359,7 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
             ["puei://search", "✨ Puei Copilot"],
             ["puei://forum", "💼 PueiForum"],
             ["puei://wallpapers", "🖼️ Puei Wallpapers"],
+            ["puei://films", "🎬 Puei Films"],
             ["puei://os3", "🚀 PueiOS 3"],
             ["puei://about", "ℹ️ About"],
           ].map(([u, l]) => (
@@ -1469,7 +1470,7 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
               ⬇ {isoFile ? "Re-download pueios2-plus.iso" : "Download pueios2-plus.iso"}
             </button>
             {isoFile && (
-              <button className="aero-button rounded px-3 py-1.5 text-xs" onClick={() => { if(confirm("Delete pueios2-plus.iso?")) { deleteFile(isoFile.id); setIsoRefresh(v => v+1); blip("click"); } }}>
+              <button className="aero-button rounded px-3 py-1.5 text-xs" onClick={() => { deleteFile(isoFile.id); setIsoRefresh(v => v+1); blip("click"); }}>
                 Delete ISO
               </button>
             )}
@@ -1489,7 +1490,7 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
               ⬇ {iso3File ? "Re-download pueios3.iso" : "Download pueios3.iso"}
             </button>
             {iso3File && (
-              <button className="aero-button rounded px-3 py-1.5 text-xs" onClick={() => { if(confirm("Delete pueios3.iso?")) { deleteFile(iso3File.id); setIsoRefresh(v => v+1); blip("click"); } }}>
+              <button className="aero-button rounded px-3 py-1.5 text-xs" onClick={() => { deleteFile(iso3File.id); setIsoRefresh(v => v+1); blip("click"); }}>
                 Delete ISO
               </button>
             )}
@@ -1561,6 +1562,42 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
       </div>
     ),
     "puei://about": <div className="p-6"><h2 className="text-2xl font-bold">About PueiNet</h2><p className="text-sm opacity-70 mt-2">A browser for an alternate 2020. Only https://&lt;app&gt;.base44.app external URLs are trusted.</p></div>,
+    "puei://films": (
+      <div className="p-6 space-y-6">
+        <div>
+          <h2 className="text-2xl font-bold">🎬 Puei Films</h2>
+          <p className="text-xs opacity-60 mt-1">Official Pueio universe short films, episodes, and clips.</p>
+        </div>
+        {[
+          { title: "Puei's First Flight", desc: "The origin story — how Puei discovered its wings and flew over Pueio City for the first time.", duration: "3:42", tag: "Origin", color: "#4fa8e0" },
+          { title: "The Great Puei Race", desc: "Puei and friends compete in the annual Pueio Glide Championship across five floating islands.", duration: "8:15", tag: "Adventure", color: "#a855f7" },
+          { title: "Puei Haunted Mansion Special", desc: "A spooky Halloween episode where Puei explores a mysterious mansion full of riddles.", duration: "12:00", tag: "Halloween", color: "#f59e0b" },
+          { title: "Puei Builds a PC", desc: "A short comedy — Puei tries to assemble a computer using only wings and enthusiasm.", duration: "5:30", tag: "Comedy", color: "#10b981" },
+          { title: "PueiOS 2: The Documentary", desc: "Behind the scenes of how PueiOS was designed and built by the Puei Team.", duration: "18:47", tag: "Documentary", color: "#3b82f6" },
+          { title: "Puei Meets the Stars", desc: "Puei launches into space and discovers a new galaxy filled with strange Puei-like creatures.", duration: "9:02", tag: "Sci-Fi", color: "#ec4899" },
+        ].map((film) => (
+          <div key={film.title} className="aero-glass-light rounded-xl overflow-hidden flex gap-4 p-4 items-start">
+            <div className="flex-shrink-0 rounded-lg flex items-center justify-center text-3xl"
+              style={{ width: 80, height: 60, background: `${film.color}22`, border: `1px solid ${film.color}44` }}>
+              🎬
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="font-semibold text-sm">{film.title}</div>
+              <div className="text-xs opacity-60 mt-0.5 leading-snug">{film.desc}</div>
+              <div className="flex items-center gap-3 mt-2">
+                <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold" style={{ background: `${film.color}33`, color: film.color }}>{film.tag}</span>
+                <span className="text-[10px] opacity-50">⏱ {film.duration}</span>
+              </div>
+            </div>
+            <button className="aero-button rounded-lg px-3 py-1.5 text-xs flex-shrink-0 flex items-center gap-1.5"
+              onClick={() => alert(`"${film.title}" is coming soon to Pueio Films! 🎬`)}>
+              ▶ Play
+            </button>
+          </div>
+        ))}
+        <div className="text-center text-xs opacity-40 pt-2">More episodes coming soon to Pueio Films ✦</div>
+      </div>
+    ),
   };
 
   let content: React.ReactNode;
@@ -2905,6 +2942,7 @@ function FileExplorerApp({ openApp, icons, openFolder, currentUser, users, setWa
           <FileGrid files={downloadFiles} emptyHint="No downloads yet. Download from Puei Wallpapers or mail attachments."
             onOpen={(f) => openApp("puei-paint", f.id)}
             onDelete={(id) => { deleteFile(id); setFiles(myFiles()); }}
+            onMoveToPictures={setWallpaper ? (f) => { moveFile(f.id, SYS_FOLDER_PICTURES); setFiles(myFiles()); blip("notify"); } : undefined}
             onDragStart={(id) => setDragFileId(id)}
             onDragEnd={() => { setDragFileId(null); setDropTarget(null); }} />
         )}
@@ -2993,7 +3031,7 @@ function FolderFileGrid({ files, icons, onOpen, onDelete, onOpenIcon }: {
           disabled={!selectedFileId}
           style={{ opacity: selectedFileId ? 1 : 0.4 }}
           onClick={() => {
-            if (selectedFileId && confirm("Delete this file?")) { onDelete(selectedFileId); setSelectedFileId(null); }
+            if (selectedFileId) { onDelete(selectedFileId); setSelectedFileId(null); }
           }}>
           🖦️ Delete
         </button>
@@ -3027,28 +3065,44 @@ function FolderFileGrid({ files, icons, onOpen, onDelete, onOpenIcon }: {
   );
 }
 
-function FileGrid({ files, emptyHint, onOpen, onDelete, onSetWallpaper, onDragStart, onDragEnd }: {
+function FileGrid({ files, emptyHint, onOpen, onDelete, onSetWallpaper, onMoveToPictures, onDragStart, onDragEnd }: {
   files: SavedFile[]; emptyHint: string;
   onOpen?: (f: SavedFile) => void;
   onDelete: (id: string) => void;
   onSetWallpaper?: (f: SavedFile) => void;
+  onMoveToPictures?: (f: SavedFile) => void;
   onDragStart?: (id: string) => void; onDragEnd?: () => void;
 }) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number; file: SavedFile } | null>(null);
   const selectedFile = files.find(f => f.id === selectedId) ?? null;
   if (files.length === 0) return <div className="text-sm opacity-70 p-6 text-center">{emptyHint}</div>;
+  const canMoveToPictures = (f: SavedFile) => onMoveToPictures && f.type === "image" && f.folder !== SYS_FOLDER_PICTURES;
   return (
-    <div>
+    <div onClick={() => setCtxMenu(null)}>
+      {ctxMenu && (
+        <ContextMenu x={ctxMenu.x} y={ctxMenu.y} onClose={() => setCtxMenu(null)} items={[
+          { label: "📂 Open", action: () => { if (onOpen) onOpen(ctxMenu.file); } },
+          ...(canMoveToPictures(ctxMenu.file) ? [{ label: "🖼️ Move to Pictures", action: () => { onMoveToPictures!(ctxMenu.file); setSelectedId(null); } }] : []),
+          ...(onSetWallpaper && ctxMenu.file.type === "image" ? [{ label: "🖼️ Set as Wallpaper", action: () => onSetWallpaper(ctxMenu.file) }] : []),
+          { sep: true },
+          { label: "🖦️ Delete", action: () => { onDelete(ctxMenu.file.id); setSelectedId(null); } },
+        ]} />
+      )}
       {/* Toolbar */}
-      <div className="flex items-center gap-2 mb-3 pb-2 border-b">
+      <div className="flex items-center gap-2 mb-3 pb-2 border-b flex-wrap">
         <button className="aero-button rounded px-3 py-1 text-xs"
           disabled={!selectedFile} style={{ opacity: selectedFile ? 1 : 0.4 }}
           onClick={() => { if (selectedFile && onOpen) onOpen(selectedFile); }}>📂 Open</button>
         <button className="aero-button rounded px-3 py-1 text-xs text-red-400"
           disabled={!selectedId} style={{ opacity: selectedId ? 1 : 0.4 }}
           onClick={() => {
-            if (selectedId && confirm("Delete this file?")) { onDelete(selectedId); setSelectedId(null); }
+            if (selectedId) { onDelete(selectedId); setSelectedId(null); }
           }}>🖦️ Delete</button>
+        {selectedFile && canMoveToPictures(selectedFile) && (
+          <button className="aero-button rounded px-3 py-1 text-xs"
+            onClick={() => { onMoveToPictures!(selectedFile); setSelectedId(null); }}>🖼️ Move to Pictures</button>
+        )}
         {onSetWallpaper && (
           <button className="aero-button rounded px-3 py-1 text-xs"
             disabled={!selectedFile || selectedFile.type !== "image"} style={{ opacity: (selectedFile && selectedFile.type === "image") ? 1 : 0.4 }}
@@ -3066,6 +3120,7 @@ function FileGrid({ files, emptyHint, onOpen, onDelete, onSetWallpaper, onDragSt
             onDragEnd={() => onDragEnd?.()}
             onClick={() => setSelectedId(f.id === selectedId ? null : f.id)}
             onDoubleClick={() => onOpen?.(f)}
+            onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); setSelectedId(f.id); setCtxMenu({ x: e.clientX, y: e.clientY, file: f }); }}
             className="text-center p-2 rounded cursor-pointer select-none transition-all"
             style={{
               background: f.id === selectedId ? "rgba(80,160,255,0.35)" : "transparent",
@@ -4608,7 +4663,6 @@ function PueiSocialApp({ user, users }: { user: string; users: User[] }) {
     setPosts(next); saveSocial(next);
   };
   const deletePost = (postId: string) => {
-    if (!confirm("Delete this post?")) return;
     const next = posts.filter((p) => p.id !== postId);
     setPosts(next); saveSocial(next);
   };
@@ -4812,7 +4866,7 @@ function RecycleBinApp() {
     <div className="p-4 h-full flex flex-col">
       <div className="flex items-center justify-between mb-3">
         <h2 className="text-lg font-semibold">🖦️ Recycle Bin</h2>
-        <button className="aero-button rounded px-3 py-1 text-xs" onClick={() => { if (confirm("Empty Recycle Bin?")) { emptyRecycle(); setItems([]); }}}>Empty Recycle Bin</button>
+        <button className="aero-button rounded px-3 py-1 text-xs" onClick={() => { emptyRecycle(); setItems([]); }}>Empty Recycle Bin</button>
       </div>
       {items.length === 0 ? (
         <div className="text-sm opacity-60 text-center p-8">Recycle Bin is empty.</div>
