@@ -448,6 +448,12 @@
 .mascot-eye { animation: blink 5s infinite; transform-origin: center; }
 .boot-logo { animation: boot-pulse 2s ease-in-out infinite; }
 
+/* Puei custom cursor */
+* { cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='32' viewBox='0 0 72 80'%3E%3Cellipse cx='18' cy='26' rx='14' ry='8' fill='white' opacity='0.55' stroke='rgba(120,180,220,0.7)' stroke-width='1'/%3E%3Cellipse cx='54' cy='26' rx='14' ry='8' fill='white' opacity='0.55' stroke='rgba(120,180,220,0.7)' stroke-width='1'/%3E%3Cdefs%3E%3ClinearGradient id='hg' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0%25' stop-color='%23ffe0bd'/%3E%3Cstop offset='100%25' stop-color='%23d9a878'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect x='28' y='60' width='16' height='14' rx='6' fill='url(%23hg)' stroke='%238a6440' stroke-width='1.2'/%3E%3Cpath d='M16 40 Q16 28 28 28 L44 28 Q56 28 56 40 L56 56 Q56 64 44 64 L28 64 Q16 64 16 56 Z' fill='url(%23hg)' stroke='%238a6440' stroke-width='1.4'/%3E%3Cellipse cx='14' cy='44' rx='5' ry='7' fill='url(%23hg)' stroke='%238a6440' stroke-width='1.2'/%3E%3Cpath d='M22 28 Q22 22 26 22 Q30 22 30 28' fill='url(%23hg)' stroke='%238a6440' stroke-width='1.2'/%3E%3Cpath d='M32 28 Q32 20 36 20 Q40 20 40 28' fill='url(%23hg)' stroke='%238a6440' stroke-width='1.2'/%3E%3Cpath d='M42 28 Q42 22 46 22 Q50 22 50 28' fill='url(%23hg)' stroke='%238a6440' stroke-width='1.2'/%3E%3Ccircle cx='29' cy='46' r='2.2' fill='%230a0a0a'/%3E%3Ccircle cx='43' cy='46' r='2.2' fill='%230a0a0a'/%3E%3C/svg%3E") 4 4, auto !important; }
+
+/* Hide custom cursor when a maximized window is open */
+.cursor-hidden * { cursor: none !important; }
+
 .loading-bar-inner {
   background: linear-gradient(90deg,
     transparent,
