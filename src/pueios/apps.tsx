@@ -4281,7 +4281,7 @@ function PueiStudioApp({ currentUser, users, icons, setWallpaper }: { currentUse
   const [brushSize, setBrushSize] = useState(6);
   const [shape, setShape] = useState<StudioShape>("rect");
   const [tab, setTab] = useState<"canvas" | "projects" | "share">("canvas");
-  const [projectName, setProjectName] = useState("My Creation");
+  const [projectName, setProjectName] = useState("Untitled");
   const [projects, setProjects] = useState<SavedFile[]>(() =>
     loadFiles().filter(f => f.type === "image" && f.folder === "__studio__" && (!f.owner || f.owner === currentUser))
   );
@@ -4433,7 +4433,7 @@ function PueiStudioApp({ currentUser, users, icons, setWallpaper }: { currentUse
     const p: SocialPost = {
       id: `studio-${Date.now().toString(36)}`,
       author: currentUser, authorAvatar: me?.avatar || "🧑",
-      text: sharedMsg || `Check out my creation: ${projectName}`,
+      text: sharedMsg || projectName,
       media: { kind: "image", src: data },
       at: Date.now(), likes: 0, likedBy: [], comments: [],
     };
@@ -4601,7 +4601,7 @@ function PueiStudioApp({ currentUser, users, icons, setWallpaper }: { currentUse
           <div className="mb-4">
             <label className="text-xs opacity-70 block mb-1">Caption (optional)</label>
             <input value={sharedMsg} onChange={e => setSharedMsg(e.target.value)}
-              className="w-full rounded px-3 py-2 text-sm input-field" placeholder={`Check out my creation: ${projectName}`} />
+              className="w-full rounded px-3 py-2 text-sm input-field" placeholder={projectName} />
           </div>
           <div className="flex flex-col gap-3">
             <button onClick={shareToSocial} className="aero-button rounded-xl px-4 py-3 text-sm text-left flex items-center gap-3">
