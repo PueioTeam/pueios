@@ -243,7 +243,7 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, curren
       <div className="flex-1 p-6 overflow-auto">
         {tab === "personalize" && (
           <div>
-            <h2 className="text-xl font-semibold mb-4">Personalize PueiOS 2</h2>
+            <h2 className="text-xl font-semibold mb-4">Personalize PueiOS</h2>
             <label className="block mb-3 text-sm">Accent hue ({theme.accentH}°)</label>
             <input type="range" min={0} max={360} value={theme.accentH}
               onChange={(e) => setTheme({ ...theme, accentH: Number(e.target.value) })} className="w-full" />
@@ -519,7 +519,7 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, curren
           </div>
         )}
         {tab === "about" && (
-          <div><button className="aero-button rounded-md px-4 py-2" onClick={() => openApp("about")}>Open About PueiOS 2 →</button></div>
+          <div><button className="aero-button rounded-md px-4 py-2" onClick={() => openApp("about")}>Open About PueiOS →</button></div>
         )}
         {tab === "pueio-control" && (
           <div className="space-y-6 max-w-lg">
@@ -698,7 +698,7 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, curren
 function AboutApp() {
   return (
     <div className="p-8 text-center">
-      <h1 className="text-3xl font-bold" style={{ color: "var(--accent)" }}>PueiOS 2</h1>
+      <h1 className="text-3xl font-bold" style={{ color: "var(--accent)" }}>PueiOS</h1>
       <div className="mt-8 mx-auto max-w-sm aero-glass-light p-5 rounded-lg">
         <div className="font-semibold mb-3 text-lg">Credits</div>
         <div className="text-base space-y-1">
@@ -3482,13 +3482,13 @@ function AppStoreApp({ installWebApp, openApp, openWebApp, systemVersion, addNat
             style={{ background: tab === k ? "var(--gradient-aero)" : "transparent", color: tab === k ? "white" : undefined }}>{l}</div>
         ))}
         <div className="text-[10px] opacity-60 px-2 mt-4 leading-snug">
-          PueiOS 2 is a closed ecosystem. Only Puei Team–built apps are allowed here.
+          PueiOS is a closed ecosystem. Only Puei Team–built apps are allowed here.
         </div>
       </div>
       <div className="flex-1 p-5 overflow-auto">
         {tab === "installer" ? <InstallerPane installWebApp={installWebApp} /> : (
           <div>
-            <h2 className="text-2xl font-bold mb-1">PueiOS 2 App Store</h2>
+            <h2 className="text-2xl font-bold mb-1">PueiOS App Store</h2>
             <p className="text-sm opacity-70 mb-4">Verified, first-party apps built by the Puei Team.</p>
             <div className="grid grid-cols-3 gap-3">
               {official.map((a) => {
