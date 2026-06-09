@@ -39,28 +39,26 @@
 :root {
   --radius: 10px;
   --accent-h: 200;
-  --background: oklch(0.97 0.02 220);
-  --foreground: oklch(0.18 0.04 240);
+  --background: oklch(0.97 0.02 var(--accent-h));
+  --foreground: oklch(0.18 0.04 var(--accent-h));
   --accent: oklch(0.65 0.18 var(--accent-h));
   --accent-2: oklch(0.75 0.15 calc(var(--accent-h) + 20));
-  /* Transparent enough for backdrop-blur to show through — true Aero glass */
-  --glass: rgba(210, 235, 255, 0.18);
-  --glass-strong: rgba(220, 238, 255, 0.38);
-  --border: rgba(140, 200, 255, 0.55);
+  --glass: oklch(0.92 0.04 var(--accent-h) / 0.18);
+  --glass-strong: oklch(0.94 0.05 var(--accent-h) / 0.38);
+  --border: oklch(0.75 0.12 var(--accent-h) / 0.55);
   --taskbar: linear-gradient(180deg,
-    rgba(18, 48, 110, 0.78) 0%,
-    rgba(8, 24, 72, 0.90) 50%,
-    rgba(4, 14, 50, 0.96) 100%);
-  /* Win7-style titlebar: mostly transparent blue glass */
+    oklch(0.28 0.12 var(--accent-h) / 0.88) 0%,
+    oklch(0.18 0.10 var(--accent-h) / 0.94) 50%,
+    oklch(0.12 0.08 var(--accent-h) / 0.97) 100%);
   --titlebar: linear-gradient(180deg,
-    rgba(200, 228, 255, 0.30) 0%,
-    rgba(170, 210, 255, 0.20) 40%,
-    rgba(140, 190, 245, 0.14) 100%);
-  --titlebar-text: rgba(20, 40, 80, 0.95);
-  --muted: oklch(0.92 0.02 220);
-  --muted-foreground: oklch(0.45 0.03 240);
+    oklch(0.92 0.08 var(--accent-h) / 0.30) 0%,
+    oklch(0.85 0.10 var(--accent-h) / 0.20) 40%,
+    oklch(0.78 0.12 var(--accent-h) / 0.14) 100%);
+  --titlebar-text: oklch(0.22 0.08 var(--accent-h));
+  --muted: oklch(0.92 0.02 var(--accent-h));
+  --muted-foreground: oklch(0.45 0.03 var(--accent-h));
 
-  --aero-glow: 0 0 24px rgba(80, 160, 255, 0.5);
+  --aero-glow: 0 0 24px oklch(0.65 0.18 var(--accent-h) / 0.5);
   --aero-shadow: 0 12px 40px -8px rgba(0,0,80,0.45), 0 4px 12px rgba(0,0,0,0.25);
   --aero-glass-opacity: 38;
   --aero-blur: 22px;

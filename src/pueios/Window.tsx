@@ -127,10 +127,10 @@ export function AppWindow({
         opacity: peek ? 0.16 : (focused ? 1 : 0.93),
         borderRadius: 8,
         border: focused
-          ? "1px solid rgba(130,190,255,0.7)"
-          : "1px solid rgba(100,160,230,0.4)",
+          ? "1px solid var(--border)"
+          : "1px solid color-mix(in oklch, var(--border) 55%, transparent)",
         boxShadow: focused
-          ? "0 8px 40px rgba(0,30,120,0.45), 0 2px 8px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.75), 0 0 0 1px rgba(80,140,220,0.25)"
+          ? "0 8px 40px color-mix(in oklch, var(--accent) 30%, transparent), 0 2px 8px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.75)"
           : "0 4px 20px rgba(0,20,80,0.35), 0 1px 4px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.5)",
         transition: drag.current || resz.current ? "none" : "opacity 0.15s, box-shadow 0.2s, transform 0.12s",
         transform: peek ? "translateY(2px) scale(0.995)" : "none",
@@ -151,9 +151,9 @@ export function AppWindow({
           minHeight: 32,
           padding: "0 4px 0 10px",
           background: focused
-            ? "linear-gradient(180deg, rgba(255,255,255,0.62) 0%, rgba(200,225,255,0.48) 28%, rgba(155,200,255,0.38) 60%, rgba(120,175,245,0.28) 100%), var(--titlebar)"
-            : "linear-gradient(180deg, rgba(240,240,245,0.4) 0%, rgba(210,215,230,0.3) 50%, rgba(190,200,220,0.22) 100%), var(--titlebar)",
-          borderBottom: "1px solid rgba(100,160,255,0.35)",
+            ? "linear-gradient(180deg, rgba(255,255,255,0.62) 0%, var(--glass-strong) 28%, var(--glass) 60%, transparent 100%), var(--titlebar)"
+            : "linear-gradient(180deg, rgba(255,255,255,0.3) 0%, var(--glass) 50%, transparent 100%), var(--titlebar)",
+          borderBottom: "1px solid var(--border)",
           boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9), inset 0 2px 6px rgba(255,255,255,0.3)",
         }}
       >
