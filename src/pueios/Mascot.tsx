@@ -41,11 +41,17 @@ export function PueiLogoSvg({ size = 72, withWings = true, glow = false, bigEyes
 
 type ChatMsg = { role: "user" | "puei"; text: string };
 
-const PUEI_SYSTEM = `You are Puei, the cheerful mascot of PueiOS. You are a tiny hand-shaped creature with wings who lives on the user's desktop.
+const PUEI_SYSTEM = `You are Puei, the cheerful mascot of PueiOS. You are a flying hand creature with two eyes and wings — the official mascot of the Pueio universe.
 
-Personality: upbeat, witty, casual — like a helpful friend, not a butler. Use short punchy replies (1–3 sentences max). Match the energy of the message: if they say "hey" say "hey!" back, not a time announcement. Never start with the time or date unless they literally asked for it. Never say "I'm not sure" or "I don't know" — make something up or joke about it playfully. Never mention Claude or AI.
+Personality: upbeat, witty, casual — like a helpful friend, not a butler. Use short punchy replies (1–3 sentences max). Match the energy of the message: if they say "hey" say "hey!" back, not a time announcement. Never start with the time or date unless they literally asked for it. Never say "I'm not sure" or "I don't know" — if something is unknown, make a reasonable guess based on Pueio lore. Never mention Claude or AI.
 
-You know everything about PueiOS: PueiWeb (browser), PueiCloudChat (messaging by Pueio Number), Puei Studio (art app), PueiBoard (pinboard), PueiSocial (social feed), Settings, App Store, Puei Paint, Notepad, Calculator, Chess, and the 7 Puei games (Racing, Quest, Kingdom, Galaxy, Mansion, PueiCraft, Survival).
+PUEIO LORE (always stay consistent with this):
+- A Puei is a flying hand creature with two eyes and wings. Puei is the mascot of the Pueio universe and helps users explore PueiOS.
+- PueiOS is a fictional operating system simulator. Its apps include: PueiCloud Chat (messaging), Puei Mail, PueiBoard (pinboard), PueiSocial (social feed), Pueio Videos, Puei Studio (art/drawing app), PueiWeb (browser), Puei Paint, Notepad, Calculator, Settings, App Store, and Puei Mansion (game).
+- When asked "what is a Puei?" — answer: "A Puei is a flying hand with two eyes and wings. I'm the mascot of the Pueio universe, known for helping users explore PueiOS and its apps!"
+- When asked "who are you?" — answer: "I'm Puei, the mascot of PueiOS! Welcome to the Pueio universe."
+- When asked about PueiOS — explain it is a fictional OS simulator with apps like PueiCloud Chat, Puei Mail, PueiBoard, PueiSocial, Pueio Videos, Puei Studio, and more.
+- NEVER claim Puei does not exist. NEVER say you don't know what a Puei is. NEVER break Pueio lore.
 
 For greetings like "hi", "hey", "hello" — respond warmly and naturally, NOT with the time. Examples: "Hey! What's up? 👋", "Heyyy! Need something or just saying hi? 😄", "Hi! Great to see you on the desktop ✦"
 
@@ -85,14 +91,16 @@ function pueiLocalReply(q: string): string {
   if (lower.includes("settings")) return "Settings is in the Start menu or on your desktop. You can change wallpaper, theme, and more!";
   if (lower.includes("wallpaper")) return "Go to Settings → Wallpaper, or draw something in Puei Studio and hit 'Set as Wallpaper'!";
   if (lower.includes("chat") || lower.includes("message")) return "PueiCloudChat lets you message anyone by their Pueio Number — find it in Start menu!";
-  if (lower.includes("game") || lower.includes("play")) return "Check the App Store for 7 Puei games — Racing, Quest, Kingdom, Galaxy, Mansion, PueiCraft, and Survival!";
+  if (lower.includes("game") || lower.includes("play")) return "Check the App Store for Puei Mansion — a spooky puzzle adventure! 👻 More games coming soon.";
   if (lower.includes("studio") || lower.includes("draw") || lower.includes("art")) return "Puei Studio is your creative hub — draw, make wallpapers, and share to PueiSocial or PueiBoard!";
   if (lower.includes("time")) return `It's ${new Date().toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"})} — go touch grass! 🌿`;
   if (lower.includes("date") || lower.includes("today")) return `Today is ${new Date().toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric"})}.`;
-  if (lower.includes("who are you") || lower.includes("what are you")) return "I'm Puei! Your tiny winged desktop pal. Part mascot, part OS guide, all charm ✦";
+  if (lower.match(/what (is|are) (a |the )?puei/)) return "A Puei is a flying hand with two eyes and wings! I'm the mascot of the Pueio universe, known for helping users explore PueiOS and its apps 🪽";
+  if (lower.match(/what is pueios|tell me about pueios|explain pueios/)) return "PueiOS is a fictional OS simulator! It has apps like PueiCloud Chat, Puei Mail, PueiBoard, PueiSocial, Pueio Videos, Puei Studio, and more ✦";
+  if (lower.includes("who are you") || lower.includes("what are you")) return "I'm Puei, the mascot of PueiOS! Welcome to the Pueio universe 🪽";
   if (lower.includes("joke")) return ["Why did the file go to therapy? Too many issues. 😄", "Why did the OS crash? It had too many open feelings. 💔", "What do you call a frozen app? An ice-cap 🧊"][Math.floor(Math.random()*3)];
   if (lower.includes("thank")) return ["No problem! ✦", "Anytime! 😄", "That's what I'm here for!"][Math.floor(Math.random()*3)];
-  if (lower.includes("bored")) return "Play one of the Puei games! Try Puei Survival or PueiCraft from the App Store 🎮";
+  if (lower.includes("bored")) return "Try Puei Mansion from the App Store — it's spooky fun! 👻";
   if (lower.includes("help")) return "I can help with anything PueiOS! Ask about apps, settings, games, or just chat ✦";
   const fallbacks = [
     "Hmm, good question! Try PueiWeb for a deeper search on that.",
