@@ -2963,6 +2963,7 @@ function FileExplorerApp({ openApp, icons, openFolder, currentUser, users, setWa
               onOpen={(f) => openApp(f.type === "image" ? "puei-paint" : "notepad", f.id)}
               onDelete={(id) => { deleteFile(id); setFiles(myFiles()); }}
               onOpenIcon={(ic) => { if (ic.appId !== "web-app") openApp(ic.appId, ic.fileId); }}
+              onMoveToPictures={(f) => { moveFile(f.id, SYS_FOLDER_PICTURES); setFiles(myFiles()); blip("notify"); }}
             />
           );
         })()}
@@ -2971,19 +2972,21 @@ function FileExplorerApp({ openApp, icons, openFolder, currentUser, users, setWa
   );
 }
 
-function FolderFileGrid({ files, icons, onOpen, onDelete, onOpenIcon }: {
+function FolderFileGrid({ files, icons, onOpen, onDelete, onOpenIcon, onMoveToPictures }: {
   files: SavedFile[]; icons: DesktopIcon[];
   onOpen: (f: SavedFile) => void;
   onDelete: (id: string) => void;
   onOpenIcon: (ic: DesktopIcon) => void;
+  onMoveToPictures?: (f: SavedFile) => void;
 }) {
   const [selectedFileId, setSelectedFileId] = useState<string | null>(null);
   const selectedFile = files.find(f => f.id === selectedFileId) ?? null;
+  const canMove = selectedFile && selectedFile.type === "image" && selectedFile.folder !== SYS_FOLDER_PICTURES && onMoveToPictures;
 
   return (
     <div>
       {/* Toolbar */}
-      <div className="flex items-center gap-2 mb-3 pb-2 border-b">
+      <div className="flex items-center gap-2 mb-3 pb-2 border-b flex-wrap">
         <button
           className="aero-button rounded px-3 py-1 text-xs"
           disabled={!selectedFile}
@@ -3000,6 +3003,12 @@ function FolderFileGrid({ files, icons, onOpen, onDelete, onOpenIcon }: {
           }}>
           🖦️ Delete
         </button>
+        {canMove && (
+          <button className="aero-button rounded px-3 py-1 text-xs"
+            onClick={() => { onMoveToPictures!(selectedFile!); setSelectedFileId(null); }}>
+            🖼️ Move to Pictures
+          </button>
+        )}
         {selectedFile && <span className="text-xs opacity-50 ml-1">Selected: {selectedFile.name}</span>}
         {!selectedFile && <span className="text-xs opacity-40 ml-1">Click a file to select it</span>}
       </div>
@@ -3902,6 +3911,7 @@ function FolderApp({ folderIconId, icons, openApp, openWebApp }: {
             onOpen={(f) => openApp(f.type === "image" ? "puei-paint" : "notepad", f.id)}
             onDelete={(id) => { deleteFile(id); setSavedFiles(loadFiles().filter((f) => f.folder === folderIconId)); }}
             onOpenIcon={(ic) => ic.appId === "web-app" ? openWebApp(ic.webUrl!, ic.label) : openApp(ic.appId, ic.fileId)}
+            onMoveToPictures={(f) => { moveFile(f.id, SYS_FOLDER_PICTURES); setSavedFiles(loadFiles().filter((fi) => fi.folder === folderIconId)); blip("notify"); }}
           />
       }
     </div>
