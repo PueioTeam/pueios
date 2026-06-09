@@ -1562,42 +1562,7 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
       </div>
     ),
     "puei://about": <div className="p-6"><h2 className="text-2xl font-bold">About PueiNet</h2><p className="text-sm opacity-70 mt-2">A browser for an alternate 2020. Only https://&lt;app&gt;.base44.app external URLs are trusted.</p></div>,
-    "puei://films": (
-      <div className="p-6 space-y-6">
-        <div>
-          <h2 className="text-2xl font-bold">🎬 Puei Films</h2>
-          <p className="text-xs opacity-60 mt-1">Official Pueio universe short films, episodes, and clips.</p>
-        </div>
-        {[
-          { title: "Puei's First Flight", desc: "The origin story — how Puei discovered its wings and flew over Pueio City for the first time.", duration: "3:42", tag: "Origin", color: "#4fa8e0" },
-          { title: "The Great Puei Race", desc: "Puei and friends compete in the annual Pueio Glide Championship across five floating islands.", duration: "8:15", tag: "Adventure", color: "#a855f7" },
-          { title: "Puei Haunted Mansion Special", desc: "A spooky Halloween episode where Puei explores a mysterious mansion full of riddles.", duration: "12:00", tag: "Halloween", color: "#f59e0b" },
-          { title: "Puei Builds a PC", desc: "A short comedy — Puei tries to assemble a computer using only wings and enthusiasm.", duration: "5:30", tag: "Comedy", color: "#10b981" },
-          { title: "PueiOS 2: The Documentary", desc: "Behind the scenes of how PueiOS was designed and built by the Puei Team.", duration: "18:47", tag: "Documentary", color: "#3b82f6" },
-          { title: "Puei Meets the Stars", desc: "Puei launches into space and discovers a new galaxy filled with strange Puei-like creatures.", duration: "9:02", tag: "Sci-Fi", color: "#ec4899" },
-        ].map((film) => (
-          <div key={film.title} className="aero-glass-light rounded-xl overflow-hidden flex gap-4 p-4 items-start">
-            <div className="flex-shrink-0 rounded-lg flex items-center justify-center text-3xl"
-              style={{ width: 80, height: 60, background: `${film.color}22`, border: `1px solid ${film.color}44` }}>
-              🎬
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="font-semibold text-sm">{film.title}</div>
-              <div className="text-xs opacity-60 mt-0.5 leading-snug">{film.desc}</div>
-              <div className="flex items-center gap-3 mt-2">
-                <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold" style={{ background: `${film.color}33`, color: film.color }}>{film.tag}</span>
-                <span className="text-[10px] opacity-50">⏱ {film.duration}</span>
-              </div>
-            </div>
-            <button className="aero-button rounded-lg px-3 py-1.5 text-xs flex-shrink-0 flex items-center gap-1.5"
-              onClick={() => alert(`"${film.title}" is coming soon to Pueio Films! 🎬`)}>
-              ▶ Play
-            </button>
-          </div>
-        ))}
-        <div className="text-center text-xs opacity-40 pt-2">More episodes coming soon to Pueio Films ✦</div>
-      </div>
-    ),
+    "puei://films": <PueiFilmsPage currentUser={currentUser} />,
   };
 
   let content: React.ReactNode;
@@ -3394,6 +3359,7 @@ function AppStoreApp({ installWebApp, openApp, openWebApp, systemVersion, addNat
   const installTimers = useRef<Record<string, number>>({});
   type StoreApp = { name: string; icon: string; desc: string; appId?: AppId; preInstalled?: boolean; webUrl?: string; desktopLabel?: string };
   const official: StoreApp[] = [
+    { name: "Puei Films",     icon: "🎬", desc: "Watch official videos posted by pueioficial.",   webUrl: "puei://films",  desktopLabel: "Puei Films",   preInstalled: false },
     { name: "Puei Updater",   icon: "⬆️", desc: "Required for installing ISO system updates.",           webUrl: "puei://updates", desktopLabel: "Puei Updater", preInstalled: false },
     { name: "PueiSocial",     icon: "📢", desc: "The official PueiOS social network.",          appId: "puei-social",    preInstalled: true },
     { name: "PueiCloudChat",  icon: "💬", desc: "Chat by PueiNumber — cross-device, real-time.", appId: "puei-cloud-chat", preInstalled: true },
@@ -4595,6 +4561,106 @@ function PueiStudioApp({ currentUser, users, icons, setWallpaper }: { currentUse
           {savedMsg && <div className="mt-4 text-sm text-green-400 font-semibold">{savedMsg}</div>}
         </div>
       )}
+    </div>
+  );
+}
+
+// ---------- Puei Films ----------
+const FILMS_KEY = "pueios2-films-v1";
+type FilmPost = { id: string; title: string; desc: string; videoSrc: string; postedAt: number };
+function loadFilms(): FilmPost[] { try { return JSON.parse(localStorage.getItem(FILMS_KEY) || "[]"); } catch { return []; } }
+function saveFilms(f: FilmPost[]) { localStorage.setItem(FILMS_KEY, JSON.stringify(f)); }
+
+function PueiFilmsPage({ currentUser }: { currentUser: string }) {
+  const isAdmin = currentUser.trim().toLowerCase() === "pueioficial";
+  const [films, setFilms] = useState<FilmPost[]>(() => loadFilms());
+  const [playing, setPlaying] = useState<string | null>(null);
+  const [title, setTitle] = useState("");
+  const [desc, setDesc] = useState("");
+  const [videoSrc, setVideoSrc] = useState("");
+  const [uploading, setUploading] = useState(false);
+
+  const onFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    setUploading(true);
+    const r = new FileReader();
+    r.onload = () => { setVideoSrc(String(r.result)); setUploading(false); };
+    r.readAsDataURL(f);
+  };
+
+  const post = () => {
+    if (!title.trim() || !videoSrc) return;
+    const next: FilmPost[] = [{ id: `film-${Date.now().toString(36)}`, title: title.trim(), desc: desc.trim(), videoSrc, postedAt: Date.now() }, ...films];
+    setFilms(next); saveFilms(next);
+    setTitle(""); setDesc(""); setVideoSrc(""); blip("notify");
+  };
+
+  const remove = (id: string) => {
+    const next = films.filter(f => f.id !== id);
+    setFilms(next); saveFilms(next);
+    if (playing === id) setPlaying(null);
+    blip("click");
+  };
+
+  return (
+    <div className="flex flex-col h-full">
+      <div className="aero-titlebar px-4 py-2 flex items-center gap-3 flex-shrink-0">
+        <span className="font-bold text-base">🎬 Puei Films</span>
+        <span className="text-xs opacity-50">Official videos posted by pueioficial</span>
+      </div>
+      <div className="flex-1 overflow-auto p-4 space-y-4">
+        {isAdmin && (
+          <div className="aero-glass-light rounded-xl p-4 space-y-3">
+            <div className="text-xs font-semibold opacity-70">📤 Post a new film</div>
+            <input value={title} onChange={e => setTitle(e.target.value)} placeholder="Title" className="w-full rounded px-3 py-1.5 text-sm input-field" />
+            <input value={desc} onChange={e => setDesc(e.target.value)} placeholder="Description (optional)" className="w-full rounded px-3 py-1.5 text-sm input-field" />
+            <div className="flex items-center gap-3">
+              <label className="aero-button rounded px-3 py-1.5 text-xs cursor-pointer">
+                {uploading ? "Loading…" : videoSrc ? "✅ Video ready" : "📁 Choose video"}
+                <input type="file" accept="video/*" className="hidden" onChange={onFile} />
+              </label>
+              <button onClick={post} disabled={!title.trim() || !videoSrc || uploading}
+                className="aero-button rounded px-4 py-1.5 text-xs font-semibold"
+                style={{ opacity: (!title.trim() || !videoSrc || uploading) ? 0.4 : 1 }}>
+                Post Film
+              </button>
+            </div>
+          </div>
+        )}
+        {films.length === 0 && (
+          <div className="text-center text-sm opacity-50 py-12">No films yet. Check back soon! 🎬</div>
+        )}
+        {films.map(f => (
+          <div key={f.id} className="aero-glass-light rounded-xl overflow-hidden">
+            {playing === f.id ? (
+              <video src={f.videoSrc} controls autoPlay className="w-full max-h-64 bg-black" style={{ display: "block" }} />
+            ) : (
+              <div className="w-full h-36 bg-black flex items-center justify-center cursor-pointer relative"
+                onClick={() => setPlaying(f.id)}
+                style={{ background: "linear-gradient(135deg,#0a0a1a,#1a0a2a)" }}>
+                <div className="text-5xl opacity-80">▶</div>
+                <div className="absolute bottom-2 right-2 text-[10px] opacity-50 text-white">{new Date(f.postedAt).toLocaleDateString()}</div>
+              </div>
+            )}
+            <div className="p-3 flex items-start justify-between gap-3">
+              <div>
+                <div className="font-semibold text-sm">{f.title}</div>
+                {f.desc && <div className="text-xs opacity-60 mt-0.5">{f.desc}</div>}
+                <div className="text-[10px] opacity-40 mt-1">pueioficial · {new Date(f.postedAt).toLocaleDateString()}</div>
+              </div>
+              <div className="flex gap-2 flex-shrink-0">
+                <button className="aero-button rounded px-2 py-1 text-xs" onClick={() => setPlaying(playing === f.id ? null : f.id)}>
+                  {playing === f.id ? "⏹ Stop" : "▶ Play"}
+                </button>
+                {isAdmin && (
+                  <button className="aero-button rounded px-2 py-1 text-xs" style={{ color: "#fca5a5" }} onClick={() => remove(f.id)}>Delete</button>
+                )}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
