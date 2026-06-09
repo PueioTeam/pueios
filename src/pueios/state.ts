@@ -129,7 +129,14 @@ export type AppId =
   | "folder"
   | "web-app"
   | "recycle-bin"
-  | "chess";
+  | "chess"
+  | "puei-racing"
+  | "puei-quest"
+  | "puei-kingdom"
+  | "puei-galaxy"
+  | "puei-mansion"
+  | "pueicraft"
+  | "puei-survival";
 
 export type WindowState = {
   id: string;

@@ -250,6 +250,13 @@ export function appIcon(appId: AppId, size = 32, override?: string, iconUrl?: st
     "web-app": "🔗",
     "recycle-bin": "🗑️",
     "chess": "♟️",
+    "puei-racing": "🎮",
+    "puei-quest": "⚔️",
+    "puei-kingdom": "🏰",
+    "puei-galaxy": "🚀",
+    "puei-mansion": "👻",
+    "pueicraft": "🧱",
+    "puei-survival": "🌊",
   };
   const isImg = typeof override === "string" && override.startsWith("data:");
   const useUrl = !isImg && !override && !!iconUrl;

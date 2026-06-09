@@ -11,6 +11,7 @@ import {
 } from "./state";
 import { pullAndMergeFiles, pushFile as pushFileToServer, removeFileFromServer } from "./fileSync";
 import { changePasswordRemote } from "./accountSync";
+import { PueiRacingApp, PueiQuestApp, PueiKingdomApp, PueiGalaxyApp, PueiMansionApp, PueiCraftApp, PueiSurvivalApp } from "./games";
 
 
 export type AppRendererProps = {
@@ -59,6 +60,13 @@ export function AppRenderer(p: AppRendererProps) {
     case "web-app": return <WebAppFrame url={p.webUrl!} currentUser={p.currentUser} startUpgrade={p.startUpgrade} />;
     case "recycle-bin": return <RecycleBinApp />;
     case "chess": return <ChessApp />;
+    case "puei-racing": return <PueiRacingApp />;
+    case "puei-quest": return <PueiQuestApp />;
+    case "puei-kingdom": return <PueiKingdomApp />;
+    case "puei-galaxy": return <PueiGalaxyApp />;
+    case "puei-mansion": return <PueiMansionApp />;
+    case "pueicraft": return <PueiCraftApp />;
+    case "puei-survival": return <PueiSurvivalApp />;
   }
 }
 
@@ -3507,6 +3515,15 @@ function AppStoreApp({ installWebApp, openApp, openWebApp, systemVersion, addNat
     { name: "Chess",          icon: "♟️", desc: "Chess vs Puei Bot AI — fully functional.",     appId: "chess",          preInstalled: false },
     { name: "Installer",      icon: "📑", desc: "Install trusted web apps as desktop shortcuts.",appId: "app-store",      preInstalled: true },
   ];
+  const games: StoreApp[] = [
+    { name: "Puei Racing",   icon: "🎮", desc: "Race as Puei characters. Collect power-ups and drift past rivals.",        appId: "puei-racing",   preInstalled: false },
+    { name: "Puei Quest",    icon: "⚔️", desc: "Action RPG. Explore islands, caves, cities. Collect rare items.",          appId: "puei-quest",    preInstalled: false },
+    { name: "Puei Kingdom",  icon: "🏰", desc: "Build your kingdom. Manage resources and defend against enemies.",          appId: "puei-kingdom",  preInstalled: false },
+    { name: "Puei Galaxy",   icon: "🚀", desc: "Space exploration. Visit planets, upgrade your ship, find civilizations.",  appId: "puei-galaxy",   preInstalled: false },
+    { name: "Puei Mansion",  icon: "👻", desc: "Spooky adventure. Solve puzzles and meet weird Puei creatures.",            appId: "puei-mansion",  preInstalled: false },
+    { name: "PueiCraft",     icon: "🧱", desc: "Sandbox building. Build cities and worlds and share through PueiOS.",       appId: "pueicraft",     preInstalled: false },
+    { name: "Puei Survival", icon: "🌊", desc: "Gather, craft, and survive storms and monsters in a vast open world.",     appId: "puei-survival", preInstalled: false },
+  ];
   const isOnDesktop = (a: StoreApp) => {
     if (a.webUrl) return icons.some((i) => i.appId === "web-app" && i.webUrl === a.webUrl);
     if (!a.appId) return false;
@@ -3636,6 +3653,64 @@ function AppStoreApp({ installWebApp, openApp, openWebApp, systemVersion, addNat
                   </div>
                 );
               })}
+            </div>
+
+            {/* Games */}
+            <div className="mt-6">
+              <h3 className="font-bold text-base mb-1">🎮 Puei Games</h3>
+              <p className="text-sm opacity-70 mb-4">Games by the Puei Team — install and play right in PueiOS.</p>
+              <div className="grid grid-cols-3 gap-3">
+                {games.map((a) => {
+                  const onDesktop = isOnDesktop(a);
+                  const installKey = appInstallKey(a);
+                  const installPct = installing[installKey];
+                  const isInstalling = installPct !== undefined;
+                  return (
+                    <div key={a.name} className="aero-glass-light rounded-lg p-3 flex flex-col">
+                      <div className="flex items-center gap-2">
+                        <div className="text-3xl">{a.icon}</div>
+                        <div>
+                          <div className="font-semibold">{a.name}</div>
+                          <div className="text-[10px] opacity-60">⬇ Installable · Puei Team</div>
+                        </div>
+                      </div>
+                      <div className="text-xs opacity-70 mt-1 flex-1">{a.desc}</div>
+                      <div className="grid grid-cols-2 gap-1 mt-2">
+                        <button className="aero-button rounded px-2 py-1 text-xs w-full"
+                          onClick={() => openApp(a.appId ?? "pueinet")}>Open</button>
+                        <button
+                          className="aero-button rounded px-2 py-1 text-xs w-full"
+                          style={{ background: onDesktop ? "rgba(80,200,120,0.25)" : undefined, color: onDesktop ? "#4ade80" : undefined }}
+                          disabled={isInstalling || onDesktop}
+                          onClick={() => {
+                            if (isInstalling || onDesktop) return;
+                            beginInstall(installKey, () => {
+                              addNativeIcon(a.appId!, a.name, a.icon);
+                              blip("notify");
+                            });
+                          }}>
+                          {isInstalling ? `Installing ${Math.floor(installPct)}%` : onDesktop ? "✔ Installed" : "⬇ Install"}
+                        </button>
+                        {onDesktop && (
+                          <button className="aero-button rounded px-2 py-1 text-xs col-span-2 w-full"
+                            style={{ color: "#fca5a5" }}
+                            onClick={() => { uninstallApp(a.appId!); blip("notify"); }}>
+                            Uninstall
+                          </button>
+                        )}
+                      </div>
+                      {isInstalling && (
+                        <div className="mt-2">
+                          <div className="w-full h-1.5 rounded-full bg-cyan-900/35 overflow-hidden">
+                            <div className="loading-bar-inner h-full" style={{ width: `${installPct}%`, transition: "width 0.25s linear" }} />
+                          </div>
+                          <div className="text-[10px] opacity-60 mt-1">Estimated 10–15 seconds</div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
         )}
