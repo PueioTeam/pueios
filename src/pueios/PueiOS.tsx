@@ -1108,7 +1108,7 @@ export function PueiOS() {
       <div className="fixed inset-0 flex flex-col items-center justify-center"
         style={{ background: "linear-gradient(135deg, oklch(0.3 0.1 220), oklch(0.15 0.08 250))" }}>
         <div className="absolute top-6 left-6 text-white/70 text-sm flex items-center gap-2">
-          <PueiLogoSvg size={28} /> {locked ? "Locked" : `Welcome to ${systemVersion}`}
+          <PueiLogoSvg size={28} /> {locked ? "Locked" : `Welcome to ${(systemVersion === "PueiOS 2" || systemVersion === "PueiOS 2+") ? "PueiOS 3" : systemVersion}`}
         </div>
         <div className="absolute top-6 right-6 text-white/70 text-sm">{now.toLocaleString()}</div>
 
@@ -1380,7 +1380,7 @@ export function PueiOS() {
               openFolder={(folderIconId, title) => openApp("folder", { folderIconId, title })}
               setUsers={setUsers}
               signOut={() => { blip("shutdown"); setWindows([]); setCurrentUser(""); setPhase("login"); setPwInput(""); }}
-              lockScreen={() => { blip("click"); setLocked(true); setPwInput(""); }}
+              lockScreen={() => { blip("click"); setLocked(true); setLoginUser(currentUser); setPwInput(""); }}
               deleteAccount={(name) => {
                 const nextUsers = users.filter((u) => u.name !== name);
                 setUsers(nextUsers);
