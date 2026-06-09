@@ -57,6 +57,7 @@ const SECURITY_KEY = "puei";
 export function PueiOS() {
   const [phase, setPhase] = useState<Phase>("boot");
   const [bootProgress, setBootProgress] = useState(0);
+  const [eolDismissed, setEolDismissed] = useState(false);
   const [theme, setThemeState] = useState<Theme>(defaultTheme);
   const [icons, setIcons] = useState<DesktopIcon[]>(defaultIcons);
   const [users, setUsers] = useState<User[]>([]);
@@ -892,7 +893,7 @@ export function PueiOS() {
   }
 
   // ============ EOL WALL
-  if (systemVersion === "PueiOS 2" || systemVersion === "PueiOS 2+") {
+  if ((systemVersion === "PueiOS 2" || systemVersion === "PueiOS 2+") && !eolDismissed) {
     return (
       <div className="fixed inset-0 flex flex-col text-white select-none"
         style={{ background: "#0a2a6e", fontFamily: "'Segoe UI', Tahoma, Arial, sans-serif" }}>
@@ -949,7 +950,7 @@ export function PueiOS() {
                 Wipe device and reinstall
               </button>
               <button
-                onClick={() => setPhase("boot")}
+                onClick={() => { setEolDismissed(true); setPhase("boot"); }}
                 style={{
                   background: "transparent", border: "none",
                   padding: "6px 0", cursor: "pointer",
