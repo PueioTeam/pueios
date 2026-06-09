@@ -3451,19 +3451,17 @@ function AppStoreApp({ installWebApp, openApp, openWebApp, systemVersion, addNat
                     <div className="text-3xl mb-2">{a.icon}</div>
                     <div className="font-semibold text-sm">{a.name}</div>
                     <div className="text-xs opacity-60 mt-1 flex-1">{a.desc}</div>
-                    <div className="grid grid-cols-2 gap-1 mt-2">
-                      <button className="aero-button rounded px-2 py-1 text-xs w-full"
-                        onClick={() => a.webUrl ? openWebApp(a.webUrl, a.desktopLabel || a.name) : openApp(a.appId ?? "pueinet")}>Open</button>
+                    <div className="flex flex-col gap-1 mt-2">
                       {!onDesktop ? (
                         <button className="aero-button rounded px-2 py-1 text-xs w-full"
                           disabled={isInstalling}
                           onClick={() => !isInstalling && beginInstall(installKey, () => {
                             if (a.webUrl) installWebApp(a.desktopLabel || a.name, a.webUrl);
                           })}>
-                          {isInstalling ? `${Math.round(installPct!)}%` : "Install"}
+                          {isInstalling ? `${Math.round(installPct!)}%` : "⬇ Install"}
                         </button>
                       ) : (
-                        <button className="aero-button rounded px-2 py-1 text-xs w-full opacity-50" disabled>Installed</button>
+                        <button className="aero-button rounded px-2 py-1 text-xs w-full opacity-50" disabled>✔ Installed</button>
                       )}
                     </div>
                   </div>
@@ -3491,9 +3489,7 @@ function AppStoreApp({ installWebApp, openApp, openWebApp, systemVersion, addNat
                       </div>
                     </div>
                     <div className="text-xs opacity-70 mt-1 flex-1">{a.desc}</div>
-                    <div className="grid grid-cols-2 gap-1 mt-2">
-                      <button className="aero-button rounded px-2 py-1 text-xs w-full"
-                        onClick={() => a.webUrl ? openWebApp(a.webUrl, a.desktopLabel || a.name) : openApp(a.appId ?? "pueinet")}>Open</button>
+                    <div className="flex flex-col gap-1 mt-2">
                       {!a.preInstalled ? (
                         <button
                           className="aero-button rounded px-2 py-1 text-xs w-full"
@@ -3531,7 +3527,7 @@ function AppStoreApp({ installWebApp, openApp, openWebApp, systemVersion, addNat
                       )}
                       {onDesktop && (
                         <button
-                          className="aero-button rounded px-2 py-1 text-xs col-span-2 w-full"
+                          className="aero-button rounded px-2 py-1 text-xs w-full"
                           style={{ color: "#fca5a5" }}
                           onClick={() => {
                             if (a.webUrl) uninstallWebApp(a.webUrl);
@@ -3575,9 +3571,7 @@ function AppStoreApp({ installWebApp, openApp, openWebApp, systemVersion, addNat
                         </div>
                       </div>
                       <div className="text-xs opacity-70 mt-1 flex-1">{a.desc}</div>
-                      <div className="grid grid-cols-2 gap-1 mt-2">
-                        <button className="aero-button rounded px-2 py-1 text-xs w-full"
-                          onClick={() => openApp(a.appId ?? "pueinet")}>Open</button>
+                      <div className="flex flex-col gap-1 mt-2">
                         <button
                           className="aero-button rounded px-2 py-1 text-xs w-full"
                           style={{ background: onDesktop ? "rgba(80,200,120,0.25)" : undefined, color: onDesktop ? "#4ade80" : undefined }}
@@ -3592,7 +3586,7 @@ function AppStoreApp({ installWebApp, openApp, openWebApp, systemVersion, addNat
                           {isInstalling ? `Installing ${Math.floor(installPct)}%` : onDesktop ? "✔ Installed" : "⬇ Install"}
                         </button>
                         {onDesktop && (
-                          <button className="aero-button rounded px-2 py-1 text-xs col-span-2 w-full"
+                          <button className="aero-button rounded px-2 py-1 text-xs w-full"
                             style={{ color: "#fca5a5" }}
                             onClick={() => { uninstallApp(a.appId!); blip("notify"); }}>
                             Uninstall
