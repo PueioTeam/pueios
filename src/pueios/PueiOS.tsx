@@ -948,6 +948,16 @@ export function PueiOS() {
                 }}>
                 Wipe device and reinstall
               </button>
+              <button
+                onClick={() => setPhase("boot")}
+                style={{
+                  background: "transparent", border: "none",
+                  padding: "6px 0", cursor: "pointer",
+                  color: "rgba(140,170,255,0.45)", fontSize: 12, textAlign: "left",
+                  textDecoration: "underline",
+                }}>
+                Ignore and continue with {systemVersion} (not recommended)
+              </button>
             </div>
           </div>
         </div>
