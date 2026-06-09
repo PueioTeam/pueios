@@ -80,6 +80,7 @@ export function PueiOS() {
   const [zCounter, setZCounter] = useState(1);
   const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number; items: any[] } | null>(null);
   const [startOpen, setStartOpen] = useState(false);
+  const [showAddShortcut, setShowAddShortcut] = useState(false);
   const [selectedIcon, setSelectedIcon] = useState<string | null>(null);
   const [now, setNow] = useState(new Date());
   const [showCalendar, setShowCalendar] = useState(false);
@@ -596,6 +597,7 @@ button, a, [role="button"], select, label[for] { cursor: ${hand(c, strokeColor)}
     { label: "Refresh", action: () => pushNotif("Desktop", "Refreshed.") },
     { sep: true },
     { label: "New Folder", action: () => createFolder(null) },
+    { label: "➕ Add Shortcut to Desktop", action: () => setShowAddShortcut(true) },
     { label: "Open App Store", action: () => openApp("app-store") },
     { sep: true },
     { label: "Personalize", action: () => openApp("settings") },
@@ -1600,6 +1602,74 @@ button, a, [role="button"], select, label[for] { cursor: ${hand(c, strokeColor)}
       )}
 
       {ctxMenu && <ContextMenu x={ctxMenu.x} y={ctxMenu.y} items={ctxMenu.items} onClose={() => setCtxMenu(null)} />}
+
+      {showAddShortcut && (() => {
+        const ALL_SHORTCUTS: { id: string; label: string; icon: string; kind: "native"; appId: AppId }[] | { id: string; label: string; icon: string; kind: "web"; url: string }[] = [
+          ...(([
+            ["puei-paint","Puei Paint","🎨"], ["puei-board","PueiBoard","📌"],
+            ["pueinet","PueiWeb","🌐"], ["puei-cloud-chat","PueiCloud Chat","💬"],
+            ["puei-studio","Puei Studio","🪽"], ["file-explorer","Files","🗂️"],
+            ["settings","Settings","⚙️"], ["about","About PueiOS","ℹ️"],
+            ["notepad","Notepad","📝"], ["calculator","Calculator","🧮"],
+            ["app-store","App Store","🛍️"], ["puei-social","PueiSocial","📣"],
+            ["recycle-bin","Recycle Bin","🗑️"], ["chess","Chess","♟️"],
+            ["puei-mansion","Puei Mansion","👻"],
+          ] as [AppId, string, string][]).map(([appId, label, icon]) => ({ id: `native-${appId}`, label, icon, kind: "native" as const, appId }))),
+          ...(([
+            ["puei://films","Puei Films","🎬"], ["puei://updates","Puei Updater","⬆️"],
+            ["puei://wallpapers","Puei Wallpapers","🖼️"], ["puei://mail","Puei Mail","📧"],
+            ["puei://social","PueiSocial Web","📣"], ["puei://os3","PueiOS 3","🚀"],
+          ] as [string, string, string][]).map(([url, label, icon]) => ({ id: `web-${url}`, label, icon, kind: "web" as const, url }))),
+        ] as any[];
+
+        const isOnDesktop = (s: any) =>
+          s.kind === "native"
+            ? icons.some(i => i.appId === s.appId && !i.fileId && !i.webUrl)
+            : icons.some(i => i.appId === "web-app" && i.webUrl === s.url);
+
+        const addShortcut = (s: any) => {
+          if (isOnDesktop(s)) return;
+          if (s.kind === "native") {
+            addIcon({ id: `${s.id}-${Date.now().toString(36)}`, label: s.label, appId: s.appId, iconEmoji: s.icon });
+          } else {
+            addIcon({ id: `web-${Date.now().toString(36)}`, label: s.label, appId: "web-app", webUrl: s.url });
+          }
+          blip("notify");
+          setShowAddShortcut(false);
+        };
+
+        return (
+          <div className="fixed inset-0 z-[99998] flex items-center justify-center" style={{ background: "rgba(0,0,0,0.45)" }}
+            onMouseDown={() => setShowAddShortcut(false)}>
+            <div className="aero-glass rounded-2xl p-5 w-96 max-h-[70vh] flex flex-col"
+              onMouseDown={e => e.stopPropagation()}>
+              <div className="flex items-center justify-between mb-4">
+                <div className="font-bold text-base">➕ Add Shortcut to Desktop</div>
+                <button onClick={() => setShowAddShortcut(false)} className="opacity-60 hover:opacity-100 text-sm">✕</button>
+              </div>
+              <div className="overflow-auto flex-1 space-y-1">
+                {ALL_SHORTCUTS.map((s: any) => {
+                  const on = isOnDesktop(s);
+                  return (
+                    <button key={s.id}
+                      onClick={() => addShortcut(s)}
+                      disabled={on}
+                      className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-left transition-all"
+                      style={{ opacity: on ? 0.4 : 1, background: on ? "rgba(80,200,120,0.12)" : "rgba(255,255,255,0.08)" }}
+                      onMouseEnter={e => { if (!on) e.currentTarget.style.background = "rgba(255,255,255,0.22)"; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = on ? "rgba(80,200,120,0.12)" : "rgba(255,255,255,0.08)"; }}>
+                      <span className="text-2xl">{s.icon}</span>
+                      <span className="flex-1">{s.label}</span>
+                      {on ? <span className="text-xs text-green-400">✔ On desktop</span> : <span className="text-xs opacity-50">Add</span>}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
     </div>
   );
 }
