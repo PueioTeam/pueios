@@ -57,7 +57,7 @@ const SECURITY_KEY = "puei";
 export function PueiOS() {
   const [phase, setPhase] = useState<Phase>("boot");
   const [bootProgress, setBootProgress] = useState(0);
-  const [eolDismissed, setEolDismissed] = useState(false);
+  const [eolDismissed, setEolDismissed] = useState(() => sessionStorage.getItem("pueios-eol-dismissed") === "1");
   const [theme, setThemeState] = useState<Theme>(defaultTheme);
   const [icons, setIcons] = useState<DesktopIcon[]>(defaultIcons);
   const [users, setUsers] = useState<User[]>([]);
@@ -928,7 +928,7 @@ export function PueiOS() {
 
             <div className="flex flex-col gap-3 max-w-sm">
               <button
-                onClick={() => { setSystemVersion("PueiOS 3"); setPhase("boot"); setBootProgress(0); }}
+                onClick={() => { sessionStorage.removeItem("pueios-eol-dismissed"); setSystemVersion("PueiOS 3"); setPhase("boot"); setBootProgress(0); }}
                 style={{
                   background: "linear-gradient(180deg, #2e7fd8 0%, #1455b0 100%)",
                   border: "1px solid rgba(255,255,255,0.35)",
@@ -950,7 +950,7 @@ export function PueiOS() {
                 Wipe device and reinstall
               </button>
               <button
-                onClick={() => { setEolDismissed(true); setPhase("boot"); }}
+                onClick={() => { sessionStorage.setItem("pueios-eol-dismissed", "1"); setEolDismissed(true); setPhase("boot"); }}
                 style={{
                   background: "transparent", border: "none",
                   padding: "6px 0", cursor: "pointer",
