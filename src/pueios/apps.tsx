@@ -11,7 +11,7 @@ import {
 } from "./state";
 import { pullAndMergeFiles, pushFile as pushFileToServer, removeFileFromServer } from "./fileSync";
 import { changePasswordRemote } from "./accountSync";
-import { PueiRacingApp, PueiQuestApp, PueiKingdomApp, PueiGalaxyApp, PueiMansionApp, PueiCraftApp, PueiSurvivalApp } from "./games";
+import { PueiMansionApp } from "./games";
 
 
 export type AppRendererProps = {
@@ -60,13 +60,7 @@ export function AppRenderer(p: AppRendererProps) {
     case "web-app": return <WebAppFrame url={p.webUrl!} currentUser={p.currentUser} startUpgrade={p.startUpgrade} />;
     case "recycle-bin": return <RecycleBinApp />;
     case "chess": return <ChessApp />;
-    case "puei-racing": return <PueiRacingApp />;
-    case "puei-quest": return <PueiQuestApp />;
-    case "puei-kingdom": return <PueiKingdomApp />;
-    case "puei-galaxy": return <PueiGalaxyApp />;
     case "puei-mansion": return <PueiMansionApp />;
-    case "pueicraft": return <PueiCraftApp />;
-    case "puei-survival": return <PueiSurvivalApp />;
   }
 }
 
@@ -174,7 +168,6 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, curren
     ["account", "👤 Account"],
     ["pueio-control", "🔑 Pueio Control"],
     ["sound", "🔊 Sound"],
-    ["touch", "👆 Touchscreen"],
     ["accessibility", "♿ Accessibility"],
     ["highcontrast", "⚡ High Contrast"],
     ["upgrade", "⬆️ Upgrade"],
@@ -384,10 +377,6 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, curren
               ))}
             </div>
           </div>
-        )}
-        {tab === "touch" && (
-          <div><h2 className="text-xl font-semibold mb-4">Touchscreen</h2>
-            <p className="text-sm opacity-80">Hold for <b>0.6s</b> to trigger right-click. Drag windows by their title bar. Multi-touch supported.</p></div>
         )}
         {tab === "accessibility" && (
           <div><h2 className="text-xl font-semibold mb-4">Accessibility</h2>
@@ -3448,13 +3437,7 @@ function AppStoreApp({ installWebApp, openApp, openWebApp, systemVersion, addNat
     { name: "Installer",      icon: "📑", desc: "Install trusted web apps as desktop shortcuts.",appId: "app-store",      preInstalled: true },
   ];
   const games: StoreApp[] = [
-    { name: "Puei Racing",   icon: "🎮", desc: "Race as Puei characters. Collect power-ups and drift past rivals.",        appId: "puei-racing",   preInstalled: false },
-    { name: "Puei Quest",    icon: "⚔️", desc: "Action RPG. Explore islands, caves, cities. Collect rare items.",          appId: "puei-quest",    preInstalled: false },
-    { name: "Puei Kingdom",  icon: "🏰", desc: "Build your kingdom. Manage resources and defend against enemies.",          appId: "puei-kingdom",  preInstalled: false },
-    { name: "Puei Galaxy",   icon: "🚀", desc: "Space exploration. Visit planets, upgrade your ship, find civilizations.",  appId: "puei-galaxy",   preInstalled: false },
-    { name: "Puei Mansion",  icon: "👻", desc: "Spooky adventure. Solve puzzles and meet weird Puei creatures.",            appId: "puei-mansion",  preInstalled: false },
-    { name: "PueiCraft",     icon: "🧱", desc: "Sandbox building. Build cities and worlds and share through PueiOS.",       appId: "pueicraft",     preInstalled: false },
-    { name: "Puei Survival", icon: "🌊", desc: "Gather, craft, and survive storms and monsters in a vast open world.",     appId: "puei-survival", preInstalled: false },
+    { name: "Puei Mansion",  icon: "👻", desc: "Funny spooky adventure. Solve puzzles, find hidden secrets, and meet weird Puei creatures.", appId: "puei-mansion", preInstalled: false },
   ];
   const isOnDesktop = (a: StoreApp) => {
     if (a.webUrl) return icons.some((i) => i.appId === "web-app" && i.webUrl === a.webUrl);

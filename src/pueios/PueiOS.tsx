@@ -23,7 +23,7 @@ const APP_TITLES: Record<AppId, string> = {
   "puei-studio": "Puei Studio",
   "file-explorer": "Computer",
   "settings": "Settings",
-  "about": "About PueiOS 2",
+  "about": "About PueiOS",
   "notepad": "Notepad",
   "calculator": "Calculator",
   "app-store": "App Store",
@@ -32,13 +32,7 @@ const APP_TITLES: Record<AppId, string> = {
   "web-app": "Web App",
   "recycle-bin": "Recycle Bin",
   "chess": "Chess",
-  "puei-racing": "Puei Racing",
-  "puei-quest": "Puei Quest",
-  "puei-kingdom": "Puei Kingdom",
-  "puei-galaxy": "Puei Galaxy",
   "puei-mansion": "Puei Mansion",
-  "pueicraft": "PueiCraft",
-  "puei-survival": "Puei Survival",
 };
 const APP_SIZES: Partial<Record<AppId, { w: number; h: number }>> = {
   "calculator": { w: 280, h: 380 },
@@ -57,13 +51,7 @@ const APP_SIZES: Partial<Record<AppId, { w: number; h: number }>> = {
   "web-app": { w: 900, h: 600 },
   "recycle-bin": { w: 640, h: 460 },
   "chess": { w: 560, h: 600 },
-  "puei-racing": { w: 720, h: 540 },
-  "puei-quest": { w: 800, h: 580 },
-  "puei-kingdom": { w: 860, h: 620 },
-  "puei-galaxy": { w: 800, h: 580 },
   "puei-mansion": { w: 720, h: 540 },
-  "pueicraft": { w: 860, h: 620 },
-  "puei-survival": { w: 800, h: 580 },
 };
 
 const GRID_W = 96;
@@ -305,7 +293,7 @@ export function PueiOS() {
       loadedIcons = [...loadedIcons, { id: "i-studio", label: "Puei Studio", appId: "puei-studio" as const }];
     }
     // Strip any icons with unknown appIds (stale from old versions)
-    const VALID_APP_IDS = new Set(["puei-paint","puei-board","pueinet","puei-cloud-chat","puei-studio","file-explorer","settings","about","notepad","calculator","app-store","puei-social","folder","web-app","recycle-bin","chess","puei-racing","puei-quest","puei-kingdom","puei-galaxy","puei-mansion","pueicraft","puei-survival"]);
+    const VALID_APP_IDS = new Set(["puei-paint","puei-board","pueinet","puei-cloud-chat","puei-studio","file-explorer","settings","about","notepad","calculator","app-store","puei-social","folder","web-app","recycle-bin","chess","puei-mansion"]);
     loadedIcons = loadedIcons.filter((i: any) => i.webUrl || VALID_APP_IDS.has(i.appId));
     setIcons(loadedIcons);
     if (!s.installed) { setPhase("install"); return; }

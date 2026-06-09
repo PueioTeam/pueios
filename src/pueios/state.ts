@@ -130,13 +130,7 @@ export type AppId =
   | "web-app"
   | "recycle-bin"
   | "chess"
-  | "puei-racing"
-  | "puei-quest"
-  | "puei-kingdom"
-  | "puei-galaxy"
-  | "puei-mansion"
-  | "pueicraft"
-  | "puei-survival";
+  | "puei-mansion";
 
 export type WindowState = {
   id: string;
