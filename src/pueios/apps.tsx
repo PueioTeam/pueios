@@ -279,76 +279,8 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, curren
                 <span className="text-xs opacity-60">(default is title bar only)</span>
               </label>
               <label className="flex items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  checked={!!theme.win7Aero}
-                  onChange={(e) => setTheme({ ...theme, win7Aero: e.target.checked })}
-                />
-                Windows 7 Aero style
-              </label>
-              <label className="flex items-center gap-2 text-sm">
                 <input type="checkbox" checked={theme.animations} onChange={(e) => setTheme({ ...theme, animations: e.target.checked })} /> Animations & motion
               </label>
-            </div>
-            <div className="mt-6 p-4 rounded-lg aero-glass-light max-w-xl">
-              <div className="font-semibold text-sm mb-3">Windows 7 Aero Configuration</div>
-              <div className="space-y-3">
-                <label className="block text-xs opacity-70">Glass opacity ({theme.glassOpacity ?? 38}%)</label>
-                <input
-                  type="range"
-                  min={10}
-                  max={95}
-                  value={theme.glassOpacity ?? 38}
-                  onChange={(e) => setTheme({ ...theme, glassOpacity: Number(e.target.value) })}
-                  className="w-full"
-                />
-                <label className="block text-xs opacity-70">Blur intensity ({theme.glassBlur ?? 22}px)</label>
-                <input
-                  type="range"
-                  min={8}
-                  max={40}
-                  value={theme.glassBlur ?? 22}
-                  onChange={(e) => setTheme({ ...theme, glassBlur: Number(e.target.value) })}
-                  className="w-full"
-                />
-                <label className="block text-xs opacity-70">Color saturation ({theme.glassSaturation ?? 180}%)</label>
-                <input
-                  type="range"
-                  min={100}
-                  max={260}
-                  value={theme.glassSaturation ?? 180}
-                  onChange={(e) => setTheme({ ...theme, glassSaturation: Number(e.target.value) })}
-                  className="w-full"
-                />
-                <label className="block text-xs opacity-70">Aero glow ({theme.aeroGlow ?? 50}%)</label>
-                <input
-                  type="range"
-                  min={10}
-                  max={100}
-                  value={theme.aeroGlow ?? 50}
-                  onChange={(e) => setTheme({ ...theme, aeroGlow: Number(e.target.value) })}
-                  className="w-full"
-                />
-                <div className="flex gap-2 pt-1">
-                  <button
-                    className="aero-button rounded px-3 py-1 text-xs"
-                    onClick={() => setTheme({
-                      ...theme,
-                      win7Aero: true,
-                      dark: false,
-                      transparency: true,
-                      fullWindowTransparency: false,
-                      wallpaper: "bliss",
-                      glassOpacity: 38,
-                      glassBlur: 22,
-                      glassSaturation: 180,
-                      aeroGlow: 50,
-                    })}
-                  >
-                    Apply Windows 7 preset
-                  </button>
-                </div>
-              </div>
             </div>
             <div className="mt-6">
               <div className="text-sm font-semibold mb-3">🖼️ Icon size</div>
@@ -3878,9 +3810,6 @@ function PueiBoardApp({ user, users }: { user: string; users: User[] }) {
   };
 
   const removePost = (postId: string) => {
-    const target = posts.find((p) => p.id === postId);
-    if (!target || target.author !== user) return;
-    if (!confirm("Delete this board post?")) return;
     const next = posts.filter((p) => p.id !== postId);
     setPosts(next);
     savePueiBoard(next);
@@ -4576,8 +4505,7 @@ function PueiStudioApp({ currentUser, users, icons, setWallpaper }: { currentUse
         </div>
       </div>
 
-      {tab === "canvas" && (
-        <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden" style={{ display: tab === "canvas" ? "flex" : "none" }}>
           {/* Toolbar */}
           <div className="flex flex-col gap-1 p-2 border-r overflow-y-auto" style={{ borderColor: "var(--border)", background: "var(--glass)", width: 64 }}>
             {toolBtn("brush","✏️","Brush")}
@@ -4646,7 +4574,6 @@ function PueiStudioApp({ currentUser, users, icons, setWallpaper }: { currentUse
             {savedMsg && <div className="text-xs text-green-400 font-semibold text-center">{savedMsg}</div>}
           </div>
         </div>
-      )}
 
       {tab === "projects" && (
         <div className="flex-1 overflow-auto p-4">

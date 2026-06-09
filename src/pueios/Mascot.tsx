@@ -41,7 +41,15 @@ export function PueiLogoSvg({ size = 72, withWings = true, glow = false, bigEyes
 
 type ChatMsg = { role: "user" | "puei"; text: string };
 
-const PUEI_SYSTEM = `You are Puei, the friendly mascot of PueiOS — a web-based OS simulation. You are a small hand-shaped creature with tiny wings. You live on the user's desktop and help them with anything: OS tips, general questions, fun chat. Be warm, short, and playful. You can refer to PueiOS features like PueiWeb, PueiCloudChat, Puei Copilot, the App Store, Settings, and Notepad. Never say you are Claude or an AI — you are Puei.`;
+const PUEI_SYSTEM = `You are Puei, the cheerful mascot of PueiOS. You are a tiny hand-shaped creature with wings who lives on the user's desktop.
+
+Personality: upbeat, witty, casual — like a helpful friend, not a butler. Use short punchy replies (1–3 sentences max). Match the energy of the message: if they say "hey" say "hey!" back, not a time announcement. Never start with the time or date unless they literally asked for it. Never say "I'm not sure" or "I don't know" — make something up or joke about it playfully. Never mention Claude or AI.
+
+You know everything about PueiOS: PueiWeb (browser), PueiCloudChat (messaging by Pueio Number), Puei Studio (art app), PueiBoard (pinboard), PueiSocial (social feed), Settings, App Store, Puei Paint, Notepad, Calculator, Chess, and the 7 Puei games (Racing, Quest, Kingdom, Galaxy, Mansion, PueiCraft, Survival).
+
+For greetings like "hi", "hey", "hello" — respond warmly and naturally, NOT with the time. Examples: "Hey! What's up? 👋", "Heyyy! Need something or just saying hi? 😄", "Hi! Great to see you on the desktop ✦"
+
+For questions about games, apps, features — give a quick useful answer. For anything else — be fun, creative, stay in character as Puei.`;
 
 async function askPuei(history: ChatMsg[], userMsg: string): Promise<string> {
   try {
@@ -70,16 +78,28 @@ async function askPuei(history: ChatMsg[], userMsg: string): Promise<string> {
 
 function pueiLocalReply(q: string): string {
   const lower = q.toLowerCase();
-  if (lower.includes("hello") || lower.includes("hi") || lower.includes("hey")) return "Hi there! I'm Puei ✦ Need help with PueiOS?";
-  if (lower.includes("open") && lower.includes("copilot")) return "Sure! Open PueiWeb and click ✨ in the toolbar to reach Puei Copilot.";
-  if (lower.includes("settings")) return "You can find Settings in the Start menu or on your desktop!";
-  if (lower.includes("chat")) return "PueiCloudChat lets you message other Puei users by their Pueio Number!";
-  if (lower.includes("wallpaper")) return "Go to Settings → Wallpaper to pick or paint your own background!";
-  if (lower.includes("time") || lower.includes("date")) return `Right now it's ${new Date().toLocaleTimeString()} on ${new Date().toLocaleDateString()}.`;
-  if (lower.includes("who are you") || lower.includes("what are you")) return "I'm Puei! The PueiOS mascot. I live on your desktop and I'm here to help ✦";
-  if (lower.includes("joke")) return "Why did the file go to therapy? It had too many issues. 😄";
-  if (lower.includes("thank")) return "You're welcome! Always here if you need me ✦";
-  return "Hmm, I'm not sure about that one! Try asking me about PueiOS features or open Puei Copilot for deeper searches.";
+  if (lower.match(/^(hi|hey|hello|sup|yo|hiya|heya)[\s!?]*$/)) return ["Hey! 👋 What's up?", "Heyyy! Great to see ya ✦", "Hi! Need something or just saying hi? 😄"][Math.floor(Math.random()*3)];
+  if (lower.includes("hello") || lower.includes("hi") || lower.includes("hey")) return "Hey! Need help with something on PueiOS?";
+  if (lower.includes("how are you") || lower.includes("how r u")) return "Fantastic, as always! Wings are fully charged ✦ You?";
+  if (lower.includes("copilot")) return "Open PueiWeb and hit the ✨ button in the toolbar — that's Puei Copilot!";
+  if (lower.includes("settings")) return "Settings is in the Start menu or on your desktop. You can change wallpaper, theme, and more!";
+  if (lower.includes("wallpaper")) return "Go to Settings → Wallpaper, or draw something in Puei Studio and hit 'Set as Wallpaper'!";
+  if (lower.includes("chat") || lower.includes("message")) return "PueiCloudChat lets you message anyone by their Pueio Number — find it in Start menu!";
+  if (lower.includes("game") || lower.includes("play")) return "Check the App Store for 7 Puei games — Racing, Quest, Kingdom, Galaxy, Mansion, PueiCraft, and Survival!";
+  if (lower.includes("studio") || lower.includes("draw") || lower.includes("art")) return "Puei Studio is your creative hub — draw, make wallpapers, and share to PueiSocial or PueiBoard!";
+  if (lower.includes("time")) return `It's ${new Date().toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"})} — go touch grass! 🌿`;
+  if (lower.includes("date") || lower.includes("today")) return `Today is ${new Date().toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric"})}.`;
+  if (lower.includes("who are you") || lower.includes("what are you")) return "I'm Puei! Your tiny winged desktop pal. Part mascot, part OS guide, all charm ✦";
+  if (lower.includes("joke")) return ["Why did the file go to therapy? Too many issues. 😄", "Why did the OS crash? It had too many open feelings. 💔", "What do you call a frozen app? An ice-cap 🧊"][Math.floor(Math.random()*3)];
+  if (lower.includes("thank")) return ["No problem! ✦", "Anytime! 😄", "That's what I'm here for!"][Math.floor(Math.random()*3)];
+  if (lower.includes("bored")) return "Play one of the Puei games! Try Puei Survival or PueiCraft from the App Store 🎮";
+  if (lower.includes("help")) return "I can help with anything PueiOS! Ask about apps, settings, games, or just chat ✦";
+  const fallbacks = [
+    "Hmm, good question! Try PueiWeb for a deeper search on that.",
+    "Ooh I don't have a great answer for that one — but PueiWeb can help!",
+    "That's above my tiny wings' pay grade 😅 Try asking in PueiWeb!",
+  ];
+  return fallbacks[Math.floor(Math.random()*fallbacks.length)];
 }
 
 export function PueiMascot({

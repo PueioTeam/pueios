@@ -586,7 +586,6 @@ export function PueiOS() {
 
   const desktopCtx = (): any[] => [
     { label: "View ▸ Large icons" },
-    { label: "Sort by name", action: () => setIcons([...icons].sort((a, b) => a.label.localeCompare(b.label))) },
     { label: "Refresh", action: () => pushNotif("Desktop", "Refreshed.") },
     { sep: true },
     { label: "New Folder", action: () => createFolder(null) },
