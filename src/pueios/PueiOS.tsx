@@ -20,6 +20,7 @@ const APP_TITLES: Record<AppId, string> = {
   "puei-board": "PueiBoard",
   "pueinet": "PueiWeb",
   "puei-cloud-chat": "PueiCloudChat",
+  "puei-studio": "Puei Studio",
   "file-explorer": "Computer",
   "settings": "Settings",
   "about": "About PueiOS 2",
@@ -39,6 +40,7 @@ const APP_SIZES: Partial<Record<AppId, { w: number; h: number }>> = {
   "settings": { w: 820, h: 560 },
   "puei-board": { w: 860, h: 620 },
   "puei-cloud-chat": { w: 720, h: 500 },
+  "puei-studio": { w: 980, h: 660 },
   "pueinet": { w: 820, h: 560 },
   "puei-paint": { w: 820, h: 560 },
   "file-explorer": { w: 760, h: 500 },
@@ -284,8 +286,10 @@ export function PueiOS() {
     if (!loadedIcons.some((i: any) => i.appId === "puei-cloud-chat" && !i.fileId && !i.webUrl)) {
       loadedIcons = [...loadedIcons, { id: "i-msg", label: "PueiCloudChat", appId: "puei-cloud-chat" as const }];
     }
-    // Remove any stale puei-mail icons from existing installs
     loadedIcons = loadedIcons.filter((i: any) => i.appId !== "puei-mail");
+    if (!loadedIcons.some((i: any) => i.appId === "puei-studio" && !i.fileId && !i.webUrl)) {
+      loadedIcons = [...loadedIcons, { id: "i-studio", label: "Puei Studio", appId: "puei-studio" as const }];
+    }
     setIcons(loadedIcons);
     if (!s.installed) { setPhase("install"); return; }
     if (s.lastUser && s.remember) { setLoginUser(s.lastUser); setRemember(true); }

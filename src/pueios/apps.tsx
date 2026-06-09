@@ -51,6 +51,7 @@ export function AppRenderer(p: AppRendererProps) {
     case "puei-board": return <PueiBoardApp user={p.currentUser} users={p.users} />;
     case "pueinet": return <PueiWebApp currentUser={p.currentUser} users={p.users} icons={p.icons} />;
     case "puei-cloud-chat": return <PueiCloudChatApp user={p.currentUser} users={p.users} setUsers={p.setUsers} />;
+    case "puei-studio": return <PueiStudioApp currentUser={p.currentUser} users={p.users} icons={p.icons} setWallpaper={p.setWallpaper} />;
     case "file-explorer": return <FileExplorerApp openApp={p.openApp} icons={p.icons} openFolder={p.openFolder} currentUser={p.currentUser} users={p.users} />;
     case "app-store": return <AppStoreApp installWebApp={p.installWebApp} openApp={p.openApp} openWebApp={p.openWebApp} systemVersion={p.systemVersion} addNativeIcon={p.addNativeIcon} uninstallApp={p.uninstallApp} uninstallWebApp={p.uninstallWebApp} icons={p.icons} />;
     case "puei-social": return <PueiSocialApp user={p.currentUser} users={p.users} />;
@@ -3495,6 +3496,7 @@ function AppStoreApp({ installWebApp, openApp, openWebApp, systemVersion, addNat
     { name: "Puei Updater",   icon: "⬆️", desc: "Required for installing ISO system updates.",           webUrl: "puei://updates", desktopLabel: "Puei Updater", preInstalled: false },
     { name: "PueiSocial",     icon: "📢", desc: "The official PueiOS social network.",          appId: "puei-social",    preInstalled: true },
     { name: "PueiCloudChat",  icon: "💬", desc: "Chat by PueiNumber — cross-device, real-time.", appId: "puei-cloud-chat", preInstalled: true },
+    { name: "Puei Studio",    icon: "🪽", desc: "Create wallpapers, icons, themes and share to PueiSocial.", appId: "puei-studio", preInstalled: true },
     { name: "PueiBoard",      icon: "📌", desc: "Pinterest-style boards where Pueis post Gallery images.", appId: "puei-board", preInstalled: true },
     { name: "PueiWeb",        icon: "🌍", desc: "System browser + AI search engine.",           appId: "pueinet",        preInstalled: true },
     { name: "Puei Paint 2",   icon: "🎨", desc: "Paint and save images as wallpapers.",         appId: "puei-paint",     preInstalled: true },
@@ -4277,6 +4279,362 @@ function PueiUpdaterApp({ currentUser, startUpgrade }: { currentUser: string; st
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+// ---------- Puei Studio ----------
+type StudioTool = "brush" | "eraser" | "fill" | "eyedropper" | "text" | "shape";
+type StudioShape = "rect" | "ellipse" | "line";
+
+function PueiStudioApp({ currentUser, users, icons, setWallpaper }: { currentUser: string; users: User[]; icons: DesktopIcon[]; setWallpaper: (w: WallpaperId) => void }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [tool, setTool] = useState<StudioTool>("brush");
+  const [color, setColor] = useState("#4fa8e0");
+  const [brushSize, setBrushSize] = useState(6);
+  const [shape, setShape] = useState<StudioShape>("rect");
+  const [tab, setTab] = useState<"canvas" | "projects" | "share">("canvas");
+  const [projectName, setProjectName] = useState("My Creation");
+  const [projects, setProjects] = useState<SavedFile[]>(() =>
+    loadFiles().filter(f => f.type === "image" && f.folder === "__studio__" && (!f.owner || f.owner === currentUser))
+  );
+  const [sharedMsg, setSharedMsg] = useState("");
+  const [savedMsg, setSavedMsg] = useState("");
+  const drawing = useRef(false);
+  const lastPos = useRef<{ x: number; y: number } | null>(null);
+  const fillRef = useRef<string>(color);
+  const shapeStart = useRef<{ x: number; y: number } | null>(null);
+  const snapRef = useRef<ImageData | null>(null);
+
+  fillRef.current = color;
+
+  useEffect(() => {
+    const c = canvasRef.current;
+    if (!c) return;
+    const ctx = c.getContext("2d");
+    if (!ctx) return;
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, c.width, c.height);
+  }, []);
+
+  const getPos = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+    const c = canvasRef.current!;
+    const r = c.getBoundingClientRect();
+    const scaleX = c.width / r.width;
+    const scaleY = c.height / r.height;
+    if ("touches" in e) {
+      const t = e.touches[0] || (e as any).changedTouches[0];
+      return { x: (t.clientX - r.left) * scaleX, y: (t.clientY - r.top) * scaleY };
+    }
+    return { x: (e.clientX - r.left) * scaleX, y: (e.clientY - r.top) * scaleY };
+  };
+
+  const floodFill = (ctx: CanvasRenderingContext2D, x: number, y: number, fillColor: string) => {
+    const w = ctx.canvas.width, h = ctx.canvas.height;
+    const img = ctx.getImageData(0, 0, w, h);
+    const d = img.data;
+    const px = (Math.round(x) + Math.round(y) * w) * 4;
+    const tr = d[px], tg = d[px+1], tb = d[px+2], ta = d[px+3];
+    const fc = parseInt(fillColor.slice(1), 16);
+    const fr = (fc >> 16) & 255, fg = (fc >> 8) & 255, fb = fc & 255;
+    if (tr === fr && tg === fg && tb === fb) return;
+    const stack = [Math.round(x) + Math.round(y) * w];
+    while (stack.length) {
+      const i = stack.pop()!;
+      if (d[i*4] !== tr || d[i*4+1] !== tg || d[i*4+2] !== tb || d[i*4+3] !== ta) continue;
+      d[i*4] = fr; d[i*4+1] = fg; d[i*4+2] = fb; d[i*4+3] = 255;
+      const xi = i % w, yi = Math.floor(i / w);
+      if (xi > 0) stack.push(i-1);
+      if (xi < w-1) stack.push(i+1);
+      if (yi > 0) stack.push(i-w);
+      if (yi < h-1) stack.push(i+w);
+    }
+    ctx.putImageData(img, 0, 0);
+  };
+
+  const onDown = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+    e.preventDefault();
+    const c = canvasRef.current!;
+    const ctx = c.getContext("2d")!;
+    const pos = getPos(e);
+    if (tool === "fill") { floodFill(ctx, pos.x, pos.y, color); return; }
+    if (tool === "eyedropper") {
+      const px = ctx.getImageData(Math.round(pos.x), Math.round(pos.y), 1, 1).data;
+      setColor(`#${[px[0],px[1],px[2]].map(v=>v.toString(16).padStart(2,"0")).join("")}`);
+      return;
+    }
+    if (tool === "shape") {
+      shapeStart.current = pos;
+      snapRef.current = ctx.getImageData(0, 0, c.width, c.height);
+    }
+    drawing.current = true;
+    lastPos.current = pos;
+    ctx.beginPath();
+    ctx.arc(pos.x, pos.y, (tool === "eraser" ? brushSize * 2 : brushSize) / 2, 0, Math.PI * 2);
+    ctx.fillStyle = tool === "eraser" ? "#ffffff" : color;
+    ctx.fill();
+  };
+
+  const onMove = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+    e.preventDefault();
+    if (!drawing.current || tool === "fill" || tool === "eyedropper") return;
+    const c = canvasRef.current!;
+    const ctx = c.getContext("2d")!;
+    const pos = getPos(e);
+    if (tool === "shape" && shapeStart.current && snapRef.current) {
+      ctx.putImageData(snapRef.current, 0, 0);
+      ctx.strokeStyle = color;
+      ctx.lineWidth = brushSize;
+      ctx.beginPath();
+      const sx = shapeStart.current.x, sy = shapeStart.current.y;
+      if (shape === "rect") ctx.strokeRect(sx, sy, pos.x - sx, pos.y - sy);
+      else if (shape === "ellipse") {
+        ctx.ellipse(sx + (pos.x-sx)/2, sy + (pos.y-sy)/2, Math.abs(pos.x-sx)/2, Math.abs(pos.y-sy)/2, 0, 0, Math.PI*2);
+        ctx.stroke();
+      } else {
+        ctx.moveTo(sx, sy); ctx.lineTo(pos.x, pos.y); ctx.stroke();
+      }
+      return;
+    }
+    if (!lastPos.current) return;
+    ctx.beginPath();
+    ctx.moveTo(lastPos.current.x, lastPos.current.y);
+    ctx.lineTo(pos.x, pos.y);
+    ctx.strokeStyle = tool === "eraser" ? "#ffffff" : color;
+    ctx.lineWidth = tool === "eraser" ? brushSize * 2 : brushSize;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.stroke();
+    lastPos.current = pos;
+  };
+
+  const onUp = () => { drawing.current = false; lastPos.current = null; shapeStart.current = null; snapRef.current = null; };
+
+  const clearCanvas = () => {
+    const c = canvasRef.current!;
+    const ctx = c.getContext("2d")!;
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, c.width, c.height);
+  };
+
+  const saveProject = () => {
+    const c = canvasRef.current!;
+    const data = c.toDataURL("image/png");
+    const name = `${projectName.trim() || "Creation"}.png`;
+    const id = `studio-${Date.now().toString(36)}`;
+    upsertFile({ id, name, type: "image", content: data, updatedAt: Date.now(), owner: currentUser, folder: "__studio__" });
+    setProjects(loadFiles().filter(f => f.type === "image" && f.folder === "__studio__" && (!f.owner || f.owner === currentUser)));
+    setSavedMsg("Saved!"); setTimeout(() => setSavedMsg(""), 2000);
+    blip("notify");
+  };
+
+  const saveToFiles = () => {
+    const c = canvasRef.current!;
+    const data = c.toDataURL("image/png");
+    const name = `${projectName.trim() || "Creation"}.png`;
+    const id = `studio-export-${Date.now().toString(36)}`;
+    upsertFile({ id, name, type: "image", content: data, updatedAt: Date.now(), owner: currentUser, folder: SYS_FOLDER_PICTURES });
+    setSavedMsg("Exported to Pictures!"); setTimeout(() => setSavedMsg(""), 2000);
+    blip("notify");
+  };
+
+  const shareToSocial = () => {
+    const c = canvasRef.current!;
+    const data = c.toDataURL("image/png");
+    const me = users.find(u => u.name === currentUser);
+    const posts = loadSocial();
+    const p: SocialPost = {
+      id: `studio-${Date.now().toString(36)}`,
+      author: currentUser, authorAvatar: me?.avatar || "🧑",
+      text: sharedMsg || `Check out my creation: ${projectName}`,
+      media: { kind: "image", src: data },
+      at: Date.now(), likes: 0, likedBy: [], comments: [],
+    };
+    saveSocial([p, ...posts]);
+    setSharedMsg(""); setSavedMsg("Shared to PueiSocial!"); setTimeout(() => setSavedMsg(""), 2500);
+    blip("notify");
+  };
+
+  const shareToBoard = () => {
+    const c = canvasRef.current!;
+    const data = c.toDataURL("image/png");
+    const me = users.find(u => u.name === currentUser);
+    const posts = loadPueiBoard();
+    const p: PueiBoardPost = {
+      id: `studio-board-${Date.now().toString(36)}`,
+      author: currentUser, authorAvatar: me?.avatar || "🧑",
+      board: "Art", caption: sharedMsg || projectName,
+      imageSrc: data, imageName: projectName, at: Date.now(), likes: 0, likedBy: [],
+    };
+    savePueiBoard([p, ...posts]);
+    setSavedMsg("Shared to PueiBoard!"); setTimeout(() => setSavedMsg(""), 2500);
+    blip("notify");
+  };
+
+  const PALETTE = ["#000000","#ffffff","#e74c3c","#e67e22","#f1c40f","#2ecc71","#1abc9c","#3498db","#9b59b6","#e91e63","#ff5722","#795548","#607d8b","#4fa8e0","#a8e04f","#e04fa8"];
+
+  const toolBtn = (t: StudioTool, icon: string, label: string) => (
+    <button key={t} title={label} onClick={() => setTool(t)}
+      className="flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-lg text-sm"
+      style={{ background: tool === t ? "var(--accent)" : "var(--glass)", color: tool === t ? "#fff" : "var(--foreground)", minWidth: 44 }}>
+      <span>{icon}</span><span style={{ fontSize: 9 }}>{label}</span>
+    </button>
+  );
+
+  return (
+    <div className="flex flex-col h-full" style={{ background: "var(--background)" }}>
+      {/* Header */}
+      <div className="flex items-center gap-3 px-4 py-2 border-b" style={{ borderColor: "var(--border)", background: "var(--glass)" }}>
+        <span className="text-xl">🪽</span>
+        <div>
+          <span className="font-bold text-sm">Puei Studio</span>
+          <span className="text-xs opacity-50 ml-2">Create your Pueio world.</span>
+        </div>
+        <div className="ml-auto flex gap-1">
+          {(["canvas","projects","share"] as const).map(t => (
+            <button key={t} onClick={() => setTab(t)}
+              className="aero-button rounded-lg px-3 py-1 text-xs capitalize"
+              style={{ background: tab === t ? "var(--accent)" : undefined, color: tab === t ? "#fff" : undefined }}>
+              {t === "canvas" ? "🎨 Canvas" : t === "projects" ? "📁 Projects" : "📤 Share"}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {tab === "canvas" && (
+        <div className="flex flex-1 overflow-hidden">
+          {/* Toolbar */}
+          <div className="flex flex-col gap-1 p-2 border-r overflow-y-auto" style={{ borderColor: "var(--border)", background: "var(--glass)", width: 64 }}>
+            {toolBtn("brush","✏️","Brush")}
+            {toolBtn("eraser","⬜","Erase")}
+            {toolBtn("fill","🪣","Fill")}
+            {toolBtn("eyedropper","💉","Pick")}
+            {toolBtn("shape","⬡","Shape")}
+            <div className="border-t my-1" style={{ borderColor: "var(--border)" }} />
+            {tool === "shape" && (["rect","ellipse","line"] as StudioShape[]).map(s => (
+              <button key={s} title={s} onClick={() => setShape(s)}
+                className="text-xs rounded px-1 py-1"
+                style={{ background: shape === s ? "var(--accent)" : "transparent", color: shape === s ? "#fff" : "var(--foreground)" }}>
+                {s === "rect" ? "▭" : s === "ellipse" ? "⬬" : "╱"}
+              </button>
+            ))}
+            <div className="border-t my-1" style={{ borderColor: "var(--border)" }} />
+            <div className="text-[9px] opacity-50 text-center">Size</div>
+            <input type="range" min={1} max={40} value={brushSize} onChange={e => setBrushSize(+e.target.value)}
+              className="w-full" style={{ writingMode: "vertical-lr" as any, height: 60, cursor: "pointer" }} />
+            <div className="text-[9px] opacity-50 text-center">{brushSize}px</div>
+          </div>
+
+          {/* Canvas */}
+          <div className="flex-1 flex flex-col overflow-hidden">
+            <canvas
+              ref={canvasRef}
+              width={800} height={520}
+              className="flex-1 block"
+              style={{ touchAction: "none", cursor: tool === "eyedropper" ? "crosshair" : "default", width: "100%", height: "100%", objectFit: "contain", background: "#fff" }}
+              onMouseDown={onDown} onMouseMove={onMove} onMouseUp={onUp} onMouseLeave={onUp}
+              onTouchStart={onDown} onTouchMove={onMove} onTouchEnd={onUp}
+            />
+          </div>
+
+          {/* Right panel */}
+          <div className="flex flex-col gap-3 p-3 border-l overflow-y-auto" style={{ borderColor: "var(--border)", background: "var(--glass)", width: 160 }}>
+            <div>
+              <div className="text-[10px] opacity-50 mb-1">Color</div>
+              <input type="color" value={color} onChange={e => setColor(e.target.value)}
+                className="w-full h-8 rounded cursor-pointer" style={{ border: "none", padding: 0 }} />
+            </div>
+            <div>
+              <div className="text-[10px] opacity-50 mb-1.5">Palette</div>
+              <div className="grid grid-cols-4 gap-1">
+                {PALETTE.map(c => (
+                  <button key={c} onClick={() => setColor(c)}
+                    style={{ width: 24, height: 24, borderRadius: 4, background: c, border: color === c ? "2px solid var(--accent)" : "1px solid rgba(0,0,0,0.2)", cursor: "pointer" }} />
+                ))}
+              </div>
+            </div>
+            <div className="border-t pt-2" style={{ borderColor: "var(--border)" }}>
+              <div className="text-[10px] opacity-50 mb-1">Project name</div>
+              <input value={projectName} onChange={e => setProjectName(e.target.value)}
+                className="w-full rounded px-2 py-1 text-xs input-field" />
+            </div>
+            <button onClick={clearCanvas} className="aero-button rounded px-2 py-1 text-xs">🗑 Clear</button>
+            <button onClick={saveProject} className="aero-button rounded px-2 py-1 text-xs">💾 Save project</button>
+            <button onClick={saveToFiles} className="aero-button rounded px-2 py-1 text-xs">📤 Export to Files</button>
+            <button onClick={() => {
+              const data = canvasRef.current?.toDataURL("image/png");
+              if (!data) return;
+              setWallpaper(data);
+              setSavedMsg("Wallpaper set!"); setTimeout(() => setSavedMsg(""), 2000);
+              blip("notify");
+            }} className="aero-button rounded px-2 py-1 text-xs">🖼️ Set as Wallpaper</button>
+            {savedMsg && <div className="text-xs text-green-400 font-semibold text-center">{savedMsg}</div>}
+          </div>
+        </div>
+      )}
+
+      {tab === "projects" && (
+        <div className="flex-1 overflow-auto p-4">
+          <h3 className="font-semibold mb-3 text-sm">Saved Projects</h3>
+          {projects.length === 0 ? (
+            <div className="text-sm opacity-50 text-center mt-8">No saved projects yet. Create something on the canvas and save it!</div>
+          ) : (
+            <div className="grid grid-cols-3 gap-3">
+              {projects.map(f => (
+                <div key={f.id} className="aero-glass-light rounded-xl overflow-hidden">
+                  <img src={f.content} alt={f.name} className="w-full h-28 object-cover" />
+                  <div className="p-2">
+                    <div className="text-xs font-semibold truncate">{f.name}</div>
+                    <div className="text-[10px] opacity-50">{new Date(f.updatedAt).toLocaleDateString()}</div>
+                    <div className="flex gap-1 mt-1.5">
+                      <button className="aero-button rounded px-2 py-0.5 text-[10px]" onClick={() => {
+                        const ctx = canvasRef.current?.getContext("2d");
+                        if (!ctx) return;
+                        const img = new Image();
+                        img.onload = () => { ctx.clearRect(0,0,800,520); ctx.drawImage(img,0,0,800,520); };
+                        img.src = f.content;
+                        setTab("canvas");
+                        setProjectName(f.name.replace(/\.png$/, ""));
+                      }}>Edit</button>
+                      <button className="aero-button rounded px-2 py-0.5 text-[10px]" onClick={() => {
+                        deleteFile(f.id);
+                        setProjects(p => p.filter(x => x.id !== f.id));
+                      }}>Del</button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {tab === "share" && (
+        <div className="flex-1 overflow-auto p-6 max-w-xl">
+          <h3 className="font-semibold mb-1 text-sm">Share your creation</h3>
+          <p className="text-xs opacity-50 mb-4">Export the current canvas directly to PueiSocial or PueiBoard.</p>
+          <div className="mb-4">
+            <label className="text-xs opacity-70 block mb-1">Caption (optional)</label>
+            <input value={sharedMsg} onChange={e => setSharedMsg(e.target.value)}
+              className="w-full rounded px-3 py-2 text-sm input-field" placeholder={`Check out my creation: ${projectName}`} />
+          </div>
+          <div className="flex flex-col gap-3">
+            <button onClick={shareToSocial} className="aero-button rounded-xl px-4 py-3 text-sm text-left flex items-center gap-3">
+              <span className="text-xl">📢</span>
+              <div><div className="font-semibold">Share to PueiSocial</div><div className="text-xs opacity-60">Post to your feed — all followers can see it</div></div>
+            </button>
+            <button onClick={shareToBoard} className="aero-button rounded-xl px-4 py-3 text-sm text-left flex items-center gap-3">
+              <span className="text-xl">📌</span>
+              <div><div className="font-semibold">Share to PueiBoard</div><div className="text-xs opacity-60">Pin your art to the Art board</div></div>
+            </button>
+            <button onClick={saveToFiles} className="aero-button rounded-xl px-4 py-3 text-sm text-left flex items-center gap-3">
+              <span className="text-xl">🖼️</span>
+              <div><div className="font-semibold">Export to Pictures</div><div className="text-xs opacity-60">Save as PNG to your Files / Pictures folder</div></div>
+            </button>
+          </div>
+          {savedMsg && <div className="mt-4 text-sm text-green-400 font-semibold">{savedMsg}</div>}
+        </div>
+      )}
     </div>
   );
 }

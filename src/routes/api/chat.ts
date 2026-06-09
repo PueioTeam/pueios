@@ -4,6 +4,7 @@ interface ApiMessage {
   id: string;
   from: string;
   fromNumber: string;
+  toNumber: string;
   text: string;
   at: number;
 }
@@ -95,9 +96,11 @@ export const Route = createFileRoute("/api/chat")({
         const toNumber = normalizePueiNumber(body.toNumber);
         const msg: ApiMessage = {
           id: `m-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-          from: body.from, fromNumber, text: body.text, at: Date.now(),
+          from: body.from, fromNumber, toNumber, text: body.text, at: Date.now(),
         };
         await storeMessage(toNumber, msg);
+        // Store a sender-side copy too so full history is available on every device.
+        await storeMessage(fromNumber, msg);
         return json({ ok: true, id: msg.id });
       },
     },
