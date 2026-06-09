@@ -348,6 +348,25 @@ export function PueiOS() {
     users.forEach((u) => { if (u.pueiNumber) registerInDirectory(u); });
   }, [installed, systemVersion, theme, icons, users, loginUser, remember]);
 
+  useEffect(() => {
+    const c = theme.cursorColor ?? "#ffffff";
+    const enc = (svg: string) => `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
+    const arrow = (fill: string, stroke: string) => enc(
+      `<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'><defs><linearGradient id='a' x1='0.2' y1='0' x2='0.8' y2='1'><stop offset='0%' stop-color='${fill}'/><stop offset='50%' stop-color='${fill}cc'/><stop offset='100%' stop-color='${fill}99'/></linearGradient></defs><path d='M3 2 L3 18 L7 14 L10.5 21 L12.5 20 L9 13 L15 13 Z' fill='${stroke}' opacity='0.4' transform='translate(0.7,0.9)'/><path d='M3 2 L3 18 L7 14 L10.5 21 L12.5 20 L9 13 L15 13 Z' fill='url(#a)' stroke='${stroke}' stroke-width='0.7'/></svg>`
+    );
+    const hand = (fill: string, stroke: string) => enc(
+      `<svg xmlns='http://www.w3.org/2000/svg' width='20' height='24' viewBox='0 0 20 24'><defs><linearGradient id='hg' x1='0' y1='0' x2='0.4' y2='1'><stop offset='0%' stop-color='${fill}'/><stop offset='100%' stop-color='${fill}cc'/></linearGradient></defs><rect x='4' y='0' width='4' height='12' rx='2' fill='url(#hg)' stroke='${stroke}' stroke-width='0.8'/><rect x='9' y='3' width='4' height='10' rx='2' fill='url(#hg)' stroke='${stroke}' stroke-width='0.8'/><rect x='14' y='4' width='3.5' height='9' rx='1.75' fill='url(#hg)' stroke='${stroke}' stroke-width='0.8'/><rect x='2' y='9' width='16' height='12' rx='4' fill='url(#hg)' stroke='${stroke}' stroke-width='0.8'/><ellipse cx='2' cy='14' rx='2.5' ry='3.5' fill='url(#hg)' stroke='${stroke}' stroke-width='0.8'/><rect x='5' y='1' width='2' height='5' rx='1' fill='white' opacity='0.5'/></svg>`
+    );
+    const strokeColor = c === "#ffffff" ? "#5b9bd5" : c + "cc";
+    const css = `
+* { cursor: ${arrow(c, strokeColor)} 3 2, default !important; }
+input, textarea, [contenteditable], [contenteditable] * { cursor: url("data:image/svg+xml,${encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20'><path d='M7 2 L9 2 Q10 2 10 3 L10 17 Q10 18 9 18 L7 18' fill='none' stroke='${strokeColor}' stroke-width='2' stroke-linecap='round'/><path d='M7 2 L9 2 Q10 2 10 3 L10 17 Q10 18 9 18 L7 18' fill='none' stroke='${c}' stroke-width='1.2' stroke-linecap='round'/><path d='M13 2 L11 2 Q10 2 10 3 L10 17 Q10 18 11 18 L13 18' fill='none' stroke='${strokeColor}' stroke-width='2' stroke-linecap='round'/><path d='M13 2 L11 2 Q10 2 10 3 L10 17 Q10 18 11 18 L13 18' fill='none' stroke='${c}' stroke-width='1.2' stroke-linecap='round'/></svg>`)}") 10 10, text !important; }
+button, a, [role="button"], select, label[for] { cursor: ${hand(c, strokeColor)} 6 0, pointer !important; }
+`;
+    let el = document.getElementById("puei-cursor-style") as HTMLStyleElement | null;
+    if (!el) { el = document.createElement("style"); el.id = "puei-cursor-style"; document.head.appendChild(el); }
+    el.textContent = css;
+  }, [theme.cursorColor]);
 
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 1000 * 15);

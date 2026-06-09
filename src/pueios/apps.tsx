@@ -254,6 +254,22 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, curren
                   style={{ background: `oklch(0.65 0.2 ${h})` }} />
               ))}
             </div>
+            <div className="mt-6">
+              <div className="text-sm font-semibold mb-3">🖱️ Cursor color</div>
+              <div className="flex items-center gap-3 flex-wrap">
+                {["#ffffff","#000000","#ff4444","#ff8800","#ffdd00","#44dd44","#44aaff","#aa44ff","#ff44aa"].map((col) => (
+                  <button key={col} onClick={() => setTheme({ ...theme, cursorColor: col })}
+                    className="w-8 h-8 rounded-full border-2 shadow transition-all"
+                    style={{ background: col, borderColor: (theme.cursorColor ?? "#ffffff") === col ? "var(--accent)" : "rgba(255,255,255,0.4)", transform: (theme.cursorColor ?? "#ffffff") === col ? "scale(1.2)" : "scale(1)" }} />
+                ))}
+                <label className="flex items-center gap-2 text-sm cursor-pointer">
+                  <span className="text-xs opacity-70">Custom:</span>
+                  <input type="color" value={theme.cursorColor ?? "#ffffff"}
+                    onChange={(e) => setTheme({ ...theme, cursorColor: e.target.value })}
+                    className="w-8 h-8 rounded cursor-pointer border-0 p-0" style={{ background: "none" }} />
+                </label>
+              </div>
+            </div>
             <div className="mt-6 space-y-3">
               <label className="flex items-center gap-2 text-sm">
                 <input type="checkbox" checked={theme.dark} onChange={(e) => setTheme({ ...theme, dark: e.target.checked })} /> Dark mode <span className="text-xs opacity-60">(global — applies to every system surface)</span>

@@ -20,6 +20,7 @@ export type Theme = {
   glassBlur: number;
   glassSaturation: number;
   aeroGlow: number;
+  cursorColor: string; // hex, e.g. "#ffffff"
 };
 
 // Trusted domains for the Installer (closed-ecosystem rule)
@@ -283,6 +284,7 @@ export const defaultTheme: Theme = {
   glassBlur: 22,
   glassSaturation: 180,
   aeroGlow: 50,
+  cursorColor: "#ffffff",
 };
 
 export const defaultIcons: DesktopIcon[] = [
