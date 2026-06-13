@@ -1308,6 +1308,37 @@ function PueiCopilotPage() {
   );
 }
 
+function PueiNetIframe({ url, hostname }: { url: string; hostname: string }) {
+  const [failed, setFailed] = useState(false);
+  useEffect(() => { setFailed(false); }, [url]);
+  if (failed) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full gap-4 text-center px-8">
+        <div className="text-4xl">🌍</div>
+        <div className="font-semibold text-base">{hostname}</div>
+        <div className="text-sm opacity-70">{hostname} blocks embedding inside other apps.</div>
+        <button className="aero-button rounded-lg px-5 py-2 text-sm font-semibold"
+          onClick={() => window.open(url, "_blank")}>Open {hostname} in browser ↗</button>
+      </div>
+    );
+  }
+  return (
+    <iframe
+      src={url}
+      title={hostname}
+      className="w-full h-full border-0"
+      sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+      onError={() => setFailed(true)}
+      onLoad={(e) => {
+        try {
+          const doc = (e.target as HTMLIFrameElement).contentDocument;
+          if (!doc) setFailed(true);
+        } catch { setFailed(true); }
+      }}
+    />
+  );
+}
+
 // ---------- PueiWeb ----------
 function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users: User[]; icons: DesktopIcon[] }) {
   const [tabs, setTabs] = useState([{ id: 1, title: "Home", url: "puei://home" }]);
@@ -1502,16 +1533,6 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
             <li>Only Base44 apps allowed</li>
           </ul>
         </div>
-        <div className="rounded-lg p-3" style={{ background: "rgba(255,255,255,0.07)" }}>
-          <div className="font-semibold mb-2 opacity-90">📰 Latest News — PueiOS 2+ Update:</div>
-          <ul className="space-y-1 opacity-70 list-disc list-inside">
-            <li>Faster cloud sync</li>
-            <li>Improved PueiCloudChat saving</li>
-            <li>Better Recycle Bin recovery</li>
-            <li>Customizable High Contrast colors</li>
-            <li>New Puei Copilot responses</li>
-          </ul>
-        </div>
         <div className="rounded-lg p-3 border" style={{ borderColor: "rgba(255,255,255,0.15)", background: "rgba(255,255,255,0.04)" }}>
           <div className="text-xs opacity-50 mb-1">🔥 Trending</div>
           <div className="opacity-80">"My puei deleted my desktop shortcuts again 💇"</div>
@@ -1555,11 +1576,6 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
             <button className="aero-button rounded px-3 py-1.5 text-xs" onClick={downloadPlusIso} style={{ opacity: 0.65 }}>
               ⬇ {isoFile ? "Re-download pueios2-plus.iso" : "Download pueios2-plus.iso"}
             </button>
-            {isoFile && (
-              <button className="aero-button rounded px-3 py-1.5 text-xs" onClick={() => { deleteFile(isoFile.id); setIsoRefresh(v => v+1); blip("click"); }}>
-                Delete ISO
-              </button>
-            )}
           </div>
         </div>
 
@@ -1575,17 +1591,22 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
             <button className="aero-button rounded px-3 py-1.5 text-xs" onClick={downloadOs3Iso}>
               ⬇ {iso3File ? "Re-download pueios3.iso" : "Download pueios3.iso"}
             </button>
-            {iso3File && (
-              <button className="aero-button rounded px-3 py-1.5 text-xs" onClick={() => { deleteFile(iso3File.id); setIsoRefresh(v => v+1); blip("click"); }}>
-                Delete ISO
-              </button>
-            )}
           </div>
           {updaterInstalled && iso3File && (
             <div className="text-xs rounded px-3 py-2 mt-1" style={{ background: "rgba(80,200,120,0.16)" }}>
               Ready to install! Open Puei Updater from your desktop and drag pueios3.iso into the install zone.
             </div>
           )}
+        </div>
+
+        {/* Pueio Reverse */}
+        <div className="aero-glass-light rounded-xl p-4 space-y-2">
+          <div className="flex items-center gap-2">
+            <span className="font-semibold">🔄 Pueio Reverse</span>
+            <span className="text-xs px-2 py-0.5 rounded" style={{ background: "rgba(120,40,200,0.25)", color: "#c084fc" }}>Legacy</span>
+          </div>
+          <p className="text-xs opacity-70">Pueio Reverse lets you load ISOs whose support has ended. The system will show an end-of-support warning before booting.</p>
+          <p className="text-xs opacity-50">To use: download any ISO, open it from Files, and click "Boot with Pueio Reverse".</p>
         </div>
       </div>
     ),
@@ -1662,15 +1683,7 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
     if (!/^https?:\/\//i.test(loadUrl)) loadUrl = "https://" + loadUrl;
     let hostname = "";
     try { hostname = new URL(loadUrl).hostname; } catch {}
-    content = (
-      <div className="flex flex-col items-center justify-center h-full gap-4 text-center px-8">
-        <div className="text-4xl">🌍</div>
-        <div className="font-semibold text-base">{hostname}</div>
-        <div className="text-sm opacity-70">Most websites block embedding inside other apps.<br />Open it in your browser instead.</div>
-        <button className="aero-button rounded-lg px-5 py-2 text-sm font-semibold"
-          onClick={() => window.open(loadUrl, "_blank")}>Open {hostname} ↗</button>
-      </div>
-    );
+    content = <PueiNetIframe key={loadUrl} url={loadUrl} hostname={hostname} />;
   }
 
   return (
@@ -4041,32 +4054,32 @@ function FolderApp({ folderIconId, icons, openApp, openWebApp }: {
 // ---------- Web App frame ----------
 function WebAppFrame({ url, currentUser, startUpgrade }: { url: string; currentUser: string; startUpgrade: (target: SystemVersion) => void }) {
   const [failed, setFailed] = useState(false);
+  useEffect(() => { setFailed(false); }, [url]);
   if (url === "puei://updates") {
     return <PueiUpdaterApp currentUser={currentUser} startUpgrade={startUpgrade} />;
   }
-  const isExternal = url.startsWith("http://") || url.startsWith("https://");
+  let hostname = "";
+  try { hostname = new URL(url.startsWith("http") ? url : "https://" + url).hostname; } catch {}
   return (
     <div className="flex flex-col h-full">
       <div className="aero-titlebar text-xs px-3 py-1 flex items-center gap-2">
         <span className="opacity-60">🔗</span>
         <span className="truncate flex-1">{url}</span>
-        {isExternal && (
-          <button className="aero-button rounded px-2 py-0.5 text-xs shrink-0"
-            onClick={() => window.open(url, "_blank")}>Open in browser ↗</button>
-        )}
       </div>
       <div className="flex-1 relative panel-light">
-        {failed || isExternal ? (
+        {failed ? (
           <div className="flex flex-col items-center justify-center h-full gap-4 text-center px-8">
             <div className="text-4xl">🌍</div>
-            <div className="font-semibold text-base">{new URL(url.startsWith("http") ? url : "https://" + url).hostname}</div>
-            <div className="text-sm opacity-70">This site can't be shown inside PueiOS because it blocks embedding.<br />Open it in your browser instead.</div>
-            <button className="aero-button rounded-lg px-5 py-2 text-sm font-semibold"
-              onClick={() => window.open(url, "_blank")}>Open {new URL(url.startsWith("http") ? url : "https://" + url).hostname} ↗</button>
+            <div className="font-semibold text-base">{hostname}</div>
+            <div className="text-sm opacity-70">{hostname} can't be shown inside PueiOS.</div>
           </div>
         ) : (
           <iframe src={url} title={url} className="w-full h-full border-0"
-            onError={() => setFailed(true)} />
+            sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+            onError={() => setFailed(true)}
+            onLoad={(e) => {
+              try { if (!(e.target as HTMLIFrameElement).contentDocument) setFailed(true); } catch { setFailed(true); }
+            }} />
         )}
       </div>
     </div>
@@ -5134,19 +5147,74 @@ function IsoViewerApp({ fileId }: { fileId?: string }) {
   const name = file?.name?.trim().toLowerCase() ?? "";
   const isLegacy = name === "pueios2-plus.iso" || name === "pueios2plus.iso";
   const isPueiOS3 = name === "pueios3.iso";
+  const [reverseBooting, setReverseBooting] = useState(false);
+  const [reverseStage, setReverseStage] = useState(0);
+
+  const startReverse = () => {
+    setReverseBooting(true);
+    setReverseStage(1);
+    setTimeout(() => setReverseStage(2), 2000);
+    setTimeout(() => setReverseStage(3), 4000);
+  };
+
+  if (reverseBooting) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full gap-5 text-center px-8"
+        style={{ background: reverseStage >= 2 ? "#000" : undefined, color: reverseStage >= 2 ? "#ff4444" : undefined }}>
+        {reverseStage === 1 && <>
+          <div className="text-4xl animate-spin">⚙️</div>
+          <div className="font-semibold">Pueio Reverse — Loading legacy ISO…</div>
+          <div className="text-xs opacity-60">Bypassing end-of-support restrictions</div>
+        </>}
+        {reverseStage === 2 && <>
+          <div className="text-5xl">⛔</div>
+          <div className="font-bold text-2xl" style={{ color: "#ff4444" }}>END OF SUPPORT</div>
+          <div className="text-sm max-w-sm" style={{ color: "#ffaaaa" }}>
+            This version of PueiOS is no longer supported by Pueian Lemne or any Pueio team member.
+            Security updates have ended. Proceed only if you understand the risks.
+          </div>
+          <div className="text-xs opacity-50 mt-2">Pueio Reverse override active</div>
+        </>}
+        {reverseStage === 3 && <>
+          <div className="text-5xl">💿</div>
+          <div className="font-bold text-lg">{file?.name}</div>
+          <div className="aero-glass-light rounded-xl p-5 max-w-sm space-y-3" style={{ color: "initial" }}>
+            <div className="font-semibold text-base">Pueio Reverse — Mounted</div>
+            <div className="text-sm opacity-70">
+              Legacy ISO loaded via Pueio Reverse. This version has reached end of support — no security patches or updates are available.
+            </div>
+            <div className="grid grid-cols-2 gap-2 text-xs font-mono opacity-60 text-left">
+              <div>Version:</div><div>{file?.name?.replace(".iso","")}</div>
+              <div>Status:</div><div style={{ color: "#f87171" }}>End of Life</div>
+              <div>Override:</div><div style={{ color: "#4ade80" }}>Pueio Reverse ✔</div>
+            </div>
+          </div>
+          <button className="aero-button rounded px-4 py-2 text-sm" onClick={() => { setReverseBooting(false); setReverseStage(0); }}>
+            Eject ISO
+          </button>
+        </>}
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col items-center justify-center h-full p-8 text-center gap-4">
       <div className="text-5xl">💿</div>
       <div className="font-bold text-lg">{file?.name ?? "ISO Image"}</div>
       {isLegacy && (
-        <div className="aero-glass-light rounded-xl p-5 max-w-sm space-y-2">
+        <div className="aero-glass-light rounded-xl p-5 max-w-sm space-y-3">
           <div className="text-2xl">⛔</div>
           <div className="font-semibold text-base">End of Support</div>
           <div className="text-sm opacity-70">
             This version of PueiOS has reached end of support and can no longer be installed.
-            Please download <strong>pueios3.iso</strong> from the Puei Updater app to upgrade to the latest version.
+            Please download <strong>pueios3.iso</strong> from the Puei Updater app to upgrade.
           </div>
+          <button className="aero-button rounded-lg px-4 py-2 text-xs font-semibold w-full mt-1"
+            style={{ background: "rgba(120,40,200,0.25)", color: "#c084fc", border: "1px solid rgba(192,132,252,0.3)" }}
+            onClick={startReverse}>
+            🔄 Boot with Pueio Reverse
+          </button>
+          <div className="text-[10px] opacity-40">Pueio Reverse bypasses end-of-support restrictions. Use at your own risk.</div>
         </div>
       )}
       {isPueiOS3 && (

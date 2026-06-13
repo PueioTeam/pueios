@@ -58,6 +58,35 @@ const GRID_W = 96;
 const GRID_H = 92;
 const SECURITY_KEY = "puei";
 
+function RemoveAccountButton({ name, onConfirm }: { name: string; onConfirm: () => void }) {
+  const [confirming, setConfirming] = useState(false);
+  if (confirming) {
+    return (
+      <div className="absolute top-1 right-1 flex flex-col items-end gap-1 z-10"
+        style={{ background: "rgba(20,10,10,0.92)", borderRadius: 8, padding: "6px 8px", boxShadow: "0 2px 12px rgba(0,0,0,0.5)" }}>
+        <div className="text-xs text-white mb-1 whitespace-nowrap">Remove <b>{name}</b>?</div>
+        <div className="flex gap-1">
+          <button onClick={(e) => { e.stopPropagation(); setConfirming(false); }}
+            className="rounded px-2 py-0.5 text-xs"
+            style={{ background: "rgba(255,255,255,0.15)", color: "white" }}>Cancel</button>
+          <button onClick={(e) => { e.stopPropagation(); onConfirm(); }}
+            className="rounded px-2 py-0.5 text-xs font-semibold"
+            style={{ background: "rgba(220,50,50,0.85)", color: "white" }}>Remove</button>
+        </div>
+      </div>
+    );
+  }
+  return (
+    <button
+      title="Remove account from this device"
+      onClick={(e) => { e.stopPropagation(); setConfirming(true); }}
+      className="absolute top-1 right-1 w-6 h-6 rounded-full flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+      style={{ background: "rgba(220,50,50,0.7)", color: "white", lineHeight: 1 }}>
+      ✕
+    </button>
+  );
+}
+
 export function PueiOS() {
   const [phase, setPhase] = useState<Phase>("boot");
   const [bootProgress, setBootProgress] = useState(0);
@@ -352,17 +381,22 @@ export function PueiOS() {
 
   useEffect(() => {
     const c = theme.cursorColor ?? "#ffffff";
+    // Use a unique gradient ID based on the color to prevent browser SVG gradient caching issues
+    const gid = "cg" + c.replace("#", "");
     const enc = (svg: string) => `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
     const arrow = (fill: string, stroke: string) => enc(
-      `<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'><defs><linearGradient id='a' x1='0.2' y1='0' x2='0.8' y2='1'><stop offset='0%' stop-color='${fill}'/><stop offset='50%' stop-color='${fill}cc'/><stop offset='100%' stop-color='${fill}99'/></linearGradient></defs><path d='M3 2 L3 18 L7 14 L10.5 21 L12.5 20 L9 13 L15 13 Z' fill='${stroke}' opacity='0.4' transform='translate(0.7,0.9)'/><path d='M3 2 L3 18 L7 14 L10.5 21 L12.5 20 L9 13 L15 13 Z' fill='url(#a)' stroke='${stroke}' stroke-width='0.7'/></svg>`
+      `<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'><defs><linearGradient id='${gid}a' x1='0.2' y1='0' x2='0.8' y2='1'><stop offset='0%' stop-color='${fill}'/><stop offset='50%' stop-color='${fill}cc'/><stop offset='100%' stop-color='${fill}99'/></linearGradient></defs><path d='M3 2 L3 18 L7 14 L10.5 21 L12.5 20 L9 13 L15 13 Z' fill='${stroke}' opacity='0.4' transform='translate(0.7,0.9)'/><path d='M3 2 L3 18 L7 14 L10.5 21 L12.5 20 L9 13 L15 13 Z' fill='url(#${gid}a)' stroke='${stroke}' stroke-width='0.7'/></svg>`
     );
     const hand = (fill: string, stroke: string) => enc(
-      `<svg xmlns='http://www.w3.org/2000/svg' width='20' height='24' viewBox='0 0 20 24'><defs><linearGradient id='hg' x1='0' y1='0' x2='0.4' y2='1'><stop offset='0%' stop-color='${fill}'/><stop offset='100%' stop-color='${fill}cc'/></linearGradient></defs><rect x='4' y='0' width='4' height='12' rx='2' fill='url(#hg)' stroke='${stroke}' stroke-width='0.8'/><rect x='9' y='3' width='4' height='10' rx='2' fill='url(#hg)' stroke='${stroke}' stroke-width='0.8'/><rect x='14' y='4' width='3.5' height='9' rx='1.75' fill='url(#hg)' stroke='${stroke}' stroke-width='0.8'/><rect x='2' y='9' width='16' height='12' rx='4' fill='url(#hg)' stroke='${stroke}' stroke-width='0.8'/><ellipse cx='2' cy='14' rx='2.5' ry='3.5' fill='url(#hg)' stroke='${stroke}' stroke-width='0.8'/><rect x='5' y='1' width='2' height='5' rx='1' fill='white' opacity='0.5'/></svg>`
+      `<svg xmlns='http://www.w3.org/2000/svg' width='20' height='24' viewBox='0 0 20 24'><defs><linearGradient id='${gid}h' x1='0' y1='0' x2='0.4' y2='1'><stop offset='0%' stop-color='${fill}'/><stop offset='100%' stop-color='${fill}cc'/></linearGradient></defs><rect x='4' y='0' width='4' height='12' rx='2' fill='url(#${gid}h)' stroke='${stroke}' stroke-width='0.8'/><rect x='9' y='3' width='4' height='10' rx='2' fill='url(#${gid}h)' stroke='${stroke}' stroke-width='0.8'/><rect x='14' y='4' width='3.5' height='9' rx='1.75' fill='url(#${gid}h)' stroke='${stroke}' stroke-width='0.8'/><rect x='2' y='9' width='16' height='12' rx='4' fill='url(#${gid}h)' stroke='${stroke}' stroke-width='0.8'/><ellipse cx='2' cy='14' rx='2.5' ry='3.5' fill='url(#${gid}h)' stroke='${stroke}' stroke-width='0.8'/><rect x='5' y='1' width='2' height='5' rx='1' fill='white' opacity='0.5'/></svg>`
     );
     // Dark outline for contrast regardless of cursor color
     const outline = "#1a1a2e";
     const css = `
 * { cursor: ${arrow(c, outline)} 3 2, default !important; }
+*[style*="cursor: move"], *[style*="cursor:move"] { cursor: ${arrow(c, outline)} 3 2, move !important; }
+*[style*="cursor: grab"], *[style*="cursor:grab"] { cursor: ${hand(c, outline)} 6 0, grab !important; }
+*[style*="cursor: grabbing"], *[style*="cursor:grabbing"] { cursor: ${hand(c, outline)} 6 0, grabbing !important; }
 input, textarea, [contenteditable], [contenteditable] * { cursor: url("data:image/svg+xml,${encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20'><path d='M7 2 L9 2 Q10 2 10 3 L10 17 Q10 18 9 18 L7 18' fill='none' stroke='${outline}' stroke-width='2.2' stroke-linecap='round'/><path d='M7 2 L9 2 Q10 2 10 3 L10 17 Q10 18 9 18 L7 18' fill='none' stroke='${c}' stroke-width='1.2' stroke-linecap='round'/><path d='M13 2 L11 2 Q10 2 10 3 L10 17 Q10 18 11 18 L13 18' fill='none' stroke='${outline}' stroke-width='2.2' stroke-linecap='round'/><path d='M13 2 L11 2 Q10 2 10 3 L10 17 Q10 18 11 18 L13 18' fill='none' stroke='${c}' stroke-width='1.2' stroke-linecap='round'/></svg>`)}") 10 10, text !important; }
 button, a, [role="button"], select, label[for] { cursor: ${hand(c, outline)} 6 0, pointer !important; }
 `;
@@ -1148,6 +1182,11 @@ button, a, [role="button"], select, label[for] { cursor: ${hand(c, outline)} 6 0
       const name = newAcc.name.trim();
       if (!name) { setPwError("Enter an account name"); return; }
       if (users.some((u) => u.name === name)) { setPwError("Name already exists locally"); return; }
+      // Clear deleted flag so this fresh account isn't blocked by a previous deletion of the same name
+      try {
+        const deleted: string[] = JSON.parse(localStorage.getItem("pueios2-deleted-users-v1") || "[]");
+        localStorage.setItem("pueios2-deleted-users-v1", JSON.stringify(deleted.filter((n) => n !== name)));
+      } catch {}
       const nu: User = { name, password: newAcc.password, avatar: newAcc.avatar || "🧑", color: newAcc.color || "200", pueiNumber: pueiNumberFor(name + ":" + Date.now()), friends: [] };
       // Reserve the name in the cloud so duplicate accounts can't exist across browsers.
       const snap: AccountSnapshot = { version: 1, user: nu, theme, icons, files: [], chat: [], social: [], recycle: [], mail: [], mailFolders: {}, downloads: {} };
@@ -1209,20 +1248,13 @@ button, a, [role="button"], select, label[for] { cursor: ${hand(c, outline)} 6 0
                     <div className="text-sm font-medium" style={{ color: "rgba(220,230,255,0.9)" }}>{u.name}</div>
                   </button>
                   {!locked && (
-                    <button
-                      title="Remove account from this device"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        markUserDeleted(u.name);
-                        const next = users.filter(x => x.name !== u.name);
-                        setUsers(next);
-                        saveState({ installed, systemVersion, theme, icons, users: next, lastUser: "", remember: false });
-                        if (loginUser === u.name) { setLoginUser(""); setPwInput(""); }
-                      }}
-                      className="absolute top-1 right-1 w-6 h-6 rounded-full flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
-                      style={{ background: "rgba(220,50,50,0.7)", color: "white", lineHeight: 1 }}>
-                      ✕
-                    </button>
+                    <RemoveAccountButton name={u.name} onConfirm={() => {
+                      markUserDeleted(u.name);
+                      const next = users.filter(x => x.name !== u.name);
+                      setUsers(next);
+                      saveState({ installed, systemVersion, theme, icons, users: next, lastUser: "", remember: false });
+                      if (loginUser === u.name) { setLoginUser(""); setPwInput(""); }
+                    }} />
                   )}
                 </div>
               ))}
@@ -1268,6 +1300,23 @@ button, a, [role="button"], select, label[for] { cursor: ${hand(c, outline)} 6 0
                   style={{ color: "var(--muted-foreground)" }}
                   onClick={() => { setSwitching(true); setSwitchName(""); setSwitchPw(""); setSwitchErr(""); }}>
                   Switch to a different account
+                </button>
+              )}
+              {!locked && (
+                <button className="text-xs mt-1 w-full text-center block opacity-60 hover:opacity-100 transition-opacity"
+                  style={{ color: "rgba(200,215,255,0.8)" }}
+                  onClick={() => {
+                    const guestName = "Guest";
+                    const existing = users.find((u) => u.name === guestName);
+                    if (!existing) {
+                      const nu: User = { name: guestName, password: "", avatar: "👤", color: "220", pueiNumber: "", friends: [], noPassword: true, limitedMode: true };
+                      const next = [...users, nu];
+                      setUsers(next);
+                      saveState({ installed, systemVersion, theme, icons, users: next, lastUser: guestName, remember: false });
+                    }
+                    setLoginUser(guestName); setPwInput(""); enterDesktop(guestName);
+                  }}>
+                  Continue as Guest
                 </button>
               )}
             </div>
