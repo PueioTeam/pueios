@@ -745,8 +745,7 @@ function NotepadApp({ fileId, onCreateShortcut, currentUser }: { fileId?: string
       </div>
       <textarea value={text} onChange={(e) => { if (!docLocked) setText(e.target.value); }}
         readOnly={docLocked}
-        className="flex-1 p-3 font-mono text-sm outline-none resize-none"
-        className="input-field" style={{ overflow: "auto", boxSizing: "border-box", userSelect: "text" }} />
+        className="flex-1 p-3 font-mono text-sm outline-none resize-none input-field" style={{ overflow: "auto", boxSizing: "border-box", userSelect: "text" }} />
     </div>
   );
 }
@@ -1238,8 +1237,7 @@ function PueiCopilotPage() {
       <div className="flex gap-2 mb-5">
         <input value={query} onChange={(e) => setQuery(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && doSearch(query)}
-          className="flex-1 px-4 py-2.5 rounded-full text-sm outline-none"
-          className="input-field" style={{ border: "2px solid oklch(0.65 0.18 var(--accent-h))" }}
+          className="flex-1 px-4 py-2.5 rounded-full text-sm outline-none input-field" style={{ border: "2px solid oklch(0.65 0.18 var(--accent-h))" }}
           placeholder="Ask Puei Copilot or search anything…" />
         <button className="aero-button rounded-full px-5 py-2 text-sm font-semibold" onClick={() => doSearch(query)}>Search</button>
       </div>
@@ -2007,8 +2005,7 @@ function PueiMailApp({ currentUser, users }: { currentUser: string; users: User[
       <div className="w-64 flex-shrink-0 border-r flex flex-col overflow-hidden">
         <div className="p-2 border-b">
           <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="🔍 Search mail…"
-            className="w-full px-2 py-1 text-xs rounded outline-none"
-            className="input-field" style={{ border: "1px solid var(--border)" }} />
+            className="w-full px-2 py-1 text-xs rounded outline-none input-field" style={{ border: "1px solid var(--border)" }} />
         </div>
         {showAttachmentsView ? (
           <div className="px-3 py-2 text-xs font-semibold opacity-70 border-b">Saved attachments · {allAttachments.length}</div>
@@ -2091,8 +2088,7 @@ function PueiMailApp({ currentUser, users }: { currentUser: string; users: User[
               <span className="text-xs w-20 opacity-60">To:</span>
               <input value={draft.to} onChange={(e) => setDraft({ ...draft, to: e.target.value })}
                 placeholder="Pueio Number (e.g. 123-456-789)"
-                className="flex-1 px-3 py-1.5 rounded text-sm outline-none"
-                className="input-field" style={{ border: "1px solid var(--border)" }}
+                className="flex-1 px-3 py-1.5 rounded text-sm outline-none input-field" style={{ border: "1px solid var(--border)" }}
                 list="mail-contacts" />
               <datalist id="mail-contacts">
                 {users.filter((u) => u.name !== currentUser).map((u) => (
@@ -2107,13 +2103,11 @@ function PueiMailApp({ currentUser, users }: { currentUser: string; users: User[
               <span className="text-xs w-20 opacity-60">Subject:</span>
               <input value={draft.subject} onChange={(e) => setDraft({ ...draft, subject: e.target.value })}
                 placeholder="Subject"
-                className="flex-1 px-3 py-1.5 rounded text-sm outline-none"
-                className="input-field" style={{ border: "1px solid var(--border)" }} />
+                className="flex-1 px-3 py-1.5 rounded text-sm outline-none input-field" style={{ border: "1px solid var(--border)" }} />
             </div>
             <textarea value={draft.body} onChange={(e) => setDraft({ ...draft, body: e.target.value })}
               placeholder="Write your message…"
-              className="flex-1 px-3 py-2 rounded text-sm outline-none resize-none min-h-[160px]"
-              className="input-field" style={{ border: "1px solid var(--border)" }} />
+              className="flex-1 px-3 py-2 rounded text-sm outline-none resize-none min-h-[160px] input-field" style={{ border: "1px solid var(--border)" }} />
 
             {pending.length > 0 && (
               <div className="flex flex-wrap gap-2">
@@ -3909,8 +3903,7 @@ function PueiBoardApp({ user, users }: { user: string; users: User[] }) {
 
         <label className="text-xs opacity-70">Choose image from Gallery</label>
         <select
-          className="w-full mt-1 px-2 py-1.5 rounded text-sm"
-          className="input-field" style={{ border: "1px solid var(--border)" }}
+          className="w-full mt-1 px-2 py-1.5 rounded text-sm input-field" style={{ border: "1px solid var(--border)" }}
           value={selectedImageId}
           onChange={(e) => setSelectedImageId(e.target.value)}
         >
@@ -3929,8 +3922,7 @@ function PueiBoardApp({ user, users }: { user: string; users: User[] }) {
           value={caption}
           onChange={(e) => setCaption(e.target.value)}
           placeholder="Add a caption for your post..."
-          className="w-full mt-1 px-2 py-2 rounded text-sm outline-none resize-none"
-          className="input-field" style={{ minHeight: 70, border: "1px solid var(--border)" }}
+          className="w-full mt-1 px-2 py-2 rounded text-sm outline-none resize-none input-field" style={{ minHeight: 70, border: "1px solid var(--border)" }}
         />
 
         <button
@@ -4949,8 +4941,7 @@ function PueiSocialApp({ user, users }: { user: string; users: User[] }) {
             </div>
             <textarea value={text} onChange={(e) => setText(e.target.value)}
               placeholder={`What's on your mind, ${user}?`}
-              className="flex-1 p-2 rounded outline-none text-sm resize-none"
-              className="input-field" style={{ minHeight: 60 }} />
+              className="flex-1 p-2 rounded outline-none text-sm resize-none input-field" style={{ minHeight: 60 }} />
           </div>
           {media && (
             <div className="mt-2 relative">
@@ -4996,8 +4987,7 @@ function PueiSocialApp({ user, users }: { user: string; users: User[] }) {
               {editingPostId === p.id ? (
                 <div className="mb-2">
                   <textarea value={editText} onChange={(e) => setEditText(e.target.value)}
-                    className="w-full p-2 rounded text-sm outline-none resize-none"
-                    className="input-field" style={{ minHeight: 60 }} />
+                    className="w-full p-2 rounded text-sm outline-none resize-none input-field" style={{ minHeight: 60 }} />
                   <div className="flex gap-2 mt-1">
                     <button className="aero-button rounded px-3 py-1 text-xs" onClick={() => saveEdit(p.id)}>Save</button>
                     <button className="aero-button rounded px-3 py-1 text-xs" onClick={() => setEditingPostId(null)}>Cancel</button>
@@ -5051,8 +5041,7 @@ function PueiSocialApp({ user, users }: { user: string; users: User[] }) {
                       onChange={(e) => setCommentDrafts({ ...commentDrafts, [p.id]: e.target.value })}
                       onKeyDown={(e) => { if (e.key === "Enter") addComment(p.id); }}
                       placeholder="Write a comment…"
-                      className="flex-1 px-2 py-1 rounded text-xs outline-none"
-                      className="input-field" style={{ border: "1px solid var(--border)" }} />
+                      className="flex-1 px-2 py-1 rounded text-xs outline-none input-field" style={{ border: "1px solid var(--border)" }} />
                     <button className="aero-button rounded px-3 py-1 text-xs" onClick={() => addComment(p.id)}>Reply</button>
                   </div>
                 </div>
