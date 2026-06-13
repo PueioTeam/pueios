@@ -695,7 +695,7 @@ button, a, [role="button"], select, label[for] { cursor: ${hand(c, outline)} 6 0
         <div className="aero-glass-light rounded px-3 py-2 font-mono text-sm mb-3">{SECURITY_KEY}</div>
         <input value={installKey} onChange={(e) => setInstallKey(e.target.value)}
           placeholder="Type the security key"
-          className="w-full px-3 py-2 rounded text-sm outline-none" className="input-field" />
+          className="w-full px-3 py-2 rounded text-sm outline-none input-field" />
         {installErr && <div className="text-red-300 text-xs mt-2">{installErr}</div>}
         <div className="flex gap-2 mt-4">
           <button className="aero-button rounded px-4 py-2" onClick={() => setInstallStep(1)}>← Back</button>
@@ -769,13 +769,13 @@ button, a, [role="button"], select, label[for] { cursor: ${hand(c, outline)} 6 0
           <div>
             <label className="text-xs opacity-70">Username</label>
             <input value={newAcc.name} onChange={(e) => setNewAcc({ ...newAcc, name: e.target.value })}
-              className="w-full px-3 py-2 rounded text-sm outline-none" className="input-field" />
+              className="w-full px-3 py-2 rounded text-sm outline-none input-field" />
           </div>
           {pwOption === "have" && (
             <div>
               <label className="text-xs opacity-70">Password</label>
               <input type="password" value={newAcc.password} onChange={(e) => setNewAcc({ ...newAcc, password: e.target.value })}
-                className="w-full px-3 py-2 rounded text-sm outline-none" className="input-field" />
+                className="w-full px-3 py-2 rounded text-sm outline-none input-field" />
             </div>
           )}
           {pwOption === "none" && (
@@ -799,7 +799,7 @@ button, a, [role="button"], select, label[for] { cursor: ${hand(c, outline)} 6 0
             <div>
               <label className="text-xs opacity-70">New password</label>
               <input type="password" value={newAcc.password} onChange={(e) => setNewAcc({ ...newAcc, password: e.target.value })}
-                className="w-full px-3 py-2 rounded text-sm outline-none" className="input-field" />
+                className="w-full px-3 py-2 rounded text-sm outline-none input-field" />
             </div>
           )}
           {pwOption !== "none" && (
@@ -842,12 +842,12 @@ button, a, [role="button"], select, label[for] { cursor: ${hand(c, outline)} 6 0
         <div>
           <label className="text-xs opacity-70">Account name</label>
           <input value={newAcc.name} onChange={(e) => setNewAcc({ ...newAcc, name: e.target.value })}
-            className="w-full px-3 py-2 rounded text-sm outline-none" className="input-field" />
+            className="w-full px-3 py-2 rounded text-sm outline-none input-field" />
         </div>
         <div>
           <label className="text-xs opacity-70">Password (optional)</label>
           <input type="password" value={newAcc.password} onChange={(e) => setNewAcc({ ...newAcc, password: e.target.value })}
-            className="w-full px-3 py-2 rounded text-sm outline-none" className="input-field" />
+            className="w-full px-3 py-2 rounded text-sm outline-none input-field" />
           <div className="text-[10px] opacity-60 mt-1">Leave empty for limited access mode (you can enable a password later in Settings → Pueio Control).</div>
         </div>
         <div>
@@ -1175,13 +1175,13 @@ button, a, [role="button"], select, label[for] { cursor: ${hand(c, outline)} 6 0
               <input value={switchName} onChange={(e) => { setSwitchName(e.target.value); setSwitchErr(""); }}
                 onKeyDown={(e) => { if (e.key === "Enter") switchToAccount(); }}
                 autoFocus
-                className="w-full px-3 py-2 rounded text-sm outline-none mt-1" className="input-field" />
+                className="w-full px-3 py-2 rounded text-sm outline-none mt-1 input-field" />
             </div>
             <div>
               <label className="text-xs opacity-70">Password</label>
               <input type="password" value={switchPw} onChange={(e) => setSwitchPw(e.target.value)}
                 onKeyDown={(e) => { if (e.key === "Enter") switchToAccount(); }}
-                className="w-full px-3 py-2 rounded text-sm outline-none mt-1" className="input-field" />
+                className="w-full px-3 py-2 rounded text-sm outline-none mt-1 input-field" />
             </div>
             {switchErr && <div className="text-red-400 text-xs">{switchErr}</div>}
             <div className="flex gap-2">
@@ -1241,8 +1241,7 @@ button, a, [role="button"], select, label[for] { cursor: ${hand(c, outline)} 6 0
                   <input value={loginUser} onChange={(e) => { setLoginUser(e.target.value); setPwError(""); }}
                     onKeyDown={(e) => { if (e.key === "Enter") trySignIn(); }}
                     placeholder="Your PueiOS username"
-                    className="w-full px-3 py-2 rounded text-sm outline-none"
-                    className="input-field" />
+                    className="w-full px-3 py-2 rounded text-sm outline-none input-field" />
                 </div>
               ) : (
                 <div className="flex flex-col items-center gap-2 mb-3">
@@ -1258,8 +1257,7 @@ button, a, [role="button"], select, label[for] { cursor: ${hand(c, outline)} 6 0
               <input type="password" value={pwInput} onChange={(e) => setPwInput(e.target.value)}
                 onKeyDown={(e) => { if (e.key === "Enter") trySignIn(); }}
                 placeholder={activeUser?.password ? "Password" : "Press Enter (no password)"}
-                className="w-full px-3 py-2 rounded text-sm outline-none"
-                className="input-field" />
+                className="w-full px-3 py-2 rounded text-sm outline-none input-field" />
               {pwError && <div className="text-red-400 text-xs mt-1">{pwError}</div>}
               <div className="flex gap-2 mt-3">
                 <button className="aero-button rounded px-3 py-1 text-sm flex-1" onClick={trySignIn}>Sign in →</button>
@@ -1280,12 +1278,12 @@ button, a, [role="button"], select, label[for] { cursor: ${hand(c, outline)} 6 0
             <div>
               <label className="text-xs opacity-70">Account name</label>
               <input value={newAcc.name} onChange={(e) => setNewAcc({ ...newAcc, name: e.target.value })}
-                className="w-full px-3 py-2 rounded text-sm outline-none" className="input-field" />
+                className="w-full px-3 py-2 rounded text-sm outline-none input-field" />
             </div>
             <div>
               <label className="text-xs opacity-70">Password (optional)</label>
               <input type="password" value={newAcc.password} onChange={(e) => setNewAcc({ ...newAcc, password: e.target.value })}
-                className="w-full px-3 py-2 rounded text-sm outline-none" className="input-field" />
+                className="w-full px-3 py-2 rounded text-sm outline-none input-field" />
             </div>
             <div>
               <label className="text-xs opacity-70">Avatar</label>
