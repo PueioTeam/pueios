@@ -10,7 +10,7 @@ import { AppRenderer } from "./apps";
 import { PueiMascot, PueiLogoSvg } from "./Mascot";
 import { pullAndMergeFiles, pushFile as pushFileToServer, removeFileFromServer } from "./fileSync";
 import { loadFiles, saveFiles } from "./state";
-import { loginRemote, createRemote, applySnapshot, schedulePush, type AccountSnapshot } from "./accountSync";
+import { loginRemote, createRemote, applySnapshot, schedulePush, markUserDeleted, type AccountSnapshot } from "./accountSync";
 
 
 type Phase = "install" | "boot" | "login" | "desktop" | "shutdown" | "recovery" | "upgrade";
@@ -1437,6 +1437,7 @@ button, a, [role="button"], select, label[for] { cursor: ${hand(c, outline)} 6 0
               signOut={() => { blip("shutdown"); setWindows([]); setCurrentUser(""); setPhase("login"); setPwInput(""); }}
               lockScreen={() => { blip("click"); setLocked(true); setLoginUser(currentUser); setPwInput(""); }}
               deleteAccount={(name) => {
+                markUserDeleted(name);
                 const nextUsers = users.filter((u) => u.name !== name);
                 setUsers(nextUsers);
                 saveState({ installed, systemVersion, theme, icons, users: nextUsers, lastUser: "", remember: false });

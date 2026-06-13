@@ -12,7 +12,19 @@ const LS = {
   recycle: "pueios2-recycle-v1",
   mail: "pueios2-mail-v2",
   directory: "pueios2-directory-v1",
+  deletedUsers: "pueios2-deleted-users-v1",
 } as const;
+
+export function markUserDeleted(name: string) {
+  try {
+    const cur: string[] = JSON.parse(localStorage.getItem(LS.deletedUsers) || "[]");
+    if (!cur.includes(name)) { cur.push(name); localStorage.setItem(LS.deletedUsers, JSON.stringify(cur)); }
+  } catch {}
+}
+
+function isUserDeleted(name: string): boolean {
+  try { return (JSON.parse(localStorage.getItem(LS.deletedUsers) || "[]") as string[]).includes(name); } catch { return false; }
+}
 
 export interface AccountSnapshot {
   version: 1;
@@ -75,11 +87,13 @@ export function gatherSnapshot(user: User): AccountSnapshot {
 export function applySnapshot(snap: AccountSnapshot) {
   if (!snap || snap.version !== 1) return;
   const name = snap.user.name;
+  if (isUserDeleted(name)) return;
 
   // State (theme, icons, users entry)
   try {
     const cur = readJSON<{ users?: User[]; installed?: boolean; systemVersion?: string; theme?: Theme; icons?: DesktopIcon[] }>(LS.state, {});
-    const users = Array.isArray(cur.users) ? cur.users.filter((u) => u.name !== name) : [];
+    // Never restore users that were deleted on this device
+    const users = Array.isArray(cur.users) ? cur.users.filter((u) => u.name !== name && !isUserDeleted(u.name)) : [];
     users.push(snap.user);
     writeJSON(LS.state, {
       ...cur,

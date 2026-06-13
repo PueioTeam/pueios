@@ -436,6 +436,16 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, curren
                   </div>
                 </div>
               </div>
+              <div className="pt-4 border-t border-white/10">
+                <div className="text-sm font-semibold mb-1 text-red-300">Danger Zone</div>
+                <div className="text-xs opacity-60 mb-3">Permanently deletes this account from this device. This cannot be undone.</div>
+                <button
+                  className="aero-button rounded px-4 py-2 text-xs font-semibold"
+                  style={{ color: "#fca5a5", border: "1px solid rgba(252,165,165,0.3)" }}
+                  onClick={() => deleteAccount(currentUser)}>
+                  🗑️ Delete my account
+                </button>
+              </div>
             ) : <div className="text-sm opacity-70">Not signed in.</div>}
           </div>
         )}
