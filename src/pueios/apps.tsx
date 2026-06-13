@@ -566,7 +566,7 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, curren
                     <div>
                       <label className="text-xs opacity-70">New password</label>
                       <input type="password" value={pcNewPw} onChange={(e) => setPcNewPw(e.target.value)}
-                        className="w-full px-3 py-2 rounded text-sm outline-none mt-1" className="input-field" />
+                        className="w-full px-3 py-2 rounded text-sm input-field mt-1" />
                     </div>
                     <div>
                       <label className="text-xs opacity-70">Confirm password</label>
@@ -581,7 +581,7 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, curren
                           setPcMsg({ kind: "ok", text: "✔ Password created! Full access enabled." });
                           blip("notify");
                         }}}
-                        className="w-full px-3 py-2 rounded text-sm outline-none mt-1" className="input-field" />
+                        className="w-full px-3 py-2 rounded text-sm input-field mt-1" />
                     </div>
                     {pcMsg && (
                       <div className={`text-xs rounded px-2 py-1.5 ${pcMsg.kind === "ok" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>{pcMsg.text}</div>
@@ -603,12 +603,12 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, curren
                     <div>
                       <label className="text-xs opacity-70">Current password</label>
                       <input type="password" value={pcCurPw} onChange={(e) => setPcCurPw(e.target.value)}
-                        className="w-full px-3 py-2 rounded text-sm outline-none mt-1" className="input-field" />
+                        className="w-full px-3 py-2 rounded text-sm input-field mt-1" />
                     </div>
                     <div>
                       <label className="text-xs opacity-70">New password</label>
                       <input type="password" value={pcNewPw} onChange={(e) => setPcNewPw(e.target.value)}
-                        className="w-full px-3 py-2 rounded text-sm outline-none mt-1" className="input-field" />
+                        className="w-full px-3 py-2 rounded text-sm input-field mt-1" />
                     </div>
                     <div>
                       <label className="text-xs opacity-70">Confirm new password</label>
@@ -625,7 +625,7 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, curren
                           setPcMsg({ kind: "ok", text: "✔ Password changed." });
                           blip("notify");
                         }}}
-                        className="w-full px-3 py-2 rounded text-sm outline-none mt-1" className="input-field" />
+                        className="w-full px-3 py-2 rounded text-sm input-field mt-1" />
                     </div>
                     {pcMsg && (
                       <div className={`text-xs rounded px-2 py-1.5 ${pcMsg.kind === "ok" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>{pcMsg.text}</div>
@@ -735,7 +735,7 @@ function NotepadApp({ fileId, onCreateShortcut, currentUser }: { fileId?: string
     <div className="flex flex-col h-full" style={{ overflow: "hidden" }}>
       <div className="aero-titlebar text-xs px-2 py-1 flex items-center gap-2 flex-shrink-0">
         <input value={name} onChange={(e) => setName(e.target.value)} disabled={docLocked}
-          className="px-2 py-0.5 rounded text-xs" className="input-field" style={{ width: 180 }} />
+          className="px-2 py-0.5 rounded text-xs input-field" style={{ width: 180 }} />
         {!docLocked && <button className="aero-button rounded px-2 py-0.5" onClick={save}>💾 Save</button>}
         {docLocked && <span className="opacity-60 text-xs">🔒 Read-only</span>}
         <button className="aero-button rounded px-2 py-0.5" onClick={open}>📂 Open</button>
@@ -907,7 +907,7 @@ function PaintApp({ fileId, onCreateShortcut, currentUser }: { fileId?: string; 
   return (
     <div className="flex flex-col h-full">
       <div className="aero-titlebar flex flex-wrap gap-2 px-2 py-1 items-center text-xs">
-        <input value={name} onChange={(e) => setName(e.target.value)} disabled={locked} className="px-2 py-0.5 rounded" className="input-field" style={{ width: 140 }} />
+        <input value={name} onChange={(e) => setName(e.target.value)} disabled={locked} className="px-2 py-0.5 rounded input-field" style={{ width: 140 }} />
         {locked ? (
           <span className="opacity-60 text-xs">🔒 Read-only</span>
         ) : (
@@ -2171,7 +2171,7 @@ function PueiMailApp({ currentUser, users }: { currentUser: string; users: User[
                   <button className="aero-button rounded px-2 py-1 text-xs" onClick={() => deleteMsg(selected.id)}>🖦️ Trash</button>
                 )}
                 {customFolders.length > 0 && (
-                  <select className="text-xs rounded px-1 py-0.5" className="input-field"
+                  <select className="text-xs rounded px-1 py-0.5 input-field"
                     value="" onChange={(e) => e.target.value && moveToFolder(selected.id, e.target.value)}>
                     <option value="">Move to…</option>
                     {customFolders.map((c) => { const [id, name] = c.split("|"); return <option key={id} value={id}>{name}</option>; })}
@@ -3774,13 +3774,13 @@ function InstallerPane({ installWebApp }: { installWebApp: (label: string, url: 
           <label className="text-xs opacity-70">Website URL</label>
           <input value={url} onChange={(e) => setUrl(e.target.value)}
             placeholder="https://yourapp.lovable.app"
-            className="w-full px-3 py-2 rounded text-sm outline-none" className="input-field" />
+            className="w-full px-3 py-2 rounded text-sm input-field" />
         </div>
         <div>
           <label className="text-xs opacity-70">App name (optional)</label>
           <input value={name} onChange={(e) => setName(e.target.value)}
             placeholder="Auto from domain"
-            className="w-full px-3 py-2 rounded text-sm outline-none" className="input-field" />
+            className="w-full px-3 py-2 rounded text-sm input-field" />
         </div>
         <button className="aero-button rounded px-4 py-2 w-full" onClick={install} disabled={installing}
           style={{ opacity: installing ? 0.7 : 1 }}>
