@@ -24,8 +24,8 @@ export type Theme = {
 };
 
 // Trusted domains for the Installer (closed-ecosystem rule)
-export const TRUSTED_DOMAINS = [".lovable.app", ".base44.app"] as const;
-export type TrustedKind = "lovable" | "base44" | null;
+export const TRUSTED_DOMAINS = [".lovable.app", ".base44.app", ".pages.dev", ".github.io"] as const;
+export type TrustedKind = "lovable" | "base44" | "pages" | "github" | null;
 export function classifyTrustedUrl(raw: string): { ok: boolean; kind: TrustedKind; url?: string; host?: string; reason?: string } {
   let u = raw.trim();
   if (!u) return { ok: false, kind: null, reason: "Empty URL" };
@@ -36,7 +36,9 @@ export function classifyTrustedUrl(raw: string): { ok: boolean; kind: TrustedKin
     const host = parsed.hostname.toLowerCase();
     if (host.endsWith(".lovable.app")) return { ok: true, kind: "lovable", url: u, host };
     if (host.endsWith(".base44.app")) return { ok: true, kind: "base44", url: u, host };
-    return { ok: false, kind: null, host, reason: "Untrusted domain. PueiOS 2 only installs apps from *.lovable.app or *.base44.app." };
+    if (host.endsWith(".pages.dev")) return { ok: true, kind: "pages", url: u, host };
+    if (host.endsWith(".github.io")) return { ok: true, kind: "github", url: u, host };
+    return { ok: false, kind: null, host, reason: "Untrusted domain. Only *.lovable.app, *.base44.app, *.pages.dev, and *.github.io are allowed." };
   } catch {
     return { ok: false, kind: null, reason: "Invalid URL" };
   }

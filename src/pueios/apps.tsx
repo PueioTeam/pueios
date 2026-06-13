@@ -3753,7 +3753,8 @@ function InstallerPane({ installWebApp }: { installWebApp: (label: string, url: 
     setMsg({ kind: "ok", text: `Installing "${label}"... please wait (10-15 seconds).` });
     startInstallerInstall(() => {
       installWebApp(label, res.url!, icon);
-      setMsg({ kind: "ok", text: `Installed "${label}" (${res.kind === "lovable" ? "Lovable" : "Base44"} app) on your desktop ✔` });
+      const kindLabel = res.kind === "lovable" ? "Lovable" : res.kind === "base44" ? "Base44" : res.kind === "pages" ? "Cloudflare Pages" : "GitHub Pages";
+      setMsg({ kind: "ok", text: `Installed "${label}" (${kindLabel} app) on your desktop ✔` });
       blip("notify");
       setUrl(""); setName("");
     });
@@ -3765,8 +3766,9 @@ function InstallerPane({ installWebApp }: { installWebApp: (label: string, url: 
       <div className="aero-glass-light rounded-lg p-4 max-w-lg space-y-3">
         <div className="text-xs opacity-80">
           <div className="font-semibold mb-1">Trusted domains</div>
-          <code className="block px-2 py-1 rounded" style={{ background: "rgba(0,0,0,0.08)" }}>https://&lt;appname&gt;.lovable.app</code>
-          <code className="block px-2 py-1 rounded mt-1" style={{ background: "rgba(0,0,0,0.08)" }}>https://&lt;appname&gt;.base44.app</code>
+          {["https://<app>.lovable.app", "https://<app>.base44.app", "https://<app>.pages.dev", "https://<app>.github.io"].map(d => (
+            <code key={d} className="block px-2 py-1 rounded mt-1" style={{ background: "rgba(0,0,0,0.08)" }}>{d}</code>
+          ))}
         </div>
         <div>
           <label className="text-xs opacity-70">Website URL</label>
