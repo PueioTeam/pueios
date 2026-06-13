@@ -81,6 +81,7 @@ export function PueiOS() {
   const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number; items: any[] } | null>(null);
   const [startOpen, setStartOpen] = useState(false);
   const [showAddShortcut, setShowAddShortcut] = useState(false);
+  const [touchDot, setTouchDot] = useState<{ x: number; y: number; visible: boolean }>({ x: 0, y: 0, visible: false });
   const [selectedIcon, setSelectedIcon] = useState<string | null>(null);
   const [now, setNow] = useState(new Date());
   const [showCalendar, setShowCalendar] = useState(false);
@@ -358,11 +359,12 @@ export function PueiOS() {
     const hand = (fill: string, stroke: string) => enc(
       `<svg xmlns='http://www.w3.org/2000/svg' width='20' height='24' viewBox='0 0 20 24'><defs><linearGradient id='hg' x1='0' y1='0' x2='0.4' y2='1'><stop offset='0%' stop-color='${fill}'/><stop offset='100%' stop-color='${fill}cc'/></linearGradient></defs><rect x='4' y='0' width='4' height='12' rx='2' fill='url(#hg)' stroke='${stroke}' stroke-width='0.8'/><rect x='9' y='3' width='4' height='10' rx='2' fill='url(#hg)' stroke='${stroke}' stroke-width='0.8'/><rect x='14' y='4' width='3.5' height='9' rx='1.75' fill='url(#hg)' stroke='${stroke}' stroke-width='0.8'/><rect x='2' y='9' width='16' height='12' rx='4' fill='url(#hg)' stroke='${stroke}' stroke-width='0.8'/><ellipse cx='2' cy='14' rx='2.5' ry='3.5' fill='url(#hg)' stroke='${stroke}' stroke-width='0.8'/><rect x='5' y='1' width='2' height='5' rx='1' fill='white' opacity='0.5'/></svg>`
     );
-    const strokeColor = c === "#ffffff" ? "#5b9bd5" : c + "cc";
+    // Dark outline for contrast regardless of cursor color
+    const outline = "#1a1a2e";
     const css = `
-* { cursor: ${arrow(c, strokeColor)} 3 2, default !important; }
-input, textarea, [contenteditable], [contenteditable] * { cursor: url("data:image/svg+xml,${encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20'><path d='M7 2 L9 2 Q10 2 10 3 L10 17 Q10 18 9 18 L7 18' fill='none' stroke='${strokeColor}' stroke-width='2' stroke-linecap='round'/><path d='M7 2 L9 2 Q10 2 10 3 L10 17 Q10 18 9 18 L7 18' fill='none' stroke='${c}' stroke-width='1.2' stroke-linecap='round'/><path d='M13 2 L11 2 Q10 2 10 3 L10 17 Q10 18 11 18 L13 18' fill='none' stroke='${strokeColor}' stroke-width='2' stroke-linecap='round'/><path d='M13 2 L11 2 Q10 2 10 3 L10 17 Q10 18 11 18 L13 18' fill='none' stroke='${c}' stroke-width='1.2' stroke-linecap='round'/></svg>`)}") 10 10, text !important; }
-button, a, [role="button"], select, label[for] { cursor: ${hand(c, strokeColor)} 6 0, pointer !important; }
+* { cursor: ${arrow(c, outline)} 3 2, default !important; }
+input, textarea, [contenteditable], [contenteditable] * { cursor: url("data:image/svg+xml,${encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20'><path d='M7 2 L9 2 Q10 2 10 3 L10 17 Q10 18 9 18 L7 18' fill='none' stroke='${outline}' stroke-width='2.2' stroke-linecap='round'/><path d='M7 2 L9 2 Q10 2 10 3 L10 17 Q10 18 9 18 L7 18' fill='none' stroke='${c}' stroke-width='1.2' stroke-linecap='round'/><path d='M13 2 L11 2 Q10 2 10 3 L10 17 Q10 18 11 18 L13 18' fill='none' stroke='${outline}' stroke-width='2.2' stroke-linecap='round'/><path d='M13 2 L11 2 Q10 2 10 3 L10 17 Q10 18 11 18 L13 18' fill='none' stroke='${c}' stroke-width='1.2' stroke-linecap='round'/></svg>`)}") 10 10, text !important; }
+button, a, [role="button"], select, label[for] { cursor: ${hand(c, outline)} 6 0, pointer !important; }
 `;
     let el = document.getElementById("puei-cursor-style") as HTMLStyleElement | null;
     if (!el) { el = document.createElement("style"); el.id = "puei-cursor-style"; document.head.appendChild(el); }
@@ -372,6 +374,24 @@ button, a, [role="button"], select, label[for] { cursor: ${hand(c, strokeColor)}
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 1000 * 15);
     return () => clearInterval(t);
+  }, []);
+
+  useEffect(() => {
+    const onMove = (e: TouchEvent) => {
+      const t = e.touches[0];
+      if (t) setTouchDot({ x: t.clientX, y: t.clientY, visible: true });
+    };
+    const onEnd = () => setTouchDot(d => ({ ...d, visible: false }));
+    window.addEventListener("touchmove", onMove, { passive: true });
+    window.addEventListener("touchstart", onMove as any, { passive: true });
+    window.addEventListener("touchend", onEnd);
+    window.addEventListener("touchcancel", onEnd);
+    return () => {
+      window.removeEventListener("touchmove", onMove);
+      window.removeEventListener("touchstart", onMove as any);
+      window.removeEventListener("touchend", onEnd);
+      window.removeEventListener("touchcancel", onEnd);
+    };
   }, []);
 
   useEffect(() => {
@@ -1601,6 +1621,17 @@ button, a, [role="button"], select, label[for] { cursor: ${hand(c, strokeColor)}
         </div>
       )}
 
+      {touchDot.visible && (
+        <div style={{
+          position: "fixed", left: touchDot.x - 12, top: touchDot.y - 12,
+          width: 24, height: 24, borderRadius: "50%", pointerEvents: "none",
+          background: theme.cursorColor ?? "#ffffff",
+          border: "2px solid rgba(0,0,0,0.25)",
+          boxShadow: `0 0 8px 2px ${theme.cursorColor ?? "#ffffff"}88`,
+          zIndex: 999999, transition: "left 0.04s, top 0.04s",
+        }} />
+      )}
+
       {ctxMenu && <ContextMenu x={ctxMenu.x} y={ctxMenu.y} items={ctxMenu.items} onClose={() => setCtxMenu(null)} />}
 
       {showAddShortcut && (() => {
@@ -1616,9 +1647,8 @@ button, a, [role="button"], select, label[for] { cursor: ${hand(c, strokeColor)}
             ["puei-mansion","Puei Mansion","👻"],
           ] as [AppId, string, string][]).map(([appId, label, icon]) => ({ id: `native-${appId}`, label, icon, kind: "native" as const, appId }))),
           ...(([
-            ["puei://films","Puei Films","🎬"], ["puei://updates","Puei Updater","⬆️"],
-            ["puei://wallpapers","Puei Wallpapers","🖼️"], ["puei://mail","Puei Mail","📧"],
-            ["puei://social","PueiSocial Web","📣"], ["puei://os3","PueiOS 3","🚀"],
+            ["puei://films","Puei Films","🎬"],
+            ["puei://updates","Puei Updater","⬆️"],
           ] as [string, string, string][]).map(([url, label, icon]) => ({ id: `web-${url}`, label, icon, kind: "web" as const, url }))),
         ] as any[];
 

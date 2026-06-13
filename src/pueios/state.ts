@@ -132,7 +132,8 @@ export type AppId =
   | "recycle-bin"
   | "chess"
   | "puei-mansion"
-  | "iso-viewer";
+  | "iso-viewer"
+  | "zip-viewer";
 
 export type WindowState = {
   id: string;

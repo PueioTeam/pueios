@@ -62,6 +62,7 @@ export function AppRenderer(p: AppRendererProps) {
     case "chess": return <ChessApp />;
     case "puei-mansion": return <PueiMansionApp />;
     case "iso-viewer": return <IsoViewerApp fileId={p.fileId} />;
+    case "zip-viewer": return <ZipViewerApp fileId={p.fileId} />;
   }
 }
 
@@ -166,6 +167,7 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, curren
   const tabs = [
     ["personalize", "🎨 Personalize"],
     ["wallpaper", "🖼️ Wallpaper"],
+    ["cursor", "🖱️ Cursor di Puei"],
     ["account", "👤 Account"],
     ["pueio-control", "🔑 Pueio Control"],
     ["sound", "🔊 Sound"],
@@ -254,22 +256,6 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, curren
                   style={{ background: `oklch(0.65 0.2 ${h})` }} />
               ))}
             </div>
-            <div className="mt-6">
-              <div className="text-sm font-semibold mb-3">🖱️ Cursor color</div>
-              <div className="flex items-center gap-3 flex-wrap">
-                {["#ffffff","#000000","#ff4444","#ff8800","#ffdd00","#44dd44","#44aaff","#aa44ff","#ff44aa"].map((col) => (
-                  <button key={col} onClick={() => setTheme({ ...theme, cursorColor: col })}
-                    className="w-8 h-8 rounded-full border-2 shadow transition-all"
-                    style={{ background: col, borderColor: (theme.cursorColor ?? "#ffffff") === col ? "var(--accent)" : "rgba(255,255,255,0.4)", transform: (theme.cursorColor ?? "#ffffff") === col ? "scale(1.2)" : "scale(1)" }} />
-                ))}
-                <label className="flex items-center gap-2 text-sm cursor-pointer">
-                  <span className="text-xs opacity-70">Custom:</span>
-                  <input type="color" value={theme.cursorColor ?? "#ffffff"}
-                    onChange={(e) => setTheme({ ...theme, cursorColor: e.target.value })}
-                    className="w-8 h-8 rounded cursor-pointer border-0 p-0" style={{ background: "none" }} />
-                </label>
-              </div>
-            </div>
             <div className="mt-6 space-y-3">
               <label className="flex items-center gap-2 text-sm">
                 <input type="checkbox" checked={theme.dark} onChange={(e) => setTheme({ ...theme, dark: e.target.checked })} /> Dark mode <span className="text-xs opacity-60">(global — applies to every system surface)</span>
@@ -334,6 +320,79 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, curren
                 ))}
               </div>
             )}
+          </div>
+        )}
+        {tab === "cursor" && (
+          <div>
+            <h2 className="text-xl font-semibold mb-4">🖱️ Cursor di Puei</h2>
+            <div className="space-y-6">
+              <div>
+                <div className="text-sm font-semibold mb-3">Cursor color</div>
+                <div className="flex items-center gap-3 flex-wrap mb-3">
+                  {[
+                    ["#ffffff","White"],["#000000","Black"],["#ff4444","Red"],["#ff8800","Orange"],
+                    ["#ffdd00","Yellow"],["#44dd44","Green"],["#44aaff","Blue"],["#aa44ff","Purple"],["#ff44aa","Pink"],
+                  ].map(([col, name]) => (
+                    <button key={col} onClick={() => setTheme({ ...theme, cursorColor: col })}
+                      title={name}
+                      className="w-10 h-10 rounded-full border-2 shadow transition-all"
+                      style={{
+                        background: col,
+                        borderColor: (theme.cursorColor ?? "#ffffff") === col ? "var(--accent)" : "rgba(128,128,128,0.4)",
+                        transform: (theme.cursorColor ?? "#ffffff") === col ? "scale(1.25)" : "scale(1)",
+                        boxShadow: (theme.cursorColor ?? "#ffffff") === col ? "0 0 0 3px var(--accent)" : undefined,
+                      }} />
+                  ))}
+                </div>
+                <label className="flex items-center gap-3 text-sm">
+                  <span className="opacity-70">Custom color:</span>
+                  <input type="color" value={theme.cursorColor ?? "#ffffff"}
+                    onChange={(e) => setTheme({ ...theme, cursorColor: e.target.value })}
+                    className="w-10 h-10 rounded cursor-pointer border-0 p-0" />
+                  <span className="text-xs opacity-50 font-mono">{theme.cursorColor ?? "#ffffff"}</span>
+                </label>
+              </div>
+              <div>
+                <div className="text-sm font-semibold mb-3">Preview</div>
+                <div className="aero-glass-light rounded-xl p-6 flex items-center justify-center gap-8">
+                  {/* Arrow preview */}
+                  <div className="flex flex-col items-center gap-2">
+                    <svg width="32" height="32" viewBox="0 0 24 24">
+                      <defs><linearGradient id="cprev" x1="0.2" y1="0" x2="0.8" y2="1">
+                        <stop offset="0%" stopColor={theme.cursorColor ?? "#ffffff"} />
+                        <stop offset="100%" stopColor={(theme.cursorColor ?? "#ffffff") + "99"} />
+                      </linearGradient></defs>
+                      <path d="M3 2 L3 18 L7 14 L10.5 21 L12.5 20 L9 13 L15 13 Z" fill="url(#cprev)" stroke={(theme.cursorColor ?? "#ffffff") + "aa"} strokeWidth="0.7" />
+                    </svg>
+                    <span className="text-xs opacity-60">Arrow</span>
+                  </div>
+                  {/* Hand preview */}
+                  <div className="flex flex-col items-center gap-2">
+                    <svg width="28" height="32" viewBox="0 0 20 24">
+                      <defs><linearGradient id="hprev" x1="0" y1="0" x2="0.4" y2="1">
+                        <stop offset="0%" stopColor={theme.cursorColor ?? "#ffffff"} />
+                        <stop offset="100%" stopColor={(theme.cursorColor ?? "#ffffff") + "cc"} />
+                      </linearGradient></defs>
+                      <rect x="4" y="0" width="4" height="12" rx="2" fill="url(#hprev)" stroke={(theme.cursorColor ?? "#ffffff") + "99"} strokeWidth="0.8" />
+                      <rect x="9" y="3" width="4" height="10" rx="2" fill="url(#hprev)" stroke={(theme.cursorColor ?? "#ffffff") + "99"} strokeWidth="0.8" />
+                      <rect x="14" y="4" width="3.5" height="9" rx="1.75" fill="url(#hprev)" stroke={(theme.cursorColor ?? "#ffffff") + "99"} strokeWidth="0.8" />
+                      <rect x="2" y="9" width="16" height="12" rx="4" fill="url(#hprev)" stroke={(theme.cursorColor ?? "#ffffff") + "99"} strokeWidth="0.8" />
+                      <ellipse cx="2" cy="14" rx="2.5" ry="3.5" fill="url(#hprev)" stroke={(theme.cursorColor ?? "#ffffff") + "99"} strokeWidth="0.8" />
+                    </svg>
+                    <span className="text-xs opacity-60">Hand</span>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <div className="text-sm font-semibold mb-1">Touch cursor</div>
+                <div className="text-xs opacity-60 mb-3">On touchscreen devices, a dot follows your finger since the system cursor is invisible on touch.</div>
+                <div className="aero-glass-light rounded-xl px-4 py-3 flex items-center gap-3">
+                  <div className="w-5 h-5 rounded-full border-2 flex-shrink-0"
+                    style={{ background: theme.cursorColor ?? "#ffffff", borderColor: "rgba(255,255,255,0.5)" }} />
+                  <span className="text-xs opacity-70">Touch dot matches your cursor color automatically.</span>
+                </div>
+              </div>
+            </div>
           </div>
         )}
         {tab === "account" && (
@@ -2924,7 +2983,7 @@ function FileExplorerApp({ openApp, icons, openFolder, currentUser, users, setWa
         {folder === "downloads" && (
           <FileGrid files={downloadFiles} emptyHint="No downloads yet. Download from Puei Wallpapers or mail attachments."
             onOpen={(f) => {
-              if (f.name.trim().toLowerCase().endsWith(".iso")) { openApp("iso-viewer", f.id); return; }
+              if (f.name.trim().toLowerCase().endsWith(".iso") || f.name.trim().toLowerCase().endsWith(".zip")) { openApp(f.name.trim().toLowerCase().endsWith(".zip") ? "zip-viewer" : "iso-viewer", f.id); return; }
               if (f.type === "image") { openApp("puei-paint", f.id); return; }
               openApp("notepad", f.id);
             }}
@@ -2982,7 +3041,7 @@ function FileExplorerApp({ openApp, icons, openFolder, currentUser, users, setWa
             <FolderFileGrid
               files={folderFiles}
               icons={folderIcons}
-              onOpen={(f) => { if (f.name.trim().toLowerCase().endsWith(".iso")) { openApp("iso-viewer", f.id); return; } openApp(f.type === "image" ? "puei-paint" : "notepad", f.id); }}
+              onOpen={(f) => { if (f.name.trim().toLowerCase().endsWith(".iso") || f.name.trim().toLowerCase().endsWith(".zip")) { openApp(f.name.trim().toLowerCase().endsWith(".zip") ? "zip-viewer" : "iso-viewer", f.id); return; } openApp(f.type === "image" ? "puei-paint" : "notepad", f.id); }}
               onDelete={(id) => { deleteFile(id); setFiles(myFiles()); }}
               onOpenIcon={(ic) => { if (ic.appId !== "web-app") openApp(ic.appId, ic.fileId); }}
               onMoveToPictures={(f) => { moveFile(f.id, SYS_FOLDER_PICTURES); setFiles(myFiles()); blip("notify"); }}
@@ -3285,7 +3344,7 @@ function PueiDrivePane({ files, icons, currentUser, users, openApp, onDelete }: 
         <div className="flex items-center gap-2 mb-3 pb-2 border-b">
           <button className="aero-button rounded px-3 py-1 text-xs"
             disabled={!selectedFile} style={{ opacity: selectedFile ? 1 : 0.4 }}
-            onClick={() => { if (selectedFile) { if (selectedFile.name.trim().toLowerCase().endsWith(".iso")) { openApp("iso-viewer", selectedFile.id); return; } openApp(selectedFile.type === "image" ? "puei-paint" : "notepad", selectedFile.id); } }}>
+            onClick={() => { if (selectedFile) { const sn = selectedFile.name.trim().toLowerCase(); if (sn.endsWith(".iso") || sn.endsWith(".zip")) { openApp(sn.endsWith(".zip") ? "zip-viewer" : "iso-viewer", selectedFile.id); return; } openApp(selectedFile.type === "image" ? "puei-paint" : "notepad", selectedFile.id); } }}>
             📂 Open
           </button>
           <button className="aero-button rounded px-3 py-1 text-xs text-red-400"
@@ -3363,7 +3422,7 @@ function PueiDrivePane({ files, icons, currentUser, users, openApp, onDelete }: 
                 {shownFiles.map(f => (
                   <div key={f.id}
                     onClick={() => setSelectedId(f.id === selectedId ? null : f.id)}
-                    onDoubleClick={() => { if (f.name.trim().toLowerCase().endsWith(".iso")) { openApp("iso-viewer", f.id); return; } openApp(f.type === "image" ? "puei-paint" : "notepad", f.id); }}
+                    onDoubleClick={() => { if (f.name.trim().toLowerCase().endsWith(".iso") || f.name.trim().toLowerCase().endsWith(".zip")) { openApp(f.name.trim().toLowerCase().endsWith(".zip") ? "zip-viewer" : "iso-viewer", f.id); return; } openApp(f.type === "image" ? "puei-paint" : "notepad", f.id); }}
                     className="text-center p-2 rounded cursor-pointer select-none transition-all"
                     style={{
                       background: f.id === selectedId ? "rgba(80,160,255,0.35)" : "transparent",
@@ -3963,7 +4022,7 @@ function FolderApp({ folderIconId, icons, openApp, openWebApp }: {
         : <FolderFileGrid
             files={savedFiles}
             icons={children}
-            onOpen={(f) => { if (f.name.trim().toLowerCase().endsWith(".iso")) { openApp("iso-viewer", f.id); return; } openApp(f.type === "image" ? "puei-paint" : "notepad", f.id); }}
+            onOpen={(f) => { if (f.name.trim().toLowerCase().endsWith(".iso") || f.name.trim().toLowerCase().endsWith(".zip")) { openApp(f.name.trim().toLowerCase().endsWith(".zip") ? "zip-viewer" : "iso-viewer", f.id); return; } openApp(f.type === "image" ? "puei-paint" : "notepad", f.id); }}
             onDelete={(id) => { deleteFile(id); setSavedFiles(loadFiles().filter((f) => f.folder === folderIconId)); }}
             onOpenIcon={(ic) => ic.appId === "web-app" ? openWebApp(ic.webUrl!, ic.label) : openApp(ic.appId, ic.fileId)}
             onMoveToPictures={(f) => { moveFile(f.id, SYS_FOLDER_PICTURES); setSavedFiles(loadFiles().filter((fi) => fi.folder === folderIconId)); blip("notify"); }}
@@ -4638,12 +4697,18 @@ function PueiStudioApp({ currentUser, users, icons, setWallpaper }: { currentUse
 const FILMS_KEY = "pueios2-films-v1";
 type FilmPost = { id: string; title: string; desc: string; videoSrc: string; postedAt: number };
 function loadFilms(): FilmPost[] { try { return JSON.parse(localStorage.getItem(FILMS_KEY) || "[]"); } catch { return []; } }
-function saveFilms(f: FilmPost[]) { localStorage.setItem(FILMS_KEY, JSON.stringify(f)); }
+function saveFilms(f: FilmPost[]) { localStorage.setItem(FILMS_KEY, JSON.stringify(f)); window.dispatchEvent(new Event("pueios-films")); }
 
 function PueiFilmsPage({ currentUser }: { currentUser: string }) {
   const isAdmin = currentUser.trim().toLowerCase() === "pueioficial";
   const [films, setFilms] = useState<FilmPost[]>(() => loadFilms());
   const [playing, setPlaying] = useState<string | null>(null);
+  useEffect(() => {
+    const sync = () => setFilms(loadFilms());
+    window.addEventListener("storage", sync);
+    window.addEventListener("pueios-films", sync);
+    return () => { window.removeEventListener("storage", sync); window.removeEventListener("pueios-films", sync); };
+  }, []);
   const [title, setTitle] = useState("");
   const [desc, setDesc] = useState("");
   const [videoSrc, setVideoSrc] = useState("");
@@ -4984,6 +5049,77 @@ function PueiSocialApp({ user, users }: { user: string; users: User[] }) {
           );
         })}
         </>)}
+      </div>
+    </div>
+  );
+}
+
+// ---------- ZIP Viewer ----------
+function ZipViewerApp({ fileId }: { fileId?: string }) {
+  const file = fileId ? loadFiles().find(f => f.id === fileId) : null;
+  const [entries, setEntries] = useState<string[]>([]);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    if (!file) return;
+    // Parse ZIP local file header entries from base64 data URL
+    try {
+      const b64 = file.content.split(",")[1] ?? "";
+      const bin = atob(b64);
+      const found: string[] = [];
+      let i = 0;
+      while (i < bin.length - 4) {
+        // Local file header signature: PK\x03\x04
+        if (bin.charCodeAt(i) === 0x50 && bin.charCodeAt(i+1) === 0x4B &&
+            bin.charCodeAt(i+2) === 0x03 && bin.charCodeAt(i+3) === 0x04) {
+          const fnLen = bin.charCodeAt(i+26) | (bin.charCodeAt(i+27) << 8);
+          const exLen = bin.charCodeAt(i+28) | (bin.charCodeAt(i+29) << 8);
+          const compSize = (bin.charCodeAt(i+18) | (bin.charCodeAt(i+19) << 8) | (bin.charCodeAt(i+20) << 16) | (bin.charCodeAt(i+21) << 24)) >>> 0;
+          const name = bin.slice(i+30, i+30+fnLen);
+          if (name && !name.endsWith("/")) found.push(name);
+          i = i + 30 + fnLen + exLen + compSize;
+        } else { i++; }
+        if (found.length > 200) break;
+      }
+      setEntries(found);
+    } catch { setEntries([]); }
+    setLoaded(true);
+  }, [file]);
+
+  const ext = (name: string) => {
+    const e = name.split(".").pop()?.toLowerCase() ?? "";
+    if (["png","jpg","jpeg","gif","webp","svg"].includes(e)) return "🖼️";
+    if (["mp4","mov","avi","mkv"].includes(e)) return "🎬";
+    if (["mp3","wav","ogg"].includes(e)) return "🎵";
+    if (["txt","md","json","xml","csv","log"].includes(e)) return "📄";
+    if (["js","ts","tsx","jsx","html","css","py","java","c","cpp"].includes(e)) return "💻";
+    if (["zip","rar","7z"].includes(e)) return "🗜️";
+    return "📦";
+  };
+
+  return (
+    <div className="flex flex-col h-full">
+      <div className="aero-titlebar px-4 py-2 flex items-center gap-3 flex-shrink-0">
+        <span className="text-lg">🗜️</span>
+        <span className="font-bold text-sm">{file?.name ?? "ZIP Archive"}</span>
+        {loaded && <span className="text-xs opacity-50">{entries.length} file{entries.length !== 1 ? "s" : ""}</span>}
+      </div>
+      <div className="flex-1 overflow-auto p-4">
+        {!file && <div className="text-sm opacity-50 text-center py-12">No file found.</div>}
+        {file && !loaded && <div className="text-sm opacity-50 text-center py-12">Reading archive…</div>}
+        {loaded && entries.length === 0 && (
+          <div className="text-sm opacity-50 text-center py-12">Empty archive or unreadable format.</div>
+        )}
+        {loaded && entries.length > 0 && (
+          <div className="space-y-1">
+            {entries.map((name, i) => (
+              <div key={i} className="flex items-center gap-3 px-3 py-1.5 rounded hover:bg-white/10 text-sm">
+                <span>{ext(name)}</span>
+                <span className="flex-1 truncate font-mono text-xs opacity-80">{name}</span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
