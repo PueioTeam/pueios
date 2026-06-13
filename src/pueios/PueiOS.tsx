@@ -423,7 +423,6 @@ button, a, [role="button"], select, label[for] { cursor: ${hand(c, outline)} 6 0
     if (phase === "desktop" && !welcomedRef.current) {
       welcomedRef.current = true;
       setTimeout(() => {
-        pushNotif(`Welcome to ${systemVersion}`, `Signed in as ${currentUser}. Try right-clicking the desktop or the App Store!`);
         setMascotSpeak("Hi! I'm Puei. Click me for quick tips ✦");
         setTimeout(() => setMascotSpeak(null), 5000);
       }, 800);
