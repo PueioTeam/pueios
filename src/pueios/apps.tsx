@@ -399,53 +399,55 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, curren
           <div>
             <h2 className="text-xl font-semibold mb-4">Account</h2>
             {me ? (
-              <div className="space-y-3 max-w-md">
-                <div className="flex items-center gap-3">
-                  <div className="w-20 h-20 rounded-xl overflow-hidden flex items-center justify-center text-4xl"
-                    style={{ background: `linear-gradient(135deg, oklch(0.7 0.18 ${me.color}), oklch(0.45 0.2 ${me.color}))` }}>
-                    {me.avatar.startsWith("data:")
-                      ? <img src={me.avatar} alt="" className="w-full h-full object-cover" />
-                      : me.avatar}
+              <>
+                <div className="space-y-3 max-w-md">
+                  <div className="flex items-center gap-3">
+                    <div className="w-20 h-20 rounded-xl overflow-hidden flex items-center justify-center text-4xl"
+                      style={{ background: `linear-gradient(135deg, oklch(0.7 0.18 ${me.color}), oklch(0.45 0.2 ${me.color}))` }}>
+                      {me.avatar.startsWith("data:")
+                        ? <img src={me.avatar} alt="" className="w-full h-full object-cover" />
+                        : me.avatar}
+                    </div>
+                    <div>
+                      <div className="font-semibold">{me.name}</div>
+                      <label className="aero-button inline-block rounded px-3 py-1 text-xs cursor-pointer mt-1">
+                        Upload picture
+                        <input type="file" accept="image/*" className="hidden" onChange={onAvatarFile} />
+                      </label>
+                    </div>
                   </div>
-                  <div>
-                    <div className="font-semibold">{me.name}</div>
-                    <label className="aero-button inline-block rounded px-3 py-1 text-xs cursor-pointer mt-1">
-                      Upload picture
-                      <input type="file" accept="image/*" className="hidden" onChange={onAvatarFile} />
-                    </label>
-                  </div>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {["🧑","👩","🧔","👵","🧑‍💻","🦸","🧕","🧒","🐛","👽","🎩","🌃"].map((a) => (
-                    <button key={a} onClick={() => updateMe({ avatar: a })}
-                      className="w-9 h-9 rounded text-xl flex items-center justify-center"
-                      style={{ background: me.avatar === a ? "var(--gradient-aero)" : "rgba(255,255,255,0.5)" }}>{a}</button>
-                  ))}
-                </div>
-                <div>
-                  <label className="text-xs opacity-70">Tile colour</label>
-                  <div className="flex gap-2 mt-1 flex-wrap">
-                    {["200","260","320","30","60","130","160","0"].map((c) => (
-                      <button key={c} onClick={() => updateMe({ color: c })}
-                        className="w-8 h-8 rounded-full border-2"
-                        style={{
-                          background: `linear-gradient(135deg, oklch(0.7 0.18 ${c}), oklch(0.45 0.2 ${c}))`,
-                          borderColor: me.color === c ? "white" : "transparent",
-                        }} />
+                  <div className="flex flex-wrap gap-2">
+                    {["🧑","👩","🧔","👵","🧑‍💻","🦸","🧕","🧒","🐛","👽","🎩","🌃"].map((a) => (
+                      <button key={a} onClick={() => updateMe({ avatar: a })}
+                        className="w-9 h-9 rounded text-xl flex items-center justify-center"
+                        style={{ background: me.avatar === a ? "var(--gradient-aero)" : "rgba(255,255,255,0.5)" }}>{a}</button>
                     ))}
                   </div>
+                  <div>
+                    <label className="text-xs opacity-70">Tile colour</label>
+                    <div className="flex gap-2 mt-1 flex-wrap">
+                      {["200","260","320","30","60","130","160","0"].map((c) => (
+                        <button key={c} onClick={() => updateMe({ color: c })}
+                          className="w-8 h-8 rounded-full border-2"
+                          style={{
+                            background: `linear-gradient(135deg, oklch(0.7 0.18 ${c}), oklch(0.45 0.2 ${c}))`,
+                            borderColor: me.color === c ? "white" : "transparent",
+                          }} />
+                      ))}
+                    </div>
+                  </div>
                 </div>
-              </div>
-              <div className="pt-4 border-t border-white/10">
-                <div className="text-sm font-semibold mb-1 text-red-300">Danger Zone</div>
-                <div className="text-xs opacity-60 mb-3">Permanently deletes this account from this device. This cannot be undone.</div>
-                <button
-                  className="aero-button rounded px-4 py-2 text-xs font-semibold"
-                  style={{ color: "#fca5a5", border: "1px solid rgba(252,165,165,0.3)" }}
-                  onClick={() => deleteAccount(currentUser)}>
-                  🗑️ Delete my account
-                </button>
-              </div>
+                <div className="pt-4 border-t border-white/10 mt-4">
+                  <div className="text-sm font-semibold mb-1 text-red-300">Danger Zone</div>
+                  <div className="text-xs opacity-60 mb-3">Permanently deletes this account from this device. This cannot be undone.</div>
+                  <button
+                    className="aero-button rounded px-4 py-2 text-xs font-semibold"
+                    style={{ color: "#fca5a5", border: "1px solid rgba(252,165,165,0.3)" }}
+                    onClick={() => deleteAccount(currentUser)}>
+                    🗑️ Delete my account
+                  </button>
+                </div>
+              </>
             ) : <div className="text-sm opacity-70">Not signed in.</div>}
           </div>
         )}
