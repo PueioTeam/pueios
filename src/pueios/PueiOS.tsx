@@ -1193,20 +1193,38 @@ button, a, [role="button"], select, label[for] { cursor: ${hand(c, outline)} 6 0
           <>
             <div className="grid gap-6 mb-8" style={{ gridTemplateColumns: `repeat(${Math.min(Math.max(users.filter(u => typeof u.password !== 'undefined').length, 1), 4)}, minmax(0, 1fr))` }}>
               {users.filter(u => typeof u.password !== 'undefined').map((u) => (
-                <button key={u.name} onClick={() => { setLoginUser(u.name); setPwError(""); setPwInput(""); }}
-                  className="flex flex-col items-center gap-2 p-4 rounded-xl"
-                  style={{
-                    background: loginUser === u.name ? "rgba(255,255,255,0.15)" : "transparent",
-                    outline: loginUser === u.name ? "2px solid white" : "none",
-                  }}>
-                  <div className="w-20 h-20 rounded-xl flex items-center justify-center text-5xl overflow-hidden"
-                    style={{ background: `linear-gradient(135deg, oklch(0.7 0.18 ${u.color}), oklch(0.45 0.2 ${u.color}))`, boxShadow: "0 6px 20px rgba(0,0,0,0.4)" }}>
-                    {u.avatar.startsWith("data:")
-                      ? <img src={u.avatar} alt="" className="w-full h-full object-cover" />
-                      : u.avatar}
-                  </div>
-                  <div className="text-sm font-medium" style={{ color: "rgba(220,230,255,0.9)" }}>{u.name}</div>
-                </button>
+                <div key={u.name} className="relative group">
+                  <button onClick={() => { setLoginUser(u.name); setPwError(""); setPwInput(""); }}
+                    className="flex flex-col items-center gap-2 p-4 rounded-xl w-full"
+                    style={{
+                      background: loginUser === u.name ? "rgba(255,255,255,0.15)" : "transparent",
+                      outline: loginUser === u.name ? "2px solid white" : "none",
+                    }}>
+                    <div className="w-20 h-20 rounded-xl flex items-center justify-center text-5xl overflow-hidden"
+                      style={{ background: `linear-gradient(135deg, oklch(0.7 0.18 ${u.color}), oklch(0.45 0.2 ${u.color}))`, boxShadow: "0 6px 20px rgba(0,0,0,0.4)" }}>
+                      {u.avatar.startsWith("data:")
+                        ? <img src={u.avatar} alt="" className="w-full h-full object-cover" />
+                        : u.avatar}
+                    </div>
+                    <div className="text-sm font-medium" style={{ color: "rgba(220,230,255,0.9)" }}>{u.name}</div>
+                  </button>
+                  {!locked && (
+                    <button
+                      title="Remove account from this device"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        markUserDeleted(u.name);
+                        const next = users.filter(x => x.name !== u.name);
+                        setUsers(next);
+                        saveState({ installed, systemVersion, theme, icons, users: next, lastUser: "", remember: false });
+                        if (loginUser === u.name) { setLoginUser(""); setPwInput(""); }
+                      }}
+                      className="absolute top-1 right-1 w-6 h-6 rounded-full flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                      style={{ background: "rgba(220,50,50,0.7)", color: "white", lineHeight: 1 }}>
+                      ✕
+                    </button>
+                  )}
+                </div>
               ))}
               {!locked && (
                 <button onClick={() => { setCreating(true); setPwError(""); }}
