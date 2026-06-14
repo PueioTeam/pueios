@@ -3462,8 +3462,8 @@ function AppStoreApp({ installWebApp, openApp, openWebApp, systemVersion, addNat
   const installTimers = useRef<Record<string, number>>({});
   type StoreApp = { name: string; icon: string; desc: string; appId?: AppId; preInstalled?: boolean; webUrl?: string; desktopLabel?: string };
   const official: StoreApp[] = [
-    { name: "Puei Films",     icon: "🎬", desc: "Watch official videos posted by pueioficial.",   webUrl: "puei://films",  desktopLabel: "Puei Films",   preInstalled: false },
-    { name: "Puei Updater",   icon: "🔄", desc: "Required for installing ISO system updates.",           webUrl: "puei://updates", desktopLabel: "Puei Updater", preInstalled: false },
+    { name: "Puei Films",     icon: "/puei-films-icon.svg",   desc: "Watch official videos posted by pueioficial.",          webUrl: "puei://films",   desktopLabel: "Puei Films",   preInstalled: false },
+    { name: "Puei Updater",   icon: "/puei-updater-icon.svg", desc: "Required for installing ISO system updates.",            webUrl: "puei://updates", desktopLabel: "Puei Updater", preInstalled: false },
     { name: "PueiSocial",     icon: "📢", desc: "The official PueiOS social network.",          appId: "puei-social",    preInstalled: true },
     { name: "PueiCloudChat",  icon: "💬", desc: "Chat by PueiNumber — cross-device, real-time.", appId: "puei-cloud-chat", preInstalled: true },
     { name: "Puei Studio",    icon: "🪽", desc: "Create wallpapers, icons, themes and share to PueiSocial.", appId: "puei-studio", preInstalled: true },
@@ -3481,7 +3481,7 @@ function AppStoreApp({ installWebApp, openApp, openWebApp, systemVersion, addNat
     { name: "Puei Mansion",  icon: "👻", desc: "Funny spooky adventure. Solve puzzles, find hidden secrets, and meet weird Puei creatures.", appId: "puei-mansion", preInstalled: false },
   ];
   const community: StoreApp[] = [
-    { name: "bezosmp", icon: "/bezosmp-icon.png", desc: "A community Minecraft SMP server project. Made by bazicioschi and catotherat.", webUrl: "https://bezosmp.lovable.app", desktopLabel: "BezosMP", preInstalled: false },
+    { name: "bezosmp", icon: "/bezosmp-icon.svg", desc: "A community Minecraft SMP server project. Made by bazicioschi and catotherat.", webUrl: "https://bezosmp.lovable.app", desktopLabel: "BezosMP", preInstalled: false },
   ];
   const isInstalled = (a: StoreApp) => {
     const key = a.webUrl ? `web:${a.webUrl}` : `app:${a.appId || a.name}`;

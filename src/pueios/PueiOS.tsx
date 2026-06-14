@@ -339,16 +339,25 @@ export function PueiOS() {
     // Strip any icons with unknown appIds (stale from old versions)
     const VALID_APP_IDS = new Set(["puei-paint","puei-board","pueinet","puei-cloud-chat","puei-studio","file-explorer","settings","about","notepad","calculator","app-store","puei-social","folder","web-app","recycle-bin","chess","puei-mansion","zip-viewer","iso-viewer"]);
     loadedIcons = loadedIcons.filter((i: any) => i.webUrl || VALID_APP_IDS.has(i.appId));
-    // Fix missing iconEmoji/iconUrl on known web shortcuts
-    const knownEmojis: Record<string, string> = { "puei://films": "🎬", "puei://updates": "🔄" };
-    const knownIconUrls: Record<string, string> = { "https://bezosmp.lovable.app": "/bezosmp-icon.png" };
+    // Fix/upgrade iconUrl on known web shortcuts
+    const knownIconUrls: Record<string, string> = {
+      "https://bezosmp.lovable.app": "/bezosmp-icon.svg",
+      "puei://films": "/puei-films-icon.svg",
+      "puei://updates": "/puei-updater-icon.svg",
+    };
     loadedIcons = loadedIcons.map((i: any) => {
-      if (!i.webUrl) return i;
-      if (knownEmojis[i.webUrl] && !i.iconEmoji) return { ...i, iconEmoji: knownEmojis[i.webUrl], iconUrl: undefined };
-      if (knownIconUrls[i.webUrl] && (!i.iconUrl || i.iconUrl.includes("favicon") || i.iconEmoji === "🐞")) return { ...i, iconUrl: knownIconUrls[i.webUrl], iconEmoji: undefined };
-      return i;
+      if (!i.webUrl || !knownIconUrls[i.webUrl]) return i;
+      return { ...i, iconUrl: knownIconUrls[i.webUrl], iconEmoji: undefined };
     });
     setIcons(loadedIcons);
+    // Seed installedKeys from existing desktop icons so delete-shortcut ≠ uninstall works for all apps
+    const stored = new Set<string>(JSON.parse(localStorage.getItem("pueios2-installed-v1") || "[]") as string[]);
+    loadedIcons.forEach((i: any) => {
+      if (i.webUrl) stored.add(`web:${i.webUrl}`);
+      else if (i.appId && !i.fileId) stored.add(`app:${i.appId}`);
+    });
+    localStorage.setItem("pueios2-installed-v1", JSON.stringify([...stored]));
+    setInstalledKeys(stored);
     if (!s.installed) { setPhase("install"); return; }
     if (s.lastUser && s.remember) { setLoginUser(s.lastUser); setRemember(true); }
     else if (s.users[0]) setLoginUser(s.users[0].name);
@@ -730,18 +739,14 @@ button, a, [role="button"], select, label[for] { cursor: ${hand(c)} 6 0, pointer
         { label: "📦 Compress to ZIP", action: () => {
           const folderFiles = loadFiles().filter((f) => f.folder === icon.id);
           if (folderFiles.length === 0) { alert("This folder is empty — nothing to compress."); return; }
-          const zipName = `${icon.label}.zip`;
-          const allFiles = loadFiles();
-          const existing = allFiles.find((f) => f.name === zipName && f.type === "zip");
-          const zipId = existing?.id ?? `zip-${Date.now().toString(36)}`;
+          const zipName = `${icon.label.replace(/\.zip$/i, "")}.zip`;
+          const zipId = `zip-${Date.now().toString(36)}`;
           const zipContent = JSON.stringify(folderFiles.map((f) => f.id));
           upsertFile({ id: zipId, name: zipName, type: "zip", content: zipContent, updatedAt: Date.now(), owner: currentUser });
-          if (!existing) {
-            const iconId = `icon-${zipId}`;
-            if (!icons.some((i) => i.id === iconId)) {
-              addIcon({ id: iconId, label: zipName, appId: "zip-viewer", fileId: zipId, iconEmoji: "📦" });
-            }
-          }
+          // Transform the folder icon into a zip icon in-place (same position, no new icon)
+          setIcons((prev) => prev.map((i) => i.id === icon.id
+            ? { ...i, label: zipName, appId: "zip-viewer" as const, fileId: zipId, iconEmoji: "📦", iconUrl: undefined }
+            : i));
           blip("notify");
         }},
       ] : []),
@@ -1558,9 +1563,11 @@ button, a, [role="button"], select, label[for] { cursor: ${hand(c)} 6 0, pointer
               addNativeIcon={(appId, label, icon) => { markInstalled(`app:${appId}`); setIcons((cur) => cur.some((i) => i.appId === appId && !i.fileId && !i.webUrl) ? cur : [...cur, { id: `native-${appId}`, label, appId, iconEmoji: icon }]); }}
               installWebApp={(label, url, iconUrl) => {
                 markInstalled(`web:${url}`);
-                const pueiEmojis: Record<string, string> = { "puei://films": "🎬", "puei://updates": "🔄", "puei://social": "📣", "puei://board": "📌", "puei://search": "✨", "puei://chat": "💬" };
-                const emoji = pueiEmojis[url];
-                addIcon({ id: `web-${Date.now().toString(36)}`, label, appId: "web-app", webUrl: url, iconEmoji: emoji, iconUrl: emoji ? undefined : (iconUrl || googleFaviconFor(url, 64)) });
+                const knownIcons: Record<string, string> = { "puei://films": "/puei-films-icon.svg", "puei://updates": "/puei-updater-icon.svg", "https://bezosmp.lovable.app": "/bezosmp-icon.svg" };
+                const pueiEmojis: Record<string, string> = { "puei://social": "📣", "puei://board": "📌", "puei://search": "✨", "puei://chat": "💬" };
+                const knownUrl = knownIcons[url];
+                const emoji = !knownUrl ? pueiEmojis[url] : undefined;
+                addIcon({ id: `web-${Date.now().toString(36)}`, label, appId: "web-app", webUrl: url, iconEmoji: emoji, iconUrl: knownUrl ?? (emoji ? undefined : (iconUrl || googleFaviconFor(url, 64))) });
               }}
               installedKeys={installedKeys}
               openWebApp={(url, title) => openApp("web-app", { webUrl: url, title })}
@@ -1837,9 +1844,9 @@ button, a, [role="button"], select, label[for] { cursor: ${hand(c)} 6 0, pointer
             ["puei-mansion","Puei Mansion","👻"],
           ] as [AppId, string, string][]).map(([appId, label, icon]) => ({ id: `native-${appId}`, label, icon, kind: "native" as const, appId }))),
           ...(([
-            ["puei://films","Puei Films","🎬"],
-            ["puei://updates","Puei Updater","🔄"],
-            ["https://bezosmp.lovable.app","BezosMP","/bezosmp-icon.png"],
+            ["puei://films","Puei Films","/puei-films-icon.svg"],
+            ["puei://updates","Puei Updater","/puei-updater-icon.svg"],
+            ["https://bezosmp.lovable.app","BezosMP","/bezosmp-icon.svg"],
           ] as [string, string, string][]).map(([url, label, icon]) => ({ id: `web-${url}`, label, icon, kind: "web" as const, url }))),
         ] as any[];
 
