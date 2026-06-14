@@ -339,9 +339,15 @@ export function PueiOS() {
     // Strip any icons with unknown appIds (stale from old versions)
     const VALID_APP_IDS = new Set(["puei-paint","puei-board","pueinet","puei-cloud-chat","puei-studio","file-explorer","settings","about","notepad","calculator","app-store","puei-social","folder","web-app","recycle-bin","chess","puei-mansion","zip-viewer","iso-viewer"]);
     loadedIcons = loadedIcons.filter((i: any) => i.webUrl || VALID_APP_IDS.has(i.appId));
-    // Fix missing iconEmoji on known web shortcuts
-    const knownEmojis: Record<string, string> = { "https://bezosmp.lovable.app": "🐞", "puei://films": "🎬", "puei://updates": "🔄" };
-    loadedIcons = loadedIcons.map((i: any) => (i.webUrl && knownEmojis[i.webUrl] && !i.iconEmoji) ? { ...i, iconEmoji: knownEmojis[i.webUrl], iconUrl: undefined } : i);
+    // Fix missing iconEmoji/iconUrl on known web shortcuts
+    const knownEmojis: Record<string, string> = { "puei://films": "🎬", "puei://updates": "🔄" };
+    const knownIconUrls: Record<string, string> = { "https://bezosmp.lovable.app": "/bezosmp-icon.png" };
+    loadedIcons = loadedIcons.map((i: any) => {
+      if (!i.webUrl) return i;
+      if (knownEmojis[i.webUrl] && !i.iconEmoji) return { ...i, iconEmoji: knownEmojis[i.webUrl], iconUrl: undefined };
+      if (knownIconUrls[i.webUrl] && (!i.iconUrl || i.iconUrl.includes("favicon") || i.iconEmoji === "🐞")) return { ...i, iconUrl: knownIconUrls[i.webUrl], iconEmoji: undefined };
+      return i;
+    });
     setIcons(loadedIcons);
     if (!s.installed) { setPhase("install"); return; }
     if (s.lastUser && s.remember) { setLoginUser(s.lastUser); setRemember(true); }
@@ -1763,7 +1769,7 @@ button, a, [role="button"], select, label[for] { cursor: ${hand(c)} 6 0, pointer
           ...(([
             ["puei://films","Puei Films","🎬"],
             ["puei://updates","Puei Updater","🔄"],
-            ["https://bezosmp.lovable.app","BezosMP","🐞"],
+            ["https://bezosmp.lovable.app","BezosMP","/bezosmp-icon.png"],
           ] as [string, string, string][]).map(([url, label, icon]) => ({ id: `web-${url}`, label, icon, kind: "web" as const, url }))),
         ] as any[];
 
@@ -1774,10 +1780,11 @@ button, a, [role="button"], select, label[for] { cursor: ${hand(c)} 6 0, pointer
 
         const addShortcut = (s: any) => {
           if (isOnDesktop(s)) return;
+          const isImgUrl = typeof s.icon === "string" && (s.icon.startsWith("/") || s.icon.startsWith("http") || s.icon.startsWith("data:"));
           if (s.kind === "native") {
-            addIcon({ id: `${s.id}-${Date.now().toString(36)}`, label: s.label, appId: s.appId, iconEmoji: s.icon });
+            addIcon({ id: `${s.id}-${Date.now().toString(36)}`, label: s.label, appId: s.appId, iconEmoji: isImgUrl ? undefined : s.icon, iconUrl: isImgUrl ? s.icon : undefined });
           } else {
-            addIcon({ id: `web-${Date.now().toString(36)}`, label: s.label, appId: "web-app", webUrl: s.url, iconEmoji: s.icon });
+            addIcon({ id: `web-${Date.now().toString(36)}`, label: s.label, appId: "web-app", webUrl: s.url, iconEmoji: isImgUrl ? undefined : s.icon, iconUrl: isImgUrl ? s.icon : undefined });
           }
           blip("notify");
           setShowAddShortcut(false);
@@ -1803,7 +1810,9 @@ button, a, [role="button"], select, label[for] { cursor: ${hand(c)} 6 0, pointer
                       style={{ opacity: on ? 0.4 : 1, background: on ? "rgba(80,200,120,0.12)" : "rgba(255,255,255,0.08)" }}
                       onMouseEnter={e => { if (!on) e.currentTarget.style.background = "rgba(255,255,255,0.22)"; }}
                       onMouseLeave={e => { e.currentTarget.style.background = on ? "rgba(80,200,120,0.12)" : "rgba(255,255,255,0.08)"; }}>
-                      <span className="text-2xl">{s.icon}</span>
+                      {(s.icon.startsWith("/") || s.icon.startsWith("http") || s.icon.startsWith("data:"))
+                        ? <img src={s.icon} alt="" style={{ width: 28, height: 28, objectFit: "contain", borderRadius: 4 }} />
+                        : <span className="text-2xl">{s.icon}</span>}
                       <span className="flex-1">{s.label}</span>
                       {on ? <span className="text-xs text-green-400">✔ On desktop</span> : <span className="text-xs opacity-50">Add</span>}
                     </button>

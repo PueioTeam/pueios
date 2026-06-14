@@ -3481,7 +3481,7 @@ function AppStoreApp({ installWebApp, openApp, openWebApp, systemVersion, addNat
     { name: "Puei Mansion",  icon: "👻", desc: "Funny spooky adventure. Solve puzzles, find hidden secrets, and meet weird Puei creatures.", appId: "puei-mansion", preInstalled: false },
   ];
   const community: StoreApp[] = [
-    { name: "bezosmp", icon: "🐞", desc: "A community Minecraft SMP server project. Made by bazicioschi and catotherat.", webUrl: "https://bezosmp.lovable.app", desktopLabel: "bezosmp", preInstalled: false },
+    { name: "bezosmp", icon: "/bezosmp-icon.png", desc: "A community Minecraft SMP server project. Made by bazicioschi and catotherat.", webUrl: "https://bezosmp.lovable.app", desktopLabel: "BezosMP", preInstalled: false },
   ];
   const isInstalled = (a: StoreApp) => {
     const key = a.webUrl ? `web:${a.webUrl}` : `app:${a.appId || a.name}`;
@@ -3550,7 +3550,11 @@ function AppStoreApp({ installWebApp, openApp, openWebApp, systemVersion, addNat
                 const isInstalling2 = installPct !== undefined;
                 return (
                   <div key={a.name} className="aero-glass-light rounded-lg p-3 flex flex-col">
-                    <div className="text-3xl mb-2">{a.icon}</div>
+                    <div className="mb-2">
+                      {a.icon.startsWith("/") || a.icon.startsWith("http") || a.icon.startsWith("data:")
+                        ? <img src={a.icon} alt={a.name} style={{ width: 48, height: 48, objectFit: "contain", borderRadius: 8 }} />
+                        : <div className="text-3xl">{a.icon}</div>}
+                    </div>
                     <div className="font-semibold text-sm">{a.name}</div>
                     <div className="text-xs opacity-60 mt-1 flex-1">{a.desc}</div>
                     <div className="flex flex-col gap-1 mt-2">
@@ -3558,7 +3562,7 @@ function AppStoreApp({ installWebApp, openApp, openWebApp, systemVersion, addNat
                         <button className="aero-button rounded px-2 py-1 text-xs w-full"
                           disabled={isInstalling2}
                           onClick={() => !isInstalling2 && beginInstall(installKey, () => {
-                            if (a.webUrl) installWebApp(a.desktopLabel || a.name, a.webUrl);
+                            if (a.webUrl) installWebApp(a.desktopLabel || a.name, a.webUrl, a.icon.startsWith("/") || a.icon.startsWith("http") ? a.icon : undefined);
                           })}>
                           {isInstalling2 ? `${Math.round(installPct!)}%` : "⬇ Install"}
                         </button>
@@ -3566,7 +3570,7 @@ function AppStoreApp({ installWebApp, openApp, openWebApp, systemVersion, addNat
                         <>
                           {!onDesktop && (
                             <button className="aero-button rounded px-2 py-1 text-xs w-full"
-                              onClick={() => { if (a.webUrl) installWebApp(a.desktopLabel || a.name, a.webUrl); blip("notify"); }}>
+                              onClick={() => { if (a.webUrl) installWebApp(a.desktopLabel || a.name, a.webUrl, a.icon.startsWith("/") || a.icon.startsWith("http") ? a.icon : undefined); blip("notify"); }}>
                               + Add to desktop
                             </button>
                           )}
