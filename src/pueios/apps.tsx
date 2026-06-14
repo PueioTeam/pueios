@@ -58,7 +58,7 @@ export function AppRenderer(p: AppRendererProps) {
     case "app-store": return <AppStoreApp installWebApp={p.installWebApp} openApp={p.openApp} openWebApp={p.openWebApp} systemVersion={p.systemVersion} addNativeIcon={p.addNativeIcon} uninstallApp={p.uninstallApp} uninstallWebApp={p.uninstallWebApp} icons={p.icons} installedKeys={p.installedKeys} />;
     case "puei-social": return <PueiSocialApp user={p.currentUser} users={p.users} />;
     case "folder": return <FolderApp folderIconId={p.folderIconId!} icons={p.icons} openApp={p.openApp} openWebApp={p.openWebApp} />;
-    case "web-app": return <WebAppFrame url={p.webUrl!} currentUser={p.currentUser} startUpgrade={p.startUpgrade} />;
+    case "web-app": return <WebAppFrame url={p.webUrl!} currentUser={p.currentUser} startUpgrade={p.startUpgrade} systemVersion={p.systemVersion} />;
     case "recycle-bin": return <RecycleBinApp />;
     case "chess": return <ChessApp />;
     case "puei-mansion": return <PueiMansionApp />;
@@ -4084,9 +4084,9 @@ function FolderApp({ folderIconId, icons, openApp, openWebApp }: {
 }
 
 // ---------- Web App frame ----------
-function WebAppFrame({ url, currentUser, startUpgrade }: { url: string; currentUser: string; startUpgrade: (target: SystemVersion) => void }) {
+function WebAppFrame({ url, currentUser, startUpgrade, systemVersion }: { url: string; currentUser: string; startUpgrade: (target: SystemVersion) => void; systemVersion?: SystemVersion }) {
   if (url === "puei://updates") {
-    return <PueiUpdaterApp currentUser={currentUser} startUpgrade={startUpgrade} />;
+    return <PueiUpdaterApp currentUser={currentUser} startUpgrade={startUpgrade} systemVersion={systemVersion} />;
   }
   return (
     <div className="flex flex-col h-full">
@@ -4101,7 +4101,7 @@ function WebAppFrame({ url, currentUser, startUpgrade }: { url: string; currentU
   );
 }
 
-function PueiUpdaterApp({ currentUser, startUpgrade }: { currentUser: string; startUpgrade: (target: SystemVersion) => void }) {
+function PueiUpdaterApp({ currentUser, startUpgrade, systemVersion }: { currentUser: string; startUpgrade: (target: SystemVersion) => void; systemVersion?: SystemVersion }) {
   const [eolMsg, setEolMsg] = useState<string | null>(null);
   const [filesVersion, setFilesVersion] = useState(0);
   const [draggingIsoId, setDraggingIsoId] = useState<string | null>(null);
@@ -4225,26 +4225,35 @@ function PueiUpdaterApp({ currentUser, startUpgrade }: { currentUser: string; st
 
         {/* Version list */}
         <div className="space-y-2">
-          {versions.map(({ v, desc, eol }) => (
-            <div key={v} className="aero-glass-light rounded-xl p-4 flex items-center justify-between gap-4">
+          {versions.map(({ v, desc, eol }) => {
+            const isCurrent = v === systemVersion;
+            return (
+            <div key={v} className="aero-glass-light rounded-xl p-4 flex items-center justify-between gap-4"
+              style={{ opacity: isCurrent ? 1 : undefined, border: isCurrent ? "1px solid rgba(80,200,120,0.5)" : undefined }}>
               <div>
                 <div className="font-semibold flex items-center gap-2">
                   {v}
-                  {eol && <span className="text-[10px] rounded px-1.5 py-0.5 font-normal" style={{ background: "rgba(220,50,50,0.2)", color: "#f87171" }}>End of Life</span>}
+                  {isCurrent && <span className="text-[10px] rounded px-1.5 py-0.5 font-normal" style={{ background: "rgba(80,200,120,0.2)", color: "#4ade80" }}>✔ Installed</span>}
+                  {!isCurrent && eol && <span className="text-[10px] rounded px-1.5 py-0.5 font-normal" style={{ background: "rgba(220,50,50,0.2)", color: "#f87171" }}>End of Life</span>}
                 </div>
                 <div className="text-xs opacity-70 mt-0.5">{desc}</div>
               </div>
-              <button
-                className="aero-button rounded-lg px-4 py-2 text-sm flex-shrink-0"
-                onClick={() => {
-                  if (eol) { setEolMsg(`As of June 6th, ${v} is no longer supported. Please install PueiOS 3 instead.`); return; }
-                  setEolMsg(null);
-                  startUpgrade(v);
-                }}>
-                {eol ? "Info" : "Install →"}
-              </button>
+              {isCurrent ? (
+                <span className="text-xs opacity-50 flex-shrink-0">Current version</span>
+              ) : (
+                <button
+                  className="aero-button rounded-lg px-4 py-2 text-sm flex-shrink-0"
+                  onClick={() => {
+                    if (eol) { setEolMsg(`As of June 6th, ${v} is no longer supported. Please install PueiOS 3 instead.`); return; }
+                    setEolMsg(null);
+                    startUpgrade(v);
+                  }}>
+                  {eol ? "Info" : "Install →"}
+                </button>
+              )}
             </div>
-          ))}
+            );
+          })}
         </div>
 
         {eolMsg && (

@@ -140,6 +140,9 @@ export function PueiOS() {
   const pendingUpdateNotif = useRef(false);
   const upgradeFinishQueued = useRef(false);
     const startSystemUpgrade = (target: SystemVersion) => {
+      // Push current state to cloud immediately so deletions aren't restored on re-login after upgrade
+      const u = users.find((x) => x.name === currentUser);
+      if (u) schedulePush(u, 0);
       setUpgradeTarget(target);
       setUpgradeProgress(0);
       setUpgradeStartedAt(Date.now());
@@ -339,7 +342,7 @@ export function PueiOS() {
     // Strip any icons with unknown appIds (stale from old versions)
     const VALID_APP_IDS = new Set(["puei-paint","puei-board","pueinet","puei-cloud-chat","puei-studio","file-explorer","settings","about","notepad","calculator","app-store","puei-social","folder","web-app","recycle-bin","chess","puei-mansion","zip-viewer","iso-viewer"]);
     loadedIcons = loadedIcons.filter((i: any) => i.webUrl || VALID_APP_IDS.has(i.appId));
-    // Fix/upgrade iconUrl on known web shortcuts
+    // Always enforce correct iconUrl for known shortcuts (overwrite any stale emoji or wrong url)
     const knownIconUrls: Record<string, string> = {
       "https://bezosmp.lovable.app": "/bezosmp-icon.svg",
       "puei://films": "/puei-films-icon.svg",
@@ -347,7 +350,8 @@ export function PueiOS() {
     };
     loadedIcons = loadedIcons.map((i: any) => {
       if (!i.webUrl || !knownIconUrls[i.webUrl]) return i;
-      return { ...i, iconUrl: knownIconUrls[i.webUrl], iconEmoji: undefined };
+      const { iconEmoji: _e, ...rest } = i;
+      return { ...rest, iconUrl: knownIconUrls[i.webUrl] };
     });
     setIcons(loadedIcons);
     // Seed installedKeys from existing desktop icons so delete-shortcut ≠ uninstall works for all apps
@@ -705,7 +709,8 @@ button, a, [role="button"], select, label[for] { cursor: ${hand(c)} 6 0, pointer
         const n = prompt("Rename to:", icon.label);
         if (n) setIcons(icons.map((i) => i.id === icon.id ? { ...i, label: n } : i));
       }},
-      { label: "🗑️ Delete shortcut", action: () => {
+      { label: "🗑️ Delete shortcut", disabled: (["file-explorer","settings","recycle-bin"] as string[]).includes(icon.appId), action: () => {
+        if ((["file-explorer","settings","recycle-bin"] as string[]).includes(icon.appId)) return;
         if (icon.appId === "folder") {
           const allFiles = loadFiles();
           saveFiles(allFiles.map((file) => file.folder === icon.id ? { ...file, folder: undefined } : file));
@@ -727,6 +732,27 @@ button, a, [role="button"], select, label[for] { cursor: ${hand(c)} 6 0, pointer
           entries.forEach((f: any) => upsertFile({ ...f, folder: undefined, updatedAt: Date.now() }));
           blip("notify");
           pushNotif("📂 Extracted", `${entries.length} file${entries.length !== 1 ? "s" : ""} placed in Files.`);
+        }},
+        { label: "📁 Decompress to Folder", action: () => {
+          const zipFile = loadFiles().find((f) => f.id === icon.fileId);
+          if (!zipFile) return;
+          let fileIds: string[] = [];
+          try { fileIds = JSON.parse(zipFile.content) as string[]; } catch {}
+          const folderName = icon.label.replace(/\.zip$/i, "");
+          const folderId = `folder-${Date.now().toString(36)}`;
+          // Create a folder icon in-place (replace the zip icon)
+          setIcons((prev) => prev.map((i) => i.id === icon.id
+            ? { ...i, label: folderName, appId: "folder" as const, fileId: undefined, iconEmoji: undefined, iconUrl: undefined }
+            : i));
+          // Move all zip contents into the new folder
+          const allFiles = loadFiles();
+          fileIds.forEach((id) => {
+            const f = allFiles.find((x) => x.id === id);
+            if (f) upsertFile({ ...f, folder: folderId, updatedAt: Date.now() });
+          });
+          // Rename the icon to use the new folderId as its id (update icon id to folderId)
+          setIcons((prev) => prev.map((i) => i.id === icon.id ? { ...i, id: folderId } : i));
+          blip("notify");
         }},
       ] : []),
       ...(icon.appId === "folder" ? [
