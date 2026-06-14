@@ -1174,13 +1174,16 @@ button, a, [role="button"], select, label[for] { cursor: ${hand(c)} 6 0, pointer
           applySnapshot(remote.snapshot);
           const s = loadState();
           setUsers(s.users); setThemeState(s.theme); setIcons(s.icons);
+        } else {
+          // No snapshot but valid login — still drop Guest from local list
+          setUsers((cur) => cur.filter((u) => u.name !== "Guest"));
         }
         enterDesktop(name); return;
       }
       // Cloud said not-found OR network error → fall back to local auth.
       const u = users.find((x) => x.name === name);
       if (!u) { blip("error"); setPwError(remote.status === "not-found" ? "No PueiOS account with that name" : "Unknown user"); return; }
-      if ((u.password ?? "") === pwInput) { unmarkUserDeleted(name); enterDesktop(name); }
+      if ((u.password ?? "") === pwInput) { unmarkUserDeleted(name); setUsers((cur) => cur.filter((x) => x.name !== "Guest" || x.name === name)); enterDesktop(name); }
       else { blip("error"); setPwError("Wrong password"); }
     };
     const switchToAccount = async () => {
@@ -1200,7 +1203,7 @@ button, a, [role="button"], select, label[for] { cursor: ${hand(c)} 6 0, pointer
     const createAccount = async () => {
       const name = newAcc.name.trim();
       if (!name) { setPwError("Enter an account name"); return; }
-      if (users.some((u) => u.name === name)) { setPwError("Name already exists locally"); return; }
+      if (users.some((u) => u.name === name && u.name !== "Guest")) { setPwError("Name already exists locally"); return; }
       // Clear deleted flag so this fresh account isn't blocked by a previous deletion of the same name
       try {
         const deleted: string[] = JSON.parse(localStorage.getItem("pueios2-deleted-users-v1") || "[]");

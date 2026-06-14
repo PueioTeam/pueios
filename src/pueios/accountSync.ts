@@ -105,8 +105,8 @@ export function applySnapshot(snap: AccountSnapshot) {
   // State (theme, icons, users entry)
   try {
     const cur = readJSON<{ users?: User[]; installed?: boolean; systemVersion?: string; theme?: Theme; icons?: DesktopIcon[] }>(LS.state, {});
-    // Never restore users that were deleted on this device
-    const users = Array.isArray(cur.users) ? cur.users.filter((u) => u.name !== name && !isUserDeleted(u.name)) : [];
+    // Never restore users that were deleted on this device; also drop Guest (temp account)
+    const users = Array.isArray(cur.users) ? cur.users.filter((u) => u.name !== name && u.name !== "Guest" && !isUserDeleted(u.name)) : [];
     users.push(snap.user);
     writeJSON(LS.state, {
       ...cur,
