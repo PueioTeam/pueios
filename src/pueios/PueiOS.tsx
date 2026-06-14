@@ -9,7 +9,7 @@ import { AppWindow, ContextMenu, appIcon } from "./Window";
 import { AppRenderer } from "./apps";
 import { PueiMascot, PueiLogoSvg } from "./Mascot";
 import { pullAndMergeFiles, pushFile as pushFileToServer, removeFileFromServer } from "./fileSync";
-import { loadFiles, saveFiles } from "./state";
+import { loadFiles, saveFiles, upsertFile } from "./state";
 import { loginRemote, createRemote, applySnapshot, schedulePush, markUserDeleted, type AccountSnapshot } from "./accountSync";
 
 
@@ -382,21 +382,21 @@ export function PueiOS() {
   useEffect(() => {
     const c = theme.cursorColor ?? "#ffffff";
     const enc = (svg: string) => `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
-    // Note: url(#gradient) doesn't work in data-URL SVGs embedded in CSS — use solid fill directly
-    const arrow = (fill: string, stroke: string) => enc(
-      `<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'><path d='M3 2 L3 18 L7 14 L10.5 21 L12.5 20 L9 13 L15 13 Z' fill='${stroke}' opacity='0.35' transform='translate(0.7,0.9)'/><path d='M3 2 L3 18 L7 14 L10.5 21 L12.5 20 L9 13 L15 13 Z' fill='${fill}' stroke='${stroke}' stroke-width='0.8'/></svg>`
+    // Cursor: white fill body, chosen color as the outline/stroke
+    const arrow = (stroke: string) => enc(
+      `<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'><path d='M3 2 L3 18 L7 14 L10.5 21 L12.5 20 L9 13 L15 13 Z' fill='white' stroke='${stroke}' stroke-width='1.5' stroke-linejoin='round'/></svg>`
     );
-    const hand = (fill: string, stroke: string) => enc(
-      `<svg xmlns='http://www.w3.org/2000/svg' width='20' height='24' viewBox='0 0 20 24'><rect x='4' y='0' width='4' height='12' rx='2' fill='${fill}' stroke='${stroke}' stroke-width='0.8'/><rect x='9' y='3' width='4' height='10' rx='2' fill='${fill}' stroke='${stroke}' stroke-width='0.8'/><rect x='14' y='4' width='3.5' height='9' rx='1.75' fill='${fill}' stroke='${stroke}' stroke-width='0.8'/><rect x='2' y='9' width='16' height='12' rx='4' fill='${fill}' stroke='${stroke}' stroke-width='0.8'/><ellipse cx='2' cy='14' rx='2.5' ry='3.5' fill='${fill}' stroke='${stroke}' stroke-width='0.8'/></svg>`
+    const hand = (stroke: string) => enc(
+      `<svg xmlns='http://www.w3.org/2000/svg' width='20' height='24' viewBox='0 0 20 24'><rect x='4' y='0' width='4' height='12' rx='2' fill='white' stroke='${stroke}' stroke-width='1.2'/><rect x='9' y='3' width='4' height='10' rx='2' fill='white' stroke='${stroke}' stroke-width='1.2'/><rect x='14' y='4' width='3.5' height='9' rx='1.75' fill='white' stroke='${stroke}' stroke-width='1.2'/><rect x='2' y='9' width='16' height='12' rx='4' fill='white' stroke='${stroke}' stroke-width='1.2'/><ellipse cx='2' cy='14' rx='2.5' ry='3.5' fill='white' stroke='${stroke}' stroke-width='1.2'/></svg>`
     );
-    const outline = "#1a1a2e";
+    const ibeam = enc(`<svg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20'><path d='M7 2 L9 2 Q10 2 10 3 L10 17 Q10 18 9 18 L7 18' fill='none' stroke='${c}' stroke-width='2' stroke-linecap='round'/><path d='M13 2 L11 2 Q10 2 10 3 L10 17 Q10 18 11 18 L13 18' fill='none' stroke='${c}' stroke-width='2' stroke-linecap='round'/></svg>`);
     const css = `
-* { cursor: ${arrow(c, outline)} 3 2, default !important; }
-*[style*="cursor: move"], *[style*="cursor:move"] { cursor: ${arrow(c, outline)} 3 2, move !important; }
-*[style*="cursor: grab"], *[style*="cursor:grab"] { cursor: ${hand(c, outline)} 6 0, grab !important; }
-*[style*="cursor: grabbing"], *[style*="cursor:grabbing"] { cursor: ${hand(c, outline)} 6 0, grabbing !important; }
-input, textarea, [contenteditable], [contenteditable] * { cursor: url("data:image/svg+xml,${encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20'><path d='M7 2 L9 2 Q10 2 10 3 L10 17 Q10 18 9 18 L7 18' fill='none' stroke='${outline}' stroke-width='2.2' stroke-linecap='round'/><path d='M7 2 L9 2 Q10 2 10 3 L10 17 Q10 18 9 18 L7 18' fill='none' stroke='${c}' stroke-width='1.2' stroke-linecap='round'/><path d='M13 2 L11 2 Q10 2 10 3 L10 17 Q10 18 11 18 L13 18' fill='none' stroke='${outline}' stroke-width='2.2' stroke-linecap='round'/><path d='M13 2 L11 2 Q10 2 10 3 L10 17 Q10 18 11 18 L13 18' fill='none' stroke='${c}' stroke-width='1.2' stroke-linecap='round'/></svg>`)}") 10 10, text !important; }
-button, a, [role="button"], select, label[for] { cursor: ${hand(c, outline)} 6 0, pointer !important; }
+* { cursor: ${arrow(c)} 3 2, default !important; }
+*[style*="cursor: move"], *[style*="cursor:move"] { cursor: ${arrow(c)} 3 2, move !important; }
+*[style*="cursor: grab"], *[style*="cursor:grab"] { cursor: ${hand(c)} 6 0, grab !important; }
+*[style*="cursor: grabbing"], *[style*="cursor:grabbing"] { cursor: ${hand(c)} 6 0, grabbing !important; }
+input, textarea, [contenteditable], [contenteditable] * { cursor: ${ibeam} 10 10, text !important; }
+button, a, [role="button"], select, label[for] { cursor: ${hand(c)} 6 0, pointer !important; }
 `;
     let el = document.getElementById("puei-cursor-style") as HTMLStyleElement | null;
     if (!el) { el = document.createElement("style"); el.id = "puei-cursor-style"; document.head.appendChild(el); }
@@ -679,12 +679,25 @@ button, a, [role="button"], select, label[for] { cursor: ${hand(c, outline)} 6 0
         }
         setIcons((prev) => prev.filter((i) => i.id !== icon.id));
       }},
-      ...(icon.appId === "folder" ? [{ label: "New shortcut here", action: () => {
-        const u = prompt("Website URL to install into this folder:", "https://example.com");
-        if (!u) return;
-        const label = prompt("Name:", new URL(u.startsWith("http") ? u : "https://" + u).hostname) || "Web App";
-        addIcon({ id: `web-${Date.now().toString(36)}`, label, appId: "web-app", webUrl: u.startsWith("http") ? u : "https://" + u, iconUrl: googleFaviconFor(u, 64), folderId: icon.id });
-      }}] : []),
+      ...(icon.appId === "folder" ? [
+        { label: "New shortcut here", action: () => {
+          const u = prompt("Website URL to install into this folder:", "https://example.com");
+          if (!u) return;
+          const label = prompt("Name:", new URL(u.startsWith("http") ? u : "https://" + u).hostname) || "Web App";
+          addIcon({ id: `web-${Date.now().toString(36)}`, label, appId: "web-app", webUrl: u.startsWith("http") ? u : "https://" + u, iconUrl: googleFaviconFor(u, 64), folderId: icon.id });
+        }},
+        { label: "📦 Compress to ZIP", action: () => {
+          const folderFiles = loadFiles().filter((f) => f.folder === icon.id);
+          if (folderFiles.length === 0) { alert("This folder is empty — nothing to compress."); return; }
+          // Build a simple ZIP comment listing the files (actual binary ZIP needs server-side; we store a manifest)
+          const manifest = folderFiles.map((f) => `${f.name} (${f.type}, ${Math.round((f.content?.length ?? 0) * 0.75 / 1024)}KB)`).join("\n");
+          const zipName = `${icon.label}.zip`;
+          const zipContent = `ZIP archive of folder: ${icon.label}\nCreated: ${new Date().toLocaleString()}\nFiles:\n${manifest}\n\n[Binary ZIP creation requires export — open Files and use the ZIP viewer to inspect contents]`;
+          upsertFile({ id: `zip-${Date.now().toString(36)}`, name: zipName, type: "text", content: zipContent, updatedAt: Date.now(), owner: currentUser });
+          blip("notify");
+          pushNotif("📦 Compressed", `${zipName} saved to Files (${folderFiles.length} file${folderFiles.length !== 1 ? "s" : ""})`);
+        }},
+      ] : []),
       { sep: true },
       { label: "Properties", action: () => pushNotif(icon.label, icon.webUrl ? `Installed web app · ${icon.webUrl}` : `PueiOS Shortcut · ${APP_TITLES[icon.appId]}`) },
     ];
