@@ -4089,10 +4089,27 @@ function FolderApp({ folderIconId, icons, openApp, openWebApp }: {
 }
 
 // ---------- Web App frame ----------
+// Sites that work fine directly in an iframe (allow-listed)
+const DIRECT_IFRAME_HOSTS = new Set([
+  "youtube.com", "www.youtube.com",
+  "bezosmp.lovable.app",
+]);
+
+function proxyUrl(url: string): string {
+  try {
+    const { hostname } = new URL(url);
+    if (DIRECT_IFRAME_HOSTS.has(hostname)) return url;
+  } catch {
+    return url;
+  }
+  return `/api/proxy?url=${encodeURIComponent(url)}`;
+}
+
 function WebAppFrame({ url, currentUser, startUpgrade, systemVersion }: { url: string; currentUser: string; startUpgrade: (target: SystemVersion) => void; systemVersion?: SystemVersion }) {
   if (url === "puei://updates") {
     return <PueiUpdaterApp currentUser={currentUser} startUpgrade={startUpgrade} systemVersion={systemVersion} />;
   }
+  const src = url.startsWith("http") ? proxyUrl(url) : url;
   return (
     <div className="flex flex-col h-full">
       <div className="aero-titlebar text-xs px-3 py-1 flex items-center gap-2">
@@ -4100,7 +4117,7 @@ function WebAppFrame({ url, currentUser, startUpgrade, systemVersion }: { url: s
         <span className="truncate flex-1">{url}</span>
       </div>
       <div className="flex-1 relative panel-light">
-        <iframe src={url} title={url} className="w-full h-full border-0" allow="fullscreen" />
+        <iframe src={src} title={url} className="w-full h-full border-0" allow="fullscreen" />
       </div>
     </div>
   );
