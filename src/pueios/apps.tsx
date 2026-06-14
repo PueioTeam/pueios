@@ -1309,33 +1309,24 @@ function PueiCopilotPage() {
 }
 
 function PueiNetIframe({ url, hostname }: { url: string; hostname: string }) {
-  const [failed, setFailed] = useState(false);
-  useEffect(() => { setFailed(false); }, [url]);
-  if (failed) {
-    return (
-      <div className="flex flex-col items-center justify-center h-full gap-4 text-center px-8">
-        <div className="text-4xl">🌍</div>
-        <div className="font-semibold text-base">{hostname}</div>
-        <div className="text-sm opacity-70">{hostname} blocks embedding inside other apps.</div>
-        <button className="aero-button rounded-lg px-5 py-2 text-sm font-semibold"
-          onClick={() => window.open(url, "_blank")}>Open {hostname} in browser ↗</button>
-      </div>
-    );
-  }
+  const [loaded, setLoaded] = useState(false);
+  useEffect(() => { setLoaded(false); }, [url]);
   return (
-    <iframe
-      src={url}
-      title={hostname}
-      className="w-full h-full border-0"
-      sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
-      onError={() => setFailed(true)}
-      onLoad={(e) => {
-        try {
-          const doc = (e.target as HTMLIFrameElement).contentDocument;
-          if (!doc) setFailed(true);
-        } catch { setFailed(true); }
-      }}
-    />
+    <div style={{ position: "relative", width: "100%", height: "100%" }}>
+      {!loaded && (
+        <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 8, opacity: 0.5 }}>
+          <div style={{ fontSize: 32 }}>🌍</div>
+          <div style={{ fontSize: 13 }}>Loading {hostname}…</div>
+        </div>
+      )}
+      <iframe
+        src={url}
+        title={hostname}
+        style={{ width: "100%", height: "100%", border: "none", opacity: loaded ? 1 : 0, transition: "opacity 0.3s" }}
+        allow="fullscreen; autoplay; camera; microphone"
+        onLoad={() => setLoaded(true)}
+      />
+    </div>
   );
 }
 
@@ -3470,7 +3461,7 @@ function AppStoreApp({ installWebApp, openApp, openWebApp, systemVersion, addNat
   type StoreApp = { name: string; icon: string; desc: string; appId?: AppId; preInstalled?: boolean; webUrl?: string; desktopLabel?: string };
   const official: StoreApp[] = [
     { name: "Puei Films",     icon: "🎬", desc: "Watch official videos posted by pueioficial.",   webUrl: "puei://films",  desktopLabel: "Puei Films",   preInstalled: false },
-    { name: "Puei Updater",   icon: "⬆️", desc: "Required for installing ISO system updates.",           webUrl: "puei://updates", desktopLabel: "Puei Updater", preInstalled: false },
+    { name: "Puei Updater",   icon: "🔄", desc: "Required for installing ISO system updates.",           webUrl: "puei://updates", desktopLabel: "Puei Updater", preInstalled: false },
     { name: "PueiSocial",     icon: "📢", desc: "The official PueiOS social network.",          appId: "puei-social",    preInstalled: true },
     { name: "PueiCloudChat",  icon: "💬", desc: "Chat by PueiNumber — cross-device, real-time.", appId: "puei-cloud-chat", preInstalled: true },
     { name: "Puei Studio",    icon: "🪽", desc: "Create wallpapers, icons, themes and share to PueiSocial.", appId: "puei-studio", preInstalled: true },
@@ -4053,13 +4044,9 @@ function FolderApp({ folderIconId, icons, openApp, openWebApp }: {
 
 // ---------- Web App frame ----------
 function WebAppFrame({ url, currentUser, startUpgrade }: { url: string; currentUser: string; startUpgrade: (target: SystemVersion) => void }) {
-  const [failed, setFailed] = useState(false);
-  useEffect(() => { setFailed(false); }, [url]);
   if (url === "puei://updates") {
     return <PueiUpdaterApp currentUser={currentUser} startUpgrade={startUpgrade} />;
   }
-  let hostname = "";
-  try { hostname = new URL(url.startsWith("http") ? url : "https://" + url).hostname; } catch {}
   return (
     <div className="flex flex-col h-full">
       <div className="aero-titlebar text-xs px-3 py-1 flex items-center gap-2">
@@ -4067,20 +4054,7 @@ function WebAppFrame({ url, currentUser, startUpgrade }: { url: string; currentU
         <span className="truncate flex-1">{url}</span>
       </div>
       <div className="flex-1 relative panel-light">
-        {failed ? (
-          <div className="flex flex-col items-center justify-center h-full gap-4 text-center px-8">
-            <div className="text-4xl">🌍</div>
-            <div className="font-semibold text-base">{hostname}</div>
-            <div className="text-sm opacity-70">{hostname} can't be shown inside PueiOS.</div>
-          </div>
-        ) : (
-          <iframe src={url} title={url} className="w-full h-full border-0"
-            sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
-            onError={() => setFailed(true)}
-            onLoad={(e) => {
-              try { if (!(e.target as HTMLIFrameElement).contentDocument) setFailed(true); } catch { setFailed(true); }
-            }} />
-        )}
+        <iframe src={url} title={url} className="w-full h-full border-0" allow="fullscreen" />
       </div>
     </div>
   );
@@ -4343,6 +4317,16 @@ function PueiUpdaterApp({ currentUser, startUpgrade }: { currentUser: string; st
               </div>
             )}
           </div>
+        </div>
+
+        {/* Pueio Reverse */}
+        <div className="aero-glass-light rounded-xl p-4 space-y-2">
+          <div className="flex items-center gap-2">
+            <span className="font-semibold">🔄 Pueio Reverse</span>
+            <span className="text-xs px-2 py-0.5 rounded" style={{ background: "rgba(120,40,200,0.25)", color: "#c084fc" }}>Legacy</span>
+          </div>
+          <p className="text-xs opacity-70">Pueio Reverse lets you load ISOs whose support has ended. The system shows an end-of-support warning before booting.</p>
+          <p className="text-xs opacity-50">To use: open any ISO file from Files and click "Boot with Pueio Reverse".</p>
         </div>
       </div>
     </div>

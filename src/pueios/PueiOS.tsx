@@ -381,16 +381,14 @@ export function PueiOS() {
 
   useEffect(() => {
     const c = theme.cursorColor ?? "#ffffff";
-    // Use a unique gradient ID based on the color to prevent browser SVG gradient caching issues
-    const gid = "cg" + c.replace("#", "");
     const enc = (svg: string) => `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
+    // Note: url(#gradient) doesn't work in data-URL SVGs embedded in CSS — use solid fill directly
     const arrow = (fill: string, stroke: string) => enc(
-      `<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'><defs><linearGradient id='${gid}a' x1='0.2' y1='0' x2='0.8' y2='1'><stop offset='0%' stop-color='${fill}'/><stop offset='50%' stop-color='${fill}cc'/><stop offset='100%' stop-color='${fill}99'/></linearGradient></defs><path d='M3 2 L3 18 L7 14 L10.5 21 L12.5 20 L9 13 L15 13 Z' fill='${stroke}' opacity='0.4' transform='translate(0.7,0.9)'/><path d='M3 2 L3 18 L7 14 L10.5 21 L12.5 20 L9 13 L15 13 Z' fill='url(#${gid}a)' stroke='${stroke}' stroke-width='0.7'/></svg>`
+      `<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'><path d='M3 2 L3 18 L7 14 L10.5 21 L12.5 20 L9 13 L15 13 Z' fill='${stroke}' opacity='0.35' transform='translate(0.7,0.9)'/><path d='M3 2 L3 18 L7 14 L10.5 21 L12.5 20 L9 13 L15 13 Z' fill='${fill}' stroke='${stroke}' stroke-width='0.8'/></svg>`
     );
     const hand = (fill: string, stroke: string) => enc(
-      `<svg xmlns='http://www.w3.org/2000/svg' width='20' height='24' viewBox='0 0 20 24'><defs><linearGradient id='${gid}h' x1='0' y1='0' x2='0.4' y2='1'><stop offset='0%' stop-color='${fill}'/><stop offset='100%' stop-color='${fill}cc'/></linearGradient></defs><rect x='4' y='0' width='4' height='12' rx='2' fill='url(#${gid}h)' stroke='${stroke}' stroke-width='0.8'/><rect x='9' y='3' width='4' height='10' rx='2' fill='url(#${gid}h)' stroke='${stroke}' stroke-width='0.8'/><rect x='14' y='4' width='3.5' height='9' rx='1.75' fill='url(#${gid}h)' stroke='${stroke}' stroke-width='0.8'/><rect x='2' y='9' width='16' height='12' rx='4' fill='url(#${gid}h)' stroke='${stroke}' stroke-width='0.8'/><ellipse cx='2' cy='14' rx='2.5' ry='3.5' fill='url(#${gid}h)' stroke='${stroke}' stroke-width='0.8'/><rect x='5' y='1' width='2' height='5' rx='1' fill='white' opacity='0.5'/></svg>`
+      `<svg xmlns='http://www.w3.org/2000/svg' width='20' height='24' viewBox='0 0 20 24'><rect x='4' y='0' width='4' height='12' rx='2' fill='${fill}' stroke='${stroke}' stroke-width='0.8'/><rect x='9' y='3' width='4' height='10' rx='2' fill='${fill}' stroke='${stroke}' stroke-width='0.8'/><rect x='14' y='4' width='3.5' height='9' rx='1.75' fill='${fill}' stroke='${stroke}' stroke-width='0.8'/><rect x='2' y='9' width='16' height='12' rx='4' fill='${fill}' stroke='${stroke}' stroke-width='0.8'/><ellipse cx='2' cy='14' rx='2.5' ry='3.5' fill='${fill}' stroke='${stroke}' stroke-width='0.8'/></svg>`
     );
-    // Dark outline for contrast regardless of cursor color
     const outline = "#1a1a2e";
     const css = `
 * { cursor: ${arrow(c, outline)} 3 2, default !important; }
@@ -1713,7 +1711,8 @@ button, a, [role="button"], select, label[for] { cursor: ${hand(c, outline)} 6 0
           ] as [AppId, string, string][]).map(([appId, label, icon]) => ({ id: `native-${appId}`, label, icon, kind: "native" as const, appId }))),
           ...(([
             ["puei://films","Puei Films","🎬"],
-            ["puei://updates","Puei Updater","⬆️"],
+            ["puei://updates","Puei Updater","🔄"],
+            ["https://bezosmp.lovable.app","BezosMP","🐞"],
           ] as [string, string, string][]).map(([url, label, icon]) => ({ id: `web-${url}`, label, icon, kind: "web" as const, url }))),
         ] as any[];
 
