@@ -358,28 +358,29 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, curren
                   {/* Arrow preview */}
                   <div className="flex flex-col items-center gap-2">
                     <svg width="32" height="32" viewBox="0 0 24 24">
-                      <defs><linearGradient id="cprev" x1="0.2" y1="0" x2="0.8" y2="1">
-                        <stop offset="0%" stopColor={theme.cursorColor ?? "#ffffff"} />
-                        <stop offset="100%" stopColor={(theme.cursorColor ?? "#ffffff") + "99"} />
-                      </linearGradient></defs>
-                      <path d="M3 2 L3 18 L7 14 L10.5 21 L12.5 20 L9 13 L15 13 Z" fill="url(#cprev)" stroke={(theme.cursorColor ?? "#ffffff") + "aa"} strokeWidth="0.7" />
+                      <path d="M3 2 L3 18 L7 14 L10.5 21 L12.5 20 L9 13 L15 13 Z" fill="white" stroke={theme.cursorColor ?? "#ffffff"} strokeWidth="1.5" strokeLinejoin="round" />
                     </svg>
                     <span className="text-xs opacity-60">Arrow</span>
                   </div>
                   {/* Hand preview */}
                   <div className="flex flex-col items-center gap-2">
                     <svg width="28" height="32" viewBox="0 0 20 24">
-                      <defs><linearGradient id="hprev" x1="0" y1="0" x2="0.4" y2="1">
-                        <stop offset="0%" stopColor={theme.cursorColor ?? "#ffffff"} />
-                        <stop offset="100%" stopColor={(theme.cursorColor ?? "#ffffff") + "cc"} />
-                      </linearGradient></defs>
-                      <rect x="4" y="0" width="4" height="12" rx="2" fill="url(#hprev)" stroke={(theme.cursorColor ?? "#ffffff") + "99"} strokeWidth="0.8" />
-                      <rect x="9" y="3" width="4" height="10" rx="2" fill="url(#hprev)" stroke={(theme.cursorColor ?? "#ffffff") + "99"} strokeWidth="0.8" />
-                      <rect x="14" y="4" width="3.5" height="9" rx="1.75" fill="url(#hprev)" stroke={(theme.cursorColor ?? "#ffffff") + "99"} strokeWidth="0.8" />
-                      <rect x="2" y="9" width="16" height="12" rx="4" fill="url(#hprev)" stroke={(theme.cursorColor ?? "#ffffff") + "99"} strokeWidth="0.8" />
-                      <ellipse cx="2" cy="14" rx="2.5" ry="3.5" fill="url(#hprev)" stroke={(theme.cursorColor ?? "#ffffff") + "99"} strokeWidth="0.8" />
+                      <rect x="4" y="0" width="4" height="12" rx="2" fill="white" stroke={theme.cursorColor ?? "#ffffff"} strokeWidth="1.2" />
+                      <rect x="9" y="3" width="4" height="10" rx="2" fill="white" stroke={theme.cursorColor ?? "#ffffff"} strokeWidth="1.2" />
+                      <rect x="14" y="4" width="3.5" height="9" rx="1.75" fill="white" stroke={theme.cursorColor ?? "#ffffff"} strokeWidth="1.2" />
+                      <rect x="2" y="9" width="16" height="12" rx="4" fill="white" stroke={theme.cursorColor ?? "#ffffff"} strokeWidth="1.2" />
+                      <ellipse cx="2" cy="14" rx="2.5" ry="3.5" fill="white" stroke={theme.cursorColor ?? "#ffffff"} strokeWidth="1.2" />
                     </svg>
                     <span className="text-xs opacity-60">Hand</span>
+                  </div>
+                  {/* Busy/working preview */}
+                  <div className="flex flex-col items-center gap-2">
+                    <svg width="36" height="36" viewBox="0 0 32 32">
+                      <path d="M3 2 L3 18 L7 14 L10.5 21 L12.5 20 L9 13 L15 13 Z" fill="white" stroke={theme.cursorColor ?? "#ffffff"} strokeWidth="1.5" strokeLinejoin="round" />
+                      <circle cx="23" cy="23" r="7" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="2.5" />
+                      <path d="M23 16 A7 7 0 0 1 30 23" fill="none" stroke={theme.cursorColor ?? "#ffffff"} strokeWidth="2.5" strokeLinecap="round" />
+                    </svg>
+                    <span className="text-xs opacity-60">Working</span>
                   </div>
                 </div>
               </div>

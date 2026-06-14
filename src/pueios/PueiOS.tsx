@@ -390,6 +390,9 @@ export function PueiOS() {
       `<svg xmlns='http://www.w3.org/2000/svg' width='20' height='24' viewBox='0 0 20 24'><rect x='4' y='0' width='4' height='12' rx='2' fill='white' stroke='${stroke}' stroke-width='1.2'/><rect x='9' y='3' width='4' height='10' rx='2' fill='white' stroke='${stroke}' stroke-width='1.2'/><rect x='14' y='4' width='3.5' height='9' rx='1.75' fill='white' stroke='${stroke}' stroke-width='1.2'/><rect x='2' y='9' width='16' height='12' rx='4' fill='white' stroke='${stroke}' stroke-width='1.2'/><ellipse cx='2' cy='14' rx='2.5' ry='3.5' fill='white' stroke='${stroke}' stroke-width='1.2'/></svg>`
     );
     const ibeam = enc(`<svg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20'><path d='M7 2 L9 2 Q10 2 10 3 L10 17 Q10 18 9 18 L7 18' fill='none' stroke='${c}' stroke-width='2' stroke-linecap='round'/><path d='M13 2 L11 2 Q10 2 10 3 L10 17 Q10 18 11 18 L13 18' fill='none' stroke='${c}' stroke-width='2' stroke-linecap='round'/></svg>`);
+    // Arrow + spinner ring for progress/wait cursors
+    const arrowBusy = enc(`<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'><path d='M3 2 L3 18 L7 14 L10.5 21 L12.5 20 L9 13 L15 13 Z' fill='white' stroke='${c}' stroke-width='1.5' stroke-linejoin='round'/><circle cx='23' cy='23' r='7' fill='none' stroke='rgba(255,255,255,0.25)' stroke-width='2.5'/><path d='M23 16 A7 7 0 0 1 30 23' fill='none' stroke='${c}' stroke-width='2.5' stroke-linecap='round'/></svg>`);
+    const busyOnly = enc(`<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'><circle cx='12' cy='12' r='9' fill='none' stroke='rgba(255,255,255,0.25)' stroke-width='3'/><path d='M12 3 A9 9 0 0 1 21 12' fill='none' stroke='${c}' stroke-width='3' stroke-linecap='round'/></svg>`);
     const css = `
 * { cursor: ${arrow(c)} 3 2, default !important; }
 *[style*="cursor: move"], *[style*="cursor:move"] { cursor: ${arrow(c)} 3 2, move !important; }
@@ -397,6 +400,9 @@ export function PueiOS() {
 *[style*="cursor: grabbing"], *[style*="cursor:grabbing"] { cursor: ${hand(c)} 6 0, grabbing !important; }
 input, textarea, [contenteditable], [contenteditable] * { cursor: ${ibeam} 10 10, text !important; }
 button, a, [role="button"], select, label[for] { cursor: ${hand(c)} 6 0, pointer !important; }
+*, *[style*="cursor: progress"], *[style*="cursor:progress"] { }
+[style*="cursor: progress"], [style*="cursor:progress"] { cursor: ${arrowBusy} 3 2, progress !important; }
+[style*="cursor: wait"], [style*="cursor:wait"] { cursor: ${busyOnly} 12 12, wait !important; }
 `;
     let el = document.getElementById("puei-cursor-style") as HTMLStyleElement | null;
     if (!el) { el = document.createElement("style"); el.id = "puei-cursor-style"; document.head.appendChild(el); }
