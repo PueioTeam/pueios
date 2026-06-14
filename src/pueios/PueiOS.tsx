@@ -10,7 +10,7 @@ import { AppRenderer } from "./apps";
 import { PueiMascot, PueiLogoSvg } from "./Mascot";
 import { pullAndMergeFiles, pushFile as pushFileToServer, removeFileFromServer } from "./fileSync";
 import { loadFiles, saveFiles, upsertFile } from "./state";
-import { loginRemote, createRemote, applySnapshot, schedulePush, markUserDeleted, type AccountSnapshot } from "./accountSync";
+import { loginRemote, createRemote, applySnapshot, schedulePush, markUserDeleted, unmarkUserDeleted, type AccountSnapshot } from "./accountSync";
 
 
 type Phase = "install" | "boot" | "login" | "desktop" | "shutdown" | "recovery" | "upgrade";
@@ -860,6 +860,7 @@ button, a, [role="button"], select, label[for] { cursor: ${hand(c)} 6 0, pointer
               const remote = await loginRemote(name, newAcc.password);
               if (remote.status === "wrong-password") { setInstallErr("Wrong password for that account"); return; }
               if (remote.status === "ok" && remote.snapshot) {
+                unmarkUserDeleted(name);
                 applySnapshot(remote.snapshot);
                 const s = loadState();
                 setUsers(s.users); setThemeState(s.theme); setIcons(s.icons);
@@ -1163,6 +1164,7 @@ button, a, [role="button"], select, label[for] { cursor: ${hand(c)} 6 0, pointer
       if (remote.status === "wrong-password") { blip("error"); setPwError("Wrong password"); return; }
       if (remote.status === "ok") {
         if (remote.snapshot) {
+          unmarkUserDeleted(name); // manual login always wins over deletion flag
           applySnapshot(remote.snapshot);
           const s = loadState();
           setUsers(s.users); setThemeState(s.theme); setIcons(s.icons);
@@ -1172,7 +1174,7 @@ button, a, [role="button"], select, label[for] { cursor: ${hand(c)} 6 0, pointer
       // Cloud said not-found OR network error → fall back to local auth.
       const u = users.find((x) => x.name === name);
       if (!u) { blip("error"); setPwError(remote.status === "not-found" ? "No PueiOS account with that name" : "Unknown user"); return; }
-      if ((u.password ?? "") === pwInput) enterDesktop(name);
+      if ((u.password ?? "") === pwInput) { unmarkUserDeleted(name); enterDesktop(name); }
       else { blip("error"); setPwError("Wrong password"); }
     };
     const switchToAccount = async () => {

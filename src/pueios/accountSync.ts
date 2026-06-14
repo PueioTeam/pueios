@@ -22,6 +22,13 @@ export function markUserDeleted(name: string) {
   } catch {}
 }
 
+export function unmarkUserDeleted(name: string) {
+  try {
+    const cur: string[] = JSON.parse(localStorage.getItem(LS.deletedUsers) || "[]");
+    localStorage.setItem(LS.deletedUsers, JSON.stringify(cur.filter((n) => n !== name)));
+  } catch {}
+}
+
 function isUserDeleted(name: string): boolean {
   try { return (JSON.parse(localStorage.getItem(LS.deletedUsers) || "[]") as string[]).includes(name); } catch { return false; }
 }
