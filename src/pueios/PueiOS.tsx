@@ -1512,7 +1512,11 @@ button, a, [role="button"], select, label[for] { cursor: ${hand(c)} 6 0, pointer
               uninstallApp={(appId) => setIcons((cur) => cur.filter((i) => !(i.appId === appId && !i.fileId && !i.webUrl)))}
               uninstallWebApp={(url) => setIcons((cur) => cur.filter((i) => !(i.appId === "web-app" && i.webUrl === url)))}
               addNativeIcon={(appId, label, icon) => setIcons((cur) => cur.some((i) => i.appId === appId && !i.fileId && !i.webUrl) ? cur : [...cur, { id: `native-${appId}`, label, appId, iconEmoji: icon }])}
-              installWebApp={(label, url, iconUrl) => addIcon({ id: `web-${Date.now().toString(36)}`, label, appId: "web-app", webUrl: url, iconUrl: iconUrl || googleFaviconFor(url, 64) })}
+              installWebApp={(label, url, iconUrl) => {
+                const pueiEmojis: Record<string, string> = { "puei://films": "🎬", "puei://updates": "🔄", "puei://social": "📣", "puei://board": "📌", "puei://search": "✨", "puei://chat": "💬" };
+                const emoji = pueiEmojis[url];
+                addIcon({ id: `web-${Date.now().toString(36)}`, label, appId: "web-app", webUrl: url, iconEmoji: emoji, iconUrl: emoji ? undefined : (iconUrl || googleFaviconFor(url, 64)) });
+              }}
               openWebApp={(url, title) => openApp("web-app", { webUrl: url, title })}
               openFolder={(folderIconId, title) => openApp("folder", { folderIconId, title })}
               setUsers={setUsers}
@@ -1746,7 +1750,7 @@ button, a, [role="button"], select, label[for] { cursor: ${hand(c)} 6 0, pointer
           if (s.kind === "native") {
             addIcon({ id: `${s.id}-${Date.now().toString(36)}`, label: s.label, appId: s.appId, iconEmoji: s.icon });
           } else {
-            addIcon({ id: `web-${Date.now().toString(36)}`, label: s.label, appId: "web-app", webUrl: s.url });
+            addIcon({ id: `web-${Date.now().toString(36)}`, label: s.label, appId: "web-app", webUrl: s.url, iconEmoji: s.icon });
           }
           blip("notify");
           setShowAddShortcut(false);
