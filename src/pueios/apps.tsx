@@ -3606,7 +3606,9 @@ function AppStoreApp({ installWebApp, openApp, openWebApp, systemVersion, addNat
                 return (
                   <div key={a.name} className="aero-glass-light rounded-lg p-3 flex flex-col">
                     <div className="flex items-center gap-2">
-                      <div className="text-3xl">{a.icon}</div>
+                      {a.icon.startsWith("/") || a.icon.startsWith("http") || a.icon.startsWith("data:")
+                        ? <img src={a.icon} alt={a.name} style={{ width: 40, height: 40, objectFit: "contain", borderRadius: 8, flexShrink: 0 }} />
+                        : <div className="text-3xl flex-shrink-0">{a.icon}</div>}
                       <div>
                         <div className="font-semibold">{a.name}</div>
                         <div className="text-[10px] opacity-60">{a.preInstalled ? "✔ Pre-installed" : "⬇ Installable"} · Puei Team</div>
@@ -4108,6 +4110,19 @@ function proxyUrl(url: string): string {
 function WebAppFrame({ url, currentUser, startUpgrade, systemVersion }: { url: string; currentUser: string; startUpgrade: (target: SystemVersion) => void; systemVersion?: SystemVersion }) {
   if (url === "puei://updates") {
     return <PueiUpdaterApp currentUser={currentUser} startUpgrade={startUpgrade} systemVersion={systemVersion} />;
+  }
+  if (url === "puei://films") {
+    return (
+      <div className="flex flex-col h-full">
+        <div className="aero-titlebar text-xs px-3 py-1 flex items-center gap-2">
+          <img src="/puei-films-icon.svg" alt="" style={{ width: 16, height: 16 }} />
+          <span className="truncate flex-1">Puei Films</span>
+        </div>
+        <div className="flex-1 overflow-auto">
+          <PueiFilmsPage currentUser={currentUser} />
+        </div>
+      </div>
+    );
   }
   const src = url.startsWith("http") ? proxyUrl(url) : url;
   return (

@@ -152,11 +152,11 @@ export function PueiOS() {
 
   const dragRef = useRef<{ id: string; startX: number; startY: number; origLeft: number; origTop: number; el: HTMLElement } | null>(null);
   const wasDragged = useRef(false);
-  const DESKTOP_OX = systemVersion === "PueiOS 3" ? 76 : 12;
+  const DESKTOP_OX = 12;
   const DESKTOP_OY = 12;
   const getDesktopGridBounds = () => {
     if (typeof window === "undefined") return { maxCol: 0, maxRow: 0 };
-    const TASKBAR_H = systemVersion === "PueiOS 3" ? 0 : 48;
+    const TASKBAR_H = 48;
     const maxCol = Math.max(0, Math.floor((window.innerWidth - DESKTOP_OX - 8 - GRID_W) / GRID_W));
     const maxRow = Math.max(0, Math.floor((window.innerHeight - TASKBAR_H - DESKTOP_OY - 8 - GRID_H) / GRID_H));
     return { maxCol, maxRow };
@@ -1709,65 +1709,59 @@ button, a, [role="button"], select, label[for] { cursor: ${hand(c)} 6 0, pointer
         </div>
       )}
 
-      {/* PueiOS 3 launcher — slide-in panel from left (above the dock) */}
+      {/* PueiOS 3 launcher — panel above taskbar, bottom-left */}
       {startOpen && systemVersion === "PueiOS 3" && (
-        <>
-          {/* Backdrop */}
-          <div className="fixed inset-0 z-[8999]" style={{ background: "rgba(0,0,0,0.25)", backdropFilter: "blur(4px)" }}
-            onMouseDown={() => setStartOpen(false)} />
-          {/* Panel */}
-          <div className="fixed top-0 bottom-0 z-[9000] flex flex-col"
-            style={{ left: 68, width: 360, background: "rgba(10,10,22,0.92)", backdropFilter: "blur(40px) saturate(180%)", borderRight: "1px solid rgba(255,255,255,0.10)", animation: "slide-in-left 0.2s ease-out", boxShadow: "4px 0 40px rgba(0,0,0,0.5)" }}
-            onMouseDown={(e) => e.stopPropagation()}>
-            {/* User header */}
-            <div className="flex items-center gap-3 px-5 pt-6 pb-4">
-              <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl overflow-hidden flex-shrink-0"
-                style={{ background: "linear-gradient(135deg,#6366f1,#a855f7)" }}>
-                {currentAvatar?.startsWith("data:")
-                  ? <img src={currentAvatar} alt="" className="w-full h-full object-cover" />
-                  : (currentAvatar || "👤")}
-              </div>
-              <div>
-                <div className="text-white font-bold text-base leading-tight">{currentUser}</div>
-                <div className="text-white/40 text-xs">PueiOS 3</div>
-              </div>
+        <div className="fixed bottom-12 left-2 z-[9000] flex flex-col rounded-2xl overflow-hidden"
+          style={{ width: 420, maxHeight: "calc(100vh - 72px)", background: "rgba(10,10,22,0.93)", backdropFilter: "blur(40px) saturate(180%)", border: "1px solid rgba(255,255,255,0.12)", animation: "fade-scale 0.18s ease-out", boxShadow: "0 -4px 40px rgba(0,0,0,0.6)" }}
+          onMouseDown={(e) => e.stopPropagation()}>
+          {/* User header */}
+          <div className="flex items-center gap-3 px-5 pt-5 pb-4">
+            <div className="w-11 h-11 rounded-xl flex items-center justify-center text-2xl overflow-hidden flex-shrink-0"
+              style={{ background: "linear-gradient(135deg,#6366f1,#a855f7)" }}>
+              {currentAvatar?.startsWith("data:")
+                ? <img src={currentAvatar} alt="" className="w-full h-full object-cover" />
+                : (currentAvatar || "👤")}
             </div>
-
-            <div className="h-px mx-5 bg-white/10" />
-
-            {/* App grid */}
-            <div className="flex-1 overflow-y-auto px-4 py-4">
-              <div className="text-white/40 text-[10px] uppercase tracking-widest mb-3 px-1">All Apps</div>
-              <div className="grid grid-cols-4 gap-2">
-                {[...new Set([
-                  ...icons.filter(i => !i.fileId && !i.webUrl && i.appId !== "recycle-bin").map(i => i.appId),
-                  "settings" as const, "about" as const,
-                ])].filter(id => id in APP_TITLES).map((id) => (
-                  <button key={id} onClick={() => { openApp(id); setStartOpen(false); }}
-                    className="flex flex-col items-center gap-1.5 p-2.5 rounded-2xl transition-all"
-                    style={{ background: "rgba(255,255,255,0.06)" }}
-                    onMouseEnter={e => { e.currentTarget.style.background = "rgba(99,102,241,0.25)"; e.currentTarget.style.transform = "scale(1.06)"; }}
-                    onMouseLeave={e => { e.currentTarget.style.background = "rgba(255,255,255,0.06)"; e.currentTarget.style.transform = ""; }}>
-                    {appIcon(id, 32)}
-                    <span className="text-white/80 text-[9px] text-center truncate w-full leading-tight">{APP_TITLES[id]}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="h-px mx-5 bg-white/10" />
-
-            {/* Power row */}
-            <div className="flex items-center justify-between px-5 py-4">
-              <button className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs text-white/60 hover:text-white hover:bg-white/10 transition-all"
-                onClick={() => { setLocked(true); setStartOpen(false); setPwInput(""); }}>🔒 Lock</button>
-              <button className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs text-white/60 hover:text-white hover:bg-white/10 transition-all"
-                onClick={() => { setStartOpen(false); setPhase("login"); setPwInput(""); }}>🔄 Switch</button>
-              <button className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs text-white/60 hover:text-white hover:bg-red-500/30 transition-all"
-                onClick={() => { blip("shutdown"); setStartOpen(false); setPhase("shutdown"); setWindows([]); }}>⏻ Shut down</button>
+            <div>
+              <div className="text-white font-bold text-sm leading-tight">{currentUser}</div>
+              <div className="text-white/40 text-xs">PueiOS 3</div>
             </div>
           </div>
-        </>
+
+          <div className="h-px mx-4 bg-white/10" />
+
+          {/* App grid */}
+          <div className="overflow-y-auto px-4 py-3" style={{ maxHeight: "calc(100vh - 220px)" }}>
+            <div className="text-white/35 text-[9px] uppercase tracking-widest mb-2 px-1">Apps</div>
+            <div className="grid grid-cols-5 gap-2">
+              {[...new Set([
+                ...icons.filter(i => !i.fileId && !i.webUrl && i.appId !== "recycle-bin").map(i => i.appId),
+                "settings" as const, "about" as const,
+              ])].filter(id => id in APP_TITLES).map((id) => (
+                <button key={id} onClick={() => { openApp(id); setStartOpen(false); }}
+                  className="flex flex-col items-center gap-1 p-2 rounded-xl transition-all"
+                  style={{ background: "rgba(255,255,255,0.06)" }}
+                  onMouseEnter={e => { e.currentTarget.style.background = "rgba(99,102,241,0.3)"; e.currentTarget.style.transform = "scale(1.05)"; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = "rgba(255,255,255,0.06)"; e.currentTarget.style.transform = ""; }}>
+                  {appIcon(id, 30)}
+                  <span className="text-white/75 text-[8px] text-center truncate w-full leading-tight">{APP_TITLES[id]}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="h-px mx-4 bg-white/10" />
+
+          {/* Power row */}
+          <div className="flex items-center justify-between px-4 py-3">
+            <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs text-white/60 hover:text-white hover:bg-white/10 transition-all"
+              onClick={() => { setLocked(true); setStartOpen(false); setPwInput(""); }}>🔒 Lock</button>
+            <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs text-white/60 hover:text-white hover:bg-white/10 transition-all"
+              onClick={() => { setStartOpen(false); setPhase("login"); setPwInput(""); }}>🔄 Switch</button>
+            <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs text-white/60 hover:text-white hover:bg-red-500/25 transition-all"
+              onClick={() => { blip("shutdown"); setStartOpen(false); setPhase("shutdown"); setWindows([]); }}>⏻ Shut down</button>
+          </div>
+        </div>
       )}
 
       {/* Calendar */}
@@ -1791,73 +1785,64 @@ button, a, [role="button"], select, label[for] { cursor: ${hand(c)} 6 0, pointer
 
       {/* Taskbar */}
       {systemVersion === "PueiOS 3" ? (
-        /* PueiOS 3 — left-side vertical dock */
-        <div className="fixed left-0 top-0 bottom-0 z-[8000] flex flex-col items-center py-3 pointer-events-none"
-          style={{ width: 68 }}
-          onMouseDown={(e) => e.stopPropagation()}>
-          <div className="flex flex-col items-center gap-1 h-full pointer-events-auto rounded-2xl mx-2 py-2 px-1"
-            style={{ background: "rgba(12,12,24,0.78)", backdropFilter: "blur(28px) saturate(180%)", boxShadow: "2px 0 32px rgba(0,0,0,0.45), inset -1px 0 0 rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.11)", width: 52 }}
-            onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); setCtxMenu({ x: e.clientX, y: e.clientY, items: taskbarCtx() }); }}>
-            {/* Puei logo / start button */}
-            <button className="w-10 h-10 rounded-2xl flex items-center justify-center overflow-hidden hover:scale-110 transition-transform mb-1"
-              style={{ background: "linear-gradient(135deg,#6366f1,#a855f7)", flexShrink: 0 }}
-              title="Launcher" onClick={(e) => { e.stopPropagation(); blip("click"); setStartOpen(!startOpen); setShowCalendar(false); }}>
-              <PueiLogoSvg size={22} bigEyes />
+        /* PueiOS 3 — bottom bar, dark glass style */
+        <div className="fixed bottom-0 left-0 right-0 h-12 flex items-center px-1 gap-1 z-[8000]"
+          style={{ background: "rgba(8,8,20,0.88)", backdropFilter: "blur(24px) saturate(160%)", borderTop: "1px solid rgba(255,255,255,0.10)", boxShadow: "0 -2px 24px rgba(0,0,0,0.5)" }}
+          onMouseDown={(e) => e.stopPropagation()}
+          onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); setCtxMenu({ x: e.clientX, y: e.clientY, items: taskbarCtx() }); }}>
+          {/* Start button */}
+          <button className="w-10 h-10 rounded-xl flex items-center justify-center mx-1 overflow-hidden hover:bg-white/10 transition-colors"
+            style={{ background: startOpen ? "rgba(99,102,241,0.4)" : "rgba(99,102,241,0.2)" }}
+            title="Start" onClick={(e) => { e.stopPropagation(); blip("click"); setStartOpen(!startOpen); setShowCalendar(false); }}>
+            <PueiLogoSvg size={26} bigEyes />
+          </button>
+          {/* Pinned apps */}
+          {(["file-explorer", "app-store", "puei-social", "pueinet", "puei-cloud-chat"] as AppId[]).map((id) => {
+            const hasWin = windows.some((w) => w.appId === id);
+            const activeWin = windows.find((w) => w.appId === id && !w.minimized);
+            return (
+              <div key={id} className="relative flex flex-col items-center">
+                <button onClick={(e) => { e.stopPropagation(); openApp(id); }}
+                  onMouseEnter={() => blip("hover")} title={APP_TITLES[id]}
+                  className="w-10 h-10 rounded-xl flex items-center justify-center text-lg transition-colors hover:bg-white/10"
+                  style={{ background: activeWin ? "rgba(99,102,241,0.35)" : hasWin ? "rgba(255,255,255,0.08)" : "transparent" }}>
+                  {appIcon(id, 22)}
+                </button>
+                {hasWin && <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-indigo-400" />}
+              </div>
+            );
+          })}
+          <div className="w-px h-7 bg-white/15 mx-1" />
+          {/* Open windows */}
+          {windows.map((w) => (
+            <button key={w.id}
+              className="h-9 px-2.5 rounded-xl flex items-center gap-2 text-xs transition-colors hover:bg-white/10"
+              style={{ background: (w.z === Math.max(...windows.map((x)=>x.z)) && !w.minimized) ? "rgba(99,102,241,0.3)" : "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.85)", maxWidth: 140 }}
+              onClick={(e) => { e.stopPropagation(); if (w.minimized) focusWin(w.id); else minWin(w.id); }}
+              onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); setCtxMenu({ x: e.clientX, y: e.clientY, items: [
+                { label: "Restore", action: () => focusWin(w.id) },
+                { label: "Minimize", action: () => minWin(w.id) },
+                { label: "Maximize", action: () => maxWin(w.id) },
+                { sep: true },
+                { label: "Close", action: () => closeWin(w.id) },
+              ]});}}>
+              {appIcon(w.appId, 16)}
+              <span className="truncate max-w-[80px]">{w.title}</span>
             </button>
-            <div className="h-px w-8 bg-white/20 my-1" style={{ flexShrink: 0 }} />
-            {/* Pinned apps */}
-            {(["file-explorer", "app-store", "puei-social", "pueinet", "puei-cloud-chat"] as AppId[]).map((id) => {
-              const openWin = windows.find((w) => w.appId === id && !w.minimized);
-              const hasWin = windows.some((w) => w.appId === id);
-              return (
-                <div key={id} className="flex flex-col items-center gap-0.5" style={{ flexShrink: 0 }}>
-                  <button onClick={(e) => { e.stopPropagation(); openApp(id); }}
-                    onMouseEnter={() => blip("hover")} title={APP_TITLES[id]}
-                    className="w-10 h-10 rounded-xl flex items-center justify-center text-lg transition-all hover:scale-110"
-                    style={{ background: openWin ? "rgba(99,102,241,0.35)" : "transparent" }}>
-                    {appIcon(id, 24)}
-                  </button>
-                  <div className="w-1 h-1 rounded-full" style={{ background: hasWin ? "#818cf8" : "transparent" }} />
-                </div>
-              );
-            })}
-            <div className="h-px w-8 bg-white/20 my-1" style={{ flexShrink: 0 }} />
-            {/* Open windows (non-pinned) */}
-            <div className="flex flex-col items-center gap-1 flex-1 overflow-hidden">
-              {windows.filter((w) => !(["file-explorer","app-store","puei-social","pueinet","puei-cloud-chat"] as string[]).includes(w.appId)).map((w) => (
-                <div key={w.id} className="flex flex-col items-center gap-0.5" style={{ flexShrink: 0 }}>
-                  <button
-                    className="w-10 h-10 rounded-xl flex items-center justify-center transition-all hover:scale-110"
-                    style={{ background: (!w.minimized && w.z === Math.max(...windows.map((x)=>x.z))) ? "rgba(99,102,241,0.35)" : "rgba(255,255,255,0.07)" }}
-                    title={w.title}
-                    onClick={(e) => { e.stopPropagation(); if (w.minimized) focusWin(w.id); else minWin(w.id); }}
-                    onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); setCtxMenu({ x: e.clientX, y: e.clientY, items: [
-                      { label: "Restore", action: () => focusWin(w.id) },
-                      { label: "Minimize", action: () => minWin(w.id) },
-                      { label: "Maximize", action: () => maxWin(w.id) },
-                      { sep: true },
-                      { label: "Close", action: () => closeWin(w.id) },
-                    ]});}}>
-                    {appIcon(w.appId, 22)}
-                  </button>
-                  <div className="w-1 h-1 rounded-full" style={{ background: !w.minimized ? "#818cf8" : "rgba(255,255,255,0.3)" }} />
-                </div>
-              ))}
-            </div>
-            {/* Bottom: tray */}
-            <div className="flex flex-col items-center gap-1 mt-auto" style={{ flexShrink: 0 }}>
-              <div className="h-px w-8 bg-white/20 mb-1" />
-              <span title="Network" className="w-8 h-8 flex items-center justify-center rounded-lg cursor-pointer hover:bg-white/10 text-base"
-                onClick={(e) => { e.stopPropagation(); setShowNetwork(!showNetwork); setShowVolume(false); }}>📶</span>
-              <span title="Sound" className="w-8 h-8 flex items-center justify-center rounded-lg cursor-pointer hover:bg-white/10 text-base"
-                onClick={(e) => { e.stopPropagation(); setShowVolume(!showVolume); setShowNetwork(false); blip("notify"); }}>🔊</span>
-              <button className="flex flex-col items-center text-[9px] rounded-lg px-1 py-1.5 hover:bg-white/10 w-full"
-                onClick={(e) => { e.stopPropagation(); setShowCalendar(!showCalendar); setStartOpen(false); }}
-                style={{ color: "rgba(255,255,255,0.75)", lineHeight: 1.4 }}>
-                <span>{now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
-                <span className="opacity-60">{now.toLocaleDateString([], { month: "numeric", day: "numeric" })}</span>
-              </button>
-            </div>
+          ))}
+          <div className="flex-1" />
+          {/* Tray */}
+          <div className="flex items-center gap-1 px-2 text-white text-xs">
+            <span title="Network" className="cursor-pointer hover:opacity-80 px-1"
+              onClick={(e) => { e.stopPropagation(); setShowNetwork(!showNetwork); setShowVolume(false); }}>📶</span>
+            <span title="Sound" className="cursor-pointer hover:opacity-80 px-1"
+              onClick={(e) => { e.stopPropagation(); setShowVolume(!showVolume); setShowNetwork(false); blip("notify"); }}>🔊</span>
+            <button className="rounded-xl px-2 py-1 text-[10px] text-center hover:bg-white/10"
+              onClick={(e) => { e.stopPropagation(); setShowCalendar(!showCalendar); setStartOpen(false); }}
+              style={{ color: "rgba(255,255,255,0.85)", lineHeight: 1.4 }}>
+              {now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}<br />
+              {now.toLocaleDateString()}
+            </button>
           </div>
         </div>
       ) : (

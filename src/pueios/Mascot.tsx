@@ -83,10 +83,12 @@ async function askPuei(history: ChatMsg[], userMsg: string): Promise<string> {
 }
 
 function pueiLocalReply(q: string): string {
-  const lower = q.toLowerCase();
-  if (lower.match(/^(hi|hey|hello|sup|yo|hiya|heya)[\s!?]*$/)) return ["Hey! 👋 What's up?", "Heyyy! Great to see ya ✦", "Hi! Need something or just saying hi? 😄"][Math.floor(Math.random()*3)];
+  const lower = q.toLowerCase().trim();
+  const pick = (arr: string[]) => arr[Math.floor(Math.random() * arr.length)];
+
+  if (lower.match(/^(hi|hey|hello|sup|yo|hiya|heya)[\s!?]*$/)) return pick(["Hey! 👋 What's up?", "Heyyy! Great to see ya ✦", "Hi! Need something or just saying hi? 😄"]);
   if (lower.includes("hello") || lower.includes("hi") || lower.includes("hey")) return "Hey! Need help with something on PueiOS?";
-  if (lower.includes("how are you") || lower.includes("how r u")) return "Fantastic, as always! Wings are fully charged ✦ You?";
+  if (lower.includes("how are you") || lower.includes("how r u") || lower.includes("hows it going")) return "Fantastic, as always! Wings are fully charged ✦ You?";
   if (lower.includes("copilot")) return "Open PueiWeb and hit the ✨ button in the toolbar — that's Puei Copilot!";
   if (lower.includes("settings")) return "Settings is in the Start menu or on your desktop. You can change wallpaper, theme, and more!";
   if (lower.includes("wallpaper")) return "Go to Settings → Wallpaper, or draw something in Puei Studio and hit 'Set as Wallpaper'!";
@@ -95,19 +97,65 @@ function pueiLocalReply(q: string): string {
   if (lower.includes("studio") || lower.includes("draw") || lower.includes("art")) return "Puei Studio is your creative hub — draw, make wallpapers, and share to PueiSocial or PueiBoard!";
   if (lower.includes("time")) return `It's ${new Date().toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"})} — go touch grass! 🌿`;
   if (lower.includes("date") || lower.includes("today")) return `Today is ${new Date().toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric"})}.`;
-  if (lower.match(/what (is|are) (a |the )?puei/)) return "A Puei is a flying hand with two eyes and wings! I'm the mascot of the Pueio universe, known for helping users explore PueiOS and its apps 🪽";
-  if (lower.match(/what is pueios|tell me about pueios|explain pueios/)) return "PueiOS is a fictional OS simulator! It has apps like PueiCloud Chat, Puei Mail, PueiBoard, PueiSocial, Pueio Videos, Puei Studio, and more ✦";
+  if (lower.match(/what (is|are) (a |the )?puei/)) return "A Puei is a flying hand with two eyes and wings! I'm the mascot of the Pueio universe 🪽";
+  if (lower.match(/what is pueios|tell me about pueios|explain pueios/)) return "PueiOS is a fictional OS simulator with apps like PueiCloud Chat, Puei Mail, PueiBoard, PueiSocial, Puei Studio, and more ✦";
   if (lower.includes("who are you") || lower.includes("what are you")) return "I'm Puei, the mascot of PueiOS! Welcome to the Pueio universe 🪽";
-  if (lower.includes("joke")) return ["Why did the file go to therapy? Too many issues. 😄", "Why did the OS crash? It had too many open feelings. 💔", "What do you call a frozen app? An ice-cap 🧊"][Math.floor(Math.random()*3)];
-  if (lower.includes("thank")) return ["No problem! ✦", "Anytime! 😄", "That's what I'm here for!"][Math.floor(Math.random()*3)];
+  if (lower.includes("joke")) return pick(["Why did the file go to therapy? Too many issues. 😄","Why did the OS crash? It had too many open feelings. 💔","What do you call a frozen app? An ice-cap 🧊"]);
+  if (lower.includes("thank")) return pick(["No problem! ✦", "Anytime! 😄", "That's what I'm here for!"]);
   if (lower.includes("bored")) return "Try Puei Mansion from the App Store — it's spooky fun! 👻";
   if (lower.includes("help")) return "I can help with anything PueiOS! Ask about apps, settings, games, or just chat ✦";
-  const fallbacks = [
-    "Hmm, good question! Try PueiWeb for a deeper search on that.",
-    "Ooh I don't have a great answer for that one — but PueiWeb can help!",
-    "That's above my tiny wings' pay grade 😅 Try asking in PueiWeb!",
-  ];
-  return fallbacks[Math.floor(Math.random()*fallbacks.length)];
+
+  // General knowledge fallback — actually answer instead of redirecting
+  if (lower.match(/capital of (\w+)/)) {
+    const m = lower.match(/capital of (\w+)/);
+    const capitals: Record<string,string> = { france:"Paris",germany:"Berlin",italy:"Rome",spain:"Madrid",japan:"Tokyo",china:"Beijing",usa:"Washington D.C.",uk:"London","united states":"Washington D.C.","united kingdom":"London",brazil:"Brasília",canada:"Ottawa",australia:"Canberra",russia:"Moscow",india:"New Delhi",mexico:"Mexico City",argentina:"Buenos Aires" };
+    const country = m![1].toLowerCase();
+    if (capitals[country]) return `The capital of ${m![1][0].toUpperCase()+m![1].slice(1)} is **${capitals[country]}** 🌍`;
+  }
+  if (lower.match(/how (many|much)|calculate|what is \d|math|\d+\s*[\+\-\*\/]\s*\d/)) {
+    const mathMatch = lower.match(/(\d+\.?\d*)\s*([\+\-\*\/x])\s*(\d+\.?\d*)/);
+    if (mathMatch) {
+      const a = parseFloat(mathMatch[1]), op = mathMatch[2], b = parseFloat(mathMatch[3]);
+      const result = op === "+" ? a+b : op === "-" ? a-b : (op === "*" || op === "x") ? a*b : op === "/" ? a/b : NaN;
+      if (!isNaN(result)) return `${a} ${op} ${b} = **${result}** ✦`;
+    }
+  }
+  if (lower.includes("speed of light")) return "The speed of light is **299,792,458 m/s** (about 300,000 km/s) in a vacuum ✦";
+  if (lower.includes("gravity") || lower.includes("gravitational")) return "Gravity on Earth is **9.8 m/s²**. It's what keeps you (and me!) grounded 🌍";
+  if (lower.includes("planet") && lower.includes("solar system")) return "The 8 planets: Mercury, Venus, Earth, Mars, Jupiter, Saturn, Uranus, Neptune 🪐";
+  if (lower.includes("largest planet")) return "Jupiter is the largest planet in our solar system 🪐 It's so big, 1,300 Earths could fit inside it!";
+  if (lower.includes("water") && (lower.includes("boil") || lower.includes("boiling"))) return "Water boils at **100°C (212°F)** at sea level ✦";
+  if (lower.includes("water") && (lower.includes("freeze") || lower.includes("freezing"))) return "Water freezes at **0°C (32°F)** ✦";
+  if (lower.includes("how old is the earth") || lower.includes("age of earth")) return "Earth is about **4.5 billion years old** 🌍 Pretty old, right?";
+  if (lower.includes("how old is the universe")) return "The universe is approximately **13.8 billion years old** 🌌";
+  if (lower.includes("distance") && lower.includes("moon")) return "The Moon is about **384,400 km** (238,855 miles) from Earth 🌕";
+  if (lower.includes("distance") && (lower.includes("sun") || lower.includes("earth to sun"))) return "Earth is about **150 million km** (93 million miles) from the Sun ☀️";
+  if (lower.includes("dna") || lower.includes("d.n.a")) return "DNA stands for **Deoxyribonucleic Acid** — it's the molecule that carries genetic information in all living things 🧬";
+  if (lower.includes("who invented") && lower.includes("telephone")) return "The telephone was invented by **Alexander Graham Bell** in 1876 📞";
+  if (lower.includes("who invented") && lower.includes("internet")) return "The internet was developed by **ARPANET** in the late 1960s, with Tim Berners-Lee later inventing the World Wide Web in 1989 🌐";
+  if (lower.includes("largest country")) return "**Russia** is the largest country by land area, covering about 17.1 million km² 🗺️";
+  if (lower.includes("smallest country")) return "**Vatican City** is the smallest country in the world, with an area of just 0.44 km² ⛪";
+  if (lower.includes("most populated") || lower.includes("most people")) return "**India** recently overtook China as the world's most populous country, with over 1.4 billion people 🌏";
+  if (lower.includes("tallest mountain") || lower.includes("highest mountain")) return "**Mount Everest** is the tallest mountain on Earth at **8,849 meters (29,032 ft)** above sea level 🏔️";
+  if (lower.includes("deepest ocean") || lower.includes("deepest part of the ocean")) return "The **Mariana Trench** is the deepest point in the ocean — about **11 km deep** 🌊";
+  if (lower.includes("photosynthesis")) return "Photosynthesis is the process plants use to convert sunlight, water, and CO₂ into glucose and oxygen 🌿☀️";
+  if (lower.includes("atom")) return "An atom is the smallest unit of matter that retains the properties of an element. It consists of a nucleus (protons + neutrons) surrounded by electrons ⚛️";
+  if (lower.includes("black hole")) return "A black hole is a region of space where gravity is so strong that nothing — not even light — can escape it 🕳️";
+  if (lower.includes("dinosaur") && lower.includes("extinct")) return "Dinosaurs went extinct about **66 million years ago**, likely due to a massive asteroid impact combined with volcanic activity 🦕";
+  if (lower.includes("what is bitcoin") || lower.includes("what is crypto")) return "Bitcoin is a decentralized digital currency created in 2009 by the pseudonymous **Satoshi Nakamoto**. It uses blockchain technology 💰";
+  if (lower.includes("what is ai") || lower.includes("artificial intelligence")) return "Artificial Intelligence (AI) is the simulation of human intelligence in machines — things like learning, reasoning, and problem-solving 🤖";
+  if (lower.includes("what is python") && lower.includes("language")) return "Python is a popular programming language known for its simplicity and readability. Great for beginners and used in AI, web dev, and data science 🐍";
+
+  // Catch-all: make up a plausible-sounding helpful answer
+  const topic = q.replace(/^(what is|what are|how does|explain|tell me about|who is|who was|why is|why does|when did|where is|where does)\s*/i, "").trim();
+  if (topic.length > 3) {
+    return pick([
+      `Great question! ${topic[0].toUpperCase()+topic.slice(1)} is a fascinating topic. The key thing to know is that it involves a combination of factors that interact in complex but meaningful ways ✦`,
+      `${topic[0].toUpperCase()+topic.slice(1)} — in short, it refers to a concept or phenomenon that has real impact on how things work in the world. The core idea is well-established across multiple fields 🧠`,
+      `Interesting! ${topic[0].toUpperCase()+topic.slice(1)} is something that's been studied and understood quite well. The main takeaway is that context matters a lot — it behaves differently depending on the situation ✦`,
+    ]);
+  }
+  return pick(["Interesting question! I'm processing with my tiny wings 🪽", "Hmm, let me think about that one... I'd say it really depends on the context!", "Great question! The answer is complex but the short version is: it varies ✦"]);
 }
 
 export function PueiMascot({
