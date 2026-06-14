@@ -1262,7 +1262,6 @@ button, a, [role="button"], select, label[for] { cursor: ${hand(c)} 6 0, pointer
                   </button>
                   {!locked && (
                     <RemoveAccountButton name={u.name} onConfirm={() => {
-                      markUserDeleted(u.name);
                       const next = users.filter(x => x.name !== u.name);
                       setUsers(next);
                       saveState({ installed, systemVersion, theme, icons, users: next, lastUser: "", remember: false });
