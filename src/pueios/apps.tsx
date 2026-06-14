@@ -35,6 +35,7 @@ export type AppRendererProps = {
   addNativeIcon: (appId: AppId, label: string, icon: string) => void;
   onCreateShortcut: (label: string, fileId: string) => void;
   installWebApp: (label: string, url: string, iconUrl?: string) => void;
+  installedKeys: Set<string>;
   openWebApp: (url: string, title: string) => void;
   openFolder: (folderIconId: string, title: string) => void;
   signOut: () => void;
@@ -54,7 +55,7 @@ export function AppRenderer(p: AppRendererProps) {
     case "puei-cloud-chat": return <PueiCloudChatApp user={p.currentUser} users={p.users} setUsers={p.setUsers} />;
     case "puei-studio": return <PueiStudioApp currentUser={p.currentUser} users={p.users} icons={p.icons} setWallpaper={p.setWallpaper} />;
     case "file-explorer": return <FileExplorerApp openApp={p.openApp} icons={p.icons} openFolder={p.openFolder} currentUser={p.currentUser} users={p.users} setWallpaper={p.setWallpaper} />;
-    case "app-store": return <AppStoreApp installWebApp={p.installWebApp} openApp={p.openApp} openWebApp={p.openWebApp} systemVersion={p.systemVersion} addNativeIcon={p.addNativeIcon} uninstallApp={p.uninstallApp} uninstallWebApp={p.uninstallWebApp} icons={p.icons} />;
+    case "app-store": return <AppStoreApp installWebApp={p.installWebApp} openApp={p.openApp} openWebApp={p.openWebApp} systemVersion={p.systemVersion} addNativeIcon={p.addNativeIcon} uninstallApp={p.uninstallApp} uninstallWebApp={p.uninstallWebApp} icons={p.icons} installedKeys={p.installedKeys} />;
     case "puei-social": return <PueiSocialApp user={p.currentUser} users={p.users} />;
     case "folder": return <FolderApp folderIconId={p.folderIconId!} icons={p.icons} openApp={p.openApp} openWebApp={p.openWebApp} />;
     case "web-app": return <WebAppFrame url={p.webUrl!} currentUser={p.currentUser} startUpgrade={p.startUpgrade} />;
@@ -3455,7 +3456,7 @@ function PueiDrivePane({ files, icons, currentUser, users, openApp, onDelete }: 
 }
 
 // ---------- App Store ----------
-function AppStoreApp({ installWebApp, openApp, openWebApp, systemVersion, addNativeIcon, uninstallApp, uninstallWebApp, icons }: { installWebApp: (label: string, url: string, iconUrl?: string) => void; openApp: (id: AppId) => void; openWebApp: (url: string, title: string) => void; systemVersion: SystemVersion; addNativeIcon: (appId: AppId, label: string, icon: string) => void; uninstallApp: (appId: AppId) => void; uninstallWebApp: (url: string) => void; icons: DesktopIcon[] }) {
+function AppStoreApp({ installWebApp, openApp, openWebApp, systemVersion, addNativeIcon, uninstallApp, uninstallWebApp, icons, installedKeys }: { installWebApp: (label: string, url: string, iconUrl?: string) => void; openApp: (id: AppId) => void; openWebApp: (url: string, title: string) => void; systemVersion: SystemVersion; addNativeIcon: (appId: AppId, label: string, icon: string) => void; uninstallApp: (appId: AppId) => void; uninstallWebApp: (url: string) => void; icons: DesktopIcon[]; installedKeys: Set<string> }) {
   const [tab, setTab] = useState<"official" | "community" | "installer">("official");
   const [installing, setInstalling] = useState<Record<string, number>>({});
   const installTimers = useRef<Record<string, number>>({});
@@ -3482,6 +3483,13 @@ function AppStoreApp({ installWebApp, openApp, openWebApp, systemVersion, addNat
   const community: StoreApp[] = [
     { name: "bezosmp", icon: "🐞", desc: "A community Minecraft SMP server project. Made by bazicioschi and catotherat.", webUrl: "https://bezosmp.lovable.app", desktopLabel: "bezosmp", preInstalled: false },
   ];
+  const isInstalled = (a: StoreApp) => {
+    const key = a.webUrl ? `web:${a.webUrl}` : `app:${a.appId || a.name}`;
+    if (installedKeys.has(key)) return true;
+    if (a.webUrl) return icons.some((i) => i.appId === "web-app" && i.webUrl === a.webUrl);
+    if (!a.appId) return false;
+    return icons.some((i) => i.appId === a.appId && !i.fileId && !i.webUrl);
+  };
   const isOnDesktop = (a: StoreApp) => {
     if (a.webUrl) return icons.some((i) => i.appId === "web-app" && i.webUrl === a.webUrl);
     if (!a.appId) return false;
@@ -3535,26 +3543,39 @@ function AppStoreApp({ installWebApp, openApp, openWebApp, systemVersion, addNat
             <p className="text-sm opacity-70 mb-4">Apps made by the Pueio community. Not affiliated with the Puei Team.</p>
             <div className="grid grid-cols-3 gap-3">
               {community.map((a) => {
+                const installed = isInstalled(a);
                 const onDesktop = isOnDesktop(a);
                 const installKey = appInstallKey(a);
                 const installPct = installing[installKey];
-                const isInstalling = installPct !== undefined;
+                const isInstalling2 = installPct !== undefined;
                 return (
                   <div key={a.name} className="aero-glass-light rounded-lg p-3 flex flex-col">
                     <div className="text-3xl mb-2">{a.icon}</div>
                     <div className="font-semibold text-sm">{a.name}</div>
                     <div className="text-xs opacity-60 mt-1 flex-1">{a.desc}</div>
                     <div className="flex flex-col gap-1 mt-2">
-                      {!onDesktop ? (
+                      {!installed ? (
                         <button className="aero-button rounded px-2 py-1 text-xs w-full"
-                          disabled={isInstalling}
-                          onClick={() => !isInstalling && beginInstall(installKey, () => {
+                          disabled={isInstalling2}
+                          onClick={() => !isInstalling2 && beginInstall(installKey, () => {
                             if (a.webUrl) installWebApp(a.desktopLabel || a.name, a.webUrl);
                           })}>
-                          {isInstalling ? `${Math.round(installPct!)}%` : "⬇ Install"}
+                          {isInstalling2 ? `${Math.round(installPct!)}%` : "⬇ Install"}
                         </button>
                       ) : (
-                        <button className="aero-button rounded px-2 py-1 text-xs w-full opacity-50" disabled>✔ Installed</button>
+                        <>
+                          {!onDesktop && (
+                            <button className="aero-button rounded px-2 py-1 text-xs w-full"
+                              onClick={() => { if (a.webUrl) installWebApp(a.desktopLabel || a.name, a.webUrl); blip("notify"); }}>
+                              + Add to desktop
+                            </button>
+                          )}
+                          <button className="aero-button rounded px-2 py-1 text-xs w-full opacity-50" disabled>✔ Installed</button>
+                          <button className="aero-button rounded px-2 py-1 text-xs w-full" style={{ color: "#fca5a5" }}
+                            onClick={() => { if (a.webUrl) uninstallWebApp(a.webUrl); blip("notify"); }}>
+                            Uninstall
+                          </button>
+                        </>
                       )}
                     </div>
                   </div>
@@ -3568,6 +3589,7 @@ function AppStoreApp({ installWebApp, openApp, openWebApp, systemVersion, addNat
             <p className="text-sm opacity-70 mb-4">Verified, first-party apps built by the Puei Team.</p>
             <div className="grid grid-cols-3 gap-3">
               {official.map((a) => {
+                const appInstalled = isInstalled(a);
                 const onDesktop = isOnDesktop(a);
                 const installKey = appInstallKey(a);
                 const installPct = installing[installKey];
@@ -3584,24 +3606,43 @@ function AppStoreApp({ installWebApp, openApp, openWebApp, systemVersion, addNat
                     <div className="text-xs opacity-70 mt-1 flex-1">{a.desc}</div>
                     <div className="flex flex-col gap-1 mt-2">
                       {!a.preInstalled ? (
-                        <button
-                          className="aero-button rounded px-2 py-1 text-xs w-full"
-                          style={{ background: onDesktop ? "rgba(80,200,120,0.25)" : undefined, color: onDesktop ? "#4ade80" : undefined }}
-                          disabled={isInstalling || onDesktop}
-                          title={isInstalling ? "Installation in progress" : undefined}
-                          onClick={() => {
-                            if (isInstalling || onDesktop) return;
-                            beginInstall(installKey, () => {
-                              if (a.webUrl) {
-                                installWebApp(a.desktopLabel || a.name, a.webUrl, a.webUrl.startsWith("puei://") ? undefined : googleFaviconFor(a.webUrl, 64));
-                              } else if (a.appId) {
-                                addNativeIcon(a.appId, a.name, a.icon);
-                              }
-                              blip("notify");
-                            });
-                          }}>
-                          {isInstalling ? `Installing ${Math.floor(installPct)}%` : onDesktop ? "✔ Installed" : "⬇ Install"}
-                        </button>
+                        !appInstalled ? (
+                          <button
+                            className="aero-button rounded px-2 py-1 text-xs w-full"
+                            disabled={isInstalling}
+                            title={isInstalling ? "Installation in progress" : undefined}
+                            onClick={() => {
+                              if (isInstalling) return;
+                              beginInstall(installKey, () => {
+                                if (a.webUrl) {
+                                  installWebApp(a.desktopLabel || a.name, a.webUrl, a.webUrl.startsWith("puei://") ? undefined : googleFaviconFor(a.webUrl, 64));
+                                } else if (a.appId) {
+                                  addNativeIcon(a.appId, a.name, a.icon);
+                                }
+                                blip("notify");
+                              });
+                            }}>
+                            {isInstalling ? `Installing ${Math.floor(installPct)}%` : "⬇ Install"}
+                          </button>
+                        ) : (
+                          <>
+                            {!onDesktop && (
+                              <button className="aero-button rounded px-2 py-1 text-xs w-full"
+                                onClick={() => {
+                                  if (a.webUrl) installWebApp(a.desktopLabel || a.name, a.webUrl, a.webUrl.startsWith("puei://") ? undefined : googleFaviconFor(a.webUrl, 64));
+                                  else if (a.appId) addNativeIcon(a.appId, a.name, a.icon);
+                                  blip("notify");
+                                }}>+ Add to desktop</button>
+                            )}
+                            <button className="aero-button rounded px-2 py-1 text-xs w-full opacity-50" disabled>✔ Installed</button>
+                            <button className="aero-button rounded px-2 py-1 text-xs w-full" style={{ color: "#fca5a5" }}
+                              onClick={() => {
+                                if (a.webUrl) uninstallWebApp(a.webUrl);
+                                else if (a.appId) uninstallApp(a.appId);
+                                blip("notify");
+                              }}>Uninstall</button>
+                          </>
+                        )
                       ) : (
                         <button
                           className="aero-button rounded px-2 py-1 text-xs w-full"
@@ -3616,18 +3657,6 @@ function AppStoreApp({ installWebApp, openApp, openWebApp, systemVersion, addNat
                             });
                           }}>
                           {isInstalling ? `Installing ${Math.floor(installPct)}%` : onDesktop ? "✔ On desktop" : "+ Add to desktop"}
-                        </button>
-                      )}
-                      {onDesktop && (
-                        <button
-                          className="aero-button rounded px-2 py-1 text-xs w-full"
-                          style={{ color: "#fca5a5" }}
-                          onClick={() => {
-                            if (a.webUrl) uninstallWebApp(a.webUrl);
-                            else if (a.appId) uninstallApp(a.appId);
-                            blip("notify");
-                          }}>
-                          Uninstall
                         </button>
                       )}
                     </div>
@@ -3650,6 +3679,7 @@ function AppStoreApp({ installWebApp, openApp, openWebApp, systemVersion, addNat
               <p className="text-sm opacity-70 mb-4">Games by the Puei Team — install and play right in PueiOS.</p>
               <div className="grid grid-cols-3 gap-3">
                 {games.map((a) => {
+                  const gameInstalled = isInstalled(a);
                   const onDesktop = isOnDesktop(a);
                   const installKey = appInstallKey(a);
                   const installPct = installing[installKey];
@@ -3665,25 +3695,31 @@ function AppStoreApp({ installWebApp, openApp, openWebApp, systemVersion, addNat
                       </div>
                       <div className="text-xs opacity-70 mt-1 flex-1">{a.desc}</div>
                       <div className="flex flex-col gap-1 mt-2">
-                        <button
-                          className="aero-button rounded px-2 py-1 text-xs w-full"
-                          style={{ background: onDesktop ? "rgba(80,200,120,0.25)" : undefined, color: onDesktop ? "#4ade80" : undefined }}
-                          disabled={isInstalling || onDesktop}
-                          onClick={() => {
-                            if (isInstalling || onDesktop) return;
-                            beginInstall(installKey, () => {
-                              addNativeIcon(a.appId!, a.name, a.icon);
-                              blip("notify");
-                            });
-                          }}>
-                          {isInstalling ? `Installing ${Math.floor(installPct)}%` : onDesktop ? "✔ Installed" : "⬇ Install"}
-                        </button>
-                        {onDesktop && (
-                          <button className="aero-button rounded px-2 py-1 text-xs w-full"
-                            style={{ color: "#fca5a5" }}
-                            onClick={() => { uninstallApp(a.appId!); blip("notify"); }}>
-                            Uninstall
+                        {!gameInstalled ? (
+                          <button
+                            className="aero-button rounded px-2 py-1 text-xs w-full"
+                            disabled={isInstalling}
+                            onClick={() => {
+                              if (isInstalling) return;
+                              beginInstall(installKey, () => {
+                                addNativeIcon(a.appId!, a.name, a.icon);
+                                blip("notify");
+                              });
+                            }}>
+                            {isInstalling ? `Installing ${Math.floor(installPct)}%` : "⬇ Install"}
                           </button>
+                        ) : (
+                          <>
+                            {!onDesktop && (
+                              <button className="aero-button rounded px-2 py-1 text-xs w-full"
+                                onClick={() => { addNativeIcon(a.appId!, a.name, a.icon); blip("notify"); }}>
+                                + Add to desktop
+                              </button>
+                            )}
+                            <button className="aero-button rounded px-2 py-1 text-xs w-full opacity-50" disabled>✔ Installed</button>
+                            <button className="aero-button rounded px-2 py-1 text-xs w-full" style={{ color: "#fca5a5" }}
+                              onClick={() => { uninstallApp(a.appId!); blip("notify"); }}>Uninstall</button>
+                          </>
                         )}
                       </div>
                       {isInstalling && (

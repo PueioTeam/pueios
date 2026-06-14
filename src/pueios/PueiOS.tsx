@@ -102,6 +102,19 @@ export function PueiOS() {
   const [upgradeProgress, setUpgradeProgress] = useState(0);
   const [upgradeStartedAt, setUpgradeStartedAt] = useState<number | null>(null);
   const [currentUser, setCurrentUser] = useState<string>("");
+  const [installedKeys, setInstalledKeys] = useState<Set<string>>(() => {
+    try { return new Set(JSON.parse(localStorage.getItem("pueios2-installed-v1") || "[]") as string[]); } catch { return new Set(); }
+  });
+  const markInstalled = (key: string) => setInstalledKeys((prev) => {
+    const next = new Set(prev); next.add(key);
+    try { localStorage.setItem("pueios2-installed-v1", JSON.stringify([...next])); } catch {}
+    return next;
+  });
+  const markUninstalled = (key: string) => setInstalledKeys((prev) => {
+    const next = new Set(prev); next.delete(key);
+    try { localStorage.setItem("pueios2-installed-v1", JSON.stringify([...next])); } catch {}
+    return next;
+  });
   const [pwInput, setPwInput] = useState("");
   const [pwError, setPwError] = useState("");
   const [remember, setRemember] = useState(false);
@@ -326,6 +339,9 @@ export function PueiOS() {
     // Strip any icons with unknown appIds (stale from old versions)
     const VALID_APP_IDS = new Set(["puei-paint","puei-board","pueinet","puei-cloud-chat","puei-studio","file-explorer","settings","about","notepad","calculator","app-store","puei-social","folder","web-app","recycle-bin","chess","puei-mansion"]);
     loadedIcons = loadedIcons.filter((i: any) => i.webUrl || VALID_APP_IDS.has(i.appId));
+    // Fix missing iconEmoji on known web shortcuts
+    const knownEmojis: Record<string, string> = { "https://bezosmp.lovable.app": "🐞", "puei://films": "🎬", "puei://updates": "🔄" };
+    loadedIcons = loadedIcons.map((i: any) => (i.webUrl && knownEmojis[i.webUrl] && !i.iconEmoji) ? { ...i, iconEmoji: knownEmojis[i.webUrl], iconUrl: undefined } : i);
     setIcons(loadedIcons);
     if (!s.installed) { setPhase("install"); return; }
     if (s.lastUser && s.remember) { setLoginUser(s.lastUser); setRemember(true); }
@@ -695,13 +711,13 @@ button, a, [role="button"], select, label[for] { cursor: ${hand(c)} 6 0, pointer
         { label: "📦 Compress to ZIP", action: () => {
           const folderFiles = loadFiles().filter((f) => f.folder === icon.id);
           if (folderFiles.length === 0) { alert("This folder is empty — nothing to compress."); return; }
-          // Build a simple ZIP comment listing the files (actual binary ZIP needs server-side; we store a manifest)
           const manifest = folderFiles.map((f) => `${f.name} (${f.type}, ${Math.round((f.content?.length ?? 0) * 0.75 / 1024)}KB)`).join("\n");
           const zipName = `${icon.label}.zip`;
-          const zipContent = `ZIP archive of folder: ${icon.label}\nCreated: ${new Date().toLocaleString()}\nFiles:\n${manifest}\n\n[Binary ZIP creation requires export — open Files and use the ZIP viewer to inspect contents]`;
-          upsertFile({ id: `zip-${Date.now().toString(36)}`, name: zipName, type: "text", content: zipContent, updatedAt: Date.now(), owner: currentUser });
+          const zipId = `zip-${Date.now().toString(36)}`;
+          const zipContent = `ZIP archive of folder: ${icon.label}\nCreated: ${new Date().toLocaleString()}\nFiles:\n${manifest}`;
+          upsertFile({ id: zipId, name: zipName, type: "text", content: zipContent, updatedAt: Date.now(), owner: currentUser });
+          addIcon({ id: `icon-${zipId}`, label: zipName, appId: "notepad", fileId: zipId, iconEmoji: "📦" });
           blip("notify");
-          pushNotif("📦 Compressed", `${zipName} saved to Files (${folderFiles.length} file${folderFiles.length !== 1 ? "s" : ""})`);
         }},
       ] : []),
       { sep: true },
@@ -1512,14 +1528,16 @@ button, a, [role="button"], select, label[for] { cursor: ${hand(c)} 6 0, pointer
               webUrl={w.webUrl} folderIconId={w.folderIconId} icons={icons}
               systemVersion={systemVersion}
               startUpgrade={(target) => startSystemUpgrade(target)}
-              uninstallApp={(appId) => setIcons((cur) => cur.filter((i) => !(i.appId === appId && !i.fileId && !i.webUrl)))}
-              uninstallWebApp={(url) => setIcons((cur) => cur.filter((i) => !(i.appId === "web-app" && i.webUrl === url)))}
-              addNativeIcon={(appId, label, icon) => setIcons((cur) => cur.some((i) => i.appId === appId && !i.fileId && !i.webUrl) ? cur : [...cur, { id: `native-${appId}`, label, appId, iconEmoji: icon }])}
+              uninstallApp={(appId) => { markUninstalled(`app:${appId}`); setIcons((cur) => cur.filter((i) => !(i.appId === appId && !i.fileId && !i.webUrl))); }}
+              uninstallWebApp={(url) => { markUninstalled(`web:${url}`); setIcons((cur) => cur.filter((i) => !(i.appId === "web-app" && i.webUrl === url))); }}
+              addNativeIcon={(appId, label, icon) => { markInstalled(`app:${appId}`); setIcons((cur) => cur.some((i) => i.appId === appId && !i.fileId && !i.webUrl) ? cur : [...cur, { id: `native-${appId}`, label, appId, iconEmoji: icon }]); }}
               installWebApp={(label, url, iconUrl) => {
+                markInstalled(`web:${url}`);
                 const pueiEmojis: Record<string, string> = { "puei://films": "🎬", "puei://updates": "🔄", "puei://social": "📣", "puei://board": "📌", "puei://search": "✨", "puei://chat": "💬" };
                 const emoji = pueiEmojis[url];
                 addIcon({ id: `web-${Date.now().toString(36)}`, label, appId: "web-app", webUrl: url, iconEmoji: emoji, iconUrl: emoji ? undefined : (iconUrl || googleFaviconFor(url, 64)) });
               }}
+              installedKeys={installedKeys}
               openWebApp={(url, title) => openApp("web-app", { webUrl: url, title })}
               openFolder={(folderIconId, title) => openApp("folder", { folderIconId, title })}
               setUsers={setUsers}
