@@ -10,7 +10,7 @@ import {
   loadDownloads, recordDownload, isLikelySpam, aiMailSuggestions,
 } from "./state";
 import { pullAndMergeFiles, pushFile as pushFileToServer, removeFileFromServer } from "./fileSync";
-import { changePasswordRemote } from "./accountSync";
+import { changePasswordRemote, fetchPublicFilms } from "./accountSync";
 import { PueiMansionApp } from "./games";
 
 
@@ -4707,10 +4707,14 @@ function PueiFilmsPage({ currentUser }: { currentUser: string }) {
   const isAdmin = currentUser.trim().toLowerCase() === "pueioficial";
   const [films, setFilms] = useState<FilmPost[]>(() => loadFilms());
   const [playing, setPlaying] = useState<string | null>(null);
+  const [fetching, setFetching] = useState(false);
   useEffect(() => {
     const sync = () => setFilms(loadFilms());
     window.addEventListener("storage", sync);
     window.addEventListener("pueios-films", sync);
+    // Pull latest films from pueioficial's cloud account on mount
+    setFetching(true);
+    fetchPublicFilms().then((f) => { if (f.length) setFilms(f as FilmPost[]); setFetching(false); }).catch(() => setFetching(false));
     return () => { window.removeEventListener("storage", sync); window.removeEventListener("pueios-films", sync); };
   }, []);
   const [title, setTitle] = useState("");
@@ -4766,7 +4770,10 @@ function PueiFilmsPage({ currentUser }: { currentUser: string }) {
             </div>
           </div>
         )}
-        {films.length === 0 && (
+        {fetching && films.length === 0 && (
+          <div className="text-center text-sm opacity-50 py-12 animate-pulse">Loading films… 🎬</div>
+        )}
+        {!fetching && films.length === 0 && (
           <div className="text-center text-sm opacity-50 py-12">No films yet. Check back soon! 🎬</div>
         )}
         {films.map(f => (

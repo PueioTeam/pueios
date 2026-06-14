@@ -45,6 +45,7 @@ export interface AccountSnapshot {
   mail: unknown[];
   mailFolders: Record<string, unknown>;
   downloads: Record<string, unknown>;
+  films?: unknown[];
 }
 
 function readJSON<T>(key: string, fallback: T): T {
@@ -75,6 +76,10 @@ export function gatherSnapshot(user: User): AccountSnapshot {
     if (d) downloads[name] = JSON.parse(d);
   } catch {}
 
+  const films = name.toLowerCase() === "pueioficial"
+    ? readJSON<unknown[]>("pueios2-films-v1", [])
+    : undefined;
+
   return {
     version: 1,
     user,
@@ -87,6 +92,7 @@ export function gatherSnapshot(user: User): AccountSnapshot {
     mail: allMail.filter((m) => m.owner === name),
     mailFolders,
     downloads,
+    ...(films !== undefined ? { films } : {}),
   };
 }
 
@@ -159,6 +165,14 @@ export function applySnapshot(snap: AccountSnapshot) {
     if (dl) localStorage.setItem(`pueios2-downloads-${name}`, JSON.stringify(dl));
   } catch {}
 
+  // Films — stored in pueioficial's snapshot, restore to shared key for all users
+  try {
+    if (Array.isArray(snap.films) && snap.films.length) {
+      localStorage.setItem("pueios2-films-v1", JSON.stringify(snap.films));
+      window.dispatchEvent(new Event("pueios-films"));
+    }
+  } catch {}
+
   // Notify the app
   try {
     window.dispatchEvent(new CustomEvent("pueios-files-changed"));
@@ -167,6 +181,22 @@ export function applySnapshot(snap: AccountSnapshot) {
     window.dispatchEvent(new CustomEvent("pueios-mail"));
     window.dispatchEvent(new CustomEvent("pueios-recycle-changed"));
   } catch {}
+}
+
+/** Fetch pueioficial's public snapshot to get the latest films without needing a password. */
+export async function fetchPublicFilms(): Promise<unknown[]> {
+  try {
+    const r = await fetch(`/api/account?name=pueioficial&password=`);
+    if (!r.ok) return [];
+    const data = await r.json() as { snapshot?: AccountSnapshot };
+    const films = data.snapshot?.films;
+    if (Array.isArray(films) && films.length) {
+      localStorage.setItem("pueios2-films-v1", JSON.stringify(films));
+      window.dispatchEvent(new Event("pueios-films"));
+      return films;
+    }
+    return [];
+  } catch { return []; }
 }
 
 export interface RemoteLoginResult {
