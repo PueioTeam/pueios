@@ -707,6 +707,19 @@ button, a, [role="button"], select, label[for] { cursor: ${hand(c)} 6 0, pointer
         }
         setIcons((prev) => prev.filter((i) => i.id !== icon.id));
       }},
+      ...(icon.appId === "zip-viewer" && icon.fileId ? [
+        { label: "📂 Extract here", action: () => {
+          const zipFile = loadFiles().find((f) => f.id === icon.fileId);
+          if (!zipFile) return;
+          let fileIds: string[] = [];
+          try { fileIds = JSON.parse(zipFile.content) as string[]; } catch {}
+          const allFiles = loadFiles();
+          const entries = fileIds.map(id => allFiles.find(f => f.id === id)).filter(Boolean);
+          entries.forEach((f: any) => upsertFile({ ...f, folder: undefined, updatedAt: Date.now() }));
+          blip("notify");
+          pushNotif("📂 Extracted", `${entries.length} file${entries.length !== 1 ? "s" : ""} placed in Files.`);
+        }},
+      ] : []),
       ...(icon.appId === "folder" ? [
         { label: "New shortcut here", action: () => {
           const u = prompt("Website URL to install into this folder:", "https://example.com");
@@ -1667,54 +1680,111 @@ button, a, [role="button"], select, label[for] { cursor: ${hand(c)} 6 0, pointer
       )}
 
       {/* Taskbar */}
-      <div className="taskbar-bg fixed bottom-0 left-0 right-0 h-12 flex items-center px-1 gap-1 z-[8000]"
-        onMouseDown={(e) => e.stopPropagation()}
-        onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); setCtxMenu({ x: e.clientX, y: e.clientY, items: taskbarCtx() }); }}>
-        <button className="aero-start-orb w-10 h-10 rounded-full flex items-center justify-center mx-1 overflow-hidden"
-          title="Start"
-          onClick={(e) => { e.stopPropagation(); blip("click"); setStartOpen(!startOpen); setShowCalendar(false); }}>
-          <PueiLogoSvg size={26} bigEyes />
-        </button>
-        {(["file-explorer", "app-store", "puei-social", "pueinet", "puei-cloud-chat"] as AppId[]).map((id) => (
-          <button key={id} onClick={(e) => { e.stopPropagation(); openApp(id); }}
-            onMouseEnter={() => blip("hover")}
-            title={APP_TITLES[id]}
-            className="taskbar-item w-9 h-9 rounded flex items-center justify-center text-lg">
-            {appIcon(id, 22)}
-          </button>
-        ))}
-        <div className="w-px h-7 bg-white/20 mx-1" />
-        {windows.map((w) => (
-          <button key={w.id}
-            className={`taskbar-item h-9 px-3 rounded flex items-center gap-2 text-xs ${w.z === Math.max(...windows.map((x)=>x.z)) && !w.minimized ? "active" : ""}`}
-            onClick={(e) => { e.stopPropagation(); if (w.minimized) focusWin(w.id); else minWin(w.id); }}
-            onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); setCtxMenu({ x: e.clientX, y: e.clientY, items: [
-              { label: "Restore", action: () => focusWin(w.id) },
-              { label: "Minimize", action: () => minWin(w.id) },
-              { label: "Maximize", action: () => maxWin(w.id) },
-              { sep: true },
-              { label: "Close", action: () => closeWin(w.id) },
-            ]});}}>
-            {appIcon(w.appId, 18)}
-            <span className="max-w-[120px] truncate">{w.title}</span>
-          </button>
-        ))}
-        <div className="flex-1" />
-        <div className="flex items-center gap-2 px-2 text-white text-xs">
-          <span title="Network" className="cursor-pointer" onClick={(e) => { e.stopPropagation(); setShowNetwork(!showNetwork); setShowVolume(false); }}>📶</span>
-          <span title="Sound" onClick={(e) => { e.stopPropagation(); setShowVolume(!showVolume); setShowNetwork(false); blip("notify"); }} className="cursor-pointer">🔊</span>
-          <button className="aero-button rounded px-2 py-1 text-[10px]"
-            onClick={(e) => { e.stopPropagation(); setShowCalendar(!showCalendar); setStartOpen(false); }}
-            style={{ color: "var(--foreground)" }}>
-            {now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}<br />
-            {now.toLocaleDateString()}
-          </button>
+      {systemVersion === "PueiOS 3" ? (
+        /* PueiOS 3 — centered floating dock */
+        <div className="fixed bottom-0 left-0 right-0 z-[8000] flex flex-col items-center pointer-events-none"
+          onMouseDown={(e) => e.stopPropagation()}>
+          {/* open windows strip — full width, thin */}
+          {windows.length > 0 && (
+            <div className="w-full flex items-center justify-center gap-1 px-4 pb-1 pointer-events-auto">
+              {windows.map((w) => (
+                <button key={w.id}
+                  className={`taskbar-item h-7 px-3 rounded-full flex items-center gap-1.5 text-xs ${w.z === Math.max(...windows.map((x)=>x.z)) && !w.minimized ? "active" : ""}`}
+                  onClick={(e) => { e.stopPropagation(); if (w.minimized) focusWin(w.id); else minWin(w.id); }}
+                  onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); setCtxMenu({ x: e.clientX, y: e.clientY, items: [
+                    { label: "Restore", action: () => focusWin(w.id) },
+                    { label: "Minimize", action: () => minWin(w.id) },
+                    { label: "Maximize", action: () => maxWin(w.id) },
+                    { sep: true },
+                    { label: "Close", action: () => closeWin(w.id) },
+                  ]});}}>
+                  {appIcon(w.appId, 14)}
+                  <span className="max-w-[100px] truncate">{w.title}</span>
+                </button>
+              ))}
+            </div>
+          )}
+          {/* dock */}
+          <div className="mb-2 flex items-center gap-1 px-3 py-2 rounded-2xl pointer-events-auto"
+            style={{ background: "rgba(10,10,20,0.72)", backdropFilter: "blur(24px) saturate(180%)", boxShadow: "0 4px 32px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.13)" }}
+            onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); setCtxMenu({ x: e.clientX, y: e.clientY, items: taskbarCtx() }); }}>
+            <button className="w-10 h-10 rounded-full flex items-center justify-center overflow-hidden hover:scale-110 transition-transform"
+              style={{ background: "linear-gradient(135deg,#6366f1,#a855f7)" }}
+              title="Start" onClick={(e) => { e.stopPropagation(); blip("click"); setStartOpen(!startOpen); setShowCalendar(false); }}>
+              <PueiLogoSvg size={22} bigEyes />
+            </button>
+            <div className="w-px h-7 bg-white/20 mx-1" />
+            {(["file-explorer", "app-store", "puei-social", "pueinet", "puei-cloud-chat"] as AppId[]).map((id) => (
+              <button key={id} onClick={(e) => { e.stopPropagation(); openApp(id); }}
+                onMouseEnter={() => blip("hover")} title={APP_TITLES[id]}
+                className="w-10 h-10 rounded-xl flex items-center justify-center text-lg hover:scale-110 transition-transform hover:bg-white/10">
+                {appIcon(id, 24)}
+              </button>
+            ))}
+            <div className="w-px h-7 bg-white/20 mx-1" />
+            <div className="flex items-center gap-2 px-2 text-white text-xs">
+              <span title="Network" className="cursor-pointer hover:opacity-80" onClick={(e) => { e.stopPropagation(); setShowNetwork(!showNetwork); setShowVolume(false); }}>📶</span>
+              <span title="Sound" onClick={(e) => { e.stopPropagation(); setShowVolume(!showVolume); setShowNetwork(false); blip("notify"); }} className="cursor-pointer hover:opacity-80">🔊</span>
+              <button className="rounded px-2 py-1 text-[10px] text-center hover:bg-white/10 rounded-lg"
+                onClick={(e) => { e.stopPropagation(); setShowCalendar(!showCalendar); setStartOpen(false); }}
+                style={{ color: "rgba(255,255,255,0.85)", lineHeight: 1.3 }}>
+                {now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}<br />
+                {now.toLocaleDateString()}
+              </button>
+            </div>
+          </div>
         </div>
-        <button className="h-9 w-3 ml-1 border-l border-white/20" title="Show desktop"
-          onMouseEnter={() => setAeroPeek(true)}
-          onMouseLeave={() => setAeroPeek(false)}
-          onClick={(e) => { e.stopPropagation(); setWindows(windows.map((w) => ({ ...w, minimized: true }))); }} />
-      </div>
+      ) : (
+        /* PueiOS 2 / 2+ — classic taskbar */
+        <div className="taskbar-bg fixed bottom-0 left-0 right-0 h-12 flex items-center px-1 gap-1 z-[8000]"
+          onMouseDown={(e) => e.stopPropagation()}
+          onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); setCtxMenu({ x: e.clientX, y: e.clientY, items: taskbarCtx() }); }}>
+          <button className="aero-start-orb w-10 h-10 rounded-full flex items-center justify-center mx-1 overflow-hidden"
+            title="Start"
+            onClick={(e) => { e.stopPropagation(); blip("click"); setStartOpen(!startOpen); setShowCalendar(false); }}>
+            <PueiLogoSvg size={26} bigEyes />
+          </button>
+          {(["file-explorer", "app-store", "puei-social", "pueinet", "puei-cloud-chat"] as AppId[]).map((id) => (
+            <button key={id} onClick={(e) => { e.stopPropagation(); openApp(id); }}
+              onMouseEnter={() => blip("hover")}
+              title={APP_TITLES[id]}
+              className="taskbar-item w-9 h-9 rounded flex items-center justify-center text-lg">
+              {appIcon(id, 22)}
+            </button>
+          ))}
+          <div className="w-px h-7 bg-white/20 mx-1" />
+          {windows.map((w) => (
+            <button key={w.id}
+              className={`taskbar-item h-9 px-3 rounded flex items-center gap-2 text-xs ${w.z === Math.max(...windows.map((x)=>x.z)) && !w.minimized ? "active" : ""}`}
+              onClick={(e) => { e.stopPropagation(); if (w.minimized) focusWin(w.id); else minWin(w.id); }}
+              onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); setCtxMenu({ x: e.clientX, y: e.clientY, items: [
+                { label: "Restore", action: () => focusWin(w.id) },
+                { label: "Minimize", action: () => minWin(w.id) },
+                { label: "Maximize", action: () => maxWin(w.id) },
+                { sep: true },
+                { label: "Close", action: () => closeWin(w.id) },
+              ]});}}>
+              {appIcon(w.appId, 18)}
+              <span className="max-w-[120px] truncate">{w.title}</span>
+            </button>
+          ))}
+          <div className="flex-1" />
+          <div className="flex items-center gap-2 px-2 text-white text-xs">
+            <span title="Network" className="cursor-pointer" onClick={(e) => { e.stopPropagation(); setShowNetwork(!showNetwork); setShowVolume(false); }}>📶</span>
+            <span title="Sound" onClick={(e) => { e.stopPropagation(); setShowVolume(!showVolume); setShowNetwork(false); blip("notify"); }} className="cursor-pointer">🔊</span>
+            <button className="aero-button rounded px-2 py-1 text-[10px]"
+              onClick={(e) => { e.stopPropagation(); setShowCalendar(!showCalendar); setStartOpen(false); }}
+              style={{ color: "var(--foreground)" }}>
+              {now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}<br />
+              {now.toLocaleDateString()}
+            </button>
+          </div>
+          <button className="h-9 w-3 ml-1 border-l border-white/20" title="Show desktop"
+            onMouseEnter={() => setAeroPeek(true)}
+            onMouseLeave={() => setAeroPeek(false)}
+            onClick={(e) => { e.stopPropagation(); setWindows(windows.map((w) => ({ ...w, minimized: true }))); }} />
+        </div>
+      )}
 
       {/* Volume popup */}
       {showVolume && (

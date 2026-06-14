@@ -5106,6 +5106,7 @@ function PueiSocialApp({ user, users }: { user: string; users: User[] }) {
 function ZipViewerApp({ fileId }: { fileId?: string }) {
   const zipFile = fileId ? loadFiles().find(f => f.id === fileId) : null;
   const [preview, setPreview] = useState<string | null>(null);
+  const [extracted, setExtracted] = useState(false);
 
   const fileIds: string[] = (() => {
     if (!zipFile?.content) return [];
@@ -5114,12 +5115,27 @@ function ZipViewerApp({ fileId }: { fileId?: string }) {
   const allFiles = loadFiles();
   const entries = fileIds.map(id => allFiles.find(f => f.id === id)).filter(Boolean) as SavedFile[];
 
+  const isImage = (f: SavedFile) => f.type === "image" || f.content?.startsWith("data:image");
+
+  const extractAll = () => {
+    entries.forEach(f => {
+      upsertFile({ ...f, folder: undefined, updatedAt: Date.now() });
+    });
+    setExtracted(true);
+    blip("notify");
+  };
+
   return (
     <div className="flex flex-col h-full">
       <div className="aero-titlebar px-4 py-2 flex items-center gap-3 flex-shrink-0">
         <span className="text-lg">📦</span>
         <span className="font-bold text-sm">{zipFile?.name ?? "ZIP Archive"}</span>
         <span className="text-xs opacity-50">{entries.length} file{entries.length !== 1 ? "s" : ""}</span>
+        <div className="ml-auto flex gap-2">
+          <button className="aero-button rounded px-3 py-1 text-xs" onClick={extractAll} disabled={entries.length === 0}>
+            {extracted ? "✔ Extracted" : "📂 Extract all"}
+          </button>
+        </div>
       </div>
       {preview && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70" onClick={() => setPreview(null)}>
@@ -5134,7 +5150,7 @@ function ZipViewerApp({ fileId }: { fileId?: string }) {
           <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))" }}>
             {entries.map((f) => (
               <div key={f.id} className="rounded-lg overflow-hidden border border-white/10 bg-white/5 hover:bg-white/10 transition-colors">
-                {f.type === "image" ? (
+                {isImage(f) ? (
                   <div className="cursor-pointer" onClick={() => setPreview(f.content)}>
                     <img src={f.content} alt={f.name} className="w-full h-24 object-cover" />
                     <div className="px-2 py-1 text-xs truncate opacity-70">{f.name}</div>
@@ -5148,6 +5164,11 @@ function ZipViewerApp({ fileId }: { fileId?: string }) {
                 )}
               </div>
             ))}
+          </div>
+        )}
+        {extracted && (
+          <div className="mt-4 text-xs rounded px-3 py-2" style={{ background: "rgba(80,200,120,0.18)" }}>
+            ✔ {entries.length} file{entries.length !== 1 ? "s" : ""} extracted to Files.
           </div>
         )}
       </div>
