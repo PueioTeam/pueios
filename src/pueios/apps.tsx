@@ -147,9 +147,14 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, curren
     return () => window.removeEventListener("pueios-files-changed", fn);
   }, [currentUser]);
 
-  const me: User | undefined = users.find((u: User) => u.name === currentUser);
+  const me: User | undefined = users.find((u: User) => u.name === currentUser)
+    ?? (currentUser ? { name: currentUser, avatar: "🧑", color: "200", pueiNumber: "", friends: [] } as User : undefined);
   const updateMe = (patch: Partial<User>) => {
-    setUsers(users.map((u: User) => u.name === currentUser ? { ...u, ...patch } : u));
+    if (!users.some((u: User) => u.name === currentUser)) {
+      setUsers([...users, { ...me!, ...patch }]);
+    } else {
+      setUsers(users.map((u: User) => u.name === currentUser ? { ...u, ...patch } : u));
+    }
   };
   const onAvatarFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0]; if (!f) return;

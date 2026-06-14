@@ -1656,7 +1656,7 @@ button, a, [role="button"], select, label[for] { cursor: ${hand(c)} 6 0, pointer
       )}
 
       {/* Start menu */}
-      {startOpen && (
+      {startOpen && systemVersion !== "PueiOS 3" && (
         <div className="fixed bottom-12 left-2 rounded-xl w-[440px] z-[9000] overflow-hidden shadow-2xl"
           style={{ animation: "fade-scale 0.18s ease-out", background: "var(--background)", border: "1px solid var(--border)" }} onMouseDown={(e) => e.stopPropagation()}>
           <div className="aero-titlebar px-4 py-2 flex items-center gap-2">
@@ -1689,6 +1689,56 @@ button, a, [role="button"], select, label[for] { cursor: ${hand(c)} 6 0, pointer
               onClick={() => { setStartOpen(false); setPhase("login"); setPwInput(""); }}>🔄 Switch User</button>
             <button className="aero-button rounded px-3 py-1 text-xs"
               onClick={() => { blip("shutdown"); setStartOpen(false); setPhase("shutdown"); setWindows([]); }}>⏻ Shut down</button>
+          </div>
+        </div>
+      )}
+
+      {/* PueiOS 3 fullscreen launcher */}
+      {startOpen && systemVersion === "PueiOS 3" && (
+        <div className="fixed inset-0 z-[9000] flex flex-col items-center justify-center"
+          style={{ background: "rgba(8,8,20,0.82)", backdropFilter: "blur(32px) saturate(160%)", animation: "fade-scale 0.18s ease-out" }}
+          onMouseDown={() => setStartOpen(false)}>
+          <div onMouseDown={(e) => e.stopPropagation()} className="flex flex-col items-center w-full max-w-2xl px-6">
+            {/* User header */}
+            <div className="flex items-center gap-4 mb-8">
+              <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl overflow-hidden"
+                style={{ background: "linear-gradient(135deg,#6366f1,#a855f7)" }}>
+                {currentAvatar?.startsWith("data:")
+                  ? <img src={currentAvatar} alt="" className="w-full h-full object-cover" />
+                  : (currentAvatar || "👤")}
+              </div>
+              <div>
+                <div className="text-white font-bold text-xl">{currentUser}</div>
+                <div className="text-white/50 text-sm">PueiOS 3</div>
+              </div>
+            </div>
+
+            {/* App grid */}
+            <div className="grid grid-cols-5 gap-4 w-full mb-8">
+              {[...new Set([
+                ...icons.filter(i => !i.fileId && !i.webUrl && i.appId !== "recycle-bin").map(i => i.appId),
+                "settings" as const, "about" as const,
+              ])].filter(id => id in APP_TITLES).slice(0, 15).map((id) => (
+                <button key={id} onClick={() => { openApp(id); setStartOpen(false); }}
+                  className="flex flex-col items-center gap-2 p-3 rounded-2xl transition-all hover:scale-105"
+                  style={{ background: "rgba(255,255,255,0.08)" }}
+                  onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.16)")}
+                  onMouseLeave={e => (e.currentTarget.style.background = "rgba(255,255,255,0.08)")}>
+                  {appIcon(id, 36)}
+                  <span className="text-white text-[10px] text-center truncate w-full">{APP_TITLES[id]}</span>
+                </button>
+              ))}
+            </div>
+
+            {/* Bottom actions */}
+            <div className="flex gap-3">
+              <button className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm text-white/80 hover:text-white transition-colors hover:bg-white/10"
+                onClick={() => { setLocked(true); setStartOpen(false); setPwInput(""); }}>🔒 Lock</button>
+              <button className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm text-white/80 hover:text-white transition-colors hover:bg-white/10"
+                onClick={() => { setStartOpen(false); setPhase("login"); setPwInput(""); }}>🔄 Switch User</button>
+              <button className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm text-white/80 hover:text-white transition-colors hover:bg-white/10"
+                onClick={() => { blip("shutdown"); setStartOpen(false); setPhase("shutdown"); setWindows([]); }}>⏻ Shut down</button>
+            </div>
           </div>
         </div>
       )}
