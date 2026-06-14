@@ -337,7 +337,7 @@ export function PueiOS() {
       loadedIcons = [...loadedIcons, { id: "i-studio", label: "Puei Studio", appId: "puei-studio" as const }];
     }
     // Strip any icons with unknown appIds (stale from old versions)
-    const VALID_APP_IDS = new Set(["puei-paint","puei-board","pueinet","puei-cloud-chat","puei-studio","file-explorer","settings","about","notepad","calculator","app-store","puei-social","folder","web-app","recycle-bin","chess","puei-mansion"]);
+    const VALID_APP_IDS = new Set(["puei-paint","puei-board","pueinet","puei-cloud-chat","puei-studio","file-explorer","settings","about","notepad","calculator","app-store","puei-social","folder","web-app","recycle-bin","chess","puei-mansion","zip-viewer","iso-viewer"]);
     loadedIcons = loadedIcons.filter((i: any) => i.webUrl || VALID_APP_IDS.has(i.appId));
     // Fix missing iconEmoji on known web shortcuts
     const knownEmojis: Record<string, string> = { "https://bezosmp.lovable.app": "🐞", "puei://films": "🎬", "puei://updates": "🔄" };
@@ -711,12 +711,18 @@ button, a, [role="button"], select, label[for] { cursor: ${hand(c)} 6 0, pointer
         { label: "📦 Compress to ZIP", action: () => {
           const folderFiles = loadFiles().filter((f) => f.folder === icon.id);
           if (folderFiles.length === 0) { alert("This folder is empty — nothing to compress."); return; }
-          const manifest = folderFiles.map((f) => `${f.name} (${f.type}, ${Math.round((f.content?.length ?? 0) * 0.75 / 1024)}KB)`).join("\n");
           const zipName = `${icon.label}.zip`;
-          const zipId = `zip-${Date.now().toString(36)}`;
-          const zipContent = `ZIP archive of folder: ${icon.label}\nCreated: ${new Date().toLocaleString()}\nFiles:\n${manifest}`;
-          upsertFile({ id: zipId, name: zipName, type: "text", content: zipContent, updatedAt: Date.now(), owner: currentUser });
-          addIcon({ id: `icon-${zipId}`, label: zipName, appId: "notepad", fileId: zipId, iconEmoji: "📦" });
+          const allFiles = loadFiles();
+          const existing = allFiles.find((f) => f.name === zipName && f.type === "zip");
+          const zipId = existing?.id ?? `zip-${Date.now().toString(36)}`;
+          const zipContent = JSON.stringify(folderFiles.map((f) => f.id));
+          upsertFile({ id: zipId, name: zipName, type: "zip", content: zipContent, updatedAt: Date.now(), owner: currentUser });
+          if (!existing) {
+            const iconId = `icon-${zipId}`;
+            if (!icons.some((i) => i.id === iconId)) {
+              addIcon({ id: iconId, label: zipName, appId: "zip-viewer", fileId: zipId, iconEmoji: "📦" });
+            }
+          }
           blip("notify");
         }},
       ] : []),

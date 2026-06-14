@@ -5100,66 +5100,48 @@ function PueiSocialApp({ user, users }: { user: string; users: User[] }) {
 
 // ---------- ZIP Viewer ----------
 function ZipViewerApp({ fileId }: { fileId?: string }) {
-  const file = fileId ? loadFiles().find(f => f.id === fileId) : null;
-  const [entries, setEntries] = useState<string[]>([]);
-  const [loaded, setLoaded] = useState(false);
+  const zipFile = fileId ? loadFiles().find(f => f.id === fileId) : null;
+  const [preview, setPreview] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!file) return;
-    // Parse ZIP local file header entries from base64 data URL
-    try {
-      const b64 = file.content.split(",")[1] ?? "";
-      const bin = atob(b64);
-      const found: string[] = [];
-      let i = 0;
-      while (i < bin.length - 4) {
-        // Local file header signature: PK\x03\x04
-        if (bin.charCodeAt(i) === 0x50 && bin.charCodeAt(i+1) === 0x4B &&
-            bin.charCodeAt(i+2) === 0x03 && bin.charCodeAt(i+3) === 0x04) {
-          const fnLen = bin.charCodeAt(i+26) | (bin.charCodeAt(i+27) << 8);
-          const exLen = bin.charCodeAt(i+28) | (bin.charCodeAt(i+29) << 8);
-          const compSize = (bin.charCodeAt(i+18) | (bin.charCodeAt(i+19) << 8) | (bin.charCodeAt(i+20) << 16) | (bin.charCodeAt(i+21) << 24)) >>> 0;
-          const name = bin.slice(i+30, i+30+fnLen);
-          if (name && !name.endsWith("/")) found.push(name);
-          i = i + 30 + fnLen + exLen + compSize;
-        } else { i++; }
-        if (found.length > 200) break;
-      }
-      setEntries(found);
-    } catch { setEntries([]); }
-    setLoaded(true);
-  }, [file]);
-
-  const ext = (name: string) => {
-    const e = name.split(".").pop()?.toLowerCase() ?? "";
-    if (["png","jpg","jpeg","gif","webp","svg"].includes(e)) return "🖼️";
-    if (["mp4","mov","avi","mkv"].includes(e)) return "🎬";
-    if (["mp3","wav","ogg"].includes(e)) return "🎵";
-    if (["txt","md","json","xml","csv","log"].includes(e)) return "📄";
-    if (["js","ts","tsx","jsx","html","css","py","java","c","cpp"].includes(e)) return "💻";
-    if (["zip","rar","7z"].includes(e)) return "🗜️";
-    return "📦";
-  };
+  const fileIds: string[] = (() => {
+    if (!zipFile?.content) return [];
+    try { return JSON.parse(zipFile.content) as string[]; } catch { return []; }
+  })();
+  const allFiles = loadFiles();
+  const entries = fileIds.map(id => allFiles.find(f => f.id === id)).filter(Boolean) as SavedFile[];
 
   return (
     <div className="flex flex-col h-full">
       <div className="aero-titlebar px-4 py-2 flex items-center gap-3 flex-shrink-0">
-        <span className="text-lg">🗜️</span>
-        <span className="font-bold text-sm">{file?.name ?? "ZIP Archive"}</span>
-        {loaded && <span className="text-xs opacity-50">{entries.length} file{entries.length !== 1 ? "s" : ""}</span>}
+        <span className="text-lg">📦</span>
+        <span className="font-bold text-sm">{zipFile?.name ?? "ZIP Archive"}</span>
+        <span className="text-xs opacity-50">{entries.length} file{entries.length !== 1 ? "s" : ""}</span>
       </div>
+      {preview && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70" onClick={() => setPreview(null)}>
+          <img src={preview} alt="" className="max-w-[90vw] max-h-[85vh] rounded shadow-2xl object-contain" onClick={(e) => e.stopPropagation()} />
+          <button onClick={() => setPreview(null)} className="absolute top-4 right-4 text-white text-2xl opacity-70 hover:opacity-100">✕</button>
+        </div>
+      )}
       <div className="flex-1 overflow-auto p-4">
-        {!file && <div className="text-sm opacity-50 text-center py-12">No file found.</div>}
-        {file && !loaded && <div className="text-sm opacity-50 text-center py-12">Reading archive…</div>}
-        {loaded && entries.length === 0 && (
-          <div className="text-sm opacity-50 text-center py-12">Empty archive or unreadable format.</div>
-        )}
-        {loaded && entries.length > 0 && (
-          <div className="space-y-1">
-            {entries.map((name, i) => (
-              <div key={i} className="flex items-center gap-3 px-3 py-1.5 rounded hover:bg-white/10 text-sm">
-                <span>{ext(name)}</span>
-                <span className="flex-1 truncate font-mono text-xs opacity-80">{name}</span>
+        {!zipFile && <div className="text-sm opacity-50 text-center py-12">No archive found.</div>}
+        {zipFile && entries.length === 0 && <div className="text-sm opacity-50 text-center py-12">Empty archive.</div>}
+        {entries.length > 0 && (
+          <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))" }}>
+            {entries.map((f) => (
+              <div key={f.id} className="rounded-lg overflow-hidden border border-white/10 bg-white/5 hover:bg-white/10 transition-colors">
+                {f.type === "image" ? (
+                  <div className="cursor-pointer" onClick={() => setPreview(f.content)}>
+                    <img src={f.content} alt={f.name} className="w-full h-24 object-cover" />
+                    <div className="px-2 py-1 text-xs truncate opacity-70">{f.name}</div>
+                  </div>
+                ) : (
+                  <div className="p-2">
+                    <div className="text-2xl mb-1">📄</div>
+                    <div className="text-xs font-semibold truncate">{f.name}</div>
+                    <div className="text-[10px] opacity-50 mt-1 line-clamp-3 font-mono whitespace-pre-wrap break-all">{f.content?.slice(0, 120)}</div>
+                  </div>
+                )}
               </div>
             ))}
           </div>
