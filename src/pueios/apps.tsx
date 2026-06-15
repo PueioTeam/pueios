@@ -13,6 +13,31 @@ import { pullAndMergeFiles, pushFile as pushFileToServer, removeFileFromServer }
 import { changePasswordRemote, fetchPublicFilms } from "./accountSync";
 import { PueiMansionApp } from "./games";
 
+type DialogState = { msg: string; onOk: () => void; onCancel?: () => void } | null;
+function useLocalDialog(): [DialogState, (msg: string, onOk?: () => void) => void, (msg: string, onOk: () => void, onCancel?: () => void) => void] {
+  const [dialog, setDialog] = useState<DialogState>(null);
+  const alert = (msg: string, onOk?: () => void) =>
+    setDialog({ msg, onOk: () => { setDialog(null); onOk?.(); } });
+  const confirm = (msg: string, onOk: () => void, onCancel?: () => void) =>
+    setDialog({ msg, onOk: () => { setDialog(null); onOk(); }, onCancel: () => { setDialog(null); onCancel?.(); } });
+  return [dialog, alert, confirm];
+}
+function LocalDialogModal({ dialog }: { dialog: DialogState }) {
+  if (!dialog) return null;
+  return (
+    <div className="absolute inset-0 z-[60] flex items-center justify-center" style={{ background: "rgba(0,0,0,0.55)" }}>
+      <div className="aero-glass rounded-xl p-5 w-72 shadow-2xl" style={{ animation: "fade-scale 0.15s ease-out" }}>
+        <div className="text-sm leading-relaxed mb-5 whitespace-pre-wrap">{dialog.msg}</div>
+        <div className="flex justify-end gap-2">
+          {dialog.onCancel && (
+            <button className="aero-button rounded px-4 py-1.5 text-sm" onClick={dialog.onCancel}>Cancel</button>
+          )}
+          <button className="aero-button rounded px-4 py-1.5 text-sm font-semibold" onClick={dialog.onOk}>OK</button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export type AppRendererProps = {
   appId: AppId;
@@ -111,7 +136,6 @@ function chooseImageDestination(defaultChoice: "pictures" | "downloads" | "deskt
   if (!v || v === "pictures" || v === "picture") return SYS_FOLDER_PICTURES;
   if (v === "downloads" || v === "download") return SYS_FOLDER_DOWNLOADS;
   if (v === "desktop") return undefined;
-  alert("Unknown folder. Use: pictures, downloads, or desktop.");
   return null;
 }
 
@@ -139,6 +163,7 @@ function saveDownloadedImage(owner: string, name: string, dataUrl: string, folde
 
 
 function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, currentUser, users, setUsers, systemVersion, startUpgrade, uninstallApp, icons, signOut, lockScreen, deleteAccount }: any) {
+  const [settingsDialog, , settingsConfirm] = useLocalDialog();
   const [tab, setTab] = useState("personalize");
   const [paintImages, setPaintImages] = useState<SavedFile[]>(() => loadFiles().filter((f) => f.type === "image" && f.folder === SYS_FOLDER_PICTURES && (!f.owner || f.owner === currentUser)));
   useEffect(() => {
@@ -236,7 +261,8 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, curren
     "Pueio Control",
   ];
   return (
-    <div className="flex h-full">
+    <div className="flex h-full relative">
+      <LocalDialogModal dialog={settingsDialog} />
       <div className="w-48 p-2 border-r" style={{ background: "var(--background)" }}>
         {tabs.map(([k, l]) => (
           <div key={k} onClick={() => { setTab(k); blip("click"); }}
@@ -651,15 +677,15 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, curren
                       setPcMsg({ kind: "ok", text: "✔ Password changed." });
                       blip("notify");
                     }}>Change password</button>
-                    <button className="text-xs opacity-60 underline hover:opacity-100" onClick={async () => {
-                      if (confirm("Remove your password? This switches you to Limited Access mode.")) {
+                    <button className="text-xs opacity-60 underline hover:opacity-100" onClick={() => {
+                      settingsConfirm("Remove your password? This switches you to Limited Access mode.", async () => {
                         const ok = await changePasswordRemote(me.name, me.password ?? "", "", { ...me, password: "", noPassword: true, limitedMode: true });
                         if (!ok) { setPcMsg({ kind: "err", text: "Could not reach server. Try again." }); return; }
                         updateMe({ password: "", noPassword: true, limitedMode: true });
                         setPcCurPw(""); setPcNewPw(""); setPcConfirm("");
                         setPcMsg({ kind: "ok", text: "Password removed. Now in Limited Access mode." });
                         blip("notify");
-                      }
+                      });
                     }}>Remove password</button>
                   </>
                 )}
@@ -718,6 +744,7 @@ function AboutApp() {
 
 
 function NotepadApp({ fileId, onCreateShortcut, currentUser }: { fileId?: string; onCreateShortcut: (l: string, id: string) => void; currentUser: string }) {
+  const [noteDialog, noteAlert] = useLocalDialog();
   const initial = fileId ? getFile(fileId) : undefined;
   const [text, setText] = useState(initial?.content ?? "Welcome to Puei Notepad.\n\nType anything...");
   const [name, setName] = useState(initial?.name ?? "Untitled.txt");
@@ -733,15 +760,16 @@ function NotepadApp({ fileId, onCreateShortcut, currentUser }: { fileId?: string
   };
   const open = () => {
     const all = loadFiles().filter((f) => f.type === "text" && (!f.owner || f.owner === currentUser));
-    if (all.length === 0) { alert("No saved documents yet."); return; }
+    if (all.length === 0) { noteAlert("No saved documents yet."); return; }
     const pick = prompt("Open file — type a name from:\n" + all.map((f) => f.name).join("\n"), all[0].name);
     if (!pick) return;
     const f = all.find((x) => x.name === pick);
-    if (!f) { alert("Not found"); return; }
+    if (!f) { noteAlert("File not found."); return; }
     setText(f.content); setName(f.name); setSavedId(f.id); setDocLocked(false);
   };
   return (
-    <div className="flex flex-col h-full" style={{ overflow: "hidden" }}>
+    <div className="flex flex-col h-full relative" style={{ overflow: "hidden" }}>
+      <LocalDialogModal dialog={noteDialog} />
       <div className="aero-titlebar text-xs px-2 py-1 flex items-center gap-2 flex-shrink-0">
         <input value={name} onChange={(e) => setName(e.target.value)} disabled={docLocked}
           className="px-2 py-0.5 rounded text-xs input-field" style={{ width: 180 }} />
@@ -797,6 +825,7 @@ function CalculatorApp() {
 }
 
 function PaintApp({ fileId, onCreateShortcut, currentUser }: { fileId?: string; onCreateShortcut: (l: string, id: string) => void; currentUser: string }) {
+  const [paintDialog, paintAlert] = useLocalDialog();
   const initial = fileId ? getFile(fileId) : undefined;
   const cv = useRef<HTMLCanvasElement>(null);
   const draw = useRef(false);
@@ -902,7 +931,7 @@ function PaintApp({ fileId, onCreateShortcut, currentUser }: { fileId?: string; 
   };
   const open = () => {
     const all = loadFiles().filter((f) => f.type === "image" && (!f.owner || f.owner === currentUser));
-    if (all.length === 0) { alert("No saved images yet."); return; }
+    if (all.length === 0) { paintAlert("No saved images yet."); return; }
     const pick = prompt("Open file — type a name from:\n" + all.map((f) => f.name).join("\n"), all[0].name);
     if (!pick) return;
     const f = all.find((x) => x.name === pick);
@@ -913,7 +942,8 @@ function PaintApp({ fileId, onCreateShortcut, currentUser }: { fileId?: string; 
     const img = new Image(); img.onload = () => ctx.drawImage(img, 0, 0); img.src = f.content;
   };
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full relative">
+      <LocalDialogModal dialog={paintDialog} />
       <div className="aero-titlebar flex flex-wrap gap-2 px-2 py-1 items-center text-xs">
         <input value={name} onChange={(e) => setName(e.target.value)} disabled={locked} className="px-2 py-0.5 rounded input-field" style={{ width: 140 }} />
         {locked ? (
@@ -1339,6 +1369,7 @@ function PueiNetIframe({ url, hostname }: { url: string; hostname: string }) {
 
 // ---------- PueiWeb ----------
 function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users: User[]; icons: DesktopIcon[] }) {
+  const [webDialog, webAlert] = useLocalDialog();
   const [tabs, setTabs] = useState([{ id: 1, title: "Home", url: "puei://home" }]);
   const [active, setActive] = useState(1);
   const navUrl = tabs.find((t) => t.id === active)?.url ?? "puei://home";
@@ -1366,7 +1397,7 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
   const updaterInstalled = icons.some((i) => i.appId === "web-app" && i.webUrl === "puei://updates" && i.label.trim().toLowerCase() === "puei updater");
 
   const downloadPlusIso = () => {
-    if (isoFile) { blip("click"); alert("PueiOS 2+ ISO is already downloaded in Files."); return; }
+    if (isoFile) { blip("click"); webAlert("PueiOS 2+ ISO is already downloaded in Files."); return; }
     upsertFile({
       id: `iso-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`,
       name: "pueios2-plus.iso",
@@ -1381,7 +1412,7 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
   };
 
   const downloadOs3Iso = () => {
-    if (iso3File) { blip("click"); alert("PueiOS 3 ISO is already downloaded in Files."); return; }
+    if (iso3File) { blip("click"); webAlert("PueiOS 3 ISO is already downloaded in Files."); return; }
     upsertFile({
       id: `iso3-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`,
       name: "pueios3.iso",
@@ -1445,7 +1476,7 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
     if (folder === null) return;
     saveDownloadedImage(currentUser, `${w.name}.png`, w.dataUrl, folder);
     blip("notify");
-    alert(`Saved ${w.name} to ${destinationFolderLabel(folder)}.`);
+    webAlert(`Saved ${w.name} to ${destinationFolderLabel(folder)}.`);
   };
 
   const pageTitles: Record<string, string> = {
@@ -1685,7 +1716,8 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
   }
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full relative">
+      <LocalDialogModal dialog={webDialog} />
       <div className="aero-titlebar flex items-center gap-1 px-2 pt-1">
         {tabs.map((t) => (
           <div key={t.id} onClick={() => { setActive(t.id); setUrlBar(t.url); }}
@@ -2261,6 +2293,7 @@ function PueiMailApp({ currentUser, users }: { currentUser: string; users: User[
 
 
 function PueiCloudChatApp({ user, users, setUsers }: { user: string; users: User[]; setUsers: (u: User[]) => void }) {
+  const [chatDialog, chatAlert, chatConfirm] = useLocalDialog();
   const me = users.find((u) => u.name === user);
   const myPueiNumber = me?.pueiNumber ?? "";
   type ExtContact = { pueiNumber: string; name?: string; avatar?: string; color?: string };
@@ -2524,7 +2557,7 @@ function PueiCloudChatApp({ user, users, setUsers }: { user: string; users: User
     if (!text.trim()) return;
     if (!myPueiNumber || !/^\d{3}-\d{3}-\d{3}$/.test(myPueiNumber)) {
       blip("error");
-      alert("Your Puei Number is not ready yet. Reopen PueiCloudChat and try again.");
+      chatAlert("Your Puei Number is not ready yet. Reopen PueiCloudChat and try again.");
       return;
     }
     const msg=text; setText(""); blip("click");
@@ -2538,7 +2571,7 @@ function PueiCloudChatApp({ user, users, setUsers }: { user: string; users: User
         const res = await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({from:user,fromNumber:myPueiNumber,toNumber:extPartner.pueiNumber,text:msg})});
         if (!res.ok) {
           blip("error");
-          alert("Message could not be delivered. Please try again.");
+          chatAlert("Message could not be delivered. Please try again.");
           return;
         }
         const body = (await res.json()) as { id?: string };
@@ -2554,7 +2587,7 @@ function PueiCloudChatApp({ user, users, setUsers }: { user: string; users: User
       }
       catch {
         blip("error");
-        alert("Message could not be delivered. Please check your connection and try again.");
+        chatAlert("Message could not be delivered. Please check your connection and try again.");
       }
     }
   };
@@ -2566,12 +2599,13 @@ function PueiCloudChatApp({ user, users, setUsers }: { user: string; users: User
   const BLOCK_KEY = `pueios-blocked-${user}`;
   const isBlocked = (num:string) => { try { return (JSON.parse(localStorage.getItem(BLOCK_KEY)||"[]") as string[]).includes(num); } catch { return false; } };
   const blockNum = (num:string, name?:string) => {
-    if (!confirm(`Block ${name??num}? They won't be able to message you.`)) return;
-    const b:string[]=JSON.parse(localStorage.getItem(BLOCK_KEY)||"[]");
-    localStorage.setItem(BLOCK_KEY,JSON.stringify([...b,num]));
-    if (name) { deleteChatBetween(user,name); setAllMsgs(loadChat()); }
-    else { setApiMsgs(p=>{const n={...p};delete n[num];return n;}); saveExtContacts(extContacts.filter(c=>c.pueiNumber!==num)); }
-    setActiveId(null); blip("click");
+    chatConfirm(`Block ${name??num}? They won't be able to message you.`, () => {
+      const b:string[]=JSON.parse(localStorage.getItem(BLOCK_KEY)||"[]");
+      localStorage.setItem(BLOCK_KEY,JSON.stringify([...b,num]));
+      if (name) { deleteChatBetween(user,name); setAllMsgs(loadChat()); }
+      else { setApiMsgs(p=>{const n={...p};delete n[num];return n;}); saveExtContacts(extContacts.filter(c=>c.pueiNumber!==num)); }
+      setActiveId(null); blip("click");
+    });
   };
 
   const ME_BG = "linear-gradient(135deg,#6d28d9,#4f46e5)";
@@ -2581,7 +2615,8 @@ function PueiCloudChatApp({ user, users, setUsers }: { user: string; users: User
 
   // Settings screen
   if (showSettings) return (
-    <div className="flex flex-col h-full" style={{background:MAIN_BG,color:"white"}}>
+    <div className="flex flex-col h-full relative" style={{background:MAIN_BG,color:"white"}}>
+      <LocalDialogModal dialog={chatDialog} />
       <div className="flex items-center gap-2 px-4 py-3 border-b border-white/10">
         <button onClick={()=>setShowSettings(false)} className="text-sm px-3 py-1 rounded-full hover:bg-white/10">← Back</button>
         <span className="font-semibold">My Profile</span>
@@ -2623,7 +2658,8 @@ function PueiCloudChatApp({ user, users, setUsers }: { user: string; users: User
   );
 
   return (
-    <div className="flex h-full" style={{color:"white"}}>
+    <div className="flex h-full relative" style={{color:"white"}}>
+      <LocalDialogModal dialog={chatDialog} />
       {/* Sidebar */}
       <div className="w-56 flex flex-col border-r border-white/10 flex-shrink-0" style={{background:SIDEBAR_BG}}>
         {/* Header */}
@@ -2741,7 +2777,7 @@ function PueiCloudChatApp({ user, users, setUsers }: { user: string; users: User
                     <div className="text-[10px] opacity-40 font-mono">#{localPartner.pueiNumber||"—"}</div>
                   </div>
                   <button className="text-xs opacity-40 hover:opacity-100 hover:text-red-400 transition-all px-2 py-1 rounded-lg"
-                    onClick={()=>{if(confirm(`Remove ${localPartner.name} from your contacts?`)){deleteChatBetween(user,localPartner.name);hideContact(localPartner.name);setAllMsgs(loadChat());setActiveId(null);blip("click");}}}>
+                    onClick={()=>{chatConfirm(`Remove ${localPartner.name} from your contacts?`,()=>{deleteChatBetween(user,localPartner.name);hideContact(localPartner.name);setAllMsgs(loadChat());setActiveId(null);blip("click");});}}>
                     🗑️
                   </button>
                   <button className="text-xs opacity-40 hover:opacity-100 hover:text-red-400 transition-all px-2 py-1 rounded-lg"
@@ -2766,7 +2802,7 @@ function PueiCloudChatApp({ user, users, setUsers }: { user: string; users: User
                     ✅
                   </button>
                   <button className="text-xs opacity-40 hover:opacity-100 hover:text-red-400 transition-all px-2 py-1 rounded-lg"
-                    onClick={()=>{if(confirm(`Remove ${extPartner.pueiNumber}?`)){saveExtContacts(extContacts.filter(c=>c.pueiNumber!==extPartner.pueiNumber));setApiMsgs(p=>{const n={...p};delete n[extPartner.pueiNumber];return n;});setActiveId(null);blip("click");}}}>
+                    onClick={()=>{chatConfirm(`Remove ${extPartner.pueiNumber}?`,()=>{saveExtContacts(extContacts.filter(c=>c.pueiNumber!==extPartner.pueiNumber));setApiMsgs(p=>{const n={...p};delete n[extPartner.pueiNumber];return n;});setActiveId(null);blip("click");});}}>
                     🖦️
                   </button>
                   <button className="text-xs opacity-40 hover:opacity-100 hover:text-red-400 transition-all px-2 py-1 rounded-lg"
@@ -2869,6 +2905,7 @@ function PueiCloudChatApp({ user, users, setUsers }: { user: string; users: User
 }
 
 function FileExplorerApp({ openApp, icons, openFolder, currentUser, users, setWallpaper }: { openApp: (id: AppId, fileId?: string) => void; icons: DesktopIcon[]; openFolder: (id: string, title: string) => void; currentUser: string; users: User[]; setWallpaper?: (w: WallpaperId) => void }) {
+  const [feDialog, , feConfirm] = useLocalDialog();
   const myFiles = () => loadFiles().filter((f) => !f.owner || f.owner === currentUser);
   const [files, setFiles] = useState<SavedFile[]>(() => myFiles());
   const [folder, setFolder] = useState<"home" | "documents" | "pictures" | "downloads" | "apps" | "folders" | "puei-drive" | "recycle-bin">("home");
@@ -2919,7 +2956,8 @@ function FileExplorerApp({ openApp, icons, openFolder, currentUser, users, setWa
   };
 
   return (
-    <div className="flex h-full">
+    <div className="flex h-full relative">
+      <LocalDialogModal dialog={feDialog} />
       <div className="w-48 p-2 border-r text-sm" style={{ background: "var(--glass)" }}>
         <div className="font-semibold mb-2 opacity-70 text-xs">FAVORITES</div>
         {[
@@ -3367,7 +3405,7 @@ function PueiDrivePane({ files, icons, currentUser, users, openApp, onDelete }: 
           <button className="aero-button rounded px-3 py-1 text-xs text-red-400"
             disabled={!selectedId} style={{ opacity: selectedId ? 1 : 0.4 }}
             onClick={() => {
-              if (selectedId && confirm("Delete this file?")) { onDelete(selectedId); setSelectedId(null); }
+              if (selectedId) { feConfirm("Delete this file?", () => { onDelete(selectedId); setSelectedId(null); }); }
             }}>
             🖦️ Delete
           </button>
@@ -4147,6 +4185,7 @@ function PueiUpdaterApp({ currentUser, startUpgrade, systemVersion }: { currentU
   const [installProgress, setInstallProgress] = useState(0);
   const [isInstalling, setIsInstalling] = useState(false);
   const [installStopped, setInstallStopped] = useState(false);
+  const [localDialog, localAlert, localConfirm] = useLocalDialog();
   // Pueio Reverse — XP-style EOL warning before installing legacy ISO or downgrading
   const [reverseWarning, setReverseWarning] = useState<{ version: SystemVersion; fromIso?: boolean } | null>(null);
   const [restartQueued, setRestartQueued] = useState(false);
@@ -4228,30 +4267,29 @@ function PueiUpdaterApp({ currentUser, startUpgrade, systemVersion }: { currentU
     }
     if (mountedVersion !== "PueiOS 3") {
       blip("error");
-      // On PueiOS 3: show the XP-style Pueio Reverse warning instead of browser alert
       if (systemVersion === "PueiOS 3") {
         setReverseWarning({ version: mountedVersion, fromIso: true });
       } else {
-        alert(`As of June 6th, ${mountedVersion} is no longer supported and cannot be installed. Please download pueios3.iso from puei://updates instead.`);
+        localAlert(`As of June 6th, ${mountedVersion} is no longer supported and cannot be installed. Please download pueios3.iso from puei://updates instead.`);
       }
       return;
     }
-    if (!confirm(`Install ${mountedVersion} from ${mountedIso.name}? Your device will restart when installation finishes.`)) return;
-    beginInstallActual();
+    localConfirm(`Install ${mountedVersion} from ${mountedIso.name}? Your device will restart when installation finishes.`, () => beginInstallActual());
   };
 
   const stopInstall = () => {
     if (!isInstalling) return;
-    if (!confirm("Stop ISO installation now?")) return;
-    if (restartTimer.current) {
-      window.clearTimeout(restartTimer.current);
-      restartTimer.current = null;
-    }
-    setIsInstalling(false);
-    setInstallProgress(0);
-    setRestartQueued(false);
-    setInstallStopped(true);
-    blip("click");
+    localConfirm("Stop ISO installation now?", () => {
+      if (restartTimer.current) {
+        window.clearTimeout(restartTimer.current);
+        restartTimer.current = null;
+      }
+      setIsInstalling(false);
+      setInstallProgress(0);
+      setRestartQueued(false);
+      setInstallStopped(true);
+      blip("click");
+    });
   };
 
   const versions: { v: SystemVersion; desc: string; eol?: boolean }[] = [
@@ -4262,6 +4300,8 @@ function PueiUpdaterApp({ currentUser, startUpgrade, systemVersion }: { currentU
 
   return (
     <div className="flex flex-col h-full relative">
+      {/* Local in-app dialog */}
+      <LocalDialogModal dialog={localDialog} />
       {/* Pueio Reverse — XP-style EOL warning modal (PueiOS 3 only) */}
       {reverseWarning && (
         <div className="absolute inset-0 z-50 flex items-center justify-center" style={{ background: "rgba(0,0,0,0.55)" }}>
@@ -4335,6 +4375,11 @@ function PueiUpdaterApp({ currentUser, startUpgrade, systemVersion }: { currentU
               </div>
               {isCurrent ? (
                 <span className="text-xs opacity-50 flex-shrink-0">Current version</span>
+              ) : v === "PueiOS 2" ? (
+                <span className="text-xs flex-shrink-0 px-3 py-1.5 rounded-lg"
+                  style={{ background: "rgba(100,50,50,0.3)", color: "#f87171" }}>
+                  Lost in time
+                </span>
               ) : (
                 <button
                   className="aero-button rounded-lg px-4 py-2 text-sm flex-shrink-0"
@@ -4908,7 +4953,8 @@ function PueiFilmsPage({ currentUser }: { currentUser: string }) {
         <span className="text-xs opacity-50">Official videos posted by pueioficial</span>
       </div>
       <div className="flex-1 overflow-auto p-4 space-y-4">
-        {/* Post a film — available to all users */}
+        {/* Post a film — only pueioficial */}
+        {isAdmin && (
         <div className="aero-glass-light rounded-xl overflow-hidden">
           <button className="w-full flex items-center justify-between px-4 py-2.5 text-sm font-semibold hover:bg-white/5 transition-colors"
             onClick={() => setShowPost(p => !p)}>
@@ -4934,6 +4980,7 @@ function PueiFilmsPage({ currentUser }: { currentUser: string }) {
             </div>
           )}
         </div>
+        )}
         {fetching && films.length === 0 && (
           <div className="text-center text-sm opacity-50 py-12 animate-pulse">Loading films… 🎬</div>
         )}

@@ -137,6 +137,7 @@ export function PueiOS() {
   const [netInfo, setNetInfo] = useState<{ ping: number | null; speed: number | null; type: string; online: boolean }>({ ping: null, speed: null, type: "?", online: true });
   const [cursorPos, setCursorPos] = useState({ x: 0, y: 0 });
   const [busyCursor, setBusyCursor] = useState(false);
+  const [pueiDialog, setPueiDialog] = useState<{ msg: string; onOk: () => void; onCancel?: () => void } | null>(null);
   const [locked, setLocked] = useState(false);
   const pendingUpdateNotif = useRef(false);
   const upgradeFinishQueued = useRef(false);
@@ -611,6 +612,12 @@ button, a, [role="button"], select, label[for] { cursor: ${hand(c)} 6 0, pointer
     window.setTimeout(() => setBusyCursor(false), 3000);
   };
 
+  // In-app replacements for browser alert() / confirm() — avoids "site says:" browser chrome
+  const pueiAlert = (msg: string, onOk?: () => void) =>
+    setPueiDialog({ msg, onOk: () => { setPueiDialog(null); onOk?.(); } });
+  const pueiConfirm = (msg: string, onOk: () => void, onCancel?: () => void) =>
+    setPueiDialog({ msg, onOk: () => { setPueiDialog(null); onOk(); }, onCancel: () => { setPueiDialog(null); onCancel?.(); } });
+
   const openApp = useCallback((appId: AppId, opts?: { fileId?: string; webUrl?: string; title?: string; folderIconId?: string }) => {
     blip("click");
     triggerBusy();
@@ -787,7 +794,7 @@ button, a, [role="button"], select, label[for] { cursor: ${hand(c)} 6 0, pointer
         }},
         { label: "📦 Compress to ZIP", action: () => {
           const folderFiles = loadFiles().filter((f) => f.folder === icon.id);
-          if (folderFiles.length === 0) { alert("This folder is empty — nothing to compress."); return; }
+          if (folderFiles.length === 0) { pueiAlert("This folder is empty — nothing to compress."); return; }
           const zipName = `${icon.label.replace(/\.zip$/i, "")}.zip`;
           const zipId = `zip-${Date.now().toString(36)}`;
           const zipContent = JSON.stringify(folderFiles.map((f) => f.id));
@@ -1142,7 +1149,7 @@ button, a, [role="button"], select, label[for] { cursor: ${hand(c)} 6 0, pointer
                 <span style={{ fontSize: 18, opacity: 0.8 }}>›</span>
               </button>
               <button
-                onClick={() => { if (confirm("Wipe all accounts and files and reinstall?")) { localStorage.clear(); location.reload(); } }}
+                onClick={() => { pueiConfirm("Wipe all accounts and files and reinstall?", () => { localStorage.clear(); location.reload(); }); }}
                 style={{
                   background: "transparent", border: "1px solid rgba(255,255,255,0.2)",
                   borderRadius: 4, padding: "8px 24px", cursor: "pointer",
@@ -1212,9 +1219,7 @@ button, a, [role="button"], select, label[for] { cursor: ${hand(c)} 6 0, pointer
           <button className="aero-button rounded px-6 py-2 block w-64" onClick={() => { setPhase("boot"); setBootProgress(0); }}>Attempt repair & restart</button>
           <button className="aero-button rounded px-6 py-2 block w-64" onClick={() => setPhase("login")}>Continue to login</button>
           <button className="aero-button rounded px-6 py-2 block w-64" onClick={() => {
-            if (confirm("Reinstall PueiOS 2? All accounts and files will be wiped.")) {
-              localStorage.clear(); location.reload();
-            }
+            pueiConfirm("Reinstall PueiOS 2? All accounts and files will be wiped.", () => { localStorage.clear(); location.reload(); });
           }}>Reinstall PueiOS 2</button>
         </div>
       </div>
@@ -1373,10 +1378,8 @@ button, a, [role="button"], select, label[for] { cursor: ${hand(c)} 6 0, pointer
                   ))}
                   {!locked && (
                     <button onClick={() => { setCreating(true); setPwError(""); }}
-                      className="flex flex-col items-center gap-2">
-                      <div className="w-20 h-20 rounded-2xl flex items-center justify-center text-3xl"
-                        style={{ background: "rgba(255,255,255,0.08)", border: "1px dashed rgba(255,255,255,0.25)" }}>+</div>
-                      <div className="text-white/40 text-xs">Add account</div>
+                      className="text-xs text-white/35 hover:text-white/65 transition-colors mt-2 underline-offset-2 hover:underline">
+                      + Add account
                     </button>
                   )}
                 </div>
@@ -2077,6 +2080,23 @@ button, a, [role="button"], select, label[for] { cursor: ${hand(c)} 6 0, pointer
       )}
 
       {ctxMenu && <ContextMenu x={ctxMenu.x} y={ctxMenu.y} items={ctxMenu.items} onClose={() => setCtxMenu(null)} />}
+
+      {/* In-app dialog — replaces browser alert()/confirm() */}
+      {pueiDialog && (
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center" style={{ background: "rgba(0,0,0,0.55)" }}
+          onMouseDown={() => { if (!pueiDialog.onCancel) { pueiDialog.onOk(); } }}>
+          <div className="aero-glass rounded-xl p-5 w-80 shadow-2xl" style={{ animation: "fade-scale 0.15s ease-out" }}
+            onMouseDown={e => e.stopPropagation()}>
+            <div className="text-sm leading-relaxed mb-5 whitespace-pre-wrap">{pueiDialog.msg}</div>
+            <div className="flex justify-end gap-2">
+              {pueiDialog.onCancel && (
+                <button className="aero-button rounded px-4 py-1.5 text-sm" onClick={pueiDialog.onCancel}>Cancel</button>
+              )}
+              <button className="aero-button rounded px-4 py-1.5 text-sm font-semibold" onClick={pueiDialog.onOk}>OK</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showAddShortcut && (() => {
         const ALL_SHORTCUTS: { id: string; label: string; icon: string; kind: "native"; appId: AppId }[] | { id: string; label: string; icon: string; kind: "web"; url: string }[] = [
