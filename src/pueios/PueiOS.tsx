@@ -138,6 +138,23 @@ export function PueiOS() {
   const [cursorPos, setCursorPos] = useState({ x: 0, y: 0 });
   const [busyCursor, setBusyCursor] = useState(false);
   const [pueiDialog, setPueiDialog] = useState<{ msg: string; onOk: () => void; onCancel?: () => void } | null>(null);
+  const [pinnedApps, setPinnedApps] = useState<AppId[]>(() => {
+    try {
+      const saved = localStorage.getItem("pueios2-pinned-v1");
+      return saved ? (JSON.parse(saved) as AppId[]) : (["file-explorer", "app-store", "puei-social", "pueinet", "puei-cloud-chat"] as AppId[]);
+    } catch { return ["file-explorer", "app-store", "puei-social", "pueinet", "puei-cloud-chat"] as AppId[]; }
+  });
+  const pinToTaskbar = (appId: AppId) => setPinnedApps((prev) => {
+    if (prev.includes(appId)) return prev;
+    const next = [...prev, appId];
+    try { localStorage.setItem("pueios2-pinned-v1", JSON.stringify(next)); } catch {}
+    return next;
+  });
+  const unpinFromTaskbar = (appId: AppId) => setPinnedApps((prev) => {
+    const next = prev.filter((id) => id !== appId);
+    try { localStorage.setItem("pueios2-pinned-v1", JSON.stringify(next)); } catch {}
+    return next;
+  });
   const [locked, setLocked] = useState(false);
   const pendingUpdateNotif = useRef(false);
   const upgradeFinishQueued = useRef(false);
@@ -732,9 +749,16 @@ button, a, [role="button"], select, label[for] { cursor: ${hand(c)} 6 0, pointer
       else if (icon.appId === "web-app") openApp("web-app", { webUrl: icon.webUrl, title: icon.label });
       else openApp(icon.appId, { fileId: icon.fileId });
     };
+    const isPinnable = icon.appId !== "folder" && icon.appId !== "web-app" && (icon.appId in APP_TITLES);
+    const isPinned = pinnedApps.includes(icon.appId);
     return [
       { label: "Open", action: openIt },
       { sep: true },
+      ...(isPinnable ? [
+        isPinned
+          ? { label: "📌 Unpin from taskbar", action: () => unpinFromTaskbar(icon.appId) }
+          : { label: "📌 Pin to taskbar", action: () => pinToTaskbar(icon.appId) },
+      ] : []),
       { label: "Rename", action: () => {
         const n = prompt("Rename to:", icon.label);
         if (n) setIcons(icons.map((i) => i.id === icon.id ? { ...i, label: n } : i));
@@ -1943,13 +1967,18 @@ button, a, [role="button"], select, label[for] { cursor: ${hand(c)} 6 0, pointer
             <PueiLogoSvg size={26} bigEyes />
           </button>
           {/* Pinned apps */}
-          {(["file-explorer", "app-store", "puei-social", "pueinet", "puei-cloud-chat"] as AppId[]).map((id) => {
+          {pinnedApps.map((id) => {
             const hasWin = windows.some((w) => w.appId === id);
             const activeWin = windows.find((w) => w.appId === id && !w.minimized);
             return (
               <div key={id} className="relative flex flex-col items-center">
                 <button onClick={(e) => { e.stopPropagation(); openApp(id); }}
                   onMouseEnter={() => blip("hover")} title={APP_TITLES[id]}
+                  onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); setCtxMenu({ x: e.clientX, y: e.clientY, items: [
+                    { label: "Open", action: () => openApp(id) },
+                    { sep: true },
+                    { label: "📌 Unpin from taskbar", action: () => unpinFromTaskbar(id) },
+                  ]}); }}
                   className="w-10 h-10 rounded-xl flex items-center justify-center text-lg transition-colors hover:bg-white/10"
                   style={{ background: activeWin ? "rgba(99,102,241,0.35)" : hasWin ? "rgba(255,255,255,0.08)" : "transparent" }}>
                   {appIcon(id, 22)}
@@ -1965,10 +1994,12 @@ button, a, [role="button"], select, label[for] { cursor: ${hand(c)} 6 0, pointer
               className="h-9 px-2.5 rounded-xl flex items-center gap-2 text-xs transition-colors hover:bg-white/10"
               style={{ background: (w.z === Math.max(...windows.map((x)=>x.z)) && !w.minimized) ? "rgba(99,102,241,0.3)" : "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.85)", maxWidth: 140 }}
               onClick={(e) => { e.stopPropagation(); if (w.minimized) focusWin(w.id); else minWin(w.id); }}
-              onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); setCtxMenu({ x: e.clientX, y: e.clientY, items: [
+              onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); const isWinPinned = pinnedApps.includes(w.appId); setCtxMenu({ x: e.clientX, y: e.clientY, items: [
                 { label: "Restore", action: () => focusWin(w.id) },
                 { label: "Minimize", action: () => minWin(w.id) },
                 { label: "Maximize", action: () => maxWin(w.id) },
+                { sep: true },
+                isWinPinned ? { label: "📌 Unpin from taskbar", action: () => unpinFromTaskbar(w.appId) } : { label: "📌 Pin to taskbar", action: () => pinToTaskbar(w.appId) },
                 { sep: true },
                 { label: "Close", action: () => closeWin(w.id) },
               ]});}}>
@@ -2001,10 +2032,15 @@ button, a, [role="button"], select, label[for] { cursor: ${hand(c)} 6 0, pointer
             onClick={(e) => { e.stopPropagation(); blip("click"); setStartOpen(!startOpen); setShowCalendar(false); }}>
             <PueiLogoSvg size={26} bigEyes />
           </button>
-          {(["file-explorer", "app-store", "puei-social", "pueinet", "puei-cloud-chat"] as AppId[]).map((id) => (
+          {pinnedApps.map((id) => (
             <button key={id} onClick={(e) => { e.stopPropagation(); openApp(id); }}
               onMouseEnter={() => blip("hover")}
               title={APP_TITLES[id]}
+              onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); setCtxMenu({ x: e.clientX, y: e.clientY, items: [
+                { label: "Open", action: () => openApp(id) },
+                { sep: true },
+                { label: "📌 Unpin from taskbar", action: () => unpinFromTaskbar(id) },
+              ]}); }}
               className="taskbar-item w-9 h-9 rounded flex items-center justify-center text-lg">
               {appIcon(id, 22)}
             </button>
@@ -2014,10 +2050,12 @@ button, a, [role="button"], select, label[for] { cursor: ${hand(c)} 6 0, pointer
             <button key={w.id}
               className={`taskbar-item h-9 px-3 rounded flex items-center gap-2 text-xs ${w.z === Math.max(...windows.map((x)=>x.z)) && !w.minimized ? "active" : ""}`}
               onClick={(e) => { e.stopPropagation(); if (w.minimized) focusWin(w.id); else minWin(w.id); }}
-              onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); setCtxMenu({ x: e.clientX, y: e.clientY, items: [
+              onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); const isWPinned = pinnedApps.includes(w.appId); setCtxMenu({ x: e.clientX, y: e.clientY, items: [
                 { label: "Restore", action: () => focusWin(w.id) },
                 { label: "Minimize", action: () => minWin(w.id) },
                 { label: "Maximize", action: () => maxWin(w.id) },
+                { sep: true },
+                isWPinned ? { label: "📌 Unpin from taskbar", action: () => unpinFromTaskbar(w.appId) } : { label: "📌 Pin to taskbar", action: () => pinToTaskbar(w.appId) },
                 { sep: true },
                 { label: "Close", action: () => closeWin(w.id) },
               ]});}}>
