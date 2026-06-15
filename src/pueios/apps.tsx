@@ -1556,11 +1556,145 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
     };
   };
 
+  const makeBubbleWallpaper = (name: string, bg1: string, bg2: string, bubbleColor: string) => {
+    const bubbles = Array.from({ length: 18 }, (_, i) => {
+      const cx = 80 + (i * 117) % 1760, cy = 50 + (i * 83) % 980, r = 20 + (i * 31) % 90;
+      return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${bubbleColor}" opacity="${0.12 + (i % 5) * 0.06}"/>`;
+    }).join("");
+    const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1920 1080'>
+      <defs>
+        <linearGradient id='bg' x1='0' y1='0' x2='1' y2='1'>
+          <stop offset='0%' stop-color='${bg1}'/>
+          <stop offset='100%' stop-color='${bg2}'/>
+        </linearGradient>
+      </defs>
+      <rect width='1920' height='1080' fill='url(#bg)'/>
+      ${bubbles}
+      <circle cx='960' cy='540' r='240' fill='${bubbleColor}' opacity='0.07'/>
+      <circle cx='960' cy='540' r='160' fill='${bubbleColor}' opacity='0.08'/>
+      <circle cx='960' cy='540' r='80' fill='${bubbleColor}' opacity='0.10'/>
+    </svg>`;
+    return { name, dataUrl: `data:image/svg+xml;utf8,${encodeURIComponent(svg)}` };
+  };
+
+  const makeGardenWallpaper = (name: string, skyTop: string, skyBot: string, grassColor: string, flowerColor: string) => {
+    const flowers = Array.from({ length: 12 }, (_, i) => {
+      const cx = 100 + i * 160, cy = 920 + (i % 3) * 18;
+      return `<circle cx="${cx}" cy="${cy}" r="22" fill="${flowerColor}" opacity="0.9"/>
+        <circle cx="${cx + 14}" cy="${cy - 12}" r="16" fill="${flowerColor}" opacity="0.8"/>
+        <circle cx="${cx - 14}" cy="${cy - 12}" r="16" fill="${flowerColor}" opacity="0.8"/>
+        <circle cx="${cx}" cy="${cy - 22}" r="16" fill="${flowerColor}" opacity="0.8"/>
+        <circle cx="${cx}" cy="${cy}" r="9" fill="#fff9c4" opacity="0.95"/>
+        <line x1="${cx}" y1="${cy + 22}" x2="${cx + (i%2?8:-8)}" y2="${cy + 80}" stroke="#4caf50" stroke-width="4"/>`;
+    }).join("");
+    const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1920 1080'>
+      <defs>
+        <linearGradient id='sky' x1='0' y1='0' x2='0' y2='1'>
+          <stop offset='0%' stop-color='${skyTop}'/>
+          <stop offset='70%' stop-color='${skyBot}'/>
+          <stop offset='100%' stop-color='${grassColor}'/>
+        </linearGradient>
+      </defs>
+      <rect width='1920' height='1080' fill='url(#sky)'/>
+      <ellipse cx='960' cy='1120' rx='1100' ry='260' fill='${grassColor}'/>
+      <circle cx='280' cy='200' r='110' fill='#fff8dc' opacity='0.9'/>
+      <ellipse cx='500' cy='280' rx='140' ry='70' fill='white' opacity='0.7'/>
+      <ellipse cx='700' cy='250' rx='110' ry='55' fill='white' opacity='0.6'/>
+      <ellipse cx='1400' cy='180' rx='160' ry='65' fill='white' opacity='0.65'/>
+      ${flowers}
+    </svg>`;
+    return { name, dataUrl: `data:image/svg+xml;utf8,${encodeURIComponent(svg)}` };
+  };
+
+  const makeOceanWallpaper = (name: string, deepColor: string, shallowColor: string, foamColor: string) => {
+    const waves = Array.from({ length: 6 }, (_, i) => {
+      const y = 600 + i * 80, op = 0.15 + i * 0.05;
+      return `<path d='M0 ${y} Q480 ${y - 40}, 960 ${y} Q1440 ${y + 40}, 1920 ${y} L1920 1080 L0 1080 Z' fill='${foamColor}' opacity='${op}'/>`;
+    }).join("");
+    const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1920 1080'>
+      <defs>
+        <linearGradient id='ocean' x1='0' y1='0' x2='0' y2='1'>
+          <stop offset='0%' stop-color='${deepColor}'/>
+          <stop offset='60%' stop-color='${shallowColor}'/>
+          <stop offset='100%' stop-color='${foamColor}'/>
+        </linearGradient>
+        <radialGradient id='sun' cx='75%' cy='15%' r='20%'>
+          <stop offset='0%' stop-color='#fff9c0' stop-opacity='0.9'/>
+          <stop offset='100%' stop-color='#ff9900' stop-opacity='0'/>
+        </radialGradient>
+      </defs>
+      <rect width='1920' height='1080' fill='url(#ocean)'/>
+      <rect width='1920' height='1080' fill='url(#sun)'/>
+      ${waves}
+      <ellipse cx='960' cy='1040' rx='960' ry='80' fill='${foamColor}' opacity='0.3'/>
+    </svg>`;
+    return { name, dataUrl: `data:image/svg+xml;utf8,${encodeURIComponent(svg)}` };
+  };
+
+  const makeSpaceWallpaper = (name: string, c1: string, c2: string, nebulaColor: string) => {
+    const stars = Array.from({ length: 80 }, (_, i) => {
+      const cx = (i * 247) % 1920, cy = (i * 131) % 1080, r = 0.8 + (i % 4) * 0.6;
+      return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="white" opacity="${0.4 + (i % 5) * 0.12}"/>`;
+    }).join("");
+    const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1920 1080'>
+      <defs>
+        <linearGradient id='space' x1='0' y1='0' x2='1' y2='1'>
+          <stop offset='0%' stop-color='${c1}'/>
+          <stop offset='100%' stop-color='${c2}'/>
+        </linearGradient>
+        <radialGradient id='nebula' cx='40%' cy='60%' r='50%'>
+          <stop offset='0%' stop-color='${nebulaColor}' stop-opacity='0.35'/>
+          <stop offset='100%' stop-color='${nebulaColor}' stop-opacity='0'/>
+        </radialGradient>
+      </defs>
+      <rect width='1920' height='1080' fill='url(#space)'/>
+      <rect width='1920' height='1080' fill='url(#nebula)'/>
+      ${stars}
+    </svg>`;
+    return { name, dataUrl: `data:image/svg+xml;utf8,${encodeURIComponent(svg)}` };
+  };
+
+  const makeSunsetWallpaper = (name: string) => {
+    const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1920 1080'>
+      <defs>
+        <linearGradient id='sky' x1='0' y1='0' x2='0' y2='1'>
+          <stop offset='0%' stop-color='#1a0533'/>
+          <stop offset='35%' stop-color='#8b1a6b'/>
+          <stop offset='60%' stop-color='#ff6030'/>
+          <stop offset='80%' stop-color='#ffb347'/>
+          <stop offset='100%' stop-color='#ffd68a'/>
+        </linearGradient>
+        <radialGradient id='sun' cx='50%' cy='78%' r='18%'>
+          <stop offset='0%' stop-color='#fff5a0' stop-opacity='1'/>
+          <stop offset='40%' stop-color='#ffdd44' stop-opacity='0.8'/>
+          <stop offset='100%' stop-color='#ff8c00' stop-opacity='0'/>
+        </radialGradient>
+      </defs>
+      <rect width='1920' height='1080' fill='url(#sky)'/>
+      <rect width='1920' height='1080' fill='url(#sun)'/>
+      <ellipse cx='960' cy='1120' rx='1200' ry='200' fill='#1a0533' opacity='0.9'/>
+      <path d='M0 920 Q480 880, 960 920 Q1440 960, 1920 920 L1920 1080 L0 1080 Z' fill='#0d0020' opacity='0.95'/>
+      <path d='M0 950 Q320 910, 640 940 Q960 970, 1280 940 Q1600 910, 1920 950 L1920 1080 L0 1080 Z' fill='#1a0533' opacity='0.8'/>
+    </svg>`;
+    return { name, dataUrl: `data:image/svg+xml;utf8,${encodeURIComponent(svg)}` };
+  };
+
   const wallpaperPack = [
     makeWaveWallpaper("Puei Wave Blue", "#65d9ff", "#0ba9ff", "#8bdcff", true),
     makeWaveWallpaper("Puei Wave Aurora", "#6ce1ff", "#ff86d8", "#b8dfff", true),
     makeWaveWallpaper("Puei Wave Neon", "#38ceff", "#ff4db6", "#8cd6ff", true),
     makeWaveWallpaper("Puei Dusk Lake", "#5ad0ff", "#ffb06f", "#89bcff", false),
+    makeBubbleWallpaper("Puei Bubbles Cyan", "#0d4a6b", "#0a2a40", "#00e5ff"),
+    makeBubbleWallpaper("Puei Bubbles Pink", "#4a0d3a", "#2a0a28", "#ff69b4"),
+    makeBubbleWallpaper("Puei Bubbles Mint", "#0d4a2a", "#0a2a18", "#00e5a0"),
+    makeGardenWallpaper("Puei Garden Spring", "#87ceeb", "#b8e4f0", "#5cb85c", "#ff69b4"),
+    makeGardenWallpaper("Puei Garden Sunset", "#ff9966", "#ffd194", "#6aaa3a", "#ff4466"),
+    makeGardenWallpaper("Puei Garden Lavender", "#c8a8e0", "#dac8f0", "#5cb85c", "#9b59b6"),
+    makeOceanWallpaper("Puei Ocean Deep", "#001a3e", "#0d4a8a", "#1a8fc8"),
+    makeOceanWallpaper("Puei Ocean Tropical", "#003a2a", "#0d7a5a", "#20c0a0"),
+    makeSpaceWallpaper("Puei Space Nebula", "#050010", "#0a0030", "#7c44ff"),
+    makeSpaceWallpaper("Puei Space Cosmos", "#000a20", "#001040", "#0088ff"),
+    makeSunsetWallpaper("Puei Sunset"),
   ];
 
   const downloadWallpaper = (w: { name: string; dataUrl: string }) => {
@@ -3636,7 +3770,7 @@ function AppStoreApp({ installWebApp, openApp, openWebApp, systemVersion, addNat
     { name: "Puei Space", icon: "🚀", desc: "3D space shooter — fly your ship, blast asteroids and enemies, survive as long as you can.", appId: "pueyracing", preInstalled: false },
   ];
   const community: StoreApp[] = [
-    { name: "bezosmp", icon: "/bezosmp-icon.svg", desc: "A community Minecraft SMP server project. Made by bazicioschi and catotherat.", webUrl: "https://bezosmp.lovable.app", desktopLabel: "BezosMP", preInstalled: false },
+    { name: "bezosmp", icon: "/bezosmp-icon.svg", desc: "By bazicioschi and catotherat.", webUrl: "https://bezosmp.lovable.app", desktopLabel: "BezosMP", preInstalled: false },
   ];
   const isInstalled = (a: StoreApp) => {
     const key = a.webUrl ? `web:${a.webUrl}` : `app:${a.appId || a.name}`;
@@ -6492,7 +6626,7 @@ function PueiRacingApp({ currentUser }: { currentUser: string }) {
     const mount = mountRef.current; if (!mount) return;
     let raf = 0;
     let cleanup = () => {};
-    const down = (e: KeyboardEvent) => { keysRef.current.add(e.key); if ([" ","ArrowLeft","ArrowRight","ArrowUp","ArrowDown"].includes(e.key)) e.preventDefault(); };
+    const down = (e: KeyboardEvent) => { keysRef.current.add(e.key); if ([" "].includes(e.key)) e.preventDefault(); };
     const up = (e: KeyboardEvent) => keysRef.current.delete(e.key);
     window.addEventListener("keydown", down);
     window.addEventListener("keyup", up);
@@ -6622,10 +6756,10 @@ function PueiRacingApp({ currentUser }: { currentUser: string }) {
 
         const ks = keysRef.current;
         const speed = 0.1;
-        if (ks.has("ArrowLeft") || ks.has("a") || ks.has("A")) gs.vx -= 0.018;
-        if (ks.has("ArrowRight") || ks.has("d") || ks.has("D")) gs.vx += 0.018;
-        if (ks.has("ArrowUp") || ks.has("w") || ks.has("W")) gs.vy += 0.015;
-        if (ks.has("ArrowDown") || ks.has("s") || ks.has("S")) gs.vy -= 0.015;
+        if (ks.has("a") || ks.has("A")) gs.vx -= 0.018;
+        if (ks.has("d") || ks.has("D")) gs.vx += 0.018;
+        if (ks.has("w") || ks.has("W")) gs.vy += 0.015;
+        if (ks.has("s") || ks.has("S")) gs.vy -= 0.015;
         gs.vx *= 0.88; gs.vy *= 0.88;
         gs.x = Math.max(-6, Math.min(6, gs.x + gs.vx));
         gs.y = Math.max(-4, Math.min(4, gs.y + gs.vy));
@@ -6781,15 +6915,15 @@ function PueiRacingApp({ currentUser }: { currentUser: string }) {
       {/* Touch controls */}
       <div className="flex items-center justify-between px-4 py-2 shrink-0" style={{ background: "rgba(0,0,20,0.7)" }}>
         <div className="flex flex-col items-center gap-1">
-          <button onPointerDown={() => startKey("ArrowUp")} onPointerUp={() => stopKey("ArrowUp")} onPointerLeave={() => stopKey("ArrowUp")}
-            className="rounded-xl text-white font-bold text-base select-none" style={{ background: "rgba(68,136,255,0.25)", border: "1px solid rgba(68,136,255,0.4)", width: 46, height: 46, touchAction: "none" }}>▲</button>
+          <button onPointerDown={() => startKey("w")} onPointerUp={() => stopKey("w")} onPointerLeave={() => stopKey("w")}
+            className="rounded-xl text-white font-bold text-base select-none" style={{ background: "rgba(68,136,255,0.25)", border: "1px solid rgba(68,136,255,0.4)", width: 46, height: 46, touchAction: "none" }}>W</button>
           <div className="flex gap-1">
-            <button onPointerDown={() => startKey("ArrowLeft")} onPointerUp={() => stopKey("ArrowLeft")} onPointerLeave={() => stopKey("ArrowLeft")}
-              className="rounded-xl text-white font-bold text-base select-none" style={{ background: "rgba(68,136,255,0.25)", border: "1px solid rgba(68,136,255,0.4)", width: 46, height: 46, touchAction: "none" }}>◀</button>
-            <button onPointerDown={() => startKey("ArrowDown")} onPointerUp={() => stopKey("ArrowDown")} onPointerLeave={() => stopKey("ArrowDown")}
-              className="rounded-xl text-white font-bold text-base select-none" style={{ background: "rgba(68,136,255,0.25)", border: "1px solid rgba(68,136,255,0.4)", width: 46, height: 46, touchAction: "none" }}>▼</button>
-            <button onPointerDown={() => startKey("ArrowRight")} onPointerUp={() => stopKey("ArrowRight")} onPointerLeave={() => stopKey("ArrowRight")}
-              className="rounded-xl text-white font-bold text-base select-none" style={{ background: "rgba(68,136,255,0.25)", border: "1px solid rgba(68,136,255,0.4)", width: 46, height: 46, touchAction: "none" }}>▶</button>
+            <button onPointerDown={() => startKey("a")} onPointerUp={() => stopKey("a")} onPointerLeave={() => stopKey("a")}
+              className="rounded-xl text-white font-bold text-base select-none" style={{ background: "rgba(68,136,255,0.25)", border: "1px solid rgba(68,136,255,0.4)", width: 46, height: 46, touchAction: "none" }}>A</button>
+            <button onPointerDown={() => startKey("s")} onPointerUp={() => stopKey("s")} onPointerLeave={() => stopKey("s")}
+              className="rounded-xl text-white font-bold text-base select-none" style={{ background: "rgba(68,136,255,0.25)", border: "1px solid rgba(68,136,255,0.4)", width: 46, height: 46, touchAction: "none" }}>S</button>
+            <button onPointerDown={() => startKey("d")} onPointerUp={() => stopKey("d")} onPointerLeave={() => stopKey("d")}
+              className="rounded-xl text-white font-bold text-base select-none" style={{ background: "rgba(68,136,255,0.25)", border: "1px solid rgba(68,136,255,0.4)", width: 46, height: 46, touchAction: "none" }}>D</button>
           </div>
         </div>
         <button onPointerDown={() => startKey(" ")} onPointerUp={() => stopKey(" ")} onPointerLeave={() => stopKey(" ")}

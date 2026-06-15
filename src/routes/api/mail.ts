@@ -10,42 +10,37 @@ interface ApiMail {
   attachments?: unknown[];
 }
 
-interface KVNamespace {
-  get(key: string, type: "text"): Promise<string | null>;
-  put(key: string, value: string, options?: { expirationTtl?: number }): Promise<void>;
+const UPSTASH_URL = "https://free-elephant-40203.upstash.io";
+const UPSTASH_TOKEN = "AZ0LAAIgcDEzNzg3YmJmODc5Mjg0ODdmYTg3YjM4YjA4NjE0MmE0Yg";
+const TTL = 60 * 60 * 24 * 365;
+
+const inboxStore = new Map<string, ApiMail[]>();
+
+async function upstash(command: string, ...args: string[]): Promise<unknown> {
+  try {
+    const r = await fetch(UPSTASH_URL, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${UPSTASH_TOKEN}`, "Content-Type": "application/json" },
+      body: JSON.stringify([command, ...args]),
+    });
+    const data = await r.json() as { result?: unknown; error?: string };
+    return data.result ?? null;
+  } catch { return null; }
 }
-interface CfEnv { MAIL_KV?: KVNamespace; MESSAGES_KV?: KVNamespace }
 
-const inboxStore = new Map<string, ApiMail[]>();   // delivered, not yet pulled
-const mailboxStore = new Map<string, unknown>();   // full mailbox snapshot per owner
-
-const getKV = (): KVNamespace | null => {
-  const env = (globalThis as Record<string, unknown>).__cfEnv as CfEnv | undefined;
-  return env?.MAIL_KV ?? env?.MESSAGES_KV ?? null;
-};
+const mailKey = (owner: string) => `mail:${owner.toLowerCase().trim()}`;
 
 async function fetchInbox(owner: string): Promise<ApiMail[]> {
-  const kv = getKV();
-  if (kv) { const raw = await kv.get(`mail:${owner.toLowerCase()}`, "text"); return raw ? JSON.parse(raw) as ApiMail[] : []; }
+  const raw = await upstash("GET", mailKey(owner)) as string | null;
+  if (raw) { try { return JSON.parse(raw) as ApiMail[]; } catch {} }
   return inboxStore.get(owner.toLowerCase()) ?? [];
 }
+
 async function pushInbox(owner: string, msg: ApiMail) {
   const all = await fetchInbox(owner);
   const next = [...all, msg].slice(-1000);
-  const kv = getKV();
-  if (kv) await kv.put(`mail:${owner.toLowerCase()}`, JSON.stringify(next), { expirationTtl: 60 * 60 * 24 * 365 });
-  else inboxStore.set(owner.toLowerCase(), next);
-}
-
-async function fetchMailbox(owner: string): Promise<unknown> {
-  const kv = getKV();
-  if (kv) { const raw = await kv.get(`mailbox:${owner.toLowerCase()}`, "text"); return raw ? JSON.parse(raw) : null; }
-  return mailboxStore.get(owner.toLowerCase()) ?? null;
-}
-async function saveMailbox(owner: string, data: unknown) {
-  const kv = getKV();
-  if (kv) await kv.put(`mailbox:${owner.toLowerCase()}`, JSON.stringify(data), { expirationTtl: 60 * 60 * 24 * 365 });
-  else mailboxStore.set(owner.toLowerCase(), data);
+  await upstash("SET", mailKey(owner), JSON.stringify(next), "EX", String(TTL));
+  inboxStore.set(owner.toLowerCase(), next);
 }
 
 const json = (d: unknown, s = 200) =>
@@ -57,9 +52,7 @@ export const Route = createFileRoute("/api/mail")({
       GET: async ({ request }) => {
         const url = new URL(request.url);
         const owner = url.searchParams.get("owner");
-        const mode = url.searchParams.get("mode");
         if (!owner) return json({ error: "Missing owner" }, 400);
-        if (mode === "full") return json(await fetchMailbox(owner));
         return json(await fetchInbox(owner));
       },
       POST: async ({ request }) => {
@@ -76,13 +69,6 @@ export const Route = createFileRoute("/api/mail")({
         };
         await pushInbox(msg.to, msg);
         return json({ ok: true, id: msg.id });
-      },
-      // PUT: full mailbox sync (entire owner's mailbox state)
-      PUT: async ({ request }) => {
-        const body = (await request.json()) as { owner: string; mailbox: unknown };
-        if (!body.owner) return json({ error: "Missing owner" }, 400);
-        await saveMailbox(body.owner, body.mailbox);
-        return json({ ok: true });
       },
     },
   },
