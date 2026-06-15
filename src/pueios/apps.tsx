@@ -6581,12 +6581,19 @@ function PMailApp({ currentUser, users }: { currentUser: string; users: { name: 
           <div className="flex flex-col h-full">
             <div className="flex items-start gap-3 p-4 border-b" style={{ borderColor: "var(--border)", background: "var(--glass)" }}>
               {(() => {
-                const sender = users.find(u => u.name === selected.from);
-                const av = sender?.avatar;
-                const col = sender?.color ?? "220";
+                const fromLower = (selected.from ?? "").toLowerCase();
+                const sender = users.find(u => u.name.toLowerCase() === fromLower);
+                const av: string | undefined = (sender as any)?.avatar;
+                const col: string = (sender as any)?.color ?? "220";
+                const isImg = av?.startsWith("data:") || av?.startsWith("http");
                 return (
-                  <div style={{ width: 40, height: 40, borderRadius: 10, background: `linear-gradient(135deg, oklch(0.7 0.18 ${col}), oklch(0.45 0.2 ${col}))`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: av && av.startsWith("data:") ? undefined : 20, flexShrink: 0, overflow: "hidden" }}>
-                    {av ? (av.startsWith("data:") ? <img src={av} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <span>{av}</span>) : <span style={{ color: "#fff", fontWeight: 700, fontSize: 18 }}>{(selected.from[0] ?? "?").toUpperCase()}</span>}
+                  <div style={{ width: 40, height: 40, borderRadius: 10, background: `linear-gradient(135deg, oklch(0.7 0.18 ${col}), oklch(0.45 0.2 ${col}))`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0, overflow: "hidden" }}>
+                    {isImg
+                      ? <img src={av} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      : av
+                        ? <span>{av}</span>
+                        : <span style={{ color: "#fff", fontWeight: 700, fontSize: 16 }}>{(selected.from?.[0] ?? "?").toUpperCase()}</span>
+                    }
                   </div>
                 );
               })()}

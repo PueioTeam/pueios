@@ -1414,208 +1414,170 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
     const activeUser = users.find((u) => u.name === loginUser);
 
     if (systemVersion === "PueiOS 3") {
-      // PueiOS 3 login — modern ambient glass style
-      const glassCard: React.CSSProperties = {
-        background: "rgba(255,255,255,0.10)",
-        backdropFilter: "blur(40px) saturate(180%)",
-        WebkitBackdropFilter: "blur(40px) saturate(180%)",
-        border: "1px solid rgba(255,255,255,0.22)",
-        borderRadius: 24,
-        boxShadow: "0 32px 64px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.25)",
-      };
+      // PueiOS 3 — split-panel login
+      const selectedU = users.find((u) => u.name === loginUser) ?? users[0];
       const p3Input: React.CSSProperties = {
-        background: "rgba(255,255,255,0.12)",
-        border: "1px solid rgba(255,255,255,0.25)",
-        borderRadius: 10,
-        padding: "9px 14px",
-        fontSize: 14,
+        background: "rgba(255,255,255,0.07)",
+        border: "1px solid rgba(255,255,255,0.18)",
+        borderRadius: 12,
+        padding: "12px 16px",
+        fontSize: 15,
         color: "#fff",
         outline: "none",
         width: "100%",
         boxSizing: "border-box",
       };
       const p3Btn: React.CSSProperties = {
-        background: "linear-gradient(135deg, rgba(255,255,255,0.35) 0%, rgba(255,255,255,0.18) 100%)",
-        border: "1px solid rgba(255,255,255,0.35)",
-        borderRadius: 10,
+        background: "rgba(255,255,255,0.1)",
+        border: "1px solid rgba(255,255,255,0.2)",
+        borderRadius: 12,
         color: "#fff",
         fontWeight: 600,
         fontSize: 14,
-        padding: "9px 24px",
+        padding: "11px 24px",
         cursor: "pointer",
-        backdropFilter: "blur(10px)",
-        boxShadow: "0 2px 12px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.3)",
-        transition: "all 0.15s ease",
       };
       const p3BtnPrimary: React.CSSProperties = {
         ...p3Btn,
-        background: "linear-gradient(135deg, rgba(120,180,255,0.55) 0%, rgba(80,120,220,0.45) 100%)",
-        border: "1px solid rgba(140,200,255,0.5)",
+        background: "linear-gradient(135deg, #6366f1, #4f46e5)",
+        border: "1px solid rgba(139,92,246,0.6)",
+        boxShadow: "0 4px 20px rgba(99,102,241,0.5)",
       };
-      const selectedU = users.find((u) => u.name === loginUser) ?? users[0];
 
-      // PueiOS 3 — new login: dark neon grid with centered card stack
-      const p3Neon: React.CSSProperties = {
-        background: "rgba(10,10,30,0.85)",
-        backdropFilter: "blur(20px) saturate(140%)",
-        WebkitBackdropFilter: "blur(20px) saturate(140%)",
-        border: "1px solid rgba(80,160,255,0.25)",
-        borderRadius: 20,
-        boxShadow: "0 0 0 1px rgba(80,160,255,0.08), 0 24px 60px rgba(0,0,0,0.6), 0 0 60px rgba(40,80,255,0.08)",
+      const renderForm = () => {
+        if (creating) return (
+          <>
+            <div style={{ color: "#e0e0ff", fontWeight: 700, fontSize: 20, marginBottom: 28 }}>Create account</div>
+            <div style={{ marginBottom: 14 }}>
+              <div style={{ fontSize: 11, color: "rgba(200,200,255,0.5)", marginBottom: 6, letterSpacing: 1, textTransform: "uppercase" }}>Name</div>
+              <input value={newAcc.name} onChange={(e) => setNewAcc({ ...newAcc, name: e.target.value })} style={p3Input} autoFocus placeholder="Your name" />
+            </div>
+            <div style={{ marginBottom: 14 }}>
+              <div style={{ fontSize: 11, color: "rgba(200,200,255,0.5)", marginBottom: 6, letterSpacing: 1, textTransform: "uppercase" }}>Password (optional)</div>
+              <input type="password" value={newAcc.password} onChange={(e) => setNewAcc({ ...newAcc, password: e.target.value })} style={p3Input} placeholder="••••••••" />
+            </div>
+            <div style={{ fontSize: 11, color: "rgba(200,200,255,0.5)", marginBottom: 8, letterSpacing: 1, textTransform: "uppercase" }}>Avatar</div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 22 }}>
+              {["🧑","👩","🧔","👵","🧑‍💻","🦸","🧙","🐱","🤖","👽","🎩","🌟"].map((a) => (
+                <button key={a} onClick={() => setNewAcc({ ...newAcc, avatar: a })}
+                  style={{ width: 36, height: 36, borderRadius: 9, fontSize: 18, border: newAcc.avatar === a ? "2px solid #6366f1" : "1px solid rgba(255,255,255,0.12)", background: newAcc.avatar === a ? "rgba(99,102,241,0.25)" : "transparent", cursor: "pointer" }}>{a}</button>
+              ))}
+            </div>
+            {pwError && <div style={{ color: "#f87171", fontSize: 12, marginBottom: 12 }}>{pwError}</div>}
+            <div style={{ display: "flex", gap: 10 }}>
+              <button style={{ ...p3Btn, flex: 1 }} onClick={() => { setCreating(false); setPwError(""); }}>Back</button>
+              <button style={{ ...p3BtnPrimary, flex: 1 }} onClick={createAccount}>Create</button>
+            </div>
+          </>
+        );
+        if (switching) return (
+          <>
+            <div style={{ color: "#e0e0ff", fontWeight: 700, fontSize: 20, marginBottom: 28 }}>Other account</div>
+            <div style={{ marginBottom: 14 }}>
+              <div style={{ fontSize: 11, color: "rgba(200,200,255,0.5)", marginBottom: 6, letterSpacing: 1, textTransform: "uppercase" }}>Username</div>
+              <input value={switchName} onChange={(e) => { setSwitchName(e.target.value); setSwitchErr(""); }} onKeyDown={(e) => { if (e.key === "Enter") switchToAccount(); }} autoFocus style={p3Input} placeholder="Username" />
+            </div>
+            <div style={{ marginBottom: 22 }}>
+              <div style={{ fontSize: 11, color: "rgba(200,200,255,0.5)", marginBottom: 6, letterSpacing: 1, textTransform: "uppercase" }}>Password</div>
+              <input type="password" value={switchPw} onChange={(e) => setSwitchPw(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") switchToAccount(); }} style={p3Input} placeholder="••••••••" />
+            </div>
+            {switchErr && <div style={{ color: "#f87171", fontSize: 12, marginBottom: 12 }}>{switchErr}</div>}
+            <div style={{ display: "flex", gap: 10 }}>
+              <button style={{ ...p3Btn, flex: 1 }} onClick={() => { setSwitching(false); setSwitchErr(""); }}>Back</button>
+              <button style={{ ...p3BtnPrimary, flex: 1 }} onClick={switchToAccount}>Sign in</button>
+            </div>
+          </>
+        );
+        if (!selectedU) return <div style={{ color: "rgba(255,255,255,0.4)", fontSize: 14 }}>Select an account</div>;
+        return (
+          <>
+            {/* User avatar + name */}
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: 32 }}>
+              <div style={{ width: 88, height: 88, borderRadius: "50%", background: `linear-gradient(135deg, oklch(0.7 0.18 ${selectedU.color}), oklch(0.45 0.2 ${selectedU.color}))`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 46, overflow: "hidden", marginBottom: 14, boxShadow: "0 0 0 4px rgba(99,102,241,0.3), 0 8px 32px rgba(0,0,0,0.5)" }}>
+                {selectedU.avatar.startsWith("data:") ? <img src={selectedU.avatar} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : selectedU.avatar}
+              </div>
+              <div style={{ color: "#e0e0ff", fontWeight: 700, fontSize: 22 }}>{selectedU.name}</div>
+              <div style={{ color: "rgba(180,180,255,0.45)", fontSize: 12, marginTop: 3 }}>{locked ? "Screen locked" : "Welcome back"}</div>
+            </div>
+            {/* User selector if multiple accounts */}
+            {!locked && users.filter(u => typeof u.password !== "undefined").length > 1 && (
+              <div style={{ display: "flex", gap: 8, marginBottom: 20, flexWrap: "wrap", justifyContent: "center" }}>
+                {users.filter(u => typeof u.password !== "undefined").map((u) => {
+                  const isSel = loginUser === u.name;
+                  return (
+                    <button key={u.name} onClick={() => { setLoginUser(u.name); setPwError(""); setPwInput(""); }}
+                      style={{ display: "flex", alignItems: "center", gap: 6, padding: "5px 12px 5px 6px", borderRadius: 30, border: isSel ? "1px solid #6366f1" : "1px solid rgba(255,255,255,0.1)", background: isSel ? "rgba(99,102,241,0.2)" : "transparent", cursor: "pointer", color: "#fff" }}>
+                      <div style={{ width: 24, height: 24, borderRadius: "50%", background: `linear-gradient(135deg, oklch(0.7 0.18 ${u.color}), oklch(0.45 0.2 ${u.color}))`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, overflow: "hidden", flexShrink: 0 }}>
+                        {u.avatar.startsWith("data:") ? <img src={u.avatar} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : u.avatar}
+                      </div>
+                      <span style={{ fontSize: 12 }}>{u.name}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+            {!users.filter(u => typeof u.password !== "undefined").length && (
+              <input value={loginUser} onChange={(e) => { setLoginUser(e.target.value); setPwError(""); }} onKeyDown={(e) => { if (e.key === "Enter") trySignIn(); }} placeholder="Username" style={{ ...p3Input, marginBottom: 12 }} />
+            )}
+            <input type="password" value={pwInput} onChange={(e) => setPwInput(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") trySignIn(); }}
+              placeholder={selectedU.password ? "Password" : "No password — press Sign In"} style={{ ...p3Input, marginBottom: pwError ? 10 : 20 }} autoFocus />
+            {pwError && <div style={{ color: "#f87171", fontSize: 12, marginBottom: 14 }}>{pwError}</div>}
+            <button style={{ ...p3BtnPrimary, width: "100%", justifyContent: "center", display: "flex", alignItems: "center", gap: 6, padding: "13px 0", fontSize: 16, marginBottom: 20 }} onClick={trySignIn}>
+              Sign In →
+            </button>
+            <div style={{ display: "flex", justifyContent: "center", gap: 18 }}>
+              <button style={{ background: "none", border: "none", color: "rgba(180,180,255,0.45)", cursor: "pointer", fontSize: 12 }} onClick={() => setPhase("recovery")}>Recovery</button>
+              {!locked && <button style={{ background: "none", border: "none", color: "rgba(180,180,255,0.45)", cursor: "pointer", fontSize: 12 }} onClick={() => { setSwitching(true); setSwitchName(""); setSwitchPw(""); setSwitchErr(""); }}>Other account</button>}
+              {!locked && <button style={{ background: "none", border: "none", color: "rgba(180,180,255,0.45)", cursor: "pointer", fontSize: 12 }} onClick={() => {
+                const guestName = "Guest";
+                const existing = users.find((u) => u.name === guestName);
+                if (!existing) {
+                  const nu: User = { name: guestName, password: "", avatar: "👤", color: "220", pueiNumber: "", friends: [], noPassword: true, limitedMode: true };
+                  const next = [...users, nu];
+                  setUsers(next);
+                  saveState({ installed, systemVersion, theme, icons, users: next, lastUser: guestName, remember: false });
+                }
+                setLoginUser(guestName); setPwInput(""); enterDesktop(guestName);
+              }}>Guest</button>}
+            </div>
+          </>
+        );
       };
 
       return (
-        <div className="fixed inset-0 flex flex-col items-center justify-center" style={{
-          background: "#060612",
-          fontFamily: "'Segoe UI', system-ui, sans-serif",
-          overflow: "hidden",
-        }}>
-          {/* Grid lines */}
-          <div style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 0, opacity: 0.07 }}>
-            <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
-              <defs>
-                <pattern id="grid" width="60" height="60" patternUnits="userSpaceOnUse">
-                  <path d="M 60 0 L 0 0 0 60" fill="none" stroke="#4488ff" strokeWidth="0.8"/>
-                </pattern>
-              </defs>
-              <rect width="100%" height="100%" fill="url(#grid)" />
-            </svg>
-          </div>
-          {/* Glow orbs */}
-          <div style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 0 }}>
-            <div style={{ position: "absolute", top: "20%", left: "15%", width: 400, height: 400, borderRadius: "50%", background: "radial-gradient(ellipse, rgba(40,80,255,0.18) 0%, transparent 70%)", filter: "blur(60px)", animation: "p3orb1 8s ease-in-out infinite alternate" }} />
-            <div style={{ position: "absolute", bottom: "15%", right: "12%", width: 350, height: 350, borderRadius: "50%", background: "radial-gradient(ellipse, rgba(120,40,255,0.15) 0%, transparent 70%)", filter: "blur(60px)", animation: "p3orb2 11s ease-in-out infinite alternate" }} />
-          </div>
-
-          {/* Clock — top center */}
-          <div style={{ position: "absolute", top: 24, left: "50%", transform: "translateX(-50%)", textAlign: "center", zIndex: 2, pointerEvents: "none" }}>
-            <div style={{ color: "rgba(200,220,255,0.9)", fontSize: 52, fontWeight: 200, letterSpacing: 4, lineHeight: 1 }}>
-              {now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+        <div className="fixed inset-0 flex" style={{ fontFamily: "'Segoe UI', system-ui, sans-serif", overflow: "hidden" }}>
+          {/* Left panel — decorative */}
+          <div style={{ flex: 1, position: "relative", background: "linear-gradient(160deg, #0f0c29, #302b63, #24243e)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
+            {/* Animated rings */}
+            <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none" }}>
+              {[340, 260, 180, 100].map((r, i) => (
+                <div key={r} style={{ position: "absolute", width: r * 2, height: r * 2, borderRadius: "50%", border: `1px solid rgba(139,92,246,${0.08 + i * 0.04})`, animation: `p3ring${i} ${14 + i * 4}s linear infinite` }} />
+              ))}
             </div>
-            <div style={{ color: "rgba(150,180,255,0.55)", fontSize: 12, marginTop: 4, letterSpacing: 2, textTransform: "uppercase" }}>
-              {now.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })}
+            {/* Glow center */}
+            <div style={{ position: "absolute", width: 300, height: 300, borderRadius: "50%", background: "radial-gradient(ellipse, rgba(99,102,241,0.25) 0%, transparent 70%)", filter: "blur(40px)" }} />
+            {/* Logo + branding */}
+            <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 18 }}>
+              <PueiLogoSvg size={80} bigEyes />
+              <div style={{ color: "rgba(255,255,255,0.9)", fontSize: 32, fontWeight: 700, letterSpacing: 2 }}>PueiOS 3</div>
+              <div style={{ color: "rgba(180,180,255,0.5)", fontSize: 13, letterSpacing: 1 }}>The future of Puei</div>
+            </div>
+            {/* Clock bottom of left panel */}
+            <div style={{ position: "absolute", bottom: 28, left: 0, right: 0, textAlign: "center", color: "rgba(180,180,255,0.45)", fontSize: 12, letterSpacing: 2 }}>
+              {now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} · {now.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })}
             </div>
           </div>
 
-          {/* Logo — top left */}
-          <div style={{ position: "absolute", top: 20, left: 24, display: "flex", alignItems: "center", gap: 8, zIndex: 2 }}>
-            <PueiLogoSvg size={28} bigEyes />
-            <span style={{ color: "rgba(140,180,255,0.7)", fontSize: 13, fontWeight: 500, letterSpacing: 1 }}>PueiOS 3</span>
-          </div>
-
-          {/* Main content */}
-          <div style={{ position: "relative", zIndex: 2, display: "flex", flexDirection: "column", alignItems: "center", width: "100%", maxWidth: 420, padding: "0 24px" }}>
-
-            {creating ? (
-              <div style={{ ...p3Neon, padding: "32px 36px", width: "100%" }}>
-                <div style={{ color: "#c8d8ff", fontWeight: 700, fontSize: 17, marginBottom: 24, display: "flex", alignItems: "center", gap: 8 }}>
-                  <PueiLogoSvg size={20} /> Create account
-                </div>
-                <div style={{ marginBottom: 12 }}>
-                  <div style={{ fontSize: 11, color: "rgba(140,180,255,0.7)", marginBottom: 5, letterSpacing: 0.5 }}>Account name</div>
-                  <input value={newAcc.name} onChange={(e) => setNewAcc({ ...newAcc, name: e.target.value })} style={p3Input} autoFocus placeholder="Your name" />
-                </div>
-                <div style={{ marginBottom: 14 }}>
-                  <div style={{ fontSize: 11, color: "rgba(140,180,255,0.7)", marginBottom: 5, letterSpacing: 0.5 }}>Password (optional)</div>
-                  <input type="password" value={newAcc.password} onChange={(e) => setNewAcc({ ...newAcc, password: e.target.value })} style={p3Input} placeholder="••••••••" />
-                </div>
-                <div style={{ fontSize: 11, color: "rgba(140,180,255,0.7)", marginBottom: 8, letterSpacing: 0.5 }}>Avatar</div>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 20 }}>
-                  {["🧑","👩","🧔","👵","🧑‍💻","🦸","🧙","🐱","🤖","👽","🎩","🌟"].map((a) => (
-                    <button key={a} onClick={() => setNewAcc({ ...newAcc, avatar: a })}
-                      style={{ width: 34, height: 34, borderRadius: 8, fontSize: 17, border: newAcc.avatar === a ? "2px solid rgba(80,160,255,0.8)" : "1px solid rgba(80,160,255,0.2)", background: newAcc.avatar === a ? "rgba(40,80,255,0.25)" : "rgba(255,255,255,0.04)", cursor: "pointer" }}>{a}</button>
-                  ))}
-                </div>
-                {pwError && <div style={{ color: "#ff8080", fontSize: 12, marginBottom: 10 }}>{pwError}</div>}
-                <div style={{ display: "flex", gap: 10 }}>
-                  <button style={{ ...p3Btn, flex: 1 }} onClick={() => { setCreating(false); setPwError(""); }}>Back</button>
-                  <button style={{ ...p3BtnPrimary, flex: 1 }} onClick={createAccount}>Create</button>
-                </div>
-              </div>
-            ) : switching ? (
-              <div style={{ ...p3Neon, padding: "32px 36px", width: "100%" }}>
-                <div style={{ color: "#c8d8ff", fontWeight: 700, fontSize: 17, marginBottom: 24 }}>Sign in to another account</div>
-                <div style={{ marginBottom: 12 }}>
-                  <div style={{ fontSize: 11, color: "rgba(140,180,255,0.7)", marginBottom: 5, letterSpacing: 0.5 }}>Account name</div>
-                  <input value={switchName} onChange={(e) => { setSwitchName(e.target.value); setSwitchErr(""); }} onKeyDown={(e) => { if (e.key === "Enter") switchToAccount(); }} autoFocus style={p3Input} placeholder="Username" />
-                </div>
-                <div style={{ marginBottom: 18 }}>
-                  <div style={{ fontSize: 11, color: "rgba(140,180,255,0.7)", marginBottom: 5, letterSpacing: 0.5 }}>Password</div>
-                  <input type="password" value={switchPw} onChange={(e) => setSwitchPw(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") switchToAccount(); }} style={p3Input} placeholder="••••••••" />
-                </div>
-                {switchErr && <div style={{ color: "#ff8080", fontSize: 12, marginBottom: 10 }}>{switchErr}</div>}
-                <div style={{ display: "flex", gap: 10 }}>
-                  <button style={{ ...p3Btn, flex: 1 }} onClick={() => { setSwitching(false); setSwitchErr(""); }}>Back</button>
-                  <button style={{ ...p3BtnPrimary, flex: 1 }} onClick={switchToAccount}>Sign in</button>
-                </div>
-              </div>
-            ) : (
-              <>
-                {/* User selector row — horizontal pills */}
-                {!locked && users.filter(u => typeof u.password !== "undefined").length > 1 && (
-                  <div style={{ display: "flex", gap: 10, marginBottom: 20, flexWrap: "wrap", justifyContent: "center" }}>
-                    {users.filter(u => typeof u.password !== "undefined").map((u) => {
-                      const isSel = loginUser === u.name;
-                      return (
-                        <button key={u.name} onClick={() => { setLoginUser(u.name); setPwError(""); setPwInput(""); }}
-                          style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 14px 6px 8px", borderRadius: 40, border: isSel ? "1px solid rgba(80,160,255,0.7)" : "1px solid rgba(80,160,255,0.18)", background: isSel ? "rgba(40,80,255,0.22)" : "rgba(255,255,255,0.04)", cursor: "pointer", color: "#fff" }}>
-                          <div style={{ width: 30, height: 30, borderRadius: "50%", background: `linear-gradient(135deg, oklch(0.7 0.18 ${u.color}), oklch(0.45 0.2 ${u.color}))`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, overflow: "hidden", flexShrink: 0 }}>
-                            {u.avatar.startsWith("data:") ? <img src={u.avatar} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : u.avatar}
-                          </div>
-                          <span style={{ fontSize: 13, fontWeight: isSel ? 600 : 400 }}>{u.name}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-
-                {/* Sign-in card */}
-                {selectedU && (
-                  <div style={{ ...p3Neon, padding: "36px 36px 28px", width: "100%", display: "flex", flexDirection: "column", alignItems: "center" }}>
-                    {/* Neon ring avatar */}
-                    <div style={{ position: "relative", marginBottom: 16 }}>
-                      <div style={{ width: 96, height: 96, borderRadius: "50%", background: `linear-gradient(135deg, oklch(0.7 0.18 ${selectedU.color}), oklch(0.45 0.2 ${selectedU.color}))`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 50, overflow: "hidden", boxShadow: `0 0 0 3px rgba(80,160,255,0.4), 0 0 20px rgba(80,160,255,0.25), 0 8px 30px rgba(0,0,0,0.5)` }}>
-                        {selectedU.avatar.startsWith("data:") ? <img src={selectedU.avatar} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : selectedU.avatar}
-                      </div>
-                    </div>
-                    <div style={{ color: "#c8d8ff", fontWeight: 700, fontSize: 22, letterSpacing: 0.5, marginBottom: 4 }}>{selectedU.name}</div>
-                    {locked && <div style={{ color: "rgba(140,180,255,0.5)", fontSize: 11, marginBottom: 16 }}>Device is locked</div>}
-                    {!locked && <div style={{ color: "rgba(140,180,255,0.4)", fontSize: 11, marginBottom: 16 }}>Welcome back</div>}
-
-                    {!users.filter(u => typeof u.password !== "undefined").length && (
-                      <input value={loginUser} onChange={(e) => { setLoginUser(e.target.value); setPwError(""); }} onKeyDown={(e) => { if (e.key === "Enter") trySignIn(); }} placeholder="Username" style={{ ...p3Input, marginBottom: 10, width: "100%" }} />
-                    )}
-                    <input type="password" value={pwInput} onChange={(e) => setPwInput(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") trySignIn(); }}
-                      placeholder={selectedU.password ? "Enter password" : "No password set"} style={{ ...p3Input, width: "100%", marginBottom: pwError ? 8 : 20, textAlign: "center" }} autoFocus />
-                    {pwError && <div style={{ color: "#ff8080", fontSize: 12, marginBottom: 14, textAlign: "center" }}>{pwError}</div>}
-
-                    <button style={{ ...p3BtnPrimary, width: "100%", justifyContent: "center", display: "flex", alignItems: "center", gap: 8, padding: "12px 0", fontSize: 15, borderRadius: 12, marginBottom: 18 }} onClick={trySignIn}>
-                      Sign In
-                    </button>
-                    <div style={{ display: "flex", justifyContent: "center", gap: 20 }}>
-                      <button style={{ background: "none", border: "none", color: "rgba(120,160,255,0.6)", cursor: "pointer", fontSize: 12 }} onClick={() => setPhase("recovery")}>Recovery</button>
-                      {!locked && <button style={{ background: "none", border: "none", color: "rgba(120,160,255,0.6)", cursor: "pointer", fontSize: 12 }} onClick={() => { setSwitching(true); setSwitchName(""); setSwitchPw(""); setSwitchErr(""); }}>Other account</button>}
-                      {!locked && <button style={{ background: "none", border: "none", color: "rgba(120,160,255,0.6)", cursor: "pointer", fontSize: 12 }} onClick={() => {
-                        const guestName = "Guest";
-                        const existing = users.find((u) => u.name === guestName);
-                        if (!existing) {
-                          const nu: User = { name: guestName, password: "", avatar: "👤", color: "220", pueiNumber: "", friends: [], noPassword: true, limitedMode: true };
-                          const next = [...users, nu];
-                          setUsers(next);
-                          saveState({ installed, systemVersion, theme, icons, users: next, lastUser: guestName, remember: false });
-                        }
-                        setLoginUser(guestName); setPwInput(""); enterDesktop(guestName);
-                      }}>Guest</button>}
-                    </div>
-                  </div>
-                )}
-              </>
-            )}
+          {/* Right panel — login form */}
+          <div style={{ width: 420, flexShrink: 0, background: "#0d0d1a", display: "flex", flexDirection: "column", justifyContent: "center", padding: "48px 40px", overflow: "auto" }}>
+            {renderForm()}
           </div>
 
           <style>{`
-            @keyframes p3orb1 { 0%{transform:translate(0,0) scale(1)} 100%{transform:translate(5%,8%) scale(1.1)} }
-            @keyframes p3orb2 { 0%{transform:translate(0,0) scale(1)} 100%{transform:translate(-7%,-5%) scale(1.08)} }
+            @keyframes p3ring0 { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+            @keyframes p3ring1 { from{transform:rotate(45deg)} to{transform:rotate(405deg)} }
+            @keyframes p3ring2 { from{transform:rotate(120deg)} to{transform:rotate(480deg)} }
+            @keyframes p3ring3 { from{transform:rotate(200deg)} to{transform:rotate(560deg)} }
           `}</style>
         </div>
       );
