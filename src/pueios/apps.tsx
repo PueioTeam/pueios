@@ -404,6 +404,8 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, curren
                 ["aero-neon", "Morning"], ["aero-dusk", "Lake"],
                 ["aero-forest", "Autumn"], ["aero-ember", "Snow"],
                 ["aero-arctic", "Night"], ["aero-galaxy", "Space"],
+                ["puei-bubbles", "Bubbles"], ["puei-garden", "Garden"],
+                ["puei-ocean", "Ocean"],
               ] as [WallpaperId, string][]).map(([w, label]) => (
                 <button key={w} onClick={() => setWallpaper(w)}
                   className={`wallpaper-${w} h-28 rounded-lg border-2 text-white font-semibold text-sm`}
@@ -1418,53 +1420,9 @@ function PueiCopilotPage() {
   );
 }
 
-// Detect iOS standalone PWA — iframes are blocked for cross-origin sites in this mode
-const isIosPwa = () =>
-  typeof navigator !== "undefined" &&
-  /iphone|ipad|ipod/i.test(navigator.userAgent) &&
-  (navigator as any).standalone === true;
-
 function PueiNetIframe({ url, hostname }: { url: string; hostname: string }) {
   const [loaded, setLoaded] = useState(false);
-  const [iframeBlocked, setIframeBlocked] = useState(false);
-  const iosPwa = isIosPwa();
-
-  useEffect(() => { setLoaded(false); setIframeBlocked(false); }, [url]);
-
-  // On iOS PWA, iframes for cross-origin sites are silently blocked — show open-in-safari UI instead
-  if (iosPwa || iframeBlocked) {
-    return (
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", gap: 16, padding: 24, textAlign: "center" }}>
-        <div style={{ fontSize: 48 }}>🌐</div>
-        <div style={{ fontSize: 15, fontWeight: 600 }}>{hostname}</div>
-        <div style={{ fontSize: 12, opacity: 0.6, maxWidth: 280 }}>
-          {iosPwa
-            ? "iOS doesn't allow websites to load inside PueiOS when running as a Home Screen app."
-            : "This site blocked loading inside PueiOS."}
-        </div>
-        <a
-          href={url}
-          target="_blank"
-          rel="noopener noreferrer"
-          style={{
-            background: "var(--accent)",
-            color: "#fff",
-            border: "none",
-            borderRadius: 10,
-            padding: "10px 22px",
-            fontSize: 14,
-            fontWeight: 600,
-            textDecoration: "none",
-            display: "inline-block",
-            boxShadow: "0 2px 12px rgba(0,0,0,0.3)",
-          }}>
-          Open in Safari
-        </a>
-        <div style={{ fontSize: 11, opacity: 0.4 }}>{url}</div>
-      </div>
-    );
-  }
-
+  useEffect(() => { setLoaded(false); }, [url]);
   return (
     <div style={{ position: "relative", width: "100%", height: "100%" }}>
       {!loaded && (
@@ -1477,9 +1435,9 @@ function PueiNetIframe({ url, hostname }: { url: string; hostname: string }) {
         src={url}
         title={hostname}
         style={{ width: "100%", height: "100%", border: "none", opacity: loaded ? 1 : 0, transition: "opacity 0.3s" }}
-        allow="fullscreen; autoplay; camera; microphone"
+        allow="fullscreen; autoplay; camera; microphone; payment"
+        allowFullScreen
         onLoad={() => setLoaded(true)}
-        onError={() => setIframeBlocked(true)}
       />
     </div>
   );
@@ -3675,7 +3633,7 @@ function AppStoreApp({ installWebApp, openApp, openWebApp, systemVersion, addNat
   ];
   const games: StoreApp[] = [
     { name: "Puei Mansion",  icon: "👻", desc: "Funny spooky adventure. Solve puzzles, find hidden secrets, and meet weird Puei creatures.", appId: "puei-mansion", preInstalled: false },
-    { name: "PueiRacing", icon: "🏎️", desc: "Real 3D racing with Three.js — drive fast, drift corners, feel the speed.", appId: "pueyracing", preInstalled: false },
+    { name: "Puei Space", icon: "🚀", desc: "3D space shooter — fly your ship, blast asteroids and enemies, survive as long as you can.", appId: "pueyracing", preInstalled: false },
   ];
   const community: StoreApp[] = [
     { name: "bezosmp", icon: "/bezosmp-icon.svg", desc: "A community Minecraft SMP server project. Made by bazicioschi and catotherat.", webUrl: "https://bezosmp.lovable.app", desktopLabel: "BezosMP", preInstalled: false },
@@ -6273,18 +6231,23 @@ function PMailApp({ currentUser, users }: { currentUser: string; users: { name: 
 
   const reload = () => setMsgs(loadMail(currentUser));
 
-  // Pull new messages from server into local storage, then reload
+  // Pull new messages from server — use normalized lowercase key matching what doSend stores
   const pullFromServer = async () => {
     try {
-      const res = await fetch(`/api/mail?owner=${encodeURIComponent(currentUser.toLowerCase())}`);
+      const ownerKey = currentUser.toLowerCase().trim();
+      const res = await fetch(`/api/mail?owner=${encodeURIComponent(ownerKey)}`);
       if (!res.ok) return;
       const incoming = (await res.json()) as { id: string; from: string; to: string; subject: string; body: string; at: number }[];
-      if (!incoming.length) return;
+      if (!Array.isArray(incoming) || !incoming.length) return;
       const existing = loadMail(currentUser);
       const existingIds = new Set(existing.map((m) => m.id));
       const newMsgs: MailMessage[] = incoming
         .filter((m) => !existingIds.has(m.id))
-        .map((m) => ({ id: m.id, from: m.from, to: m.to, subject: m.subject, body: m.body, at: m.at, read: false, folder: "inbox" as const, owner: currentUser }));
+        .map((m) => ({
+          id: m.id, from: m.from, to: currentUser,
+          subject: m.subject, body: m.body, at: m.at,
+          read: false, folder: "inbox" as const, owner: currentUser,
+        }));
       if (newMsgs.length) {
         replaceMailFor(currentUser, [...existing, ...newMsgs]);
         reload();
@@ -6343,22 +6306,27 @@ function PMailApp({ currentUser, users }: { currentUser: string; users: { name: 
   const doSend = async () => {
     if (!toField.trim()) { setSentMsg("Enter a recipient."); return; }
     const recipient = resolveMailRecipient(toField, users) ?? toField.trim();
+    // Normalize recipient name for server key — must match what pullFromServer uses
+    const recipientKey = recipient.toLowerCase().trim();
     setSending(true);
     try {
       const msg = sendMail(currentUser, recipient, subjField || "(no subject)", bodyField, users);
       const myMails = [...msgs, msg];
       replaceMailFor(currentUser, myMails);
       setMsgs(myMails);
-      await fetch("/api/mail", {
+      const res = await fetch("/api/mail", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ from: currentUser, to: recipient, subject: subjField || "(no subject)", body: bodyField }),
-      }).catch(() => {});
-      setSentMsg("Sent!");
+        body: JSON.stringify({ from: currentUser, to: recipientKey, subject: subjField || "(no subject)", body: bodyField }),
+      });
+      if (!res.ok) { setSentMsg("Server error — but saved locally."); }
+      else { setSentMsg("Sent!"); }
       setToField(""); setSubjField(""); setBodyField("");
-      setTimeout(() => { setSentMsg(""); setComposing(false); setFolder("sent"); }, 1200);
+      setTimeout(() => { setSentMsg(""); setComposing(false); setFolder("sent"); }, 1400);
     } catch {
-      setSentMsg("Send failed.");
+      setSentMsg("Sent locally (no internet).");
+      setToField(""); setSubjField(""); setBodyField("");
+      setTimeout(() => { setSentMsg(""); setComposing(false); setFolder("sent"); }, 1400);
     }
     setSending(false);
   };
@@ -6509,281 +6477,254 @@ function PMailApp({ currentUser, users }: { currentUser: string; users: { name: 
   );
 }
 
-// ---------- PueiRacing 3D ----------
+// ---------- Puei Space — 3D space shooter ----------
 
 function PueiRacingApp({ currentUser }: { currentUser: string }) {
   const mountRef = useRef<HTMLDivElement>(null);
   const keysRef = useRef<Set<string>>(new Set());
-  const stateRef = useRef({ x: 0, z: 0, angle: 0, speed: 0, lap: 1, cp: 0, finished: false });
-  const botsRef = useRef([
-    { x: -3, z: 3, angle: 0, speed: 0, lap: 1, cp: 0 },
-    { x: 3, z: 3, angle: 0, speed: 0, lap: 1, cp: 0 },
-  ]);
-  const [hud, setHud] = useState({ lap: 1, speed: 0, msg: "Drive with WASD / Arrow keys" });
-  const totalLaps = 3;
-
-  // Track waypoints (world coords, closed loop)
-  const WPS = [
-    [0,0],[40,0],[80,10],[110,30],[120,70],[100,110],[60,130],[20,120],
-    [-20,110],[-50,80],[-60,40],[-50,10],[-20,0],
-  ] as [number,number][];
+  const [score, setScore] = useState(0);
+  const [lives, setLives] = useState(3);
+  const [gameOver, setGameOver] = useState(false);
+  const [started, setStarted] = useState(false);
 
   useEffect(() => {
+    if (!started) return;
     const mount = mountRef.current; if (!mount) return;
     let raf = 0;
-    const down = (e: KeyboardEvent) => { keysRef.current.add(e.key); if (["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"," "].includes(e.key)) e.preventDefault(); };
+    let cleanup = () => {};
+    const down = (e: KeyboardEvent) => { keysRef.current.add(e.key); if ([" ","ArrowLeft","ArrowRight","ArrowUp","ArrowDown"].includes(e.key)) e.preventDefault(); };
     const up = (e: KeyboardEvent) => keysRef.current.delete(e.key);
     window.addEventListener("keydown", down);
     window.addEventListener("keyup", up);
 
-    // Dynamic Three.js CDN import
-    let cleanup = () => {};
-
     import("https://cdn.jsdelivr.net/npm/three@0.160/build/three.module.js" as any).then((THREE: any) => {
-      const W = mount.clientWidth || 860, H = mount.clientHeight || 520;
-
-      // Renderer
+      const W = mount.clientWidth || 800, H = mount.clientHeight || 480;
       const renderer = new THREE.WebGLRenderer({ antialias: true });
       renderer.setSize(W, H);
-      renderer.shadowMap.enabled = true;
-      renderer.setClearColor(0x87ceeb);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
       mount.appendChild(renderer.domElement);
 
-      // Scene & camera
       const scene = new THREE.Scene();
-      scene.fog = new THREE.FogExp2(0x87ceeb, 0.012);
+      scene.background = new THREE.Color(0x000010);
+      const camera = new THREE.PerspectiveCamera(70, W / H, 0.1, 2000);
+      camera.position.set(0, 2, 8);
 
-      const camera = new THREE.PerspectiveCamera(60, W / H, 0.1, 500);
-
-      // Lighting
-      const sun = new THREE.DirectionalLight(0xfff8e0, 1.4);
-      sun.position.set(30, 60, 20);
-      sun.castShadow = true;
-      scene.add(sun);
-      scene.add(new THREE.AmbientLight(0x88aacc, 0.6));
-
-      // Ground plane (grass)
-      const ground = new THREE.Mesh(
-        new THREE.PlaneGeometry(400, 400),
-        new THREE.MeshLambertMaterial({ color: 0x3a8c3a })
-      );
-      ground.rotation.x = -Math.PI / 2;
-      ground.receiveShadow = true;
-      scene.add(ground);
-
-      // Build track from waypoints (extruded path)
-      const trackWidth = 10;
-      const buildTrackMesh = () => {
-        const group = new THREE.Group();
-        const n = WPS.length;
-        for (let i = 0; i < n; i++) {
-          const a = WPS[i], b = WPS[(i + 1) % n];
-          const dx = b[0] - a[0], dz = b[1] - a[1];
-          const len = Math.sqrt(dx * dx + dz * dz);
-          const seg = new THREE.Mesh(
-            new THREE.PlaneGeometry(len + 1, trackWidth),
-            new THREE.MeshLambertMaterial({ color: 0x303030 })
-          );
-          seg.rotation.x = -Math.PI / 2;
-          seg.position.set((a[0] + b[0]) / 2, 0.01, (a[1] + b[1]) / 2);
-          seg.rotation.z = -Math.atan2(dz, dx);
-          // Fix: PlaneGeometry is in XY plane, rotated to XZ, so need to apply heading in Y
-          seg.rotation.y = Math.atan2(dz, dx);
-          seg.rotation.x = -Math.PI / 2;
-          group.add(seg);
-          // White center stripe
-          const stripe = new THREE.Mesh(
-            new THREE.PlaneGeometry(len + 0.5, 0.4),
-            new THREE.MeshLambertMaterial({ color: 0xffff88 })
-          );
-          stripe.rotation.x = -Math.PI / 2;
-          stripe.rotation.y = Math.atan2(dz, dx);
-          stripe.position.set((a[0] + b[0]) / 2, 0.02, (a[1] + b[1]) / 2);
-          group.add(stripe);
-        }
-        return group;
-      };
-      scene.add(buildTrackMesh());
-
-      // Start/finish gate
-      const gateGeom = new THREE.BoxGeometry(trackWidth + 2, 3, 0.3);
-      const gateMat = new THREE.MeshLambertMaterial({ color: 0xffffff });
-      const gate = new THREE.Mesh(gateGeom, gateMat);
-      gate.position.set(WPS[0][0], 1.5, WPS[0][1]);
-      scene.add(gate);
-
-      // Trees along track edges
-      const addTree = (x: number, z: number) => {
-        const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.3, 2, 6), new THREE.MeshLambertMaterial({ color: 0x8B4513 }));
-        trunk.position.set(x, 1, z);
-        const leaves = new THREE.Mesh(new THREE.ConeGeometry(1.8, 3, 7), new THREE.MeshLambertMaterial({ color: 0x228B22 }));
-        leaves.position.set(x, 3.5, z);
-        scene.add(trunk); scene.add(leaves);
-      };
-      for (let i = 0; i < WPS.length; i++) {
-        const a = WPS[i], b = WPS[(i + 1) % WPS.length];
-        const mx = (a[0] + b[0]) / 2, mz = (a[1] + b[1]) / 2;
-        const dx = b[0] - a[0], dz = b[1] - a[1];
-        const len = Math.sqrt(dx * dx + dz * dz);
-        const nx = -dz / len, nz = dx / len;
-        addTree(mx + nx * 9, mz + nz * 9);
-        addTree(mx - nx * 9, mz - nz * 9);
+      // Stars
+      const starGeo = new THREE.BufferGeometry();
+      const starVerts: number[] = [];
+      for (let i = 0; i < 3000; i++) {
+        starVerts.push((Math.random() - 0.5) * 2000, (Math.random() - 0.5) * 2000, (Math.random() - 0.5) * 2000);
       }
+      starGeo.setAttribute("position", new THREE.Float32BufferAttribute(starVerts, 3));
+      scene.add(new THREE.Points(starGeo, new THREE.PointsMaterial({ color: 0xffffff, size: 1.2 })));
 
-      // Player car
-      const makeCar = (color: number) => {
-        const g = new THREE.Group();
-        const body = new THREE.Mesh(new THREE.BoxGeometry(2, 0.7, 4), new THREE.MeshLambertMaterial({ color }));
-        body.position.y = 0.5;
-        body.castShadow = true;
-        g.add(body);
-        const roof = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.6, 2), new THREE.MeshLambertMaterial({ color: 0xeeeeee }));
-        roof.position.set(0, 1.15, -0.2);
-        g.add(roof);
-        const windshield = new THREE.Mesh(new THREE.BoxGeometry(1.55, 0.55, 0.1), new THREE.MeshLambertMaterial({ color: 0x88ccff, transparent: true, opacity: 0.7 }));
-        windshield.position.set(0, 1.1, 0.85);
-        g.add(windshield);
-        // Wheels
-        [[1.1,-0.05,1.4],[-1.1,-0.05,1.4],[1.1,-0.05,-1.4],[-1.1,-0.05,-1.4]].forEach(([wx,wy,wz]) => {
-          const wheel = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.4, 0.3, 10), new THREE.MeshLambertMaterial({ color: 0x111111 }));
-          wheel.rotation.z = Math.PI / 2;
-          wheel.position.set(wx, wy, wz);
-          g.add(wheel);
-        });
-        return g;
+      scene.add(new THREE.AmbientLight(0x334466, 1));
+      const light1 = new THREE.PointLight(0x8899ff, 2, 60);
+      light1.position.set(0, 5, 0);
+      scene.add(light1);
+
+      // Player ship
+      const ship = new THREE.Group();
+      const fuselage = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.4, 2.2, 8), new THREE.MeshPhongMaterial({ color: 0x4488ff, shininess: 120 }));
+      fuselage.rotation.x = Math.PI / 2;
+      ship.add(fuselage);
+      const wing1 = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.08, 0.8), new THREE.MeshPhongMaterial({ color: 0x2255cc }));
+      wing1.position.set(0, 0, 0.2);
+      ship.add(wing1);
+      const wing2 = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.06, 1.4), new THREE.MeshPhongMaterial({ color: 0x2255cc }));
+      wing2.position.set(0, 0, 0.8);
+      ship.add(wing2);
+      const cockpit = new THREE.Mesh(new THREE.SphereGeometry(0.28, 8, 8), new THREE.MeshPhongMaterial({ color: 0x88ddff, transparent: true, opacity: 0.7, shininess: 200 }));
+      cockpit.position.set(0, 0.05, -0.5);
+      ship.add(cockpit);
+      const engine = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.28, 0.4, 8), new THREE.MeshPhongMaterial({ color: 0xff6600, emissive: 0xff3300, emissiveIntensity: 1.5 }));
+      engine.rotation.x = Math.PI / 2;
+      engine.position.set(0, 0, 1.2);
+      ship.add(engine);
+      ship.position.set(0, 0, 5);
+      scene.add(ship);
+
+      // Game state
+      const gs = { x: 0, y: 0, vx: 0, vy: 0, score: 0, lives: 3, over: false, shootCooldown: 0, invincible: 0 };
+      const bullets: THREE.Mesh[] = [];
+      const enemies: { mesh: THREE.Group; vz: number; vy: number; hp: number }[] = [];
+      const asteroids: { mesh: THREE.Mesh; vx: number; vy: number; vz: number; rot: THREE.Vector3 }[] = [];
+      let spawnTimer = 0;
+      let starZ = 0;
+
+      const makeBullet = () => {
+        const b = new THREE.Mesh(new THREE.SphereGeometry(0.12, 6, 6), new THREE.MeshPhongMaterial({ color: 0x00ffff, emissive: 0x00aaff, emissiveIntensity: 2 }));
+        b.position.set(gs.x, gs.y, 3.5);
+        scene.add(b);
+        bullets.push(b);
       };
 
-      const playerCar = makeCar(0x2266dd);
-      scene.add(playerCar);
-      const botCars = [makeCar(0xdd2222), makeCar(0xaa22cc)];
-      botCars.forEach(c => scene.add(c));
+      const makeEnemy = () => {
+        const g = new THREE.Group();
+        const body = new THREE.Mesh(new THREE.OctahedronGeometry(0.7, 0), new THREE.MeshPhongMaterial({ color: 0xff2244, shininess: 80 }));
+        g.add(body);
+        const eye = new THREE.Mesh(new THREE.SphereGeometry(0.2, 6, 6), new THREE.MeshPhongMaterial({ color: 0xffff00, emissive: 0xffcc00, emissiveIntensity: 1.5 }));
+        eye.position.set(0, 0, -0.5);
+        g.add(eye);
+        const x = (Math.random() - 0.5) * 10;
+        const y = (Math.random() - 0.5) * 6;
+        g.position.set(x, y, -60);
+        scene.add(g);
+        enemies.push({ mesh: g, vz: 0.25 + Math.random() * 0.2, vy: (Math.random() - 0.5) * 0.03, hp: 2 });
+      };
 
-      // HUD overlay (canvas-based)
+      const makeAsteroid = () => {
+        const r = 0.4 + Math.random() * 0.9;
+        const ast = new THREE.Mesh(
+          new THREE.DodecahedronGeometry(r, 0),
+          new THREE.MeshPhongMaterial({ color: 0x886644, shininess: 20 })
+        );
+        ast.position.set((Math.random() - 0.5) * 14, (Math.random() - 0.5) * 8, -80);
+        scene.add(ast);
+        asteroids.push({ mesh: ast, vx: (Math.random() - 0.5) * 0.03, vy: (Math.random() - 0.5) * 0.02, vz: 0.35 + Math.random() * 0.25, rot: new THREE.Vector3((Math.random() - 0.5) * 0.04, (Math.random() - 0.5) * 0.04, (Math.random() - 0.5) * 0.04) });
+      };
+
+      // Canvas HUD
       const hudCanvas = document.createElement("canvas");
       hudCanvas.style.cssText = "position:absolute;top:0;left:0;pointer-events:none;";
       hudCanvas.width = W; hudCanvas.height = H;
       mount.appendChild(hudCanvas);
       const hctx = hudCanvas.getContext("2d")!;
-
-      const drawHUD = (lap: number, speed: number, msg: string) => {
+      const drawHUD = () => {
         hctx.clearRect(0, 0, W, H);
-        hctx.fillStyle = "rgba(0,0,0,0.5)";
-        hctx.beginPath(); hctx.roundRect(12, 12, 170, 55, 8); hctx.fill();
-        hctx.fillStyle = "#fff";
-        hctx.font = "bold 15px system-ui";
-        hctx.fillText(`Lap ${Math.min(lap, totalLaps)} / ${totalLaps}`, 22, 34);
-        hctx.font = "12px system-ui";
-        hctx.fillStyle = "#aae";
-        hctx.fillText(`${(speed * 22).toFixed(0)} km/h`, 22, 55);
-        if (msg) {
-          hctx.fillStyle = "rgba(0,0,0,0.6)";
-          hctx.font = "bold 13px system-ui";
-          const tw = hctx.measureText(msg).width;
-          hctx.beginPath(); hctx.roundRect(W/2 - tw/2 - 10, H - 50, tw + 20, 30, 6); hctx.fill();
-          hctx.fillStyle = "#fff";
-          hctx.fillText(msg, W/2 - tw/2, H - 28);
-        }
-        // Speed bar
-        hctx.fillStyle = "rgba(0,0,0,0.4)";
-        hctx.fillRect(W - 100, 14, 88, 12);
-        hctx.fillStyle = "#3388ff";
-        hctx.fillRect(W - 99, 15, Math.max(0, Math.min(1, speed / 0.5) * 86), 10);
-        hctx.fillStyle = "rgba(255,255,255,0.6)";
-        hctx.font = "9px system-ui";
-        hctx.fillText("SPEED", W - 95, 23);
-      };
-
-      const ACCEL = 0.012, BRAKE = 0.009, FRICTION = 0.97, TURN = 0.042, MAX_SPEED = 0.55;
-      const cpRadius = 12;
-
-      const nextCp = (cp: number) => (cp + 1) % WPS.length;
-
-      const updateBot = (b: typeof botsRef.current[0]) => {
-        const target = WPS[nextCp(b.cp)];
-        const dx = target[0] - b.x, dz = target[1] - b.z;
-        const dist = Math.sqrt(dx * dx + dz * dz);
-        const ta = Math.atan2(dx, dz);
-        let da = ta - b.angle;
-        while (da > Math.PI) da -= Math.PI * 2;
-        while (da < -Math.PI) da += Math.PI * 2;
-        b.angle += Math.sign(da) * Math.min(Math.abs(da), TURN * 1.1);
-        b.speed = Math.min(MAX_SPEED * 0.72, b.speed + ACCEL * 0.8);
-        b.x += Math.sin(b.angle) * b.speed;
-        b.z += Math.cos(b.angle) * b.speed;
-        if (dist < cpRadius) {
-          b.cp = nextCp(b.cp);
-          if (b.cp === 0) b.lap++;
+        hctx.fillStyle = "rgba(0,0,0,0.45)";
+        hctx.beginPath(); (hctx as any).roundRect?.(10, 10, 180, 52, 8); hctx.fill();
+        hctx.fillStyle = "#fff"; hctx.font = "bold 14px system-ui";
+        hctx.fillText(`Score: ${gs.score}`, 20, 32);
+        hctx.fillStyle = "#ff6688"; hctx.font = "13px system-ui";
+        hctx.fillText("❤".repeat(gs.lives), 20, 52);
+        if (gs.over) {
+          hctx.fillStyle = "rgba(0,0,0,0.65)";
+          hctx.fillRect(W/2 - 130, H/2 - 40, 260, 80);
+          hctx.fillStyle = "#ff4466"; hctx.font = "bold 24px system-ui";
+          hctx.textAlign = "center";
+          hctx.fillText("GAME OVER", W/2, H/2 - 8);
+          hctx.fillStyle = "#fff"; hctx.font = "14px system-ui";
+          hctx.fillText(`Score: ${gs.score} — Press Restart`, W/2, H/2 + 22);
+          hctx.textAlign = "left";
         }
       };
 
-      // Initial bot positions
-      botsRef.current[0].x = WPS[0][0] - 2;
-      botsRef.current[0].z = WPS[0][1] + 3;
-      botsRef.current[1].x = WPS[0][0] + 2;
-      botsRef.current[1].z = WPS[0][1] + 3;
-      stateRef.current.x = WPS[0][0];
-      stateRef.current.z = WPS[0][1];
+      const dist2 = (a: THREE.Object3D, b: THREE.Object3D) => {
+        const dx = a.position.x - b.position.x;
+        const dy = a.position.y - b.position.y;
+        return Math.sqrt(dx * dx + dy * dy);
+      };
 
       const animate = () => {
         raf = requestAnimationFrame(animate);
-        const p = stateRef.current;
+        if (gs.over) { drawHUD(); renderer.render(scene, camera); return; }
+
         const ks = keysRef.current;
+        const speed = 0.1;
+        if (ks.has("ArrowLeft") || ks.has("a") || ks.has("A")) gs.vx -= 0.018;
+        if (ks.has("ArrowRight") || ks.has("d") || ks.has("D")) gs.vx += 0.018;
+        if (ks.has("ArrowUp") || ks.has("w") || ks.has("W")) gs.vy += 0.015;
+        if (ks.has("ArrowDown") || ks.has("s") || ks.has("S")) gs.vy -= 0.015;
+        gs.vx *= 0.88; gs.vy *= 0.88;
+        gs.x = Math.max(-6, Math.min(6, gs.x + gs.vx));
+        gs.y = Math.max(-4, Math.min(4, gs.y + gs.vy));
+        ship.position.set(gs.x, gs.y, 5);
+        ship.rotation.z = -gs.vx * 2.5;
+        ship.rotation.x = gs.vy * 1.5;
+        gs.shootCooldown = Math.max(0, gs.shootCooldown - 1);
+        if ((ks.has(" ") || ks.has("z") || ks.has("Z")) && gs.shootCooldown === 0) {
+          makeBullet(); gs.shootCooldown = 8;
+        }
+        gs.invincible = Math.max(0, gs.invincible - 1);
 
-        if (!p.finished) {
-          if (ks.has("ArrowUp") || ks.has("w") || ks.has("W")) p.speed = Math.min(MAX_SPEED, p.speed + ACCEL);
-          else if (ks.has("ArrowDown") || ks.has("s") || ks.has("S")) p.speed = Math.max(-MAX_SPEED * 0.3, p.speed - BRAKE);
-          if ((ks.has("ArrowLeft") || ks.has("a") || ks.has("A")) && Math.abs(p.speed) > 0.01) p.angle -= TURN * Math.sign(p.speed);
-          if ((ks.has("ArrowRight") || ks.has("d") || ks.has("D")) && Math.abs(p.speed) > 0.01) p.angle += TURN * Math.sign(p.speed);
-          p.speed *= FRICTION;
-          p.x += Math.sin(p.angle) * p.speed;
-          p.z += Math.cos(p.angle) * p.speed;
-
-          const tcp = WPS[nextCp(p.cp)];
-          const ddx = tcp[0] - p.x, ddz = tcp[1] - p.z;
-          if (Math.sqrt(ddx * ddx + ddz * ddz) < cpRadius) {
-            p.cp = nextCp(p.cp);
-            if (p.cp === 0) {
-              p.lap++;
-              if (p.lap > totalLaps) {
-                p.finished = true;
-                setHud(h => ({ ...h, msg: "YOU WIN! 🏆" }));
-              } else {
-                setHud(h => ({ ...h, lap: p.lap }));
-              }
-            }
-          }
-          botsRef.current.forEach(updateBot);
-          setHud(h => ({ ...h, speed: Math.abs(p.speed) }));
+        // Move bullets
+        for (let i = bullets.length - 1; i >= 0; i--) {
+          bullets[i].position.z -= 1.8;
+          if (bullets[i].position.z < -100) { scene.remove(bullets[i]); bullets.splice(i, 1); }
         }
 
-        // Update car meshes
-        playerCar.position.set(p.x, 0, p.z);
-        playerCar.rotation.y = -p.angle;
-        botsRef.current.forEach((b, i) => {
-          botCars[i].position.set(b.x, 0, b.z);
-          botCars[i].rotation.y = -b.angle;
-        });
+        // Move enemies
+        for (let i = enemies.length - 1; i >= 0; i--) {
+          const e = enemies[i];
+          e.mesh.position.z += e.vz;
+          e.mesh.position.y += e.vy;
+          e.mesh.rotation.y += 0.04;
+          // Move toward player
+          const dx = gs.x - e.mesh.position.x;
+          e.mesh.position.x += dx * 0.01;
+          if (e.mesh.position.z > 8) { scene.remove(e.mesh); enemies.splice(i, 1); continue; }
+          // Bullet hit
+          let hit = false;
+          for (let j = bullets.length - 1; j >= 0; j--) {
+            if (Math.abs(bullets[j].position.z - e.mesh.position.z) < 1.5 && dist2(bullets[j], e.mesh) < 1.2) {
+              scene.remove(bullets[j]); bullets.splice(j, 1);
+              e.hp--;
+              if (e.hp <= 0) { scene.remove(e.mesh); enemies.splice(i, 1); gs.score += 10; hit = true; break; }
+            }
+          }
+          if (hit) continue;
+          // Player collision
+          if (gs.invincible === 0 && e.mesh.position.z > 4 && dist2(e.mesh, ship) < 1.4) {
+            scene.remove(e.mesh); enemies.splice(i, 1);
+            gs.lives--; gs.invincible = 90;
+            if (gs.lives <= 0) { gs.over = true; setGameOver(true); setScore(gs.score); }
+            else setLives(gs.lives);
+          }
+        }
 
-        // Chase camera behind player car
-        const camDist = 12, camH = 5;
-        camera.position.set(
-          p.x - Math.sin(p.angle) * camDist,
-          camH,
-          p.z - Math.cos(p.angle) * camDist,
-        );
-        camera.lookAt(p.x, 0.5, p.z);
+        // Move asteroids
+        for (let i = asteroids.length - 1; i >= 0; i--) {
+          const a = asteroids[i];
+          a.mesh.position.z += a.vz;
+          a.mesh.position.x += a.vx;
+          a.mesh.position.y += a.vy;
+          a.mesh.rotation.x += a.rot.x;
+          a.mesh.rotation.y += a.rot.y;
+          if (a.mesh.position.z > 8) { scene.remove(a.mesh); asteroids.splice(i, 1); continue; }
+          let hit = false;
+          const r = (a.mesh.geometry as any).parameters?.radius ?? 0.7;
+          for (let j = bullets.length - 1; j >= 0; j--) {
+            if (Math.abs(bullets[j].position.z - a.mesh.position.z) < 1.5 && dist2(bullets[j], a.mesh) < r + 0.3) {
+              scene.remove(bullets[j]); bullets.splice(j, 1);
+              scene.remove(a.mesh); asteroids.splice(i, 1);
+              gs.score += 5; hit = true; break;
+            }
+          }
+          if (hit) continue;
+          if (gs.invincible === 0 && a.mesh.position.z > 4 && dist2(a.mesh, ship) < r + 0.5) {
+            scene.remove(a.mesh); asteroids.splice(i, 1);
+            gs.lives--; gs.invincible = 90;
+            if (gs.lives <= 0) { gs.over = true; setGameOver(true); setScore(gs.score); }
+            else setLives(gs.lives);
+          }
+        }
 
-        drawHUD(p.lap, Math.abs(p.speed), p.finished ? "YOU WIN! Press Restart" : "");
+        // Spawn
+        spawnTimer++;
+        if (spawnTimer % 80 === 0) makeEnemy();
+        if (spawnTimer % 50 === 0) makeAsteroid();
+        gs.score++;
+        if (spawnTimer % 6 === 0) setScore(gs.score);
+
+        // Stars scroll
+        starZ += 0.3;
+        if (starZ > 100) starZ = 0;
+        starGeo.attributes.position.needsUpdate = true;
+
+        // Ship blink when invincible
+        ship.visible = gs.invincible === 0 || Math.floor(gs.invincible / 6) % 2 === 0;
+
+        light1.position.set(gs.x, gs.y + 3, 4);
+        drawHUD();
         renderer.render(scene, camera);
       };
       animate();
 
-      // Resize
       const onResize = () => {
         const nw = mount.clientWidth, nh = mount.clientHeight;
         renderer.setSize(nw, nh);
-        camera.aspect = nw / nh;
-        camera.updateProjectionMatrix();
+        camera.aspect = nw / nh; camera.updateProjectionMatrix();
         hudCanvas.width = nw; hudCanvas.height = nh;
       };
       window.addEventListener("resize", onResize);
@@ -6797,8 +6738,8 @@ function PueiRacingApp({ currentUser }: { currentUser: string }) {
       };
     }).catch(() => {
       const err = document.createElement("div");
-      err.style.cssText = "color:white;padding:20px;font-family:system-ui";
-      err.textContent = "Failed to load Three.js. Check your internet connection.";
+      err.style.cssText = "color:white;padding:20px;font-family:system-ui;display:flex;align-items:center;justify-content:center;height:100%";
+      err.textContent = "Could not load Three.js — check internet connection.";
       mount?.appendChild(err);
     });
 
@@ -6808,47 +6749,53 @@ function PueiRacingApp({ currentUser }: { currentUser: string }) {
       cleanup();
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [started]);
 
-  const restart = () => {
-    stateRef.current = { x: WPS[0][0], z: WPS[0][1], angle: 0, speed: 0, lap: 1, cp: 0, finished: false };
-    botsRef.current[0] = { x: WPS[0][0] - 2, z: WPS[0][1] + 3, angle: 0, speed: 0, lap: 1, cp: 0 };
-    botsRef.current[1] = { x: WPS[0][0] + 2, z: WPS[0][1] + 3, angle: 0, speed: 0, lap: 1, cp: 0 };
-    setHud({ lap: 1, speed: 0, msg: "Drive with WASD / Arrow keys" });
-  };
+  const restart = () => { setScore(0); setLives(3); setGameOver(false); setStarted(false); setTimeout(() => setStarted(true), 50); };
 
-  const touchDir = useRef<string | null>(null);
-  const addTouch = (dir: string) => { keysRef.current.add(dir); touchDir.current = dir; };
-  const removeTouch = () => { if (touchDir.current) { keysRef.current.delete(touchDir.current); touchDir.current = null; } };
-  const touchBtn = (label: string, key: string) => (
-    <button onPointerDown={() => addTouch(key)} onPointerUp={removeTouch} onPointerLeave={removeTouch}
-      className="rounded-xl text-white font-bold text-xl select-none"
-      style={{ background: "rgba(255,255,255,0.18)", border: "1px solid rgba(255,255,255,0.25)", width: 56, height: 56, touchAction: "none" }}>
-      {label}
-    </button>
+  const holdRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const startKey = (k: string) => { keysRef.current.add(k); };
+  const stopKey = (k: string) => { keysRef.current.delete(k); if (holdRef.current) { clearInterval(holdRef.current); holdRef.current = null; } };
+
+  if (!started) return (
+    <div className="flex flex-col items-center justify-center h-full gap-6" style={{ background: "radial-gradient(ellipse at center, #0a0a30 0%, #000010 100%)" }}>
+      <div style={{ fontSize: 60, filter: "drop-shadow(0 0 20px #4488ff)" }}>🚀</div>
+      <div className="text-white font-bold text-3xl tracking-widest">PUEI SPACE</div>
+      <div className="text-white/50 text-sm text-center max-w-xs">Fly your ship through an asteroid field. Shoot enemies, survive as long as possible!</div>
+      <div className="text-white/35 text-xs text-center">Arrow keys / WASD to move · Space / Z to shoot<br/>Touch buttons on mobile</div>
+      <button onClick={() => setStarted(true)} className="mt-2 rounded-2xl px-10 py-3 text-white font-bold text-lg" style={{ background: "linear-gradient(135deg, #2255cc, #4488ff)", boxShadow: "0 0 30px rgba(68,136,255,0.6)" }}>
+        START GAME
+      </button>
+    </div>
   );
 
   return (
-    <div className="flex flex-col h-full" style={{ background: "#0a1220" }}>
-      {/* Toolbar */}
-      <div className="flex items-center gap-3 px-3 py-1.5 shrink-0" style={{ background: "rgba(0,0,0,0.5)", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
-        <span className="text-white font-bold text-sm tracking-wide">PueiRacing 3D</span>
-        <span className="text-xs text-white/40">{hud.msg || `Lap ${hud.lap}/${totalLaps}`}</span>
-        <button onClick={restart} className="ml-auto rounded-lg px-3 py-1 text-xs font-semibold text-white" style={{ background: "var(--accent)" }}>Restart</button>
+    <div className="flex flex-col h-full" style={{ background: "#000010" }}>
+      <div className="flex items-center gap-3 px-3 py-1 shrink-0" style={{ background: "rgba(0,0,20,0.8)", borderBottom: "1px solid rgba(68,136,255,0.2)" }}>
+        <span className="text-white font-bold text-sm tracking-wider">PUEI SPACE</span>
+        <span className="text-blue-300 text-xs ml-2">Score: {score}</span>
+        <span className="text-red-400 text-xs">{"❤".repeat(lives)}</span>
+        {gameOver && <button onClick={restart} className="ml-auto rounded-lg px-3 py-1 text-xs font-bold text-white" style={{ background: "#cc2244" }}>RESTART</button>}
       </div>
-      {/* Three.js mount */}
       <div ref={mountRef} className="flex-1 relative" style={{ minHeight: 0 }} />
-      {/* Touch d-pad */}
-      <div className="flex items-center justify-center gap-8 py-2 shrink-0" style={{ background: "rgba(0,0,0,0.4)" }}>
+      {/* Touch controls */}
+      <div className="flex items-center justify-between px-4 py-2 shrink-0" style={{ background: "rgba(0,0,20,0.7)" }}>
         <div className="flex flex-col items-center gap-1">
-          {touchBtn("▲", "ArrowUp")}
+          <button onPointerDown={() => startKey("ArrowUp")} onPointerUp={() => stopKey("ArrowUp")} onPointerLeave={() => stopKey("ArrowUp")}
+            className="rounded-xl text-white font-bold text-base select-none" style={{ background: "rgba(68,136,255,0.25)", border: "1px solid rgba(68,136,255,0.4)", width: 46, height: 46, touchAction: "none" }}>▲</button>
           <div className="flex gap-1">
-            {touchBtn("◀", "ArrowLeft")}
-            {touchBtn("▼", "ArrowDown")}
-            {touchBtn("▶", "ArrowRight")}
+            <button onPointerDown={() => startKey("ArrowLeft")} onPointerUp={() => stopKey("ArrowLeft")} onPointerLeave={() => stopKey("ArrowLeft")}
+              className="rounded-xl text-white font-bold text-base select-none" style={{ background: "rgba(68,136,255,0.25)", border: "1px solid rgba(68,136,255,0.4)", width: 46, height: 46, touchAction: "none" }}>◀</button>
+            <button onPointerDown={() => startKey("ArrowDown")} onPointerUp={() => stopKey("ArrowDown")} onPointerLeave={() => stopKey("ArrowDown")}
+              className="rounded-xl text-white font-bold text-base select-none" style={{ background: "rgba(68,136,255,0.25)", border: "1px solid rgba(68,136,255,0.4)", width: 46, height: 46, touchAction: "none" }}>▼</button>
+            <button onPointerDown={() => startKey("ArrowRight")} onPointerUp={() => stopKey("ArrowRight")} onPointerLeave={() => stopKey("ArrowRight")}
+              className="rounded-xl text-white font-bold text-base select-none" style={{ background: "rgba(68,136,255,0.25)", border: "1px solid rgba(68,136,255,0.4)", width: 46, height: 46, touchAction: "none" }}>▶</button>
           </div>
         </div>
-        <div className="text-white/25 text-[10px] text-center">WASD or Arrow keys<br/>Blue = You · Red/Purple = Bots</div>
+        <button onPointerDown={() => startKey(" ")} onPointerUp={() => stopKey(" ")} onPointerLeave={() => stopKey(" ")}
+          className="rounded-2xl text-white font-bold text-sm select-none" style={{ background: "linear-gradient(135deg,#0066cc,#00aaff)", border: "1px solid rgba(0,180,255,0.5)", width: 80, height: 80, touchAction: "none", boxShadow: "0 0 20px rgba(0,180,255,0.4)" }}>
+          FIRE
+        </button>
       </div>
     </div>
   );

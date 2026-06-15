@@ -266,7 +266,7 @@ const APP_ICON_SVGS: Partial<Record<AppId, (s: number) => React.ReactNode>> = {
   "zip-viewer": (s) => <svg width={s*0.62} height={s*0.62} viewBox="0 0 24 24" fill="none"><path d="M5 3h9l5 5v13a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2z" fill="rgba(255,255,255,0.15)" stroke="rgba(255,255,255,0.8)" strokeWidth="1.2"/><path d="M14 3v5h5" stroke="rgba(255,255,255,0.6)" strokeWidth="1.2"/><path d="M10 8h4v2h-4zM10 10v2h4v-2M10 12v2h4v-2M10 14v3h4v-3" stroke="none" fill="rgba(255,255,255,0.6)"/><rect x="10" y="8" width="4" height="2" fill="rgba(255,255,255,0.5)"/><rect x="10" y="11" width="4" height="2" fill="rgba(255,255,255,0.3)"/><rect x="10" y="14" width="4" height="3" fill="rgba(255,255,255,0.5)"/></svg>,
   "pmail": (s) => <svg width={s*0.62} height={s*0.62} viewBox="0 0 24 24" fill="none"><rect x="3" y="6" width="18" height="13" rx="2" fill="rgba(255,255,255,0.15)" stroke="rgba(255,255,255,0.85)" strokeWidth="1.3"/><path d="M3 8l9 6 9-6" stroke="rgba(255,255,255,0.85)" strokeWidth="1.3"/></svg>,
   "web-app": (s) => <svg width={s*0.62} height={s*0.62} viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="16" rx="2" fill="rgba(255,255,255,0.1)" stroke="rgba(255,255,255,0.7)" strokeWidth="1.2"/><path d="M3 8h18" stroke="rgba(255,255,255,0.6)" strokeWidth="1.2"/><circle cx="6.5" cy="6" r="1" fill="rgba(255,120,120,0.8)"/><circle cx="9.5" cy="6" r="1" fill="rgba(255,200,80,0.8)"/><circle cx="12.5" cy="6" r="1" fill="rgba(100,220,100,0.8)"/><rect x="6" y="11" width="12" height="1.5" rx="0.7" fill="rgba(255,255,255,0.4)"/><rect x="6" y="14" width="8" height="1.5" rx="0.7" fill="rgba(255,255,255,0.3)"/></svg>,
-  "pueyracing": (s) => <svg width={s*0.62} height={s*0.62} viewBox="0 0 24 24" fill="none"><rect x="4" y="10" width="16" height="7" rx="3" fill="rgba(255,255,255,0.2)" stroke="rgba(255,255,255,0.8)" strokeWidth="1.2"/><rect x="7" y="7" width="10" height="5" rx="2" fill="rgba(255,255,255,0.5)"/><circle cx="7.5" cy="18" r="2.5" fill="rgba(255,255,255,0.3)" stroke="rgba(255,255,255,0.8)" strokeWidth="1.2"/><circle cx="16.5" cy="18" r="2.5" fill="rgba(255,255,255,0.3)" stroke="rgba(255,255,255,0.8)" strokeWidth="1.2"/><rect x="8" y="10" width="8" height="3" rx="1" fill="rgba(150,230,255,0.5)"/></svg>,
+  "pueyracing": (s) => <svg width={s*0.62} height={s*0.62} viewBox="0 0 24 24" fill="none"><path d="M12 2 L15 8 L12 7 L9 8 Z" fill="rgba(255,255,255,0.9)"/><rect x="10.5" y="7" width="3" height="9" rx="1.5" fill="rgba(180,220,255,0.9)"/><path d="M10.5 9 L6 13 L6 15 L10.5 13Z" fill="rgba(255,255,255,0.65)"/><path d="M13.5 9 L18 13 L18 15 L13.5 13Z" fill="rgba(255,255,255,0.65)"/><ellipse cx="12" cy="16.5" rx="1.5" ry="2" fill="rgba(255,140,0,0.9)"/><circle cx="12" cy="18.5" rx="1" ry="1.2" fill="rgba(255,200,80,0.7)"/></svg>,
 };
 
 export function appIcon(appId: AppId, size = 32, override?: string, iconUrl?: string) {
@@ -293,7 +293,7 @@ export function appIcon(appId: AppId, size = 32, override?: string, iconUrl?: st
     "iso-viewer":     ["#705840","#382010"],
     "zip-viewer":     ["#607080","#283040"],
     "pmail":          ["#d03030","#800010"],
-    "pueyracing":     ["#e0a010","#905000"],
+    "pueyracing":     ["#1848c0","#080830"],
   };
   const [c1, c2] = colorMap[appId] ?? ["#486070","#203040"];
 

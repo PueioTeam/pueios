@@ -34,7 +34,7 @@ const APP_TITLES: Record<AppId, string> = {
   "chess": "Chess",
   "puei-mansion": "Puei Mansion",
   "pmail": "PMail",
-  "pueyracing": "PueiRacing",
+  "pueyracing": "Puei Space",
   "iso-viewer": "ISO Viewer",
   "zip-viewer": "ZIP Viewer",
 };
