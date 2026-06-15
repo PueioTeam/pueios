@@ -1709,7 +1709,7 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
     "puei://home": "Home", "puei://search": "Puei Copilot", "puei://about": "About",
     "puei://updates": "Updates", "puei://social": "PueiSocial", "puei://board": "PueiBoard",
     "puei://wallpapers": "Wallpapers", "puei://chat": "Chat", "puei://os3": "PueiOS 3",
-    "puei://films": "Puei Videos",
+    "puei://films": "Puei Videos", "puei://mail": "PMail",
   };
   const navigate = (target: string) => {
     let u = target.trim();
@@ -1729,6 +1729,7 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
             ["puei://board", "📌 PueiBoard"],
             ["puei://updates", "⬆️ Puei Updates"],
             ["puei://search", "✨ Puei Copilot"],
+            ["puei://mail", "✉️ PMail"],
             ["puei://forum", "💼 PueiForum"],
             ["puei://wallpapers", "🖼️ Puei Wallpapers"],
             ["puei://films", "🎬 Puei Videos"],
@@ -1941,6 +1942,7 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
         </div>
       </div>
     ),
+    "puei://mail": <PMailApp currentUser={currentUser} users={users} />,
     "puei://about": <div className="p-6"><h2 className="text-2xl font-bold">About PueiNet</h2><p className="text-sm opacity-70 mt-2">A browser for an alternate 2020. Only https://&lt;app&gt;.base44.app external URLs are trusted.</p></div>,
   };
 
@@ -6351,7 +6353,7 @@ const PMAIL_FOLDERS_DEF = [
 ];
 type PMFolder = "inbox" | "important" | "sent" | "drafts" | "spam" | "trash";
 
-function PMailApp({ currentUser, users }: { currentUser: string; users: { name: string; pueiNumber?: string }[] }) {
+function PMailApp({ currentUser, users }: { currentUser: string; users: { name: string; pueiNumber?: string; avatar?: string; color?: string }[] }) {
   const [folder, setFolder] = useState<PMFolder>("inbox");
   const [msgs, setMsgs] = useState<MailMessage[]>(() => loadMail(currentUser));
   const [selected, setSelected] = useState<MailMessage | null>(null);
@@ -6578,9 +6580,16 @@ function PMailApp({ currentUser, users }: { currentUser: string; users: { name: 
         ) : selected ? (
           <div className="flex flex-col h-full">
             <div className="flex items-start gap-3 p-4 border-b" style={{ borderColor: "var(--border)", background: "var(--glass)" }}>
-              <div style={{ width: 40, height: 40, borderRadius: 10, background: "var(--accent)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0, color: "#fff", fontWeight: 700 }}>
-                {(selected.from[0] ?? "?").toUpperCase()}
-              </div>
+              {(() => {
+                const sender = users.find(u => u.name === selected.from);
+                const av = sender?.avatar;
+                const col = sender?.color ?? "220";
+                return (
+                  <div style={{ width: 40, height: 40, borderRadius: 10, background: `linear-gradient(135deg, oklch(0.7 0.18 ${col}), oklch(0.45 0.2 ${col}))`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: av && av.startsWith("data:") ? undefined : 20, flexShrink: 0, overflow: "hidden" }}>
+                    {av ? (av.startsWith("data:") ? <img src={av} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <span>{av}</span>) : <span style={{ color: "#fff", fontWeight: 700, fontSize: 18 }}>{(selected.from[0] ?? "?").toUpperCase()}</span>}
+                  </div>
+                );
+              })()}
               <div className="flex-1 min-w-0">
                 <div className="font-semibold text-sm">{selected.subject || "(no subject)"}</div>
                 <div className="text-xs opacity-60">From: {selected.from} → {selected.to}</div>
@@ -6896,7 +6905,7 @@ function PueiRacingApp({ currentUser }: { currentUser: string }) {
       <div style={{ fontSize: 60, filter: "drop-shadow(0 0 20px #4488ff)" }}>🚀</div>
       <div className="text-white font-bold text-3xl tracking-widest">PUEI SPACE</div>
       <div className="text-white/50 text-sm text-center max-w-xs">Fly your ship through an asteroid field. Shoot enemies, survive as long as possible!</div>
-      <div className="text-white/35 text-xs text-center">Arrow keys / WASD to move · Space / Z to shoot<br/>Touch buttons on mobile</div>
+      <div className="text-white/35 text-xs text-center">WASD to move · Space / Z to shoot</div>
       <button onClick={() => setStarted(true)} className="mt-2 rounded-2xl px-10 py-3 text-white font-bold text-lg" style={{ background: "linear-gradient(135deg, #2255cc, #4488ff)", boxShadow: "0 0 30px rgba(68,136,255,0.6)" }}>
         START GAME
       </button>
@@ -6912,20 +6921,8 @@ function PueiRacingApp({ currentUser }: { currentUser: string }) {
         {gameOver && <button onClick={restart} className="ml-auto rounded-lg px-3 py-1 text-xs font-bold text-white" style={{ background: "#cc2244" }}>RESTART</button>}
       </div>
       <div ref={mountRef} className="flex-1 relative" style={{ minHeight: 0 }} />
-      {/* Touch controls */}
-      <div className="flex items-center justify-between px-4 py-2 shrink-0" style={{ background: "rgba(0,0,20,0.7)" }}>
-        <div className="flex flex-col items-center gap-1">
-          <button onPointerDown={() => startKey("w")} onPointerUp={() => stopKey("w")} onPointerLeave={() => stopKey("w")}
-            className="rounded-xl text-white font-bold text-base select-none" style={{ background: "rgba(68,136,255,0.25)", border: "1px solid rgba(68,136,255,0.4)", width: 46, height: 46, touchAction: "none" }}>W</button>
-          <div className="flex gap-1">
-            <button onPointerDown={() => startKey("a")} onPointerUp={() => stopKey("a")} onPointerLeave={() => stopKey("a")}
-              className="rounded-xl text-white font-bold text-base select-none" style={{ background: "rgba(68,136,255,0.25)", border: "1px solid rgba(68,136,255,0.4)", width: 46, height: 46, touchAction: "none" }}>A</button>
-            <button onPointerDown={() => startKey("s")} onPointerUp={() => stopKey("s")} onPointerLeave={() => stopKey("s")}
-              className="rounded-xl text-white font-bold text-base select-none" style={{ background: "rgba(68,136,255,0.25)", border: "1px solid rgba(68,136,255,0.4)", width: 46, height: 46, touchAction: "none" }}>S</button>
-            <button onPointerDown={() => startKey("d")} onPointerUp={() => stopKey("d")} onPointerLeave={() => stopKey("d")}
-              className="rounded-xl text-white font-bold text-base select-none" style={{ background: "rgba(68,136,255,0.25)", border: "1px solid rgba(68,136,255,0.4)", width: 46, height: 46, touchAction: "none" }}>D</button>
-          </div>
-        </div>
+      {/* Touch controls — FIRE only, movement via tilt/swipe handled by keyboard on desktop */}
+      <div className="flex items-center justify-end px-4 py-2 shrink-0" style={{ background: "rgba(0,0,20,0.7)" }}>
         <button onPointerDown={() => startKey(" ")} onPointerUp={() => stopKey(" ")} onPointerLeave={() => stopKey(" ")}
           className="rounded-2xl text-white font-bold text-sm select-none" style={{ background: "linear-gradient(135deg,#0066cc,#00aaff)", border: "1px solid rgba(0,180,255,0.5)", width: 80, height: 80, touchAction: "none", boxShadow: "0 0 20px rgba(0,180,255,0.4)" }}>
           FIRE

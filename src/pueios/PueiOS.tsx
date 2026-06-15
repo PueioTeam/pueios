@@ -801,7 +801,6 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
   const desktopIcons = icons.filter((i) => !i.folderId);
 
   const desktopCtx = (): any[] => [
-    { label: "View ▸ Large icons" },
     { label: "Refresh", action: () => pushNotif("Desktop", "Refreshed.") },
     { sep: true },
     { label: "New Folder", action: () => createFolder(null) },
