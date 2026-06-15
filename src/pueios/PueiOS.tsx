@@ -2060,8 +2060,8 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
 
       {/* PueiOS 3 launcher — clean fullscreen-style panel */}
       {startOpen && systemVersion === "PueiOS 3" && (
-        <div className="fixed bottom-14 left-2 z-[9000] flex flex-col rounded-2xl overflow-hidden"
-          style={{ width: 400, maxHeight: "calc(100vh - 80px)", background: "rgba(8,8,20,0.95)", backdropFilter: "blur(48px) saturate(200%)", border: "1px solid rgba(255,255,255,0.10)", animation: "fade-scale 0.15s ease-out", boxShadow: "0 -8px 50px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.05)" }}
+        <div className="fixed top-9 left-0 z-[9000] flex flex-col rounded-2xl overflow-hidden"
+          style={{ width: 400, maxHeight: "calc(100vh - 80px)", background: "rgba(8,8,20,0.95)", backdropFilter: "blur(48px) saturate(200%)", border: "1px solid rgba(255,255,255,0.10)", animation: "fade-scale 0.15s ease-out", boxShadow: "0 8px 50px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.05)" }}
           onMouseDown={(e) => e.stopPropagation()}>
           {/* Search bar */}
           <div className="px-4 pt-4 pb-3">
@@ -2114,7 +2114,7 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
 
       {/* Calendar */}
       {showCalendar && (
-        <div className="fixed bottom-12 right-2 aero-glass rounded-xl p-3 z-[9000] w-64" onMouseDown={(e) => e.stopPropagation()}>
+        <div className={`fixed ${systemVersion === "PueiOS 3" ? "top-9 right-2" : "bottom-12 right-2"} aero-glass rounded-xl p-3 z-[9000] w-64`} onMouseDown={(e) => e.stopPropagation()}>
           <div className="text-center font-semibold mb-2">{now.toLocaleString(undefined, { month: "long", year: "numeric" })}</div>
           <div className="grid grid-cols-7 gap-1 text-center text-xs">
             {["S","M","T","W","T","F","S"].map((d, i) => <div key={i} className="opacity-60">{d}</div>)}
@@ -2133,94 +2133,96 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
 
       {/* Taskbar */}
       {systemVersion === "PueiOS 3" ? (
-        /* PueiOS 3 — Win7 glass taskbar */
-        <div className="fixed bottom-0 left-0 right-0 flex items-stretch z-[8000]"
-          style={{ height: 44, background: theme.taskbarColor ?? "linear-gradient(180deg, rgba(20,50,100,0.82) 0%, rgba(10,25,60,0.95) 100%)", backdropFilter: "blur(20px) saturate(180%)", borderTop: "1px solid rgba(100,160,240,0.25)", boxShadow: "0 -1px 0 rgba(255,255,255,0.08), 0 -4px 20px rgba(0,0,20,0.6)" }}
-          onMouseDown={(e) => e.stopPropagation()}
-          onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); setCtxMenu({ x: e.clientX, y: e.clientY, items: taskbarCtx() }); }}>
-          {/* Win7-style Start orb */}
-          <button
-            title="Start" onClick={(e) => { e.stopPropagation(); blip("click"); setStartOpen(!startOpen); setShowCalendar(false); }}
-            style={{ width: 52, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", background: startOpen ? "linear-gradient(180deg,rgba(60,120,220,0.7) 0%,rgba(20,60,180,0.9) 100%)" : "linear-gradient(180deg,rgba(40,100,200,0.5) 0%,rgba(15,50,140,0.7) 100%)", borderRight: "1px solid rgba(100,160,240,0.2)", cursor: "pointer", position: "relative" }}>
-            {/* Orb glow */}
-            <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at 50% 30%, rgba(100,180,255,0.35) 0%, transparent 70%)", pointerEvents: "none" }} />
-            <PueiLogoSvg size={28} bigEyes />
-          </button>
-          {/* Pinned + open apps area */}
-          <div className="flex items-center flex-1 overflow-hidden" style={{ gap: 2, padding: "0 4px" }}>
-            {pinnedApps.map((p) => {
-              const pKey = p.webUrl ?? p.appId;
-              const hasWin = windows.some((w) => p.appId === "web-app" ? w.appId === "web-app" && w.webUrl === p.webUrl : w.appId === p.appId);
-              const activeWin = windows.find((w) => (p.appId === "web-app" ? w.appId === "web-app" && w.webUrl === p.webUrl : w.appId === p.appId) && !w.minimized);
-              const label = p.label ?? APP_TITLES[p.appId] ?? p.appId;
-              const desktopIc = icons.find((i) => i.appId === p.appId && (p.appId !== "web-app" || i.webUrl === p.webUrl));
-              const pinnedIconUrl = desktopIc?.iconUrl;
-              const pinnedIconEmoji = desktopIc?.iconEmoji;
-              const isActive = !!activeWin;
-              return (
-                <div key={pKey} style={{ position: "relative", flexShrink: 0 }}>
-                  <button onClick={(e) => { e.stopPropagation(); openPinned(p); }}
-                    onMouseEnter={() => blip("hover")} title={label}
-                    onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); setCtxMenu({ x: e.clientX, y: e.clientY, items: [
-                      { label: "Open", action: () => openPinned(p) },
-                      { sep: true },
-                      { label: "🖇️ Unpin from taskbar", action: () => unpinFromTaskbar(pKey) },
-                    ]}); }}
-                    style={{ width: 44, height: 40, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 2, border: isActive ? "1px solid rgba(120,180,255,0.55)" : hasWin ? "1px solid rgba(255,255,255,0.12)" : "1px solid transparent", background: isActive ? "linear-gradient(180deg,rgba(60,140,255,0.35) 0%,rgba(20,80,200,0.4) 100%)" : hasWin ? "rgba(255,255,255,0.07)" : "transparent", cursor: "pointer", position: "relative", overflow: "hidden" }}>
-                    {/* Glass gloss on active */}
-                    {isActive && <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "50%", background: "linear-gradient(180deg,rgba(255,255,255,0.2) 0%,rgba(255,255,255,0) 100%)", pointerEvents: "none" }} />}
-                    {appIcon(p.appId, 26, pinnedIconEmoji, pinnedIconUrl)}
-                  </button>
-                  {hasWin && <div style={{ position: "absolute", bottom: 1, left: "50%", transform: "translateX(-50%)", width: isActive ? 24 : 8, height: 2, borderRadius: 1, background: isActive ? "rgba(100,180,255,0.9)" : "rgba(150,200,255,0.5)", transition: "width 0.2s", boxShadow: isActive ? "0 0 6px rgba(80,160,255,0.7)" : "none" }} />}
-                </div>
-              );
-            })}
-            {pinnedApps.length > 0 && windows.filter(w => !pinnedApps.some(p => p.appId === "web-app" ? w.appId === "web-app" && w.webUrl === p.webUrl : w.appId === p.appId)).length > 0 && (
-              <div style={{ width: 1, height: 28, background: "rgba(255,255,255,0.12)", margin: "0 3px", flexShrink: 0 }} />
-            )}
-            {/* Non-pinned open windows */}
-            {windows.filter(w => !pinnedApps.some(p => p.appId === "web-app" ? w.appId === "web-app" && w.webUrl === p.webUrl : w.appId === p.appId)).map((w) => {
-              const isActive2 = w.z === Math.max(...windows.map((x) => x.z)) && !w.minimized;
-              return (
-                <button key={w.id}
-                  style={{ height: 40, padding: "0 10px", display: "flex", alignItems: "center", gap: 6, borderRadius: 2, border: isActive2 ? "1px solid rgba(120,180,255,0.55)" : "1px solid rgba(255,255,255,0.1)", background: isActive2 ? "linear-gradient(180deg,rgba(60,140,255,0.35) 0%,rgba(20,80,200,0.4) 100%)" : "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.9)", fontSize: 11, maxWidth: 140, flexShrink: 0, cursor: "pointer", position: "relative", overflow: "hidden" }}
-                  onClick={(e) => { e.stopPropagation(); if (w.minimized) focusWin(w.id); else minWin(w.id); }}
-                  onContextMenu={(e) => { e.preventDefault(); e.stopPropagation();
-                    const wKey = w.appId === "web-app" ? (w.webUrl ?? w.appId) : w.appId;
-                    const isWinPinned = pinnedApps.some((p) => (p.webUrl ?? p.appId) === wKey);
-                    setCtxMenu({ x: e.clientX, y: e.clientY, items: [
-                    { label: "Restore", action: () => focusWin(w.id) },
-                    { label: "Minimize", action: () => minWin(w.id) },
-                    { label: "Maximize", action: () => maxWin(w.id) },
-                    { sep: true },
-                    isWinPinned ? { label: "🖇️ Unpin from taskbar", action: () => unpinFromTaskbar(wKey) } : { label: "🖇️ Pin to taskbar", action: () => pinToTaskbar({ appId: w.appId, webUrl: w.webUrl, label: w.title }) },
-                    { sep: true },
-                    { label: "Close", action: () => closeWin(w.id) },
-                  ]});}}>
-                  {isActive2 && <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "50%", background: "linear-gradient(180deg,rgba(255,255,255,0.18) 0%,rgba(255,255,255,0) 100%)", pointerEvents: "none" }} />}
-                  {appIcon(w.appId, 18, undefined, w.appId === "web-app" ? icons.find(i => i.appId === "web-app" && i.webUrl === w.webUrl)?.iconUrl : undefined)}
-                  <span className="truncate" style={{ maxWidth: 90 }}>{w.title}</span>
-                </button>
-              );
-            })}
-          </div>
-          {/* Win7 tray */}
-          <div style={{ display: "flex", alignItems: "center", borderLeft: "1px solid rgba(100,160,240,0.2)", padding: "0 8px", gap: 4, flexShrink: 0 }}>
-            <span title="Network" style={{ cursor: "pointer", fontSize: 14, opacity: 0.7, padding: "0 3px" }}
-              onClick={(e) => { e.stopPropagation(); setShowNetwork(!showNetwork); setShowVolume(false); }}>📶</span>
-            <span title="Sound" style={{ cursor: "pointer", fontSize: 14, opacity: 0.7, padding: "0 3px" }}
-              onClick={(e) => { e.stopPropagation(); setShowVolume(!showVolume); setShowNetwork(false); blip("notify"); }}>🔊</span>
-            <button
-              onClick={(e) => { e.stopPropagation(); setShowCalendar(!showCalendar); setStartOpen(false); }}
-              style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: "none", border: "none", color: "rgba(200,225,255,0.85)", fontSize: 10, lineHeight: 1.5, cursor: "pointer", padding: "0 6px", textAlign: "center" }}>
-              <span style={{ fontWeight: 500 }}>{now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
-              <span style={{ opacity: 0.7 }}>{now.toLocaleDateString()}</span>
+        /* PueiOS 3 — macOS-style floating dock */
+        <>
+          {/* Tray bar: top-right menu bar */}
+          <div className="fixed top-0 left-0 right-0 flex items-center z-[8000]" style={{ height: 28, background: "rgba(0,0,0,0.28)", backdropFilter: "blur(20px) saturate(180%)", WebkitBackdropFilter: "blur(20px) saturate(180%)" }}
+            onMouseDown={(e) => e.stopPropagation()}
+            onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); setCtxMenu({ x: e.clientX, y: e.clientY, items: taskbarCtx() }); }}>
+            {/* Apple-style menu */}
+            <button onClick={(e) => { e.stopPropagation(); blip("click"); setStartOpen(!startOpen); setShowCalendar(false); }}
+              style={{ display: "flex", alignItems: "center", padding: "0 12px", height: "100%", background: startOpen ? "rgba(255,255,255,0.15)" : "transparent", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.9)" }}>
+              <PueiLogoSvg size={16} bigEyes />
             </button>
+            <span style={{ color: "rgba(255,255,255,0.85)", fontSize: 12, fontWeight: 600, padding: "0 6px" }}>PueiOS</span>
+            <div style={{ flex: 1 }} />
+            {/* Right side tray */}
+            <div style={{ display: "flex", alignItems: "center", gap: 2, padding: "0 8px", height: "100%" }}>
+              <span title="Network" style={{ cursor: "pointer", fontSize: 12, opacity: 0.8, padding: "0 4px", color: "#fff" }}
+                onClick={(e) => { e.stopPropagation(); setShowNetwork(!showNetwork); setShowVolume(false); }}>📶</span>
+              <span title="Sound" style={{ cursor: "pointer", fontSize: 12, opacity: 0.8, padding: "0 4px", color: "#fff" }}
+                onClick={(e) => { e.stopPropagation(); setShowVolume(!showVolume); setShowNetwork(false); blip("notify"); }}>🔊</span>
+              <button onClick={(e) => { e.stopPropagation(); setShowCalendar(!showCalendar); setStartOpen(false); }}
+                style={{ background: "none", border: "none", color: "rgba(255,255,255,0.9)", fontSize: 11, fontWeight: 500, cursor: "pointer", padding: "0 6px" }}>
+                {now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} · {now.toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+              </button>
+            </div>
           </div>
-          {/* Show Desktop button */}
-          <div title="Show Desktop" style={{ width: 8, flexShrink: 0, background: "rgba(255,255,255,0.06)", borderLeft: "1px solid rgba(100,160,240,0.2)", cursor: "pointer" }}
-            onClick={(e) => { e.stopPropagation(); windows.forEach((w) => minWin(w.id)); }} />
-        </div>
+          {/* Floating dock */}
+          <div className="fixed bottom-4 left-0 right-0 flex justify-center z-[8000] pointer-events-none">
+            <div className="pointer-events-auto flex items-end gap-1.5 px-3"
+              style={{ background: "rgba(255,255,255,0.14)", backdropFilter: "blur(40px) saturate(180%)", WebkitBackdropFilter: "blur(40px) saturate(180%)", border: "1px solid rgba(255,255,255,0.2)", borderRadius: 20, boxShadow: "0 8px 40px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.3)", padding: "6px 8px 6px" }}
+              onMouseDown={(e) => e.stopPropagation()}
+              onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); setCtxMenu({ x: e.clientX, y: e.clientY, items: taskbarCtx() }); }}>
+              {/* Pinned apps */}
+              {pinnedApps.map((p) => {
+                const pKey = p.webUrl ?? p.appId;
+                const hasWin = windows.some((w) => p.appId === "web-app" ? w.appId === "web-app" && w.webUrl === p.webUrl : w.appId === p.appId);
+                const activeWin = windows.find((w) => (p.appId === "web-app" ? w.appId === "web-app" && w.webUrl === p.webUrl : w.appId === p.appId) && !w.minimized);
+                const label = p.label ?? APP_TITLES[p.appId] ?? p.appId;
+                const desktopIc = icons.find((i) => i.appId === p.appId && (p.appId !== "web-app" || i.webUrl === p.webUrl));
+                const pinnedIconUrl = desktopIc?.iconUrl;
+                const pinnedIconEmoji = desktopIc?.iconEmoji;
+                return (
+                  <div key={pKey} style={{ position: "relative", display: "flex", flexDirection: "column", alignItems: "center" }}>
+                    <button className="macos-dock-btn"
+                      onClick={(e) => { e.stopPropagation(); openPinned(p); }}
+                      onMouseEnter={() => blip("hover")}
+                      onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); setCtxMenu({ x: e.clientX, y: e.clientY, items: [
+                        { label: "Open", action: () => openPinned(p) },
+                        { sep: true },
+                        { label: "🖇️ Unpin from Dock", action: () => unpinFromTaskbar(pKey) },
+                      ]}); }}>
+                      <span className="macos-dock-label">{label}</span>
+                      {appIcon(p.appId, 48, pinnedIconEmoji, pinnedIconUrl)}
+                    </button>
+                    {/* Running dot */}
+                    <div style={{ width: hasWin ? (activeWin ? 5 : 3) : 0, height: hasWin ? (activeWin ? 5 : 3) : 0, borderRadius: "50%", background: activeWin ? "rgba(255,255,255,0.95)" : "rgba(255,255,255,0.5)", marginTop: 3, transition: "all 0.2s", boxShadow: activeWin ? "0 0 4px rgba(255,255,255,0.6)" : "none" }} />
+                  </div>
+                );
+              })}
+              {/* Separator before non-pinned open windows */}
+              {pinnedApps.length > 0 && windows.filter(w => !pinnedApps.some(p => p.appId === "web-app" ? w.appId === "web-app" && w.webUrl === p.webUrl : w.appId === p.appId)).length > 0 && (
+                <div style={{ width: 1, height: 40, background: "rgba(255,255,255,0.25)", margin: "0 2px", alignSelf: "center" }} />
+              )}
+              {/* Non-pinned open windows as dock icons */}
+              {windows.filter(w => !pinnedApps.some(p => p.appId === "web-app" ? w.appId === "web-app" && w.webUrl === p.webUrl : w.appId === p.appId)).map((w) => {
+                const isActive2 = w.z === Math.max(...windows.map((x) => x.z)) && !w.minimized;
+                return (
+                  <div key={w.id} style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                    <button className="macos-dock-btn"
+                      onClick={(e) => { e.stopPropagation(); if (w.minimized) focusWin(w.id); else minWin(w.id); }}
+                      onContextMenu={(e) => { e.preventDefault(); e.stopPropagation();
+                        const wKey = w.appId === "web-app" ? (w.webUrl ?? w.appId) : w.appId;
+                        const isWinPinned = pinnedApps.some((p) => (p.webUrl ?? p.appId) === wKey);
+                        setCtxMenu({ x: e.clientX, y: e.clientY, items: [
+                          { label: "Show", action: () => focusWin(w.id) },
+                          { label: "Minimize", action: () => minWin(w.id) },
+                          { sep: true },
+                          isWinPinned ? { label: "🖇️ Remove from Dock", action: () => unpinFromTaskbar(wKey) } : { label: "📌 Keep in Dock", action: () => pinToTaskbar({ appId: w.appId, webUrl: w.webUrl, label: w.title }) },
+                          { sep: true },
+                          { label: "Close", action: () => closeWin(w.id) },
+                        ]});}}>
+                      <span className="macos-dock-label">{w.title}</span>
+                      {appIcon(w.appId, 48, undefined, w.appId === "web-app" ? icons.find(i => i.appId === "web-app" && i.webUrl === w.webUrl)?.iconUrl : undefined)}
+                    </button>
+                    <div style={{ width: isActive2 ? 5 : 3, height: isActive2 ? 5 : 3, borderRadius: "50%", background: isActive2 ? "rgba(255,255,255,0.95)" : "rgba(255,255,255,0.5)", marginTop: 3, transition: "all 0.2s", boxShadow: isActive2 ? "0 0 4px rgba(255,255,255,0.6)" : "none" }} />
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </>
       ) : (
         /* PueiOS 2 / 2+ — classic taskbar */
         <div className="taskbar-bg fixed bottom-0 left-0 right-0 h-12 flex items-center px-1 gap-1 z-[8000]"
@@ -2289,7 +2291,7 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
 
       {/* Volume popup */}
       {showVolume && (
-        <div className="fixed bottom-14 right-24 aero-glass rounded-xl p-4 z-[9000] w-52" onMouseDown={(e) => e.stopPropagation()}>
+        <div className={`fixed ${systemVersion === "PueiOS 3" ? "top-9 right-24" : "bottom-14 right-24"} aero-glass rounded-xl p-4 z-[9000] w-52`} onMouseDown={(e) => e.stopPropagation()}>
           <div className="font-semibold text-sm mb-3">🔊 Volume</div>
           <input type="range" min={0} max={100} value={volume}
             onChange={(e) => { const v = Number(e.target.value); setVolume(v); try { localStorage.setItem("pueios2-volume", String(v)); } catch {} }}
@@ -2301,7 +2303,7 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
 
       {/* Network popup */}
       {showNetwork && (
-        <div className="fixed bottom-14 right-36 aero-glass rounded-xl p-4 z-[9000] w-56" onMouseDown={(e) => e.stopPropagation()}>
+        <div className={`fixed ${systemVersion === "PueiOS 3" ? "top-9 right-36" : "bottom-14 right-36"} aero-glass rounded-xl p-4 z-[9000] w-56`} onMouseDown={(e) => e.stopPropagation()}>
           <div className="font-semibold text-sm mb-2">📶 PueiNet</div>
           <div className="text-xs space-y-1">
             <div className="flex justify-between"><span className="opacity-60">Status</span><span className={netInfo.online ? "text-green-400 font-semibold" : "text-red-400 font-semibold"}>{netInfo.online ? "Connected" : "Offline"}</span></div>

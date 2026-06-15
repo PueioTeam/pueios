@@ -8,6 +8,8 @@ interface ApiMail {
   body: string;
   at: number;
   attachments?: unknown[];
+  senderAvatar?: string;
+  senderColor?: string;
 }
 
 const UPSTASH_URL = "https://free-elephant-40203.upstash.io";
@@ -58,7 +60,7 @@ export const Route = createFileRoute("/api/mail")({
       POST: async ({ request }) => {
         const body = (await request.json()) as {
           from: string; to: string; subject: string; body: string;
-          attachments?: unknown[];
+          attachments?: unknown[]; senderAvatar?: string; senderColor?: string;
         };
         if (!body.from || !body.to || !body.subject) return json({ error: "Missing fields" }, 400);
         const msg: ApiMail = {
@@ -66,6 +68,8 @@ export const Route = createFileRoute("/api/mail")({
           from: body.from.trim(), to: body.to.trim(),
           subject: body.subject, body: body.body || "", at: Date.now(),
           attachments: body.attachments,
+          senderAvatar: body.senderAvatar ?? "",
+          senderColor: body.senderColor ?? "220",
         };
         await pushInbox(msg.to, msg);
         return json({ ok: true, id: msg.id });

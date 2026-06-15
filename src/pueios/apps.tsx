@@ -6381,17 +6381,18 @@ const PMAIL_FOLDERS_DEF = [
 ];
 type PMFolder = "inbox" | "important" | "sent" | "drafts" | "spam" | "trash";
 
-function resolveSenderInfo(name: string, users: { name: string; avatar?: string; color?: string }[]): { av: string; col: string } {
+function resolveSenderInfo(name: string, users: { name: string; avatar?: string; color?: string }[], msgAvatar?: string, msgColor?: string): { av: string; col: string } {
   const lower = name.toLowerCase();
   const local = users.find((u) => u.name.toLowerCase() === lower);
-  if (local) return { av: (local.avatar ?? "").trim(), col: local.color ?? "220" };
+  if (local && (local.avatar ?? "").trim()) return { av: local.avatar!.trim(), col: local.color ?? "220" };
   const dir = loadDirectory().find((e) => e.name.toLowerCase() === lower);
-  if (dir) return { av: (dir.avatar ?? "").trim(), col: dir.color ?? "220" };
-  return { av: "", col: "220" };
+  if (dir && (dir.avatar ?? "").trim()) return { av: dir.avatar.trim(), col: dir.color ?? "220" };
+  if (msgAvatar && msgAvatar.trim()) return { av: msgAvatar.trim(), col: msgColor ?? "220" };
+  return { av: "", col: local?.color ?? dir?.color ?? msgColor ?? "220" };
 }
 
-function SenderAvatar({ name, size = 32, users }: { name: string; size?: number; users: { name: string; avatar?: string; color?: string }[] }) {
-  const { av, col } = resolveSenderInfo(name, users);
+function SenderAvatar({ name, size = 32, users, msgAvatar, msgColor }: { name: string; size?: number; users: { name: string; avatar?: string; color?: string }[]; msgAvatar?: string; msgColor?: string }) {
+  const { av, col } = resolveSenderInfo(name, users, msgAvatar, msgColor);
   const isImg = av.startsWith("data:") || av.startsWith("http");
   const isEmoji = av.length > 0 && !isImg;
   return (
@@ -6423,7 +6424,7 @@ function PMailApp({ currentUser, users }: { currentUser: string; users: { name: 
       const ownerKey = currentUser.toLowerCase().trim();
       const res = await fetch(`/api/mail?owner=${encodeURIComponent(ownerKey)}`);
       if (!res.ok) return;
-      const incoming = (await res.json()) as { id: string; from: string; to: string; subject: string; body: string; at: number }[];
+      const incoming = (await res.json()) as { id: string; from: string; to: string; subject: string; body: string; at: number; senderAvatar?: string; senderColor?: string }[];
       if (!Array.isArray(incoming) || !incoming.length) return;
       const existing = loadMail(currentUser);
       const existingIds = new Set(existing.map((m) => m.id));
@@ -6433,6 +6434,8 @@ function PMailApp({ currentUser, users }: { currentUser: string; users: { name: 
           id: m.id, from: m.from, to: currentUser,
           subject: m.subject, body: m.body, at: m.at,
           read: false, folder: "inbox" as const, owner: currentUser,
+          senderAvatar: m.senderAvatar ?? "",
+          senderColor: m.senderColor ?? "220",
         }));
       if (newMsgs.length) {
         replaceMailFor(currentUser, [...existing, ...newMsgs]);
@@ -6500,10 +6503,11 @@ function PMailApp({ currentUser, users }: { currentUser: string; users: { name: 
       const myMails = [...msgs, msg];
       replaceMailFor(currentUser, myMails);
       setMsgs(myMails);
+      const meUser = users.find((u) => u.name.toLowerCase() === currentUser.toLowerCase());
       const res = await fetch("/api/mail", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ from: currentUser, to: recipientKey, subject: subjField || "(no subject)", body: bodyField }),
+        body: JSON.stringify({ from: currentUser, to: recipientKey, subject: subjField || "(no subject)", body: bodyField, senderAvatar: meUser?.avatar ?? "", senderColor: meUser?.color ?? "220" }),
       });
       if (!res.ok) { setSentMsg("Server error — but saved locally."); }
       else { setSentMsg("Sent!"); }
@@ -6578,7 +6582,7 @@ function PMailApp({ currentUser, users }: { currentUser: string; users: { name: 
               <div key={m.id} onClick={() => openMsg(m)}
                 className="flex items-start gap-2 px-3 py-2.5 border-b cursor-pointer transition-colors"
                 style={{ borderColor: "var(--border)", background: selected?.id === m.id ? "var(--accent)" : "transparent" }}>
-                <SenderAvatar name={displayName} size={34} users={users} />
+                <SenderAvatar name={displayName} size={34} users={users} msgAvatar={m.senderAvatar} msgColor={m.senderColor} />
                 <div className="flex flex-col gap-0.5 min-w-0 flex-1">
                   <div className="flex justify-between items-center gap-1">
                     <span className="text-xs font-semibold truncate" style={{ color: selected?.id === m.id ? "#fff" : "var(--foreground)", opacity: m.read ? 0.7 : 1, maxWidth: 120 }}>
@@ -6636,7 +6640,7 @@ function PMailApp({ currentUser, users }: { currentUser: string; users: { name: 
         ) : selected ? (
           <div className="flex flex-col h-full">
             <div className="flex items-start gap-3 p-4 border-b" style={{ borderColor: "var(--border)", background: "var(--glass)" }}>
-              <SenderAvatar name={selected.from ?? "?"} size={44} users={users} />
+              <SenderAvatar name={selected.from ?? "?"} size={44} users={users} msgAvatar={selected.senderAvatar} msgColor={selected.senderColor} />
               <div className="flex-1 min-w-0">
                 <div className="font-semibold text-sm">{selected.subject || "(no subject)"}</div>
                 <div className="text-xs opacity-60">From: {selected.from} → {selected.to}</div>

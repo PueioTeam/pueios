@@ -310,34 +310,34 @@ const APP_ICON_SVGS: Partial<Record<AppId, (s: number) => React.ReactNode>> = {
   "pueyracing": (s) => <svg width={s} height={s} viewBox="0 0 48 48"><defs><linearGradient id="rs1" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#e8f0ff"/><stop offset="100%" stopColor="#8090d0"/></linearGradient><linearGradient id="rs2" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#ff9040"/><stop offset="100%" stopColor="#ff3000"/></linearGradient></defs><path d="M24 4 C24 4 16 14 16 26 L20 28 L24 30 L28 28 L32 26 C32 14 24 4 24 4z" fill="url(#rs1)" stroke="#6070b0" strokeWidth="1"/><ellipse cx="24" cy="18" rx="5" ry="6" fill="#80c8ff" stroke="#4090d0" strokeWidth="0.8" opacity="0.8"/><path d="M16 26 L8 32 L12 30 L16 30z" fill="#c03020" stroke="#801010" strokeWidth="0.8"/><path d="M32 26 L40 32 L36 30 L32 30z" fill="#c03020" stroke="#801010" strokeWidth="0.8"/><ellipse cx="24" cy="32" rx="5" ry="3" fill="#ff8020" stroke="#c04000" strokeWidth="0.8"/><ellipse cx="24" cy="36" rx="4" ry="6" fill="url(#rs2)" opacity="0.85"/><ellipse cx="22" cy="14" rx="3" ry="5" fill="rgba(255,255,255,0.4)" transform="rotate(-15 22 14)"/></svg>,
 };
 
-// Win7 color map for gradient background boxes
-const WIN7_COLOR: Partial<Record<AppId, [string, string]>> = {
-  "settings":        ["#c0c8e0", "#6878a0"],
-  "file-explorer":   ["#ffe080", "#d08800"],
-  "notepad":         ["#e8eeff", "#6080c0"],
-  "calculator":      ["#90d090", "#286028"],
-  "puei-paint":      ["#ffb0d0", "#c02060"],
-  "puei-board":      ["#d4a870", "#7a4820"],
-  "pueinet":         ["#60c0ff", "#1050c0"],
-  "puei-cloud-chat": ["#80e890", "#207030"],
-  "puei-studio":     ["#c878ff", "#6800b0"],
-  "app-store":       ["#50e8c8", "#007860"],
-  "puei-social":     ["#ffa060", "#c03010"],
-  "folder":          ["#ffe060", "#b07000"],
-  "recycle-bin":     ["#c8e8c0", "#507050"],
-  "chess":           ["#f0d890", "#806020"],
-  "puei-mansion":    ["#f08080", "#a01818"],
-  "about":           ["#70b8ff", "#0838b8"],
-  "iso-viewer":      ["#c8d8f8", "#4060a0"],
-  "zip-viewer":      ["#80b8f8", "#1848b0"],
-  "pmail":           ["#a8d8ff", "#1860c0"],
-  "web-app":         ["#4898e8", "#0840a8"],
-  "pueyracing":      ["#a0c8f8", "#2050a0"],
+// macOS-style icon colors — rich gradients for rounded-square icons
+const MACOS_COLOR: Partial<Record<AppId, [string, string]>> = {
+  "settings":        ["#8e9bb8", "#4a5570"],
+  "file-explorer":   ["#f5c842", "#e08800"],
+  "notepad":         ["#6ec6f5", "#2a7fc4"],
+  "calculator":      ["#2d2d2d", "#111111"],
+  "puei-paint":      ["#ff6ba0", "#c4205a"],
+  "puei-board":      ["#c4935a", "#7a4e22"],
+  "pueinet":         ["#3daff5", "#0055cc"],
+  "puei-cloud-chat": ["#4cd964", "#1a9e30"],
+  "puei-studio":     ["#b660f5", "#6c00c0"],
+  "app-store":       ["#2997ff", "#0047d0"],
+  "puei-social":     ["#ff7040", "#c41c00"],
+  "folder":          ["#74b9ff", "#2a7fdc"],
+  "recycle-bin":     ["#90c88a", "#3a7e30"],
+  "chess":           ["#b8922a", "#7a5a00"],
+  "puei-mansion":    ["#f55a5a", "#b81010"],
+  "about":           ["#5ac8fa", "#0070cc"],
+  "iso-viewer":      ["#a8c0f8", "#4060c0"],
+  "zip-viewer":      ["#50a8f8", "#1040b8"],
+  "pmail":           ["#60aaff", "#0050dd"],
+  "web-app":         ["#30a0f8", "#0040b8"],
+  "pueyracing":      ["#7090f8", "#2030c0"],
 };
 
 export function appIcon(appId: AppId, size = 32, override?: string, iconUrl?: string) {
   const s = size;
-  const radius = Math.round(s * 0.22);
+  const radius = Math.round(s * 0.225); // macOS ~22.5% corner radius
 
   const isImg = typeof override === "string" && override.startsWith("data:");
   const useUrl = !isImg && !override && !!iconUrl;
@@ -348,23 +348,22 @@ export function appIcon(appId: AppId, size = 32, override?: string, iconUrl?: st
     if (!host) return "";
     return `https://www.google.com/s2/favicons?sz=${Math.max(32, Math.round(s))}&domain_url=${encodeURIComponent(`https://${host}`)}`;
   })();
-  const [c1, c2] = WIN7_COLOR[appId] ?? ["#8090c8", "#2840a0"];
-  const customSvg = APP_ICON_SVGS[appId]?.(Math.round(s * 0.62));
+  const [c1, c2] = MACOS_COLOR[appId] ?? ["#6070cc", "#2030a0"];
+  const customSvg = APP_ICON_SVGS[appId]?.(Math.round(s * 0.65));
 
   const iconBox = (children: React.ReactNode) => (
     <div style={{
       width: s, height: s, borderRadius: radius, flexShrink: 0, position: "relative", overflow: "hidden",
-      background: `linear-gradient(160deg, ${c1} 0%, ${c2} 100%)`,
-      boxShadow: `0 ${Math.round(s*0.06)}px ${Math.round(s*0.25)}px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.55)`,
+      background: `linear-gradient(145deg, ${c1} 0%, ${c2} 100%)`,
+      boxShadow: `0 ${Math.round(s*0.04)}px ${Math.round(s*0.18)}px rgba(0,0,0,0.38), 0 ${Math.round(s*0.01)}px ${Math.round(s*0.04)}px rgba(0,0,0,0.2)`,
       display: "flex", alignItems: "center", justifyContent: "center",
     }}>
       {children}
-      {/* Win7 glass gloss overlay */}
-      <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "52%", borderRadius: `${radius}px ${radius}px 50% 50%`, background: "linear-gradient(180deg, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0.05) 100%)", pointerEvents: "none" }} />
+      {/* macOS subtle top shine */}
+      <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "38%", background: "linear-gradient(180deg, rgba(255,255,255,0.28) 0%, rgba(255,255,255,0) 100%)", pointerEvents: "none" }} />
     </div>
   );
 
-  // Win7 style: colored gradient box with gloss, icon centered at ~62% size
   return (
     <div className="flex items-center justify-center relative" style={{ width: s, height: s, flexShrink: 0 }}>
       {isImg

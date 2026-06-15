@@ -461,6 +461,8 @@ export type MailMessage = {
   attachments?: MailAttachment[];
   important?: boolean;
   spam?: boolean;
+  senderAvatar?: string;
+  senderColor?: string;
 };
 
 export function mailAddressFor(name: string): string {
