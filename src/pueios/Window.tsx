@@ -244,58 +244,74 @@ export function AppWindow({
   );
 }
 
-// Custom SVG icons per app — Win7 glass style with colored gradient background
+// Windows XP style icons — colorful, shiny, 3D-looking with gradients and highlights
 const APP_ICON_SVGS: Partial<Record<AppId, (s: number) => React.ReactNode>> = {
-  "settings": (s) => <svg width={s*0.62} height={s*0.62} viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3.5" stroke="white" strokeWidth="2"/><path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" stroke="white" strokeWidth="2" strokeLinecap="round"/></svg>,
-  "file-explorer": (s) => <svg width={s*0.62} height={s*0.62} viewBox="0 0 24 24" fill="none"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" fill="rgba(255,255,255,0.9)" stroke="rgba(255,255,255,0.3)" strokeWidth="1"/><path d="M3 9h18" stroke="rgba(255,200,100,0.8)" strokeWidth="1.5"/></svg>,
-  "notepad": (s) => <svg width={s*0.62} height={s*0.62} viewBox="0 0 24 24" fill="none"><rect x="5" y="3" width="14" height="18" rx="2" fill="rgba(255,255,255,0.9)" stroke="rgba(200,200,255,0.4)" strokeWidth="0.8"/><path d="M8 7h8M8 10h8M8 13h5" stroke="#4080d0" strokeWidth="1.8" strokeLinecap="round"/><rect x="9" y="1" width="6" height="3" rx="1" fill="rgba(255,255,255,0.7)"/></svg>,
-  "calculator": (s) => <svg width={s*0.62} height={s*0.62} viewBox="0 0 24 24" fill="none"><rect x="4" y="3" width="16" height="18" rx="2" fill="rgba(255,255,255,0.15)" stroke="rgba(255,255,255,0.7)" strokeWidth="1.2"/><rect x="6" y="5" width="12" height="4" rx="1" fill="rgba(255,255,255,0.5)"/><circle cx="8" cy="14" r="1.2" fill="white"/><circle cx="12" cy="14" r="1.2" fill="white"/><circle cx="16" cy="14" r="1.2" fill="white"/><circle cx="8" cy="18" r="1.2" fill="white"/><circle cx="12" cy="18" r="1.2" fill="white"/><rect x="14.5" y="16.5" width="3" height="3" rx="0.8" fill="rgba(0,220,180,0.9)"/></svg>,
-  "puei-paint": (s) => <svg width={s*0.62} height={s*0.62} viewBox="0 0 24 24" fill="none"><circle cx="12" cy="10" r="5" fill="rgba(255,255,255,0.15)" stroke="rgba(255,255,255,0.6)" strokeWidth="1.2"/><circle cx="9" cy="9" r="1.8" fill="#ff6eb0"/><circle cx="13" cy="8" r="1.8" fill="#ffda44"/><circle cx="11" cy="12" r="1.8" fill="#44aaff"/><path d="M14 16c1-1 3-0.5 4 1s-1 4-3 3.5" stroke="rgba(255,255,255,0.7)" strokeWidth="1.5" strokeLinecap="round"/><path d="M9 17l-2 4" stroke="rgba(255,255,255,0.5)" strokeWidth="1.2" strokeLinecap="round"/></svg>,
-  "puei-board": (s) => <svg width={s*0.62} height={s*0.62} viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="8" height="10" rx="1.5" fill="rgba(255,255,255,0.8)"/><rect x="13" y="3" width="8" height="6" rx="1.5" fill="rgba(255,200,200,0.8)"/><rect x="13" y="11" width="8" height="10" rx="1.5" fill="rgba(200,255,200,0.8)"/><rect x="3" y="15" width="8" height="6" rx="1.5" fill="rgba(200,200,255,0.8)"/><circle cx="7" cy="5.5" r="1.5" fill="#ff4060"/><line x1="7" y1="7" x2="7" y2="11" stroke="#ff4060" strokeWidth="1.5"/></svg>,
-  "pueinet": (s) => <svg width={s*0.62} height={s*0.62} viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="rgba(255,255,255,0.85)" strokeWidth="1.5"/><path d="M12 3c-2 3-3 5.5-3 9s1 6 3 9" stroke="rgba(255,255,255,0.7)" strokeWidth="1.2"/><path d="M12 3c2 3 3 5.5 3 9s-1 6-3 9" stroke="rgba(255,255,255,0.7)" strokeWidth="1.2"/><path d="M3 12h18" stroke="rgba(255,255,255,0.7)" strokeWidth="1.2"/><path d="M4.5 7.5h15M4.5 16.5h15" stroke="rgba(255,255,255,0.4)" strokeWidth="1"/></svg>,
-  "puei-cloud-chat": (s) => <svg width={s*0.62} height={s*0.62} viewBox="0 0 24 24" fill="none"><path d="M4 6a2 2 0 012-2h12a2 2 0 012 2v8a2 2 0 01-2 2H8l-4 3V6z" fill="rgba(255,255,255,0.9)"/><circle cx="8.5" cy="10.5" r="1.2" fill="#4a9040"/><circle cx="12" cy="10.5" r="1.2" fill="#4a9040"/><circle cx="15.5" cy="10.5" r="1.2" fill="#4a9040"/></svg>,
-  "puei-studio": (s) => <svg width={s*0.62} height={s*0.62} viewBox="0 0 24 24" fill="none"><path d="M12 4L20 18H4L12 4z" fill="rgba(255,255,255,0.2)" stroke="rgba(255,255,255,0.9)" strokeWidth="1.5" strokeLinejoin="round"/><path d="M7 17C8 12 11 9 12 7c1 2 4 5 5 10" stroke="rgba(220,180,255,0.8)" strokeWidth="1" strokeLinecap="round"/><circle cx="12" cy="14" r="2.5" fill="rgba(255,255,255,0.7)"/></svg>,
-  "app-store": (s) => <svg width={s*0.62} height={s*0.62} viewBox="0 0 24 24" fill="none"><path d="M12 3l2.5 5 5.5 0.8-4 3.9 0.9 5.5L12 15.7l-4.9 2.5 0.9-5.5-4-3.9 5.5-0.8z" fill="rgba(255,255,255,0.9)" stroke="rgba(255,200,100,0.5)" strokeWidth="0.5"/></svg>,
-  "puei-social": (s) => <svg width={s*0.62} height={s*0.62} viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="3.5" fill="rgba(255,255,255,0.85)"/><circle cx="5" cy="14" r="2.5" fill="rgba(255,255,255,0.65)"/><circle cx="19" cy="14" r="2.5" fill="rgba(255,255,255,0.65)"/><path d="M7 20c0-2.8 2.2-5 5-5s5 2.2 5 5" stroke="rgba(255,255,255,0.85)" strokeWidth="1.8" strokeLinecap="round"/><path d="M2 21c0-1.6 1.3-3 2.8-3.3" stroke="rgba(255,255,255,0.55)" strokeWidth="1.4" strokeLinecap="round"/><path d="M22 21c0-1.6-1.3-3-2.8-3.3" stroke="rgba(255,255,255,0.55)" strokeWidth="1.4" strokeLinecap="round"/></svg>,
-  "folder": (s) => <svg width={s*0.62} height={s*0.62} viewBox="0 0 24 24" fill="none"><path d="M3 8a2 2 0 012-2h4l2 2h8a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V8z" fill="rgba(255,255,255,0.9)"/><path d="M3 10h18" stroke="rgba(200,140,40,0.7)" strokeWidth="1.2"/></svg>,
-  "recycle-bin": (s) => <svg width={s*0.62} height={s*0.62} viewBox="0 0 24 24" fill="none"><path d="M3 6h18" stroke="rgba(255,255,255,0.8)" strokeWidth="1.8" strokeLinecap="round"/><path d="M8 6V4h8v2M19 6l-1 14H6L5 6" stroke="rgba(255,255,255,0.8)" strokeWidth="1.5" strokeLinejoin="round"/><path d="M10 11v5M14 11v5" stroke="rgba(255,255,255,0.6)" strokeWidth="1.4" strokeLinecap="round"/></svg>,
-  "chess": (s) => <svg width={s*0.62} height={s*0.62} viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="1" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="1"/>{([0,2,4,6,1,3,5,7] as number[]).map(col=>[0,2,4,6].filter(row=>(col+row/2)%2===0).map(row=><rect key={`${col}${row}`} x={3+col*2.25} y={3+row*2.25} width="2.25" height="2.25" fill="rgba(255,255,255,0.55)"/>))}<path d="M10 17V14l-1-2 1-1h4l1 1-1 2v3H10z" fill="rgba(255,255,255,0.9)"/><rect x="9.5" y="17" width="5" height="1.5" rx="0.5" fill="rgba(255,255,255,0.9)"/></svg>,
-  "puei-mansion": (s) => <svg width={s*0.62} height={s*0.62} viewBox="0 0 24 24" fill="none"><path d="M3 20h18M5 20V10L12 4l7 6v10" fill="none" stroke="rgba(255,255,255,0.8)" strokeWidth="1.5" strokeLinejoin="round"/><rect x="9" y="14" width="6" height="6" rx="0.5" fill="rgba(255,255,255,0.3)"/><rect x="7" y="10" width="3" height="3" rx="0.5" fill="rgba(200,180,255,0.5)"/><rect x="14" y="10" width="3" height="3" rx="0.5" fill="rgba(200,180,255,0.5)"/></svg>,
-  "about": (s) => <svg width={s*0.62} height={s*0.62} viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="rgba(255,255,255,0.85)" strokeWidth="1.5"/><path d="M12 8v1M12 11v6" stroke="white" strokeWidth="2.2" strokeLinecap="round"/></svg>,
-  "iso-viewer": (s) => <svg width={s*0.62} height={s*0.62} viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8" stroke="rgba(255,255,255,0.8)" strokeWidth="1.5"/><circle cx="12" cy="12" r="2" fill="rgba(255,255,255,0.5)"/><ellipse cx="12" cy="12" rx="8" ry="3" stroke="rgba(255,255,255,0.4)" strokeWidth="1"/></svg>,
-  "zip-viewer": (s) => <svg width={s*0.62} height={s*0.62} viewBox="0 0 24 24" fill="none"><path d="M5 3h9l5 5v13a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2z" fill="rgba(255,255,255,0.15)" stroke="rgba(255,255,255,0.8)" strokeWidth="1.2"/><path d="M14 3v5h5" stroke="rgba(255,255,255,0.6)" strokeWidth="1.2"/><path d="M10 8h4v2h-4zM10 10v2h4v-2M10 12v2h4v-2M10 14v3h4v-3" stroke="none" fill="rgba(255,255,255,0.6)"/><rect x="10" y="8" width="4" height="2" fill="rgba(255,255,255,0.5)"/><rect x="10" y="11" width="4" height="2" fill="rgba(255,255,255,0.3)"/><rect x="10" y="14" width="4" height="3" fill="rgba(255,255,255,0.5)"/></svg>,
-  "pmail": (s) => <svg width={s*0.62} height={s*0.62} viewBox="0 0 24 24" fill="none"><rect x="3" y="6" width="18" height="13" rx="2" fill="rgba(255,255,255,0.15)" stroke="rgba(255,255,255,0.85)" strokeWidth="1.3"/><path d="M3 8l9 6 9-6" stroke="rgba(255,255,255,0.85)" strokeWidth="1.3"/></svg>,
-  "web-app": (s) => <svg width={s*0.62} height={s*0.62} viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="16" rx="2" fill="rgba(255,255,255,0.1)" stroke="rgba(255,255,255,0.7)" strokeWidth="1.2"/><path d="M3 8h18" stroke="rgba(255,255,255,0.6)" strokeWidth="1.2"/><circle cx="6.5" cy="6" r="1" fill="rgba(255,120,120,0.8)"/><circle cx="9.5" cy="6" r="1" fill="rgba(255,200,80,0.8)"/><circle cx="12.5" cy="6" r="1" fill="rgba(100,220,100,0.8)"/><rect x="6" y="11" width="12" height="1.5" rx="0.7" fill="rgba(255,255,255,0.4)"/><rect x="6" y="14" width="8" height="1.5" rx="0.7" fill="rgba(255,255,255,0.3)"/></svg>,
-  "pueyracing": (s) => <svg width={s*0.62} height={s*0.62} viewBox="0 0 24 24" fill="none"><path d="M12 2 L15 8 L12 7 L9 8 Z" fill="rgba(255,255,255,0.9)"/><rect x="10.5" y="7" width="3" height="9" rx="1.5" fill="rgba(180,220,255,0.9)"/><path d="M10.5 9 L6 13 L6 15 L10.5 13Z" fill="rgba(255,255,255,0.65)"/><path d="M13.5 9 L18 13 L18 15 L13.5 13Z" fill="rgba(255,255,255,0.65)"/><ellipse cx="12" cy="16.5" rx="1.5" ry="2" fill="rgba(255,140,0,0.9)"/><circle cx="12" cy="18.5" rx="1" ry="1.2" fill="rgba(255,200,80,0.7)"/></svg>,
+  // Settings — silver gear with colored center
+  "settings": (s) => <svg width={s} height={s} viewBox="0 0 48 48"><defs><radialGradient id="sg1" cx="35%" cy="25%" r="65%"><stop offset="0%" stopColor="#e8e8e8"/><stop offset="100%" stopColor="#888"/></radialGradient><radialGradient id="sg2" cx="40%" cy="30%" r="60%"><stop offset="0%" stopColor="#6af"/><stop offset="100%" stopColor="#0050c0"/></radialGradient></defs><path d="M24 4l3 6 6-1 2 5-5 4 1 6-5 3-5-3 1-6-5-4 2-5 6 1z" fill="url(#sg1)" stroke="#666" strokeWidth="0.8"/><circle cx="24" cy="24" r="7" fill="url(#sg2)"/><circle cx="21" cy="21" r="2.5" fill="rgba(255,255,255,0.5)"/></svg>,
+
+  // File Explorer — yellow folder XP style
+  "file-explorer": (s) => <svg width={s} height={s} viewBox="0 0 48 48"><defs><linearGradient id="fe1" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#ffe060"/><stop offset="100%" stopColor="#d08000"/></linearGradient><linearGradient id="fe2" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#ffd030"/><stop offset="100%" stopColor="#b06000"/></linearGradient></defs><path d="M4 16a3 3 0 013-3h8l3 3h22a3 3 0 013 3v14a3 3 0 01-3 3H7a3 3 0 01-3-3V16z" fill="url(#fe1)" stroke="#a06000" strokeWidth="0.8"/><path d="M4 18h40" stroke="#b07800" strokeWidth="1.2"/><path d="M4 14a3 3 0 013-3h8l3 3z" fill="url(#fe2)" stroke="#a06000" strokeWidth="0.8"/><rect x="6" y="20" width="24" height="3" rx="1" fill="rgba(255,255,255,0.35)"/></svg>,
+
+  // Notepad — white paper with blue lines and red margin
+  "notepad": (s) => <svg width={s} height={s} viewBox="0 0 48 48"><defs><linearGradient id="np1" x1="0" y1="0" x2="0.1" y2="1"><stop offset="0%" stopColor="#f8f8ff"/><stop offset="100%" stopColor="#d8d8f0"/></linearGradient></defs><rect x="8" y="4" width="32" height="40" rx="2" fill="url(#np1)" stroke="#9090b0" strokeWidth="1"/><line x1="16" y1="4" x2="16" y2="44" stroke="#ffaaaa" strokeWidth="1.5"/><line x1="8" y1="14" x2="40" y2="14" stroke="#aac0e8" strokeWidth="1"/><line x1="8" y1="20" x2="40" y2="20" stroke="#aac0e8" strokeWidth="1"/><line x1="8" y1="26" x2="40" y2="26" stroke="#aac0e8" strokeWidth="1"/><line x1="8" y1="32" x2="40" y2="32" stroke="#aac0e8" strokeWidth="1"/><line x1="8" y1="38" x2="40" y2="38" stroke="#aac0e8" strokeWidth="1"/><rect x="8" y="4" width="32" height="6" rx="2" fill="rgba(255,255,255,0.6)"/></svg>,
+
+  // Calculator — gray plastic body, green display
+  "calculator": (s) => <svg width={s} height={s} viewBox="0 0 48 48"><defs><linearGradient id="ca1" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#c8c8d0"/><stop offset="100%" stopColor="#888890"/></linearGradient><linearGradient id="ca2" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#90e890"/><stop offset="100%" stopColor="#208020"/></linearGradient></defs><rect x="8" y="4" width="32" height="40" rx="4" fill="url(#ca1)" stroke="#666" strokeWidth="1"/><rect x="12" y="8" width="24" height="10" rx="2" fill="url(#ca2)" stroke="#186018" strokeWidth="0.8"/><text x="34" y="17" textAnchor="end" fontSize="7" fill="#004000" fontFamily="monospace">0</text>{[0,1,2,3].map(r=>[0,1,2].map(c=><rect key={`${r}${c}`} x={13+c*8} y={22+r*7} width="6" height="5" rx="1.5" fill={r===3&&c===2?"#e06060":r===0?"#b0b8c8":"#e8e8f0"} stroke="#999" strokeWidth="0.5"/>))}</svg>,
+
+  // Paint — palette with colorful blobs
+  "puei-paint": (s) => <svg width={s} height={s} viewBox="0 0 48 48"><defs><radialGradient id="pal" cx="40%" cy="35%" r="65%"><stop offset="0%" stopColor="#f0f0d8"/><stop offset="100%" stopColor="#c8c090"/></radialGradient></defs><ellipse cx="22" cy="26" rx="18" ry="14" fill="url(#pal)" stroke="#a09060" strokeWidth="1"/><circle cx="12" cy="24" r="4" fill="#e83030"/><circle cx="20" cy="18" r="4" fill="#30b030"/><circle cx="30" cy="20" r="4" fill="#3060e8"/><circle cx="30" cy="30" r="4" fill="#e8c030"/><circle cx="18" cy="30" r="4" fill="#c030c0"/><circle cx="22" cy="26" r="3" fill="rgba(255,255,255,0.8)"/><path d="M36 8 Q42 4 44 12 Q46 18 40 20 L36 18 Q32 14 36 8z" fill="#c87820" stroke="#a05010" strokeWidth="0.8"/><rect x="38" y="20" width="4" height="14" rx="2" fill="#e0b060" stroke="#a07030" strokeWidth="0.5" transform="rotate(20 40 20)"/></svg>,
+
+  // Board — cork board with colorful pins
+  "puei-board": (s) => <svg width={s} height={s} viewBox="0 0 48 48"><defs><linearGradient id="brd" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#c8a070"/><stop offset="100%" stopColor="#906040"/></linearGradient></defs><rect x="4" y="4" width="40" height="40" rx="3" fill="url(#brd)" stroke="#704020" strokeWidth="1.5"/><rect x="6" y="6" width="36" height="36" rx="2" fill="#d4a870" opacity="0.6"/><rect x="10" y="10" width="12" height="10" rx="1" fill="white" opacity="0.9"/><rect x="26" y="10" width="12" height="6" rx="1" fill="#ffffa0" opacity="0.9"/><rect x="26" y="20" width="12" height="10" rx="1" fill="#ffcccc" opacity="0.9"/><rect x="10" y="24" width="12" height="16" rx="1" fill="#ccffcc" opacity="0.9"/><circle cx="16" cy="10" r="2" fill="#e03030"/><circle cx="32" cy="10" r="2" fill="#30a030"/><circle cx="32" cy="20" r="2" fill="#3040e8"/></svg>,
+
+  // PueiNet — blue globe
+  "pueinet": (s) => <svg width={s} height={s} viewBox="0 0 48 48"><defs><radialGradient id="gl1" cx="38%" cy="28%" r="68%"><stop offset="0%" stopColor="#60c8ff"/><stop offset="60%" stopColor="#1860d0"/><stop offset="100%" stopColor="#002080"/></radialGradient></defs><circle cx="24" cy="24" r="20" fill="url(#gl1)" stroke="#0040a0" strokeWidth="1"/><ellipse cx="24" cy="24" rx="9" ry="20" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="1"/><ellipse cx="24" cy="24" rx="20" ry="8" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="1"/><line x1="4" y1="24" x2="44" y2="24" stroke="rgba(255,255,255,0.3)" strokeWidth="1"/><line x1="24" y1="4" x2="24" y2="44" stroke="rgba(255,255,255,0.3)" strokeWidth="1"/><ellipse cx="18" cy="17" rx="7" ry="4" fill="rgba(255,255,255,0.2)" transform="rotate(-25 18 17)"/></svg>,
+
+  // Chat — speech bubble green XP messenger style
+  "puei-cloud-chat": (s) => <svg width={s} height={s} viewBox="0 0 48 48"><defs><linearGradient id="ch1" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#80e880"/><stop offset="100%" stopColor="#209020"/></linearGradient></defs><path d="M6 10a4 4 0 014-4h28a4 4 0 014 4v18a4 4 0 01-4 4H28l-8 8v-8H10a4 4 0 01-4-4V10z" fill="url(#ch1)" stroke="#186018" strokeWidth="1"/><rect x="11" y="17" width="8" height="3" rx="1.5" fill="rgba(255,255,255,0.85)"/><rect x="11" y="23" width="20" height="3" rx="1.5" fill="rgba(255,255,255,0.85)"/><rect x="11" y="11" width="26" height="3" rx="1.5" fill="rgba(255,255,255,0.85)"/><ellipse cx="18" cy="13" rx="9" ry="3" fill="rgba(255,255,255,0.25)"/></svg>,
+
+  // Studio — purple music note / star
+  "puei-studio": (s) => <svg width={s} height={s} viewBox="0 0 48 48"><defs><linearGradient id="st1" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#d070ff"/><stop offset="100%" stopColor="#6000a0"/></linearGradient></defs><circle cx="24" cy="24" r="20" fill="url(#st1)" stroke="#40007a" strokeWidth="1"/><path d="M24 10 L27 19 H37 L29 25 L32 34 L24 28 L16 34 L19 25 L11 19 H21 Z" fill="#ffe860" stroke="#c09020" strokeWidth="0.8"/><ellipse cx="20" cy="18" rx="6" ry="3.5" fill="rgba(255,255,255,0.25)" transform="rotate(-20 20 18)"/></svg>,
+
+  // App Store — colorful star on teal
+  "app-store": (s) => <svg width={s} height={s} viewBox="0 0 48 48"><defs><radialGradient id="as1" cx="40%" cy="30%" r="65%"><stop offset="0%" stopColor="#60e8d0"/><stop offset="100%" stopColor="#008070"/></radialGradient></defs><rect x="4" y="4" width="40" height="40" rx="8" fill="url(#as1)" stroke="#006050" strokeWidth="1"/><path d="M24 9 L27 18 H37 L29 24 L32 33 L24 27 L16 33 L19 24 L11 18 H21 Z" fill="#fff060" stroke="#c0a000" strokeWidth="0.8"/><ellipse cx="20" cy="17" rx="5" ry="3" fill="rgba(255,255,255,0.3)" transform="rotate(-15 20 17)"/></svg>,
+
+  // Social — two people, XP-style colorful
+  "puei-social": (s) => <svg width={s} height={s} viewBox="0 0 48 48"><defs><radialGradient id="so1" cx="40%" cy="30%" r="65%"><stop offset="0%" stopColor="#ff9060"/><stop offset="100%" stopColor="#c02000"/></radialGradient></defs><circle cx="18" cy="16" r="7" fill="#ffe0b0" stroke="#c08040" strokeWidth="1"/><path d="M4 40c0-8 6-13 14-13s14 5 14 13z" fill="#ffe0b0" stroke="#c08040" strokeWidth="1"/><circle cx="32" cy="14" r="6" fill="#d0e8ff" stroke="#6090c0" strokeWidth="1" opacity="0.95"/><path d="M24 38c0-6 4-10 10-10s10 4 10 10z" fill="#d0e8ff" stroke="#6090c0" strokeWidth="1" opacity="0.95"/><ellipse cx="15" cy="13" rx="4" ry="2.5" fill="rgba(255,255,255,0.4)"/></svg>,
+
+  // Folder — regular folder (same as file-explorer style but slightly different)
+  "folder": (s) => <svg width={s} height={s} viewBox="0 0 48 48"><defs><linearGradient id="fo1" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#ffd840"/><stop offset="100%" stopColor="#c07800"/></linearGradient><linearGradient id="fo2" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#ffe870"/><stop offset="100%" stopColor="#d09000"/></linearGradient></defs><path d="M4 18a3 3 0 013-3h8l4 3h22a3 3 0 013 3v14a3 3 0 01-3 3H7a3 3 0 01-3-3V18z" fill="url(#fo1)" stroke="#a06000" strokeWidth="0.8"/><path d="M4 16a3 3 0 013-3h8l4 3z" fill="url(#fo2)" stroke="#a06000" strokeWidth="0.8"/><ellipse cx="20" cy="20" rx="12" ry="3" fill="rgba(255,255,255,0.3)"/></svg>,
+
+  // Recycle Bin — green recycling arrows on white bin
+  "recycle-bin": (s) => <svg width={s} height={s} viewBox="0 0 48 48"><defs><linearGradient id="rb1" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#e8f0e8"/><stop offset="100%" stopColor="#b0c0b0"/></linearGradient></defs><path d="M10 18h28l-3 24H13z" fill="url(#rb1)" stroke="#808880" strokeWidth="1.2"/><path d="M6 14h36" stroke="#707870" strokeWidth="2" strokeLinecap="round"/><path d="M16 14V10h16v4" fill="none" stroke="#707870" strokeWidth="1.5"/><path d="M19 26 L24 21 L29 26" fill="none" stroke="#30a030" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M24 21 v8" stroke="#30a030" strokeWidth="2" strokeLinecap="round"/></svg>,
+
+  // Chess — black/white board with knight
+  "chess": (s) => <svg width={s} height={s} viewBox="0 0 48 48"><defs><linearGradient id="cb1" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#f0d090"/><stop offset="100%" stopColor="#c09050"/></linearGradient></defs><rect x="4" y="4" width="40" height="40" rx="3" fill="url(#cb1)" stroke="#806030" strokeWidth="1.2"/>{[0,1,2,3,4].map(r=>[0,1,2,3,4].map(c=>(r+c)%2===0?<rect key={`${r}${c}`} x={4+c*8} y={4+r*8} width="8" height="8" fill="#c08848"/>:null))}<path d="M20 34v-4l-2-3 1-2 2-1 3-1 2 1 2 3-1 4-3 3z" fill="white" stroke="#606060" strokeWidth="0.8"/><rect x="17" y="34" width="10" height="3" rx="1" fill="white" stroke="#606060" strokeWidth="0.8"/><path d="M22 24 Q26 20 28 22 Q26 26 24 24z" fill="#c0c0c0" stroke="#808080" strokeWidth="0.5"/></svg>,
+
+  // Mansion — colorful house
+  "puei-mansion": (s) => <svg width={s} height={s} viewBox="0 0 48 48"><defs><linearGradient id="mn1" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#e06060"/><stop offset="100%" stopColor="#a02020"/></linearGradient><linearGradient id="mn2" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#f0f0e0"/><stop offset="100%" stopColor="#c0c0a0"/></linearGradient></defs><polygon points="24,4 44,20 40,20 40,44 8,44 8,20 4,20" fill="url(#mn1)" stroke="#801010" strokeWidth="1"/><rect x="10" y="20" width="28" height="24" fill="url(#mn2)" stroke="#a0a080" strokeWidth="0.8"/><rect x="18" y="30" width="12" height="14" rx="1" fill="#90c0e8" stroke="#6090b0" strokeWidth="0.8"/><rect x="12" y="24" width="8" height="8" rx="1" fill="#90c0e8" stroke="#6090b0" strokeWidth="0.8"/><rect x="28" y="24" width="8" height="8" rx="1" fill="#90c0e8" stroke="#6090b0" strokeWidth="0.8"/><ellipse cx="24" cy="12" rx="10" ry="3" fill="rgba(255,180,180,0.4)"/></svg>,
+
+  // About — blue info circle
+  "about": (s) => <svg width={s} height={s} viewBox="0 0 48 48"><defs><radialGradient id="ab1" cx="38%" cy="28%" r="68%"><stop offset="0%" stopColor="#70b8ff"/><stop offset="100%" stopColor="#0040c0"/></radialGradient></defs><circle cx="24" cy="24" r="20" fill="url(#ab1)" stroke="#002890" strokeWidth="1.2"/><circle cx="24" cy="15" r="3" fill="white"/><rect x="21" y="21" width="6" height="13" rx="2" fill="white"/><ellipse cx="19" cy="16" rx="5" ry="3" fill="rgba(255,255,255,0.3)" transform="rotate(-30 19 16)"/></svg>,
+
+  // ISO Viewer — shiny disc
+  "iso-viewer": (s) => <svg width={s} height={s} viewBox="0 0 48 48"><defs><radialGradient id="iso1" cx="50%" cy="50%" r="50%"><stop offset="0%" stopColor="#f0f0f0"/><stop offset="40%" stopColor="#c8d8f8"/><stop offset="70%" stopColor="#a0c0f0"/><stop offset="100%" stopColor="#8090c0"/></radialGradient><radialGradient id="iso2" cx="30%" cy="30%" r="70%"><stop offset="0%" stopColor="rgba(255,255,255,0.9)"/><stop offset="100%" stopColor="rgba(180,220,255,0)"/></radialGradient></defs><circle cx="24" cy="24" r="20" fill="url(#iso1)" stroke="#8090b0" strokeWidth="1"/><circle cx="24" cy="24" r="5" fill="#d0d0e0" stroke="#9090a8" strokeWidth="1"/><circle cx="24" cy="24" r="2.5" fill="white"/><ellipse cx="18" cy="16" rx="7" ry="4" fill="url(#iso2)" transform="rotate(-30 18 16)"/></svg>,
+
+  // ZIP Viewer — folder with zipper
+  "zip-viewer": (s) => <svg width={s} height={s} viewBox="0 0 48 48"><defs><linearGradient id="zp1" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#80c0f8"/><stop offset="100%" stopColor="#2060c0"/></linearGradient></defs><path d="M6 10a3 3 0 013-3h20l8 8v26a3 3 0 01-3 3H9a3 3 0 01-3-3V10z" fill="url(#zp1)" stroke="#1040a0" strokeWidth="1"/><path d="M29 7v8h8" fill="none" stroke="#1040a0" strokeWidth="1.2"/><rect x="20" y="14" width="8" height="3" rx="1" fill="white" opacity="0.7"/><rect x="20" y="19" width="8" height="3" rx="1" fill="#b0d0ff" opacity="0.7"/><rect x="20" y="24" width="8" height="3" rx="1" fill="white" opacity="0.7"/><rect x="20" y="29" width="8" height="3" rx="1" fill="#b0d0ff" opacity="0.7"/><rect x="20" y="34" width="8" height="3" rx="1" fill="white" opacity="0.7"/><rect x="9" y="9" width="14" height="3" rx="1" fill="rgba(255,255,255,0.4)"/></svg>,
+
+  // PMail — envelope, XP Outlook Express style
+  "pmail": (s) => <svg width={s} height={s} viewBox="0 0 48 48"><defs><linearGradient id="pm1" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#f0f8ff"/><stop offset="100%" stopColor="#b0d0f0"/></linearGradient><linearGradient id="pm2" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#60a8e8"/><stop offset="100%" stopColor="#2060c0"/></linearGradient></defs><rect x="4" y="10" width="40" height="28" rx="3" fill="url(#pm1)" stroke="#6090c0" strokeWidth="1.2"/><path d="M4 12l20 14 20-14" fill="none" stroke="#2060c0" strokeWidth="1.5"/><polygon points="4,38 18,26 4,12" fill="url(#pm2)" opacity="0.35"/><polygon points="44,38 30,26 44,12" fill="url(#pm2)" opacity="0.35"/><rect x="4" y="10" width="40" height="6" rx="3" fill="rgba(255,255,255,0.5)"/></svg>,
+
+  // Web App — browser window
+  "web-app": (s) => <svg width={s} height={s} viewBox="0 0 48 48"><defs><linearGradient id="wa1" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#5090e0"/><stop offset="100%" stopColor="#1040a0"/></linearGradient><linearGradient id="wa2" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#f8f8ff"/><stop offset="100%" stopColor="#d8e0f0"/></linearGradient></defs><rect x="3" y="6" width="42" height="36" rx="4" fill="url(#wa1)" stroke="#082880" strokeWidth="1"/><rect x="3" y="6" width="42" height="12" rx="4" fill="url(#wa2)"/><rect x="3" y="14" width="42" height="4" fill="url(#wa2)"/><circle cx="10" cy="12" r="3" fill="#e04040"/><circle cx="18" cy="12" r="3" fill="#e0c030"/><circle cx="26" cy="12" r="3" fill="#30c040"/><rect x="32" y="9" width="10" height="6" rx="2" fill="rgba(255,255,255,0.3)"/><rect x="8" y="24" width="32" height="3" rx="1.5" fill="rgba(255,255,255,0.5)"/><rect x="8" y="30" width="22" height="3" rx="1.5" fill="rgba(255,255,255,0.35)"/><rect x="8" y="36" width="28" height="3" rx="1.5" fill="rgba(255,255,255,0.25)"/></svg>,
+
+  // Puei Space — rocket/spaceship
+  "pueyracing": (s) => <svg width={s} height={s} viewBox="0 0 48 48"><defs><linearGradient id="rs1" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#e8f0ff"/><stop offset="100%" stopColor="#8090d0"/></linearGradient><linearGradient id="rs2" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#ff9040"/><stop offset="100%" stopColor="#ff3000"/></linearGradient></defs><path d="M24 4 C24 4 16 14 16 26 L20 28 L24 30 L28 28 L32 26 C32 14 24 4 24 4z" fill="url(#rs1)" stroke="#6070b0" strokeWidth="1"/><ellipse cx="24" cy="18" rx="5" ry="6" fill="#80c8ff" stroke="#4090d0" strokeWidth="0.8" opacity="0.8"/><path d="M16 26 L8 32 L12 30 L16 30z" fill="#c03020" stroke="#801010" strokeWidth="0.8"/><path d="M32 26 L40 32 L36 30 L32 30z" fill="#c03020" stroke="#801010" strokeWidth="0.8"/><ellipse cx="24" cy="32" rx="5" ry="3" fill="#ff8020" stroke="#c04000" strokeWidth="0.8"/><ellipse cx="24" cy="36" rx="4" ry="6" fill="url(#rs2)" opacity="0.85"/><ellipse cx="22" cy="14" rx="3" ry="5" fill="rgba(255,255,255,0.4)" transform="rotate(-15 22 14)"/></svg>,
 };
 
 export function appIcon(appId: AppId, size = 32, override?: string, iconUrl?: string) {
   const s = size;
-  // Win7-style per-app gradient colors
-  const colorMap: Partial<Record<AppId, [string, string]>> = {
-    "settings":       ["#5c6e8a","#2e3d52"],
-    "file-explorer":  ["#f0a020","#c05800"],
-    "notepad":        ["#3a8fe0","#1040a0"],
-    "calculator":     ["#1abccc","#007088"],
-    "puei-paint":     ["#d03880","#780048"],
-    "puei-board":     ["#e04040","#900010"],
-    "pueinet":        ["#1898e0","#0050a0"],
-    "puei-cloud-chat":["#40a850","#106020"],
-    "puei-studio":    ["#9038b0","#480870"],
-    "app-store":      ["#1aa890","#006050"],
-    "puei-social":    ["#e05030","#901000"],
-    "folder":         ["#e89020","#a05000"],
-    "web-app":        ["#5878a0","#283848"],
-    "recycle-bin":    ["#608098","#304050"],
-    "chess":          ["#785040","#402010"],
-    "puei-mansion":   ["#6040b0","#280870"],
-    "about":          ["#4858b0","#181858"],
-    "iso-viewer":     ["#705840","#382010"],
-    "zip-viewer":     ["#607080","#283040"],
-    "pmail":          ["#d03030","#800010"],
-    "pueyracing":     ["#1848c0","#080830"],
-  };
-  const [c1, c2] = colorMap[appId] ?? ["#486070","#203040"];
 
   const isImg = typeof override === "string" && override.startsWith("data:");
   const useUrl = !isImg && !override && !!iconUrl;
@@ -306,28 +322,23 @@ export function appIcon(appId: AppId, size = 32, override?: string, iconUrl?: st
     if (!host) return "";
     return `https://www.google.com/s2/favicons?sz=${Math.max(32, Math.round(s))}&domain_url=${encodeURIComponent(`https://${host}`)}`;
   })();
-  const radius = Math.round(s * 0.2);
   const customSvg = APP_ICON_SVGS[appId]?.(s);
+
+  // XP icons are self-contained — no background box, no gloss, just the SVG with a drop shadow
   return (
     <div
-      className="flex items-center justify-center overflow-hidden relative"
-      style={{
-        width: s, height: s,
-        borderRadius: radius,
-        background: isImg || useUrl ? "transparent" : `linear-gradient(145deg, ${c1} 0%, ${c2} 100%)`,
-        boxShadow: `0 ${Math.round(s*0.06)}px ${Math.round(s*0.18)}px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.35)`,
-        flexShrink: 0,
-      }}
+      className="flex items-center justify-center relative"
+      style={{ width: s, height: s, flexShrink: 0 }}
     >
       {isImg
-        ? <img src={override} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: radius }} />
+        ? <img src={override} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: Math.round(s * 0.15) }} />
         : useUrl
           ? <>
               <img
                 src={iconUrl}
                 alt=""
                 data-fallback={fallbackIconUrl}
-                style={{ width: "78%", height: "78%", objectFit: "contain" }}
+                style={{ width: "100%", height: "100%", objectFit: "contain" }}
                 onError={(e) => {
                   const img = e.currentTarget as HTMLImageElement;
                   const fallback = img.dataset.fallback || "";
@@ -340,18 +351,10 @@ export function appIcon(appId: AppId, size = 32, override?: string, iconUrl?: st
                   if (fallbackEl) fallbackEl.style.display = "flex";
                 }}
               />
-              <div style={{ display: "none", width: "100%", height: "100%", alignItems: "center", justifyContent: "center" }}>{customSvg}</div>
+              <div style={{ display: "none", width: "100%", height: "100%", alignItems: "center", justifyContent: "center", filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.5))" }}>{customSvg}</div>
             </>
-          : <div style={{ display: "flex", alignItems: "center", justifyContent: "center", filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.4))" }}>{customSvg}</div>}
-      {/* Win7-style gloss overlay */}
-      {!isImg && !useUrl && (
-        <div style={{
-          position: "absolute", top: 0, left: 0, right: 0,
-          height: "45%", borderRadius: `${radius}px ${radius}px 50% 50%`,
-          background: "linear-gradient(to bottom, rgba(255,255,255,0.45) 0%, rgba(255,255,255,0.08) 100%)",
-          pointerEvents: "none",
-        }} />
-      )}
+          : <div style={{ display: "flex", alignItems: "center", justifyContent: "center", filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.5))" }}>{customSvg}</div>
+      }
     </div>
   );
 }

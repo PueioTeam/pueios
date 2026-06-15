@@ -6582,17 +6582,20 @@ function PMailApp({ currentUser, users }: { currentUser: string; users: { name: 
             <div className="flex items-start gap-3 p-4 border-b" style={{ borderColor: "var(--border)", background: "var(--glass)" }}>
               {(() => {
                 const fromLower = (selected.from ?? "").toLowerCase();
-                const sender = users.find(u => u.name.toLowerCase() === fromLower);
-                const av: string | undefined = (sender as any)?.avatar;
+                const localSender = users.find(u => u.name.toLowerCase() === fromLower);
+                const dirEntry = !localSender ? loadDirectory().find(e => e.name.toLowerCase() === fromLower) : null;
+                const sender = localSender ?? dirEntry;
+                const av: string = ((sender as any)?.avatar ?? "").trim();
                 const col: string = (sender as any)?.color ?? "220";
-                const isImg = av?.startsWith("data:") || av?.startsWith("http");
+                const isImg = av.startsWith("data:") || av.startsWith("http");
+                const isEmoji = av.length > 0 && !isImg;
                 return (
-                  <div style={{ width: 40, height: 40, borderRadius: 10, background: `linear-gradient(135deg, oklch(0.7 0.18 ${col}), oklch(0.45 0.2 ${col}))`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0, overflow: "hidden" }}>
+                  <div style={{ width: 44, height: 44, borderRadius: 12, background: `linear-gradient(135deg, oklch(0.65 0.2 ${col}), oklch(0.4 0.22 ${col}))`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, flexShrink: 0, overflow: "hidden", boxShadow: "0 2px 8px rgba(0,0,0,0.3)" }}>
                     {isImg
                       ? <img src={av} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                      : av
-                        ? <span>{av}</span>
-                        : <span style={{ color: "#fff", fontWeight: 700, fontSize: 16 }}>{(selected.from?.[0] ?? "?").toUpperCase()}</span>
+                      : isEmoji
+                        ? <span style={{ lineHeight: 1 }}>{av}</span>
+                        : <span style={{ color: "#fff", fontWeight: 700, fontSize: 18, lineHeight: 1 }}>{(selected.from?.[0] ?? "?").toUpperCase()}</span>
                     }
                   </div>
                 );
