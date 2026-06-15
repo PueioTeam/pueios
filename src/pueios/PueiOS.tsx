@@ -488,9 +488,12 @@ export function PueiOS() {
   }, [installed, systemVersion, theme, icons, users, loginUser, remember]);
 
   useEffect(() => {
+    let el = document.getElementById("puei-cursor-style") as HTMLStyleElement | null;
+    if (!el) { el = document.createElement("style"); el.id = "puei-cursor-style"; document.head.appendChild(el); }
+    // Don't apply custom SVG cursors on touch-only screens — they show as a dot
+    if (!window.matchMedia("(pointer: fine)").matches) { el.textContent = ""; return; }
     const c = theme.cursorColor ?? "#ffffff";
     const enc = (svg: string) => `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
-    // Cursor: white fill body, chosen color as the outline/stroke
     const arrow = (stroke: string) => enc(
       `<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'><path d='M3 2 L3 18 L7 14 L10.5 21 L12.5 20 L9 13 L15 13 Z' fill='white' stroke='${stroke}' stroke-width='1.5' stroke-linejoin='round'/></svg>`
     );
@@ -498,22 +501,16 @@ export function PueiOS() {
       `<svg xmlns='http://www.w3.org/2000/svg' width='20' height='24' viewBox='0 0 20 24'><rect x='4' y='0' width='4' height='12' rx='2' fill='white' stroke='${stroke}' stroke-width='1.2'/><rect x='9' y='3' width='4' height='10' rx='2' fill='white' stroke='${stroke}' stroke-width='1.2'/><rect x='14' y='4' width='3.5' height='9' rx='1.75' fill='white' stroke='${stroke}' stroke-width='1.2'/><rect x='2' y='9' width='16' height='12' rx='4' fill='white' stroke='${stroke}' stroke-width='1.2'/><ellipse cx='2' cy='14' rx='2.5' ry='3.5' fill='white' stroke='${stroke}' stroke-width='1.2'/></svg>`
     );
     const ibeam = enc(`<svg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20'><path d='M7 2 L9 2 Q10 2 10 3 L10 17 Q10 18 9 18 L7 18' fill='none' stroke='${c}' stroke-width='2' stroke-linecap='round'/><path d='M13 2 L11 2 Q10 2 10 3 L10 17 Q10 18 11 18 L13 18' fill='none' stroke='${c}' stroke-width='2' stroke-linecap='round'/></svg>`);
-    // Arrow + spinner ring for progress/wait cursors
-    const arrowBusy = enc(`<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'><path d='M3 2 L3 18 L7 14 L10.5 21 L12.5 20 L9 13 L15 13 Z' fill='white' stroke='${c}' stroke-width='1.5' stroke-linejoin='round'/><circle cx='23' cy='23' r='7' fill='none' stroke='rgba(255,255,255,0.25)' stroke-width='2.5'/><path d='M23 16 A7 7 0 0 1 30 23' fill='none' stroke='${c}' stroke-width='2.5' stroke-linecap='round'/></svg>`);
-    const busyOnly = enc(`<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'><circle cx='12' cy='12' r='9' fill='none' stroke='rgba(255,255,255,0.25)' stroke-width='3'/><path d='M12 3 A9 9 0 0 1 21 12' fill='none' stroke='${c}' stroke-width='3' stroke-linecap='round'/></svg>`);
-    const css = `
-* { cursor: ${arrow(c)} 3 2, default !important; }
+    // Windows 7-style working-in-background: arrow + small arc ring at the tip (bottom-right of arrow)
+    const arrowBusy = enc(`<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'><path d='M3 2 L3 20 L7 15 L11 22 L13.5 20.5 L9.5 13.5 L16 13.5 Z' fill='white' stroke='${c}' stroke-width='1.5' stroke-linejoin='round'/><circle cx='24' cy='24' r='6' fill='none' stroke='rgba(255,255,255,0.18)' stroke-width='2.5'/><path d='M24 18 A6 6 0 0 1 30 24' fill='none' stroke='${c}' stroke-width='2.5' stroke-linecap='round'/><path d='M18 24 A6 6 0 0 1 24 18' fill='none' stroke='rgba(150,200,255,0.45)' stroke-width='2' stroke-linecap='round'/></svg>`);
+    const css =
+`* { cursor: ${arrow(c)} 3 2, default !important; }
 *[style*="cursor: move"], *[style*="cursor:move"] { cursor: ${arrow(c)} 3 2, move !important; }
 *[style*="cursor: grab"], *[style*="cursor:grab"] { cursor: ${hand(c)} 6 0, grab !important; }
 *[style*="cursor: grabbing"], *[style*="cursor:grabbing"] { cursor: ${hand(c)} 6 0, grabbing !important; }
-input, textarea, [contenteditable], [contenteditable] * { cursor: ${ibeam} 10 10, text !important; }
-button, a, [role="button"], select, label[for] { cursor: ${hand(c)} 6 0, pointer !important; }
-*, *[style*="cursor: progress"], *[style*="cursor:progress"] { }
-[style*="cursor: progress"], [style*="cursor:progress"] { cursor: ${arrowBusy} 3 2, progress !important; }
-[style*="cursor: wait"], [style*="cursor:wait"] { cursor: ${busyOnly} 12 12, wait !important; }
-`;
-    let el = document.getElementById("puei-cursor-style") as HTMLStyleElement | null;
-    if (!el) { el = document.createElement("style"); el.id = "puei-cursor-style"; document.head.appendChild(el); }
+input, textarea, [contenteditable] { cursor: ${ibeam} 10 10, text !important; }
+button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important; }
+[style*="cursor: progress"], [style*="cursor:progress"] { cursor: ${arrowBusy} 3 2, progress !important; }`;
     el.textContent = css;
   }, [theme.cursorColor]);
 
@@ -747,8 +744,11 @@ button, a, [role="button"], select, label[for] { cursor: ${hand(c)} 6 0, pointer
     if (e.touches.length !== 1) return;
     touchStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
     touchTimer.current = window.setTimeout(() => {
-      if (touchStart.current) setCtxMenu({ x: touchStart.current.x, y: touchStart.current.y, items });
-    }, 6000);
+      if (touchStart.current) {
+        navigator.vibrate?.(30);
+        setCtxMenu({ x: touchStart.current.x, y: touchStart.current.y, items });
+      }
+    }, 600);
   };
   const onTouchEnd = () => {
     if (touchTimer.current) { clearTimeout(touchTimer.current); touchTimer.current = null; }
@@ -2074,7 +2074,7 @@ button, a, [role="button"], select, label[for] { cursor: ${hand(c)} 6 0, pointer
       {systemVersion === "PueiOS 3" ? (
         /* PueiOS 3 — bottom bar, dark glass style */
         <div className="fixed bottom-0 left-0 right-0 h-12 flex items-center px-1 gap-1 z-[8000]"
-          style={{ background: "rgba(8,8,20,0.88)", backdropFilter: "blur(24px) saturate(160%)", borderTop: "1px solid rgba(255,255,255,0.10)", boxShadow: "0 -2px 24px rgba(0,0,0,0.5)" }}
+          style={{ background: theme.taskbarColor ?? "rgba(8,8,20,0.88)", backdropFilter: "blur(24px) saturate(160%)", borderTop: "1px solid rgba(255,255,255,0.10)", boxShadow: "0 -2px 24px rgba(0,0,0,0.5)" }}
           onMouseDown={(e) => e.stopPropagation()}
           onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); setCtxMenu({ x: e.clientX, y: e.clientY, items: taskbarCtx() }); }}>
           {/* Start button */}

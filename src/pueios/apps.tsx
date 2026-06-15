@@ -163,8 +163,24 @@ function saveDownloadedImage(owner: string, name: string, dataUrl: string, folde
 
 
 function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, currentUser, users, setUsers, systemVersion, startUpgrade, uninstallApp, icons, signOut, lockScreen, deleteAccount }: any) {
-  const [settingsDialog, , settingsConfirm] = useLocalDialog();
+  const [settingsDialog, settingsAlert, settingsConfirm] = useLocalDialog();
   const [tab, setTab] = useState("personalize");
+  const [deletePasswordInput, setDeletePasswordInput] = useState("");
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  const beginDeleteAccount = (targetName: string) => {
+    const targetUser = (users as User[]).find((u: User) => u.name === targetName);
+    if (!targetUser) return;
+    if (targetUser.password) {
+      setDeletePasswordInput("");
+      setShowDeleteConfirm(true);
+    } else {
+      settingsConfirm(
+        `Are you sure you want to permanently delete the account "${targetName}"? This cannot be undone.`,
+        () => deleteAccount(targetName)
+      );
+    }
+  };
   const [paintImages, setPaintImages] = useState<SavedFile[]>(() => loadFiles().filter((f) => f.type === "image" && f.folder === SYS_FOLDER_PICTURES && (!f.owner || f.owner === currentUser)));
   useEffect(() => {
     const fn = () => setPaintImages(loadFiles().filter((f) => f.type === "image" && f.folder === SYS_FOLDER_PICTURES && (!f.owner || f.owner === currentUser)));
@@ -263,6 +279,34 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, curren
   return (
     <div className="flex h-full relative">
       <LocalDialogModal dialog={settingsDialog} />
+      {showDeleteConfirm && (
+        <div className="absolute inset-0 z-[60] flex items-center justify-center" style={{ background: "rgba(0,0,0,0.6)" }}>
+          <div className="aero-glass rounded-xl p-5 w-80 shadow-2xl" style={{ animation: "fade-scale 0.15s ease-out" }}>
+            <div className="text-sm font-semibold mb-1 text-red-300">Delete account</div>
+            <div className="text-xs opacity-70 mb-3">Enter your password to confirm permanent deletion of account "{currentUser}". This cannot be undone.</div>
+            <input type="password" value={deletePasswordInput} onChange={(e) => setDeletePasswordInput(e.target.value)}
+              autoFocus placeholder="Password"
+              className="w-full px-3 py-2 rounded-lg text-sm mb-3 outline-none"
+              style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.2)" }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  const me2 = (users as User[]).find((u: User) => u.name === currentUser);
+                  if (deletePasswordInput === me2?.password) { setShowDeleteConfirm(false); deleteAccount(currentUser); }
+                  else settingsAlert("Incorrect password.");
+                }
+              }} />
+            <div className="flex justify-end gap-2">
+              <button className="aero-button rounded px-4 py-1.5 text-sm" onClick={() => { setShowDeleteConfirm(false); setDeletePasswordInput(""); }}>Cancel</button>
+              <button className="aero-button rounded px-4 py-1.5 text-sm font-semibold" style={{ color: "#fca5a5" }}
+                onClick={() => {
+                  const me2 = (users as User[]).find((u: User) => u.name === currentUser);
+                  if (deletePasswordInput === me2?.password) { setShowDeleteConfirm(false); deleteAccount(currentUser); }
+                  else settingsAlert("Incorrect password.");
+                }}>Delete</button>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="w-48 p-2 border-r" style={{ background: "var(--background)" }}>
         {tabs.map(([k, l]) => (
           <div key={k} onClick={() => { setTab(k); blip("click"); }}
@@ -499,7 +543,7 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, curren
                   <button
                     className="aero-button rounded px-4 py-2 text-xs font-semibold"
                     style={{ color: "#fca5a5", border: "1px solid rgba(252,165,165,0.3)" }}
-                    onClick={() => deleteAccount(currentUser)}>
+                    onClick={() => beginDeleteAccount(currentUser)}>
                     🗑️ Delete my account
                   </button>
                 </div>
@@ -732,12 +776,8 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, curren
                 <div className="font-semibold text-sm text-red-500">Danger Zone</div>
                 <div className="text-xs opacity-70">Deleting your account removes it from this device permanently. Your files and messages are not recoverable.</div>
                 <button className="rounded-lg px-4 py-2 text-sm border border-red-400/50 text-red-500 hover:bg-red-500/20 transition-colors"
-                  onClick={() => {
-                    if (prompt(`Type your username "${me.name}" to confirm deletion:`) === me.name) {
-                      deleteAccount(me.name);
-                    }
-                  }}>
-                  🖦️ Delete this account
+                  onClick={() => beginDeleteAccount(me.name)}>
+                  🗑️ Delete this account
                 </button>
               </div>
 
@@ -1398,6 +1438,8 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
   const navUrl = tabs.find((t) => t.id === active)?.url ?? "puei://home";
   const [urlBar, setUrlBar] = useState("puei://home");
   const [isoRefresh, setIsoRefresh] = useState(0);
+  const [downloading, setDownloading] = useState<string | null>(null);
+  const [dlSecondsLeft, setDlSecondsLeft] = useState(0);
 
   useEffect(() => {
     const fn = () => setIsoRefresh((v) => v + 1);
@@ -1419,34 +1461,48 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
   const iso3File = allIsoFiles.find((f) => f.name.trim().toLowerCase() === "pueios3.iso");
   const updaterInstalled = icons.some((i) => i.appId === "web-app" && i.webUrl === "puei://updates" && i.label.trim().toLowerCase() === "puei updater");
 
+  const startDownload = (name: string, onComplete: () => void) => {
+    if (downloading) return;
+    setDownloading(name);
+    setDlSecondsLeft(5);
+    blip("click");
+    let remaining = 5;
+    const tick = setInterval(() => {
+      remaining -= 1;
+      setDlSecondsLeft(remaining);
+      if (remaining <= 0) {
+        clearInterval(tick);
+        setDownloading(null);
+        onComplete();
+        blip("notify");
+      }
+    }, 1000);
+  };
+
   const downloadPlusIso = () => {
     if (isoFile) { blip("click"); webAlert("PueiOS 2+ ISO is already downloaded in Files."); return; }
-    upsertFile({
-      id: `iso-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`,
-      name: "pueios2-plus.iso",
-      type: "text",
-      content: "PueiOS 2+ installation ISO image placeholder.",
-      updatedAt: Date.now(),
-      owner: currentUser,
-      folder: SYS_FOLDER_DOWNLOADS,
+    startDownload("pueios2-plus.iso", () => {
+      upsertFile({
+        id: `iso-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`,
+        name: "pueios2-plus.iso", type: "text",
+        content: "PueiOS 2+ installation ISO image placeholder.",
+        updatedAt: Date.now(), owner: currentUser, folder: SYS_FOLDER_DOWNLOADS,
+      });
+      setIsoRefresh((v) => v + 1);
     });
-    setIsoRefresh((v) => v + 1);
-    blip("notify");
   };
 
   const downloadOs3Iso = () => {
     if (iso3File) { blip("click"); webAlert("PueiOS 3 ISO is already downloaded in Files."); return; }
-    upsertFile({
-      id: `iso3-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`,
-      name: "pueios3.iso",
-      type: "text",
-      content: "PueiOS 3 installation ISO image placeholder. Keep this file in Files/Downloads, then open Puei Updater and drag the ISO into it.",
-      updatedAt: Date.now(),
-      owner: currentUser,
-      folder: SYS_FOLDER_DOWNLOADS,
+    startDownload("pueios3.iso", () => {
+      upsertFile({
+        id: `iso3-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`,
+        name: "pueios3.iso", type: "text",
+        content: "PueiOS 3 installation ISO image placeholder. Keep this file in Files/Downloads, then open Puei Updater and drag the ISO into it.",
+        updatedAt: Date.now(), owner: currentUser, folder: SYS_FOLDER_DOWNLOADS,
+      });
+      setIsoRefresh((v) => v + 1);
     });
-    setIsoRefresh((v) => v + 1);
-    blip("notify");
   };
 
   const deleteIsoAfterUpdate = () => {
@@ -1625,9 +1681,18 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
           <p className="text-xs opacity-60">Advanced edition with stronger sync and AI systems.</p>
           <p className="text-xs" style={{ color: "#f87171" }}>As of June 6th, PueiOS 2+ is no longer supported. We recommend upgrading to PueiOS 3.</p>
           <div className="flex gap-2">
-            <button className="aero-button rounded px-3 py-1.5 text-xs" onClick={downloadPlusIso} style={{ opacity: 0.65 }}>
-              ⬇ {isoFile ? "Re-download pueios2-plus.iso" : "Download pueios2-plus.iso"}
-            </button>
+            {downloading === "pueios2-plus.iso" ? (
+              <div className="flex items-center gap-2 text-xs">
+                <div className="w-32 h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.15)" }}>
+                  <div className="h-full rounded-full transition-all" style={{ width: `${((5 - dlSecondsLeft) / 5) * 100}%`, background: "var(--accent)" }} />
+                </div>
+                <span className="opacity-70">Downloading… {dlSecondsLeft}s</span>
+              </div>
+            ) : (
+              <button className="aero-button rounded px-3 py-1.5 text-xs" onClick={downloadPlusIso} style={{ opacity: 0.65 }}>
+                ⬇ {isoFile ? "Re-download pueios2-plus.iso" : "Download pueios2-plus.iso"}
+              </button>
+            )}
           </div>
         </div>
 
@@ -1640,9 +1705,18 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
           </div>
           <p className="text-xs opacity-60">Major release: redesigned shell, new AI assistant, PueiNet 3.0.</p>
           <div className="flex gap-2">
-            <button className="aero-button rounded px-3 py-1.5 text-xs" onClick={downloadOs3Iso}>
-              ⬇ {iso3File ? "Re-download pueios3.iso" : "Download pueios3.iso"}
-            </button>
+            {downloading === "pueios3.iso" ? (
+              <div className="flex items-center gap-2 text-xs">
+                <div className="w-32 h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.15)" }}>
+                  <div className="h-full rounded-full transition-all" style={{ width: `${((5 - dlSecondsLeft) / 5) * 100}%`, background: "var(--accent)" }} />
+                </div>
+                <span className="opacity-70">Downloading… {dlSecondsLeft}s</span>
+              </div>
+            ) : (
+              <button className="aero-button rounded px-3 py-1.5 text-xs" onClick={downloadOs3Iso}>
+                ⬇ {iso3File ? "Re-download pueios3.iso" : "Download pueios3.iso"}
+              </button>
+            )}
           </div>
           {updaterInstalled && iso3File && (
             <div className="text-xs rounded px-3 py-2 mt-1" style={{ background: "rgba(80,200,120,0.16)" }}>
@@ -4103,6 +4177,22 @@ function PueiBoardApp({ user, users }: { user: string; users: User[] }) {
                 <span>{liked ? "♥" : "♡"}</span>
                 <span>{p.likes}</span>
               </button>
+              {p.imgData && (
+                <button
+                  className="aero-button rounded-full px-2 py-0.5 text-[10px]"
+                  title="Save to Pictures"
+                  onClick={() => {
+                    upsertFile({
+                      id: `board-img-${Date.now().toString(36)}`,
+                      name: `${p.title.slice(0, 24).replace(/[^a-z0-9]/gi, "_")}.png`,
+                      type: "image", content: p.imgData!,
+                      updatedAt: Date.now(), owner: user, folder: SYS_FOLDER_PICTURES,
+                    });
+                    window.dispatchEvent(new Event("pueios-files-changed"));
+                    blip("notify");
+                  }}
+                >🖼️</button>
+              )}
               {isOwn && (
                 <button
                   className="aero-button rounded-full px-2 py-0.5 text-[10px]"
@@ -4565,7 +4655,7 @@ function PueiUpdaterApp({ currentUser, startUpgrade, systemVersion }: { currentU
                     setEolMsg(null);
                     startUpgrade(v);
                   }}>
-                  {eol && systemVersion === "PueiOS 3" ? "🔄 Pueio Reverse" : eol ? "Info" : "Install →"}
+                  {eol && systemVersion === "PueiOS 3" ? "🔄 Pueio Reverse" : eol ? "Info" : mountedIso?.name.trim().toLowerCase() === "pueios3.iso" ? "Install →" : "Requires ISO ↓"}
                 </button>
               )}
             </div>

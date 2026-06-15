@@ -307,11 +307,11 @@
 
 /* Win7 taskbar: dark glass with blue accent border at top */
 .taskbar-bg {
-  background:
+  background: var(--taskbar,
     linear-gradient(180deg,
       rgba(30,60,120,0.72) 0%,
       rgba(10,30,80,0.88) 40%,
-      rgba(5,18,55,0.95) 100%);
+      rgba(5,18,55,0.95) 100%));
   backdrop-filter: saturate(var(--aero-saturation));
   -webkit-backdrop-filter: saturate(var(--aero-saturation));
   border-top: 1px solid rgba(100,160,255,0.55);
