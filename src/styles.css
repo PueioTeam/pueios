@@ -39,9 +39,11 @@
 :root {
   --radius: 10px;
   --accent-h: 200;
+  --accent-c: 0.18;
+  --accent-l: 0.65;
   --background: oklch(0.97 0.02 var(--accent-h));
   --foreground: oklch(0.18 0.04 var(--accent-h));
-  --accent: oklch(0.65 0.18 var(--accent-h));
+  --accent: oklch(var(--accent-l) var(--accent-c) var(--accent-h));
   --accent-2: oklch(0.75 0.15 calc(var(--accent-h) + 20));
   --glass: oklch(0.92 0.04 var(--accent-h) / 0.18);
   --glass-strong: oklch(0.94 0.05 var(--accent-h) / 0.38);
@@ -58,7 +60,7 @@
   --muted: oklch(0.92 0.02 var(--accent-h));
   --muted-foreground: oklch(0.45 0.03 var(--accent-h));
 
-  --aero-glow: 0 0 24px oklch(0.65 0.18 var(--accent-h) / 0.5);
+  --aero-glow: 0 0 24px oklch(var(--accent-l) var(--accent-c) var(--accent-h) / 0.5);
   --aero-shadow: 0 12px 40px -8px rgba(0,0,80,0.45), 0 4px 12px rgba(0,0,0,0.25);
   --aero-glass-opacity: 38;
   --aero-blur: 22px;
@@ -416,6 +418,9 @@
 }
 .context-sep { height: 1px; background: var(--border); margin: 4px 2px; }
 
+@keyframes puei-spin {
+  to { transform: rotate(360deg); }
+}
 @keyframes fade-scale {
   from { opacity: 0; transform: scale(0.96); }
   to { opacity: 1; transform: scale(1); }

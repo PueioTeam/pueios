@@ -94,30 +94,30 @@ export function AppRenderer(p: AppRendererProps) {
 
 const SYS_FOLDER_PICTURES = "__pictures__";
 const SYS_FOLDER_DOWNLOADS = "__downloads__";
-const PUEI_BOARD_KEY = "pueios2-board-v1";
+const PUEI_BOARD_KEY = "pueios2-board-v2";
 
-type PueiBoardPost = {
+type PueiBoardPin = {
   id: string;
   author: string;
-  authorAvatar: string;
-  board: string;
-  caption: string;
-  imageSrc: string;
-  imageName: string;
-  at: number;
+  title: string;
+  desc?: string;
+  imgData?: string;
+  link?: string;
+  tag?: string;
+  createdAt: number;
   likes: number;
   likedBy?: string[];
 };
 
-function loadPueiBoard(): PueiBoardPost[] {
+function loadPueiBoard(): PueiBoardPin[] {
   if (typeof window === "undefined") return [];
   try { return JSON.parse(localStorage.getItem(PUEI_BOARD_KEY) || "[]"); } catch { return []; }
 }
 
-function savePueiBoard(posts: PueiBoardPost[]) {
+function savePueiBoard(pins: PueiBoardPin[]) {
   if (typeof window === "undefined") return;
   try {
-    localStorage.setItem(PUEI_BOARD_KEY, JSON.stringify(posts));
+    localStorage.setItem(PUEI_BOARD_KEY, JSON.stringify(pins));
     window.dispatchEvent(new CustomEvent("pueios-board"));
   } catch {}
 }
@@ -280,13 +280,19 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, curren
             <h2 className="text-xl font-semibold mb-4">Personalize PueiOS</h2>
             <label className="block mb-3 text-sm">Accent hue ({theme.accentH}°)</label>
             <input type="range" min={0} max={360} value={theme.accentH}
-              onChange={(e) => setTheme({ ...theme, accentH: Number(e.target.value) })} className="w-full" />
+              onChange={(e) => setTheme({ ...theme, accentH: Number(e.target.value), accentC: undefined, accentL: undefined })} className="w-full" />
             <div className="flex gap-2 mt-4 flex-wrap">
               {[200, 220, 260, 290, 320, 0, 30, 60, 130, 160].map((h) => (
-                <button key={h} onClick={() => setTheme({ ...theme, accentH: h })}
+                <button key={h} onClick={() => setTheme({ ...theme, accentH: h, accentC: undefined, accentL: undefined })}
                   className="w-10 h-10 rounded-full border-2 border-white shadow"
                   style={{ background: `oklch(0.65 0.2 ${h})` }} />
               ))}
+              <button onClick={() => setTheme({ ...theme, accentH: 0, accentC: 0, accentL: 0.97 })}
+                className="w-10 h-10 rounded-full border-2 border-gray-300 shadow"
+                title="White" style={{ background: "#f8f8f8" }} />
+              <button onClick={() => setTheme({ ...theme, accentH: 0, accentC: 0, accentL: 0.15 })}
+                className="w-10 h-10 rounded-full border-2 border-gray-600 shadow"
+                title="Black" style={{ background: "#1a1a1a" }} />
             </div>
             <div className="mt-6 space-y-3">
               <label className="flex items-center gap-2 text-sm">
@@ -3895,199 +3901,323 @@ function InstallerPane({ installWebApp }: { installWebApp: (label: string, url: 
 }
 
 function PueiBoardApp({ user, users }: { user: string; users: User[] }) {
-  const [posts, setPosts] = useState<PueiBoardPost[]>(() => loadPueiBoard());
-  const [caption, setCaption] = useState("");
-  const [selectedImageId, setSelectedImageId] = useState<string>("");
-  const [activeBoard, setActiveBoard] = useState<string>("All Boards");
-  const [mineOnly, setMineOnly] = useState(false);
-  const [galleryImages, setGalleryImages] = useState<SavedFile[]>(() =>
-    loadFiles().filter((f) => f.type === "image" && (!f.owner || f.owner === user))
-  );
+  const [pins, setPins] = useState<PueiBoardPin[]>(() => loadPueiBoard());
+  const [boardDialog, , boardConfirm] = useLocalDialog();
 
-  const boards = ["All Boards", "Ideas", "Fashion", "Art", "Rooms", "Memes"];
+  // Create-pin form state
+  const [showCreate, setShowCreate] = useState(false);
+  const [formTitle, setFormTitle] = useState("");
+  const [formDesc, setFormDesc] = useState("");
+  const [formLink, setFormLink] = useState("");
+  const [formTag, setFormTag] = useState("");
+  const [formImgData, setFormImgData] = useState<string | undefined>(undefined);
+  const [formImgName, setFormImgName] = useState("");
+  const imgInputRef = useRef<HTMLInputElement>(null);
+
+  // Filter / search state
+  const [searchText, setSearchText] = useState("");
+  const [filterTag, setFilterTag] = useState("");
+
+  const TAGS = ["art", "tech", "meme", "news", "other"];
+
+  const TAG_COLORS: Record<string, string> = {
+    art: "#c084fc",
+    tech: "#60a5fa",
+    meme: "#fb923c",
+    news: "#34d399",
+    other: "#94a3b8",
+  };
 
   useEffect(() => {
-    const refreshBoard = () => setPosts(loadPueiBoard());
-    const refreshFiles = () => setGalleryImages(loadFiles().filter((f) => f.type === "image" && (!f.owner || f.owner === user)));
-    window.addEventListener("pueios-board", refreshBoard);
-    window.addEventListener("storage", refreshBoard);
-    window.addEventListener("pueios-files-changed", refreshFiles);
+    const refresh = () => setPins(loadPueiBoard());
+    window.addEventListener("pueios-board", refresh);
+    window.addEventListener("storage", refresh);
     return () => {
-      window.removeEventListener("pueios-board", refreshBoard);
-      window.removeEventListener("storage", refreshBoard);
-      window.removeEventListener("pueios-files-changed", refreshFiles);
+      window.removeEventListener("pueios-board", refresh);
+      window.removeEventListener("storage", refresh);
     };
-  }, [user]);
+  }, []);
 
-  useEffect(() => {
-    if (!selectedImageId && galleryImages.length) setSelectedImageId(galleryImages[0].id);
-    if (selectedImageId && !galleryImages.some((f) => f.id === selectedImageId)) setSelectedImageId("");
-  }, [galleryImages, selectedImageId]);
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      setFormImgData(ev.target?.result as string);
+      setFormImgName(file.name);
+    };
+    reader.readAsDataURL(file);
+  };
 
-  const me = users.find((u) => u.name === user);
-  const selectedImage = galleryImages.find((f) => f.id === selectedImageId);
-  const visiblePosts = posts
-    .filter((p) => (mineOnly ? p.author === user : true))
-    .filter((p) => activeBoard === "All Boards" ? true : p.board === activeBoard)
-    .sort((a, b) => b.at - a.at);
-
-  const post = () => {
-    if (!selectedImage) return;
-    const next: PueiBoardPost[] = [{
-      id: `board-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`,
+  const submitPin = () => {
+    if (!formTitle.trim()) { blip("error"); return; }
+    const pin: PueiBoardPin = {
+      id: `pin-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`,
       author: user,
-      authorAvatar: me?.avatar || "🧑",
-      board: activeBoard === "All Boards" ? "Ideas" : activeBoard,
-      caption: caption.trim(),
-      imageSrc: selectedImage.content,
-      imageName: selectedImage.name,
-      at: Date.now(),
+      title: formTitle.trim(),
+      desc: formDesc.trim() || undefined,
+      imgData: formImgData,
+      link: formLink.trim() || undefined,
+      tag: formTag || undefined,
+      createdAt: Date.now(),
       likes: 0,
       likedBy: [],
-    }, ...posts];
-    setPosts(next);
+    };
+    const next = [pin, ...pins];
+    setPins(next);
     savePueiBoard(next);
-    setCaption("");
+    setFormTitle(""); setFormDesc(""); setFormLink(""); setFormTag(""); setFormImgData(undefined); setFormImgName("");
+    setShowCreate(false);
     blip("notify");
   };
 
-  const removePost = (postId: string) => {
-    const next = posts.filter((p) => p.id !== postId);
-    setPosts(next);
-    savePueiBoard(next);
-    blip("click");
-  };
-
-  const toggleLike = (postId: string) => {
-    const next = posts.map((p) => {
-      if (p.id !== postId) return p;
+  const toggleLike = (pinId: string) => {
+    const next = pins.map((p) => {
+      if (p.id !== pinId) return p;
       const likedBy = p.likedBy || [];
       const hasLiked = likedBy.includes(user);
       const nextLikedBy = hasLiked ? likedBy.filter((n) => n !== user) : [...likedBy, user];
       return { ...p, likedBy: nextLikedBy, likes: nextLikedBy.length };
     });
-    setPosts(next);
+    setPins(next);
     savePueiBoard(next);
     blip("click");
   };
 
-  return (
-    <div className="flex h-full" style={{ background: "var(--glass)" }}>
-      <div className="w-72 border-r p-3 overflow-auto" style={{ background: "var(--glass)" }}>
-        <div className="font-bold text-lg mb-2">📌 PueiBoard</div>
-        <div className="text-xs opacity-70 mb-3">Pin Gallery images onto themed boards like ideas, art, fashion, and memes.</div>
+  const deletePin = (pinId: string) => {
+    boardConfirm("Delete this pin?", () => {
+      const next = pins.filter((p) => p.id !== pinId);
+      setPins(next);
+      savePueiBoard(next);
+      blip("click");
+    });
+  };
 
-        <div className="mb-3">
-          <div className="text-xs opacity-70 mb-1">Boards</div>
-          <div className="flex flex-wrap gap-1">
-            {boards.map((board) => (
-              <button
-                key={board}
-                className="aero-button rounded px-2 py-1 text-[10px]"
-                style={activeBoard === board ? { background: "var(--gradient-aero)", color: "white" } : undefined}
-                onClick={() => setActiveBoard(board)}
-              >
-                {board}
-              </button>
-            ))}
-          </div>
-        </div>
+  const visiblePins = pins
+    .filter((p) => !filterTag || p.tag === filterTag)
+    .filter((p) => {
+      if (!searchText.trim()) return true;
+      const q = searchText.toLowerCase();
+      return (
+        p.title.toLowerCase().includes(q) ||
+        (p.desc || "").toLowerCase().includes(q) ||
+        (p.author || "").toLowerCase().includes(q) ||
+        (p.tag || "").toLowerCase().includes(q)
+      );
+    })
+    .sort((a, b) => b.createdAt - a.createdAt);
 
-        <label className="text-xs opacity-70">Choose image from Gallery</label>
-        <select
-          className="w-full mt-1 px-2 py-1.5 rounded text-sm input-field" style={{ border: "1px solid var(--border)" }}
-          value={selectedImageId}
-          onChange={(e) => setSelectedImageId(e.target.value)}
-        >
-          {!galleryImages.length ? <option value="">No images found in Gallery</option> : null}
-          {galleryImages.map((img) => (
-            <option key={img.id} value={img.id}>{img.name}</option>
-          ))}
-        </select>
+  // Split into 3 columns for masonry
+  const col0: PueiBoardPin[] = [];
+  const col1: PueiBoardPin[] = [];
+  const col2: PueiBoardPin[] = [];
+  visiblePins.forEach((p, i) => {
+    if (i % 3 === 0) col0.push(p);
+    else if (i % 3 === 1) col1.push(p);
+    else col2.push(p);
+  });
 
-        {selectedImage && (
-          <img src={selectedImage.content} alt={selectedImage.name} className="w-full h-36 object-cover rounded mt-2 border border-white/30" />
+  const me = users.find((u) => u.name === user);
+
+  const renderCard = (p: PueiBoardPin) => {
+    const liked = p.likedBy?.includes(user) ?? false;
+    const tagColor = TAG_COLORS[p.tag || ""] || "#94a3b8";
+    const isOwn = p.author === user;
+    const ts = new Date(p.createdAt);
+    const timeStr = ts.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+    return (
+      <div key={p.id} className="aero-glass-light rounded-2xl mb-3 overflow-hidden break-inside-avoid"
+        style={{ boxShadow: "0 4px 24px rgba(0,0,0,0.28)", border: "1px solid rgba(255,255,255,0.13)" }}>
+        {p.imgData && (
+          <img src={p.imgData} alt={p.title} className="w-full object-cover"
+            style={{ maxHeight: 320, display: "block" }} />
         )}
-
-        <label className="text-xs opacity-70 mt-3 block">Caption (optional)</label>
-        <textarea
-          value={caption}
-          onChange={(e) => setCaption(e.target.value)}
-          placeholder="Add a caption for your post..."
-          className="w-full mt-1 px-2 py-2 rounded text-sm outline-none resize-none input-field" style={{ minHeight: 70, border: "1px solid var(--border)" }}
-        />
-
-        <button
-          className="aero-button rounded px-3 py-2 w-full mt-2 text-sm"
-          disabled={!selectedImage}
-          style={{ opacity: selectedImage ? 1 : 0.6 }}
-          onClick={post}
-        >
-          Pin to {activeBoard === "All Boards" ? "Ideas" : activeBoard}
-        </button>
-
-        <div className="text-[10px] opacity-60 mt-2">
-          Tip: Save images in Paint or download them to Pictures, then post here.
+        <div className="p-3">
+          <div className="flex items-start justify-between gap-1 mb-1">
+            <div className="font-semibold text-sm leading-snug" style={{ color: "var(--text)" }}>{p.title}</div>
+            {p.tag && (
+              <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full flex-shrink-0"
+                style={{ background: tagColor + "33", color: tagColor, border: `1px solid ${tagColor}55` }}>
+                {p.tag}
+              </span>
+            )}
+          </div>
+          {p.desc && (
+            <div className="text-xs opacity-75 leading-relaxed mb-2"
+              style={{ display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+              {p.desc}
+            </div>
+          )}
+          {p.link && (
+            <a href={p.link} target="_blank" rel="noopener noreferrer"
+              className="text-[11px] underline opacity-70 hover:opacity-100 block truncate mb-2"
+              style={{ color: "#60a5fa" }}
+              onClick={(e) => e.stopPropagation()}>
+              {p.link}
+            </a>
+          )}
+          <div className="flex items-center justify-between mt-1">
+            <div className="flex items-center gap-1.5 min-w-0">
+              <span className="w-5 h-5 rounded-full inline-flex items-center justify-center text-[11px] flex-shrink-0"
+                style={{ background: "rgba(255,255,255,0.18)" }}>
+                {(() => {
+                  const av = me && p.author === user ? me.avatar : users.find((u) => u.name === p.author)?.avatar || "🧑";
+                  return av?.startsWith("data:") ? <img src={av} alt="" className="w-full h-full object-cover rounded-full" /> : av;
+                })()}
+              </span>
+              <span className="text-[11px] opacity-70 truncate">{p.author}</span>
+              <span className="text-[10px] opacity-45 flex-shrink-0">{timeStr}</span>
+            </div>
+            <div className="flex items-center gap-1 flex-shrink-0">
+              <button
+                className="aero-button rounded-full px-2 py-0.5 text-[11px] flex items-center gap-1"
+                style={liked ? { color: "#f472b6" } : undefined}
+                onClick={() => toggleLike(p.id)}
+              >
+                <span>{liked ? "♥" : "♡"}</span>
+                <span>{p.likes}</span>
+              </button>
+              {isOwn && (
+                <button
+                  className="aero-button rounded-full px-2 py-0.5 text-[10px]"
+                  style={{ color: "#fca5a5" }}
+                  onClick={() => deletePin(p.id)}
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+          </div>
         </div>
       </div>
+    );
+  };
 
-      <div className="flex-1 p-4 overflow-auto">
-        <div className="flex items-center justify-between mb-3">
-          <div>
-            <h2 className="text-xl font-semibold">{activeBoard === "All Boards" ? "Board Feed" : `${activeBoard} Board`}</h2>
-            <div className="text-[10px] opacity-55">{visiblePosts.length} pins shown</div>
-          </div>
-          <div className="flex gap-2">
+  return (
+    <div className="flex flex-col h-full" style={{ background: "var(--glass)", position: "relative" }}>
+      <LocalDialogModal dialog={boardDialog} />
+
+      {/* Top bar */}
+      <div className="aero-titlebar flex items-center gap-2 px-3 py-2 flex-shrink-0"
+        style={{ borderBottom: "1px solid rgba(255,255,255,0.1)" }}>
+        <span className="font-bold text-base mr-1">📌 PueiBoard</span>
+        <div className="flex-1 relative">
+          <input
+            type="text"
+            placeholder="Search pins..."
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+            className="w-full px-3 py-1 rounded-full text-xs input-field"
+            style={{ border: "1px solid var(--border)", background: "rgba(255,255,255,0.08)", outline: "none" }}
+          />
+        </div>
+        <div className="flex items-center gap-1 flex-shrink-0">
+          {["", ...TAGS].map((t) => (
             <button
-              className="aero-button rounded px-3 py-1 text-xs"
-              style={mineOnly ? { background: "var(--gradient-aero)", color: "white" } : undefined}
-              onClick={() => setMineOnly((v) => !v)}
+              key={t || "all"}
+              className="aero-button rounded-full px-2 py-0.5 text-[10px]"
+              style={filterTag === t
+                ? { background: t ? TAG_COLORS[t] + "55" : "var(--gradient-aero)", color: t ? TAG_COLORS[t] : "white", fontWeight: 700 }
+                : undefined}
+              onClick={() => { setFilterTag(t); blip("click"); }}
             >
-              {mineOnly ? "Mine only" : "Everyone"}
+              {t || "all"}
             </button>
+          ))}
+        </div>
+        <button
+          className="aero-button rounded-full px-3 py-1 text-xs font-semibold flex-shrink-0"
+          style={{ background: "var(--gradient-aero)", color: "white" }}
+          onClick={() => { setShowCreate((v) => !v); blip("click"); }}
+        >
+          {showCreate ? "✕ Close" : "+ New Pin"}
+        </button>
+      </div>
+
+      {/* Create pin panel */}
+      {showCreate && (
+        <div className="flex-shrink-0 px-4 py-3 border-b"
+          style={{ background: "rgba(255,255,255,0.04)", borderColor: "rgba(255,255,255,0.1)" }}>
+          <div className="flex flex-wrap gap-3 items-start">
+            <div className="flex flex-col gap-1.5 flex-1 min-w-48">
+              <input
+                type="text"
+                placeholder="Title (required)"
+                value={formTitle}
+                onChange={(e) => setFormTitle(e.target.value)}
+                className="px-2.5 py-1.5 rounded-lg text-xs input-field"
+                style={{ border: "1px solid var(--border)", background: "rgba(255,255,255,0.07)", outline: "none" }}
+              />
+              <textarea
+                placeholder="Description (optional)"
+                value={formDesc}
+                onChange={(e) => setFormDesc(e.target.value)}
+                rows={2}
+                className="px-2.5 py-1.5 rounded-lg text-xs input-field resize-none"
+                style={{ border: "1px solid var(--border)", background: "rgba(255,255,255,0.07)", outline: "none" }}
+              />
+            </div>
+            <div className="flex flex-col gap-1.5 flex-1 min-w-48">
+              <input
+                type="url"
+                placeholder="Link URL (optional)"
+                value={formLink}
+                onChange={(e) => setFormLink(e.target.value)}
+                className="px-2.5 py-1.5 rounded-lg text-xs input-field"
+                style={{ border: "1px solid var(--border)", background: "rgba(255,255,255,0.07)", outline: "none" }}
+              />
+              <select
+                value={formTag}
+                onChange={(e) => setFormTag(e.target.value)}
+                className="px-2.5 py-1.5 rounded-lg text-xs input-field"
+                style={{ border: "1px solid var(--border)", background: "rgba(255,255,255,0.07)", outline: "none" }}
+              >
+                <option value="">No tag</option>
+                {TAGS.map((t) => <option key={t} value={t}>{t}</option>)}
+              </select>
+            </div>
+            <div className="flex flex-col gap-1.5 items-start">
+              <button
+                className="aero-button rounded-lg px-3 py-1.5 text-xs"
+                onClick={() => imgInputRef.current?.click()}
+              >
+                {formImgData ? "Change image" : "Upload image"}
+              </button>
+              <input ref={imgInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+              {formImgData && (
+                <div className="relative">
+                  <img src={formImgData} alt="preview" className="h-14 w-20 object-cover rounded-lg border border-white/20" />
+                  <button
+                    className="absolute -top-1 -right-1 w-4 h-4 rounded-full text-[9px] flex items-center justify-center"
+                    style={{ background: "#ef4444", color: "white" }}
+                    onClick={() => { setFormImgData(undefined); setFormImgName(""); }}
+                  >✕</button>
+                </div>
+              )}
+            </div>
             <button
-              className="aero-button rounded px-3 py-1 text-xs"
-              onClick={() => setActiveBoard("All Boards")}
+              className="aero-button rounded-lg px-4 py-2 text-xs font-semibold self-end"
+              style={{ background: formTitle.trim() ? "var(--gradient-aero)" : undefined, color: formTitle.trim() ? "white" : undefined, opacity: formTitle.trim() ? 1 : 0.5 }}
+              disabled={!formTitle.trim()}
+              onClick={submitPin}
             >
-              Show all boards
+              Pin it
             </button>
           </div>
         </div>
+      )}
 
-        {visiblePosts.length === 0 ? (
-          <div className="h-full flex items-center justify-center text-sm opacity-60">No posts yet. Share your first image from Gallery.</div>
+      {/* Main masonry grid */}
+      <div className="flex-1 overflow-auto px-3 py-3">
+        {visiblePins.length === 0 ? (
+          <div className="flex items-center justify-center h-full text-sm opacity-50">
+            {pins.length === 0 ? "No pins yet — create your first pin!" : "No pins match your search."}
+          </div>
         ) : (
-          <div className="columns-1 sm:columns-2 lg:columns-3 gap-3 [column-fill:_balance]">
-            {visiblePosts.map((p) => (
-              <div key={p.id} className="aero-glass-light rounded-xl mb-3 break-inside-avoid overflow-hidden">
-                <img src={p.imageSrc} alt={p.imageName} className="w-full object-cover" />
-                <div className="p-2">
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="text-xs opacity-80 flex items-center gap-1.5 min-w-0">
-                      <span className="w-6 h-6 rounded-full overflow-hidden inline-flex items-center justify-center"
-                        style={{ background: "rgba(255,255,255,0.45)" }}>
-                        {p.authorAvatar.startsWith("data:")
-                          ? <img src={p.authorAvatar} alt="" className="w-full h-full object-cover" />
-                          : p.authorAvatar}
-                      </span>
-                      <span className="truncate">{p.author}</span>
-                    </div>
-                    <div className="text-[10px] opacity-60">{new Date(p.at).toLocaleDateString()}</div>
-                  </div>
-                  {p.caption && <div className="text-sm mt-1 whitespace-pre-wrap">{p.caption}</div>}
-                  <div className="text-[10px] uppercase tracking-widest opacity-55 mt-1">Board: {p.board}</div>
-                  <div className="text-[10px] opacity-55 mt-1 truncate">Source: {p.imageName}</div>
-                  <div className="flex gap-1 mt-2 flex-wrap">
-                    <button className="aero-button rounded px-2 py-1 text-[10px]" onClick={() => toggleLike(p.id)}>
-                      {p.likedBy?.includes(user) ? `♥ Liked (${p.likes})` : `♡ Like (${p.likes})`}
-                    </button>
-                    <button className="aero-button rounded px-2 py-1 text-[10px]" style={{ color: "#fecaca" }} onClick={() => removePost(p.id)}>
-                      Delete pin
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
+          <div className="flex gap-3 items-start">
+            <div className="flex-1 min-w-0">{col0.map(renderCard)}</div>
+            <div className="flex-1 min-w-0">{col1.map(renderCard)}</div>
+            <div className="flex-1 min-w-0">{col2.map(renderCard)}</div>
           </div>
         )}
       </div>
@@ -4386,6 +4516,12 @@ function PueiUpdaterApp({ currentUser, startUpgrade, systemVersion }: { currentU
                   onClick={() => {
                     if (eol) {
                       if (systemVersion === "PueiOS 3") {
+                        const isoName = mountedIso?.name.trim().toLowerCase() ?? "";
+                        const hasPlus = ["pueios2-plus.iso", "pueios2plus.iso"].includes(isoName);
+                        if (!hasPlus) {
+                          setEolMsg("Mount pueios2-plus.iso in the installer area below first, then use Pueio Reverse.");
+                          return;
+                        }
                         setReverseWarning({ version: v, fromIso: false });
                       } else {
                         setEolMsg(`As of June 6th, ${v} is no longer supported. Please install PueiOS 3 instead.`);
@@ -4705,13 +4841,18 @@ function PueiStudioApp({ currentUser, users, icons, setWallpaper }: { currentUse
   const shareToBoard = () => {
     const c = canvasRef.current!;
     const data = c.toDataURL("image/png");
-    const me = users.find(u => u.name === currentUser);
     const posts = loadPueiBoard();
-    const p: PueiBoardPost = {
+    const p: PueiBoardPin = {
       id: `studio-board-${Date.now().toString(36)}`,
-      author: currentUser, authorAvatar: me?.avatar || "🧑",
-      board: "Art", caption: sharedMsg || projectName,
-      imageSrc: data, imageName: projectName, at: Date.now(), likes: 0, likedBy: [],
+      author: currentUser,
+      title: sharedMsg || projectName,
+      desc: undefined,
+      imgData: data,
+      link: undefined,
+      tag: "art",
+      createdAt: Date.now(),
+      likes: 0,
+      likedBy: [],
     };
     savePueiBoard([p, ...posts]);
     setSavedMsg("Shared to PueiBoard!"); setTimeout(() => setSavedMsg(""), 2500);

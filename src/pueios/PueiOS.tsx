@@ -138,23 +138,36 @@ export function PueiOS() {
   const [cursorPos, setCursorPos] = useState({ x: 0, y: 0 });
   const [busyCursor, setBusyCursor] = useState(false);
   const [pueiDialog, setPueiDialog] = useState<{ msg: string; onOk: () => void; onCancel?: () => void } | null>(null);
-  const [pinnedApps, setPinnedApps] = useState<AppId[]>(() => {
+  type PinnedEntry = { appId: AppId; webUrl?: string; label?: string };
+  const DEFAULT_PINNED: PinnedEntry[] = [
+    { appId: "file-explorer" }, { appId: "app-store" }, { appId: "puei-social" },
+    { appId: "pueinet" }, { appId: "puei-cloud-chat" },
+  ];
+  const [pinnedApps, setPinnedApps] = useState<PinnedEntry[]>(() => {
     try {
-      const saved = localStorage.getItem("pueios2-pinned-v1");
-      return saved ? (JSON.parse(saved) as AppId[]) : (["file-explorer", "app-store", "puei-social", "pueinet", "puei-cloud-chat"] as AppId[]);
-    } catch { return ["file-explorer", "app-store", "puei-social", "pueinet", "puei-cloud-chat"] as AppId[]; }
+      const saved = localStorage.getItem("pueios2-pinned-v2");
+      if (saved) return JSON.parse(saved) as PinnedEntry[];
+      // Migrate from v1 (plain AppId strings)
+      const v1 = localStorage.getItem("pueios2-pinned-v1");
+      if (v1) return (JSON.parse(v1) as AppId[]).map((id) => ({ appId: id }));
+      return DEFAULT_PINNED;
+    } catch { return DEFAULT_PINNED; }
   });
-  const pinToTaskbar = (appId: AppId) => setPinnedApps((prev) => {
-    if (prev.includes(appId)) return prev;
-    const next = [...prev, appId];
-    try { localStorage.setItem("pueios2-pinned-v1", JSON.stringify(next)); } catch {}
-    return next;
+  const savePinned = (list: PinnedEntry[]) => { try { localStorage.setItem("pueios2-pinned-v2", JSON.stringify(list)); } catch {} };
+  const pinToTaskbar = (entry: PinnedEntry) => setPinnedApps((prev) => {
+    const key = entry.webUrl ?? entry.appId;
+    if (prev.some((p) => (p.webUrl ?? p.appId) === key)) return prev;
+    const next = [...prev, entry];
+    savePinned(next); return next;
   });
-  const unpinFromTaskbar = (appId: AppId) => setPinnedApps((prev) => {
-    const next = prev.filter((id) => id !== appId);
-    try { localStorage.setItem("pueios2-pinned-v1", JSON.stringify(next)); } catch {}
-    return next;
+  const unpinFromTaskbar = (key: string) => setPinnedApps((prev) => {
+    const next = prev.filter((p) => (p.webUrl ?? p.appId) !== key);
+    savePinned(next); return next;
   });
+  const openPinned = (p: PinnedEntry) => {
+    if (p.appId === "web-app" && p.webUrl) openApp("web-app", { webUrl: p.webUrl, title: p.label });
+    else openApp(p.appId);
+  };
   const [locked, setLocked] = useState(false);
   const pendingUpdateNotif = useRef(false);
   const upgradeFinishQueued = useRef(false);
@@ -407,6 +420,10 @@ export function PueiOS() {
   useEffect(() => {
     const root = document.documentElement;
     root.style.setProperty("--accent-h", String(theme.accentH));
+    if (theme.accentC !== undefined) root.style.setProperty("--accent-c", String(theme.accentC));
+    else root.style.removeProperty("--accent-c");
+    if (theme.accentL !== undefined) root.style.setProperty("--accent-l", String(theme.accentL));
+    else root.style.removeProperty("--accent-l");
     root.classList.toggle("dark", theme.dark);
     root.classList.toggle("high-contrast", !!theme.highContrast);
     root.classList.toggle("win7-aero", !!theme.win7Aero);
@@ -749,15 +766,16 @@ button, a, [role="button"], select, label[for] { cursor: ${hand(c)} 6 0, pointer
       else if (icon.appId === "web-app") openApp("web-app", { webUrl: icon.webUrl, title: icon.label });
       else openApp(icon.appId, { fileId: icon.fileId });
     };
-    const isPinnable = icon.appId !== "folder" && icon.appId !== "web-app" && (icon.appId in APP_TITLES);
-    const isPinned = pinnedApps.includes(icon.appId);
+    const isPinnable = (icon.appId === "web-app" && !!icon.webUrl) || (icon.appId !== "folder" && icon.appId !== "web-app" && (icon.appId in APP_TITLES));
+    const pinKey = icon.appId === "web-app" ? (icon.webUrl ?? icon.appId) : icon.appId;
+    const isPinned = pinnedApps.some((p) => (p.webUrl ?? p.appId) === pinKey);
     return [
       { label: "Open", action: openIt },
       { sep: true },
       ...(isPinnable ? [
         isPinned
-          ? { label: "📌 Unpin from taskbar", action: () => unpinFromTaskbar(icon.appId) }
-          : { label: "📌 Pin to taskbar", action: () => pinToTaskbar(icon.appId) },
+          ? { label: "🖇️ Unpin from taskbar", action: () => unpinFromTaskbar(pinKey) }
+          : { label: "🖇️ Pin to taskbar", action: () => pinToTaskbar({ appId: icon.appId, webUrl: icon.webUrl, label: icon.label }) },
       ] : []),
       { label: "Rename", action: () => {
         const n = prompt("Rename to:", icon.label);
@@ -1345,131 +1363,140 @@ button, a, [role="button"], select, label[for] { cursor: ${hand(c)} 6 0, pointer
     const activeUser = users.find((u) => u.name === loginUser);
 
     if (systemVersion === "PueiOS 3") {
-      // PueiOS 3 login — dark glass, centered, minimal
+      // PueiOS 3 login — Windows XP style
+      const xpBlue = "#245ecc";
+      const xpHeaderGrad = `linear-gradient(180deg, #3a7bd5 0%, ${xpBlue} 40%, #1a4faa 100%)`;
+      const xpBg = "linear-gradient(180deg, #1a3f80 0%, #3a6fd8 50%, #1a3f80 100%)";
+      const xpBtn = { background: "linear-gradient(180deg,#6ea8ee 0%,#3e7fd6 45%,#2b68c8 55%,#4a8fe0 100%)", border: "1px solid #1a50a0", borderRadius: 4, color: "#fff", fontWeight: 700, fontSize: 13, padding: "4px 20px", cursor: "pointer", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.3),0 2px 4px rgba(0,0,0,0.4)" };
+      const xpInput = { background: "#fff", border: "2px inset #7090c0", borderRadius: 2, padding: "3px 6px", fontSize: 13, color: "#000", outline: "none", width: "100%", boxSizing: "border-box" as const };
+      const selectedU = users.find((u) => u.name === loginUser) ?? users[0];
+
       return (
-        <div className="fixed inset-0 flex flex-col items-center justify-center"
-          style={{ background: "radial-gradient(ellipse at 50% 30%, oklch(0.22 0.12 260) 0%, oklch(0.08 0.05 240) 100%)" }}>
-          {/* Blur blobs */}
-          <div className="absolute w-96 h-96 rounded-full pointer-events-none" style={{ background: "oklch(0.5 0.2 280)", filter: "blur(120px)", opacity: 0.18, top: "10%", left: "20%" }} />
-          <div className="absolute w-80 h-80 rounded-full pointer-events-none" style={{ background: "oklch(0.5 0.2 220)", filter: "blur(100px)", opacity: 0.14, bottom: "15%", right: "15%" }} />
-
-          {/* Clock top-center */}
-          <div className="absolute top-10 text-center pointer-events-none">
-            <div className="text-white text-5xl font-thin tracking-tight">{now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</div>
-            <div className="text-white/50 text-sm mt-1">{now.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })}</div>
-          </div>
-
-          {/* Logo */}
-          <div className="mb-6 flex flex-col items-center gap-2">
-            <PueiLogoSvg size={48} bigEyes />
-            <div className="text-white/60 text-xs tracking-widest uppercase">{locked ? "Locked" : "PueiOS 3"}</div>
-          </div>
-
-          {switching ? (
-            <div className="w-80 space-y-3 backdrop-blur-xl rounded-2xl p-6"
-              style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.12)" }}>
-              <div className="text-white font-semibold text-sm">Sign in to another account</div>
-              <input value={switchName} onChange={(e) => { setSwitchName(e.target.value); setSwitchErr(""); }}
-                onKeyDown={(e) => { if (e.key === "Enter") switchToAccount(); }} autoFocus
-                placeholder="Account name" className="w-full px-4 py-2.5 rounded-xl text-sm outline-none text-white placeholder-white/40"
-                style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.15)" }} />
-              <input type="password" value={switchPw} onChange={(e) => setSwitchPw(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Enter") switchToAccount(); }}
-                placeholder="Password" className="w-full px-4 py-2.5 rounded-xl text-sm outline-none text-white placeholder-white/40"
-                style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.15)" }} />
-              {switchErr && <div className="text-red-400 text-xs">{switchErr}</div>}
-              <div className="flex gap-2">
-                <button className="flex-shrink-0 px-4 py-2 rounded-xl text-sm text-white/70 hover:bg-white/10 transition-colors"
-                  onClick={() => { setSwitching(false); setSwitchErr(""); }}>← Back</button>
-                <button className="flex-1 py-2 rounded-xl text-sm font-semibold text-white transition-colors"
-                  style={{ background: "rgba(99,102,241,0.7)" }} onClick={switchToAccount}>Sign in →</button>
-              </div>
+        <div className="fixed inset-0 flex flex-col" style={{ background: xpBg, fontFamily: "Tahoma, 'Segoe UI', sans-serif" }}>
+          {/* XP top header bar */}
+          <div style={{ background: xpHeaderGrad, padding: "10px 24px", display: "flex", alignItems: "center", gap: 14, borderBottom: "2px solid #1a4faa", boxShadow: "0 3px 10px rgba(0,0,0,0.4)", flexShrink: 0 }}>
+            <PueiLogoSvg size={40} bigEyes />
+            <div>
+              <div style={{ color: "#fff", fontSize: 22, fontWeight: 700, letterSpacing: 0.5 }}>PueiOS 3</div>
+              <div style={{ color: "rgba(255,255,255,0.75)", fontSize: 12 }}>{locked ? "Computer is locked" : "To begin, click your user name"}</div>
             </div>
-          ) : !creating ? (
-            <>
-              {/* User avatars */}
-              {users.filter(u => typeof u.password !== "undefined").length > 0 && (
-                <div className="flex gap-6 mb-8 flex-wrap justify-center px-6">
-                  {users.filter(u => typeof u.password !== "undefined").map((u) => (
-                    <button key={u.name} onClick={() => { setLoginUser(u.name); setPwError(""); setPwInput(""); }}
-                      className="flex flex-col items-center gap-2 group">
-                      <div className="w-20 h-20 rounded-2xl flex items-center justify-center text-5xl overflow-hidden transition-transform group-hover:scale-105"
-                        style={{ background: `linear-gradient(135deg, oklch(0.7 0.18 ${u.color}), oklch(0.45 0.2 ${u.color}))`, boxShadow: loginUser === u.name ? `0 0 0 3px white, 0 8px 32px rgba(0,0,0,0.5)` : "0 6px 20px rgba(0,0,0,0.4)" }}>
-                        {u.avatar.startsWith("data:") ? <img src={u.avatar} alt="" className="w-full h-full object-cover" /> : u.avatar}
-                      </div>
-                      <div className="text-white/80 text-xs font-medium">{u.name}</div>
-                    </button>
-                  ))}
-                  {!locked && (
-                    <button onClick={() => { setCreating(true); setPwError(""); }}
-                      className="text-xs text-white/35 hover:text-white/65 transition-colors mt-2 underline-offset-2 hover:underline">
-                      + Add account
-                    </button>
-                  )}
-                </div>
+            <div style={{ marginLeft: "auto", color: "rgba(255,255,255,0.7)", fontSize: 12, textAlign: "right" }}>
+              <div>{now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</div>
+              <div>{now.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })}</div>
+            </div>
+          </div>
+
+          {/* Main content — users left, sign-in right */}
+          <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
+            {/* Left panel — user list */}
+            <div style={{ width: 220, background: "rgba(0,0,80,0.35)", borderRight: "2px solid rgba(255,255,255,0.15)", padding: "20px 0", overflowY: "auto" }}>
+              {users.filter(u => typeof u.password !== "undefined").map((u) => (
+                <button key={u.name} onClick={() => { setLoginUser(u.name); setPwError(""); setPwInput(""); }}
+                  style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "8px 16px", background: loginUser === u.name ? "rgba(255,255,255,0.18)" : "transparent", border: "none", cursor: "pointer", borderLeft: loginUser === u.name ? "3px solid #fff" : "3px solid transparent", textAlign: "left" }}>
+                  <div style={{ width: 44, height: 44, borderRadius: 4, background: `linear-gradient(135deg, oklch(0.7 0.18 ${u.color}), oklch(0.45 0.2 ${u.color}))`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, flexShrink: 0, overflow: "hidden", border: loginUser === u.name ? "2px solid #fff" : "2px solid transparent" }}>
+                    {u.avatar.startsWith("data:") ? <img src={u.avatar} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : u.avatar}
+                  </div>
+                  <div>
+                    <div style={{ color: loginUser === u.name ? "#fff" : "rgba(255,255,255,0.8)", fontSize: 13, fontWeight: loginUser === u.name ? 700 : 400 }}>{u.name}</div>
+                    {u.limitedMode && <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 10 }}>Limited</div>}
+                  </div>
+                </button>
+              ))}
+              {!locked && (
+                <button onClick={() => { setCreating(true); setPwError(""); }}
+                  style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "8px 16px", background: "transparent", border: "none", cursor: "pointer", marginTop: 8 }}>
+                  <div style={{ width: 44, height: 44, borderRadius: 4, background: "rgba(255,255,255,0.12)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0, border: "1px dashed rgba(255,255,255,0.3)" }}>+</div>
+                  <div style={{ color: "rgba(255,255,255,0.6)", fontSize: 12 }}>Add account</div>
+                </button>
               )}
-              {/* Password / sign-in box */}
-              <div className="w-72 space-y-3 backdrop-blur-xl rounded-2xl p-5"
-                style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.12)" }}>
-                {users.filter(u => typeof u.password !== "undefined").length === 0 && (
-                  <input value={loginUser} onChange={(e) => { setLoginUser(e.target.value); setPwError(""); }}
-                    onKeyDown={(e) => { if (e.key === "Enter") trySignIn(); }} placeholder="Username"
-                    className="w-full px-4 py-2.5 rounded-xl text-sm outline-none text-white placeholder-white/40"
-                    style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.15)" }} />
-                )}
-                {loginUser && <div className="text-white/70 text-xs text-center">{loginUser}</div>}
-                <input type="password" value={pwInput} onChange={(e) => setPwInput(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === "Enter") trySignIn(); }}
-                  placeholder={activeUser?.password ? "Password" : "No password — press Enter"}
-                  className="w-full px-4 py-2.5 rounded-xl text-sm outline-none text-white placeholder-white/40"
-                  style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.15)" }} />
-                {pwError && <div className="text-red-400 text-xs text-center">{pwError}</div>}
-                <button className="w-full py-2.5 rounded-xl text-sm font-semibold text-white transition-all hover:brightness-110"
-                  style={{ background: "rgba(99,102,241,0.75)" }} onClick={trySignIn}>Sign in →</button>
-                <div className="flex justify-between text-[11px] text-white/40">
-                  <button className="hover:text-white/70" onClick={() => setPhase("recovery")}>Recovery</button>
-                  {!locked && <button className="hover:text-white/70" onClick={() => { setSwitching(true); setSwitchName(""); setSwitchPw(""); setSwitchErr(""); }}>Other account</button>}
-                  {!locked && <button className="hover:text-white/70" onClick={() => {
-                    const guestName = "Guest";
-                    const existing = users.find((u) => u.name === guestName);
-                    if (!existing) {
-                      const nu: User = { name: guestName, password: "", avatar: "👤", color: "220", pueiNumber: "", friends: [], noPassword: true, limitedMode: true };
-                      const next = [...users, nu];
-                      setUsers(next);
-                      saveState({ installed, systemVersion, theme, icons, users: next, lastUser: guestName, remember: false });
-                    }
-                    setLoginUser(guestName); setPwInput(""); enterDesktop(guestName);
-                  }}>Guest</button>}
-                </div>
-              </div>
-            </>
-          ) : (
-            // Create account — same form, PueiOS 3 styled
-            <div className="w-96 space-y-3 backdrop-blur-xl rounded-2xl p-6"
-              style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.12)" }}>
-              <div className="text-white font-semibold text-sm flex items-center gap-2"><PueiLogoSvg size={22} /> Create account</div>
-              <input value={newAcc.name} onChange={(e) => setNewAcc({ ...newAcc, name: e.target.value })}
-                placeholder="Account name" className="w-full px-4 py-2.5 rounded-xl text-sm outline-none text-white placeholder-white/40"
-                style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.15)" }} />
-              <input type="password" value={newAcc.password} onChange={(e) => setNewAcc({ ...newAcc, password: e.target.value })}
-                placeholder="Password (optional)" className="w-full px-4 py-2.5 rounded-xl text-sm outline-none text-white placeholder-white/40"
-                style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.15)" }} />
-              <div className="flex flex-wrap gap-2">
-                {["🧑","👩","🧔","👵","🧑‍💻","🦸","🧙","🐱","🤖","👽","🎩","🌟"].map((a) => (
-                  <button key={a} onClick={() => setNewAcc({ ...newAcc, avatar: a })}
-                    className="w-9 h-9 rounded-xl text-xl flex items-center justify-center transition-all"
-                    style={{ background: newAcc.avatar === a ? "rgba(99,102,241,0.6)" : "rgba(255,255,255,0.1)", outline: newAcc.avatar === a ? "2px solid rgba(99,102,241,0.8)" : "none" }}>{a}</button>
-                ))}
-              </div>
-              {pwError && <div className="text-red-400 text-xs">{pwError}</div>}
-              <div className="flex gap-2">
-                <button className="flex-shrink-0 px-4 py-2 rounded-xl text-sm text-white/70 hover:bg-white/10"
-                  onClick={() => { setCreating(false); setPwError(""); }}>← Back</button>
-                <button className="flex-1 py-2 rounded-xl text-sm font-semibold text-white"
-                  style={{ background: "rgba(99,102,241,0.7)" }} onClick={createAccount}>Create →</button>
-              </div>
             </div>
-          )}
+
+            {/* Right panel — sign-in area */}
+            <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              {creating ? (
+                <div style={{ background: "rgba(255,255,255,0.92)", borderRadius: 6, padding: 24, width: 320, boxShadow: "0 8px 32px rgba(0,0,80,0.5)" }}>
+                  <div style={{ color: "#1a3f80", fontWeight: 700, fontSize: 14, marginBottom: 14, display: "flex", alignItems: "center", gap: 8 }}><PueiLogoSvg size={20} /> Create account</div>
+                  <div style={{ marginBottom: 8 }}>
+                    <div style={{ fontSize: 11, color: "#444", marginBottom: 3 }}>Account name</div>
+                    <input value={newAcc.name} onChange={(e) => setNewAcc({ ...newAcc, name: e.target.value })} style={xpInput} autoFocus />
+                  </div>
+                  <div style={{ marginBottom: 8 }}>
+                    <div style={{ fontSize: 11, color: "#444", marginBottom: 3 }}>Password (optional)</div>
+                    <input type="password" value={newAcc.password} onChange={(e) => setNewAcc({ ...newAcc, password: e.target.value })} style={xpInput} />
+                  </div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 10 }}>
+                    {["🧑","👩","🧔","👵","🧑‍💻","🦸","🧙","🐱","🤖","👽","🎩","🌟"].map((a) => (
+                      <button key={a} onClick={() => setNewAcc({ ...newAcc, avatar: a })}
+                        style={{ width: 32, height: 32, borderRadius: 3, fontSize: 16, border: newAcc.avatar === a ? "2px solid #245ecc" : "2px solid transparent", background: newAcc.avatar === a ? "#ddeeff" : "#eee", cursor: "pointer" }}>{a}</button>
+                    ))}
+                  </div>
+                  {pwError && <div style={{ color: "red", fontSize: 11, marginBottom: 6 }}>{pwError}</div>}
+                  <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
+                    <button style={{ ...xpBtn, background: "linear-gradient(180deg,#e0e0e0,#b0b0b0)", color: "#000", border: "1px solid #888" }} onClick={() => { setCreating(false); setPwError(""); }}>Back</button>
+                    <button style={xpBtn} onClick={createAccount}>Create</button>
+                  </div>
+                </div>
+              ) : switching ? (
+                <div style={{ background: "rgba(255,255,255,0.92)", borderRadius: 6, padding: 24, width: 300, boxShadow: "0 8px 32px rgba(0,0,80,0.5)" }}>
+                  <div style={{ color: "#1a3f80", fontWeight: 700, fontSize: 13, marginBottom: 14 }}>Sign in to another account</div>
+                  <div style={{ marginBottom: 8 }}>
+                    <div style={{ fontSize: 11, color: "#444", marginBottom: 3 }}>Account name</div>
+                    <input value={switchName} onChange={(e) => { setSwitchName(e.target.value); setSwitchErr(""); }} onKeyDown={(e) => { if (e.key === "Enter") switchToAccount(); }} autoFocus style={xpInput} />
+                  </div>
+                  <div style={{ marginBottom: 8 }}>
+                    <div style={{ fontSize: 11, color: "#444", marginBottom: 3 }}>Password</div>
+                    <input type="password" value={switchPw} onChange={(e) => setSwitchPw(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") switchToAccount(); }} style={xpInput} />
+                  </div>
+                  {switchErr && <div style={{ color: "red", fontSize: 11, marginBottom: 6 }}>{switchErr}</div>}
+                  <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
+                    <button style={{ ...xpBtn, background: "linear-gradient(180deg,#e0e0e0,#b0b0b0)", color: "#000", border: "1px solid #888" }} onClick={() => { setSwitching(false); setSwitchErr(""); }}>Back</button>
+                    <button style={xpBtn} onClick={switchToAccount}>Sign in</button>
+                  </div>
+                </div>
+              ) : selectedU ? (
+                <div style={{ background: "rgba(255,255,255,0.92)", borderRadius: 6, padding: 24, width: 300, boxShadow: "0 8px 32px rgba(0,0,80,0.5)", textAlign: "center" }}>
+                  <div style={{ width: 64, height: 64, borderRadius: 4, background: `linear-gradient(135deg, oklch(0.7 0.18 ${selectedU.color}), oklch(0.45 0.2 ${selectedU.color}))`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 36, margin: "0 auto 10px", overflow: "hidden", border: "2px solid #245ecc" }}>
+                    {selectedU.avatar.startsWith("data:") ? <img src={selectedU.avatar} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : selectedU.avatar}
+                  </div>
+                  <div style={{ color: "#1a3f80", fontWeight: 700, fontSize: 15, marginBottom: 12 }}>{selectedU.name}</div>
+                  {!users.filter(u => typeof u.password !== "undefined").length && (
+                    <div style={{ marginBottom: 8 }}>
+                      <input value={loginUser} onChange={(e) => { setLoginUser(e.target.value); setPwError(""); }} onKeyDown={(e) => { if (e.key === "Enter") trySignIn(); }} placeholder="Username" style={xpInput} />
+                    </div>
+                  )}
+                  <div style={{ marginBottom: 10, textAlign: "left" }}>
+                    <div style={{ fontSize: 11, color: "#444", marginBottom: 3 }}>Password</div>
+                    <input type="password" value={pwInput} onChange={(e) => setPwInput(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") trySignIn(); }}
+                      placeholder={selectedU.password ? "" : "(no password)"} style={xpInput} autoFocus />
+                  </div>
+                  {pwError && <div style={{ color: "red", fontSize: 11, marginBottom: 8 }}>{pwError}</div>}
+                  <button style={{ ...xpBtn, width: "100%", padding: "6px 0", fontSize: 14 }} onClick={trySignIn}>Sign In →</button>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginTop: 12, fontSize: 11, color: "#245ecc" }}>
+                    <button style={{ background: "none", border: "none", color: "#245ecc", cursor: "pointer", fontSize: 11, textDecoration: "underline" }} onClick={() => setPhase("recovery")}>Recovery</button>
+                    {!locked && <button style={{ background: "none", border: "none", color: "#245ecc", cursor: "pointer", fontSize: 11, textDecoration: "underline" }} onClick={() => { setSwitching(true); setSwitchName(""); setSwitchPw(""); setSwitchErr(""); }}>Other account</button>}
+                    {!locked && <button style={{ background: "none", border: "none", color: "#245ecc", cursor: "pointer", fontSize: 11, textDecoration: "underline" }} onClick={() => {
+                      const guestName = "Guest";
+                      const existing = users.find((u) => u.name === guestName);
+                      if (!existing) {
+                        const nu: User = { name: guestName, password: "", avatar: "👤", color: "220", pueiNumber: "", friends: [], noPassword: true, limitedMode: true };
+                        const next = [...users, nu];
+                        setUsers(next);
+                        saveState({ installed, systemVersion, theme, icons, users: next, lastUser: guestName, remember: false });
+                      }
+                      setLoginUser(guestName); setPwInput(""); enterDesktop(guestName);
+                    }}>Guest</button>}
+                  </div>
+                </div>
+              ) : (
+                <div style={{ color: "rgba(255,255,255,0.7)", fontSize: 14 }}>Select an account on the left</div>
+              )}
+            </div>
+          </div>
+
+          {/* XP bottom bar */}
+          <div style={{ background: xpHeaderGrad, padding: "8px 24px", display: "flex", justifyContent: "flex-end", gap: 12, borderTop: "2px solid #1a4faa", boxShadow: "0 -3px 10px rgba(0,0,0,0.4)", flexShrink: 0 }}>
+            <button style={{ ...xpBtn, fontSize: 12, display: "flex", alignItems: "center", gap: 6 }} onClick={() => setPhase("recovery")}>🔑 Recovery</button>
+          </div>
         </div>
       );
     }
@@ -1681,12 +1708,18 @@ button, a, [role="button"], select, label[for] { cursor: ${hand(c)} 6 0, pointer
   return (
     <div
       className={`fixed inset-0 ${typeof theme.wallpaper === "string" && (theme.wallpaper.startsWith("custom:") || theme.wallpaper.startsWith("data:")) ? "" : `wallpaper-${theme.wallpaper}`}`}
-      style={{ overflow: "hidden", cursor: busyCursor ? "progress" : undefined, ...wallpaperStyle }}
+      style={{ overflow: "hidden", ...wallpaperStyle }}
       onMouseDown={() => { setCtxMenu(null); setStartOpen(false); setShowCalendar(false); setSelectedIcon(null); setShowVolume(false); setShowNetwork(false); }}
       onContextMenu={(e) => { e.preventDefault(); setCtxMenu({ x: e.clientX, y: e.clientY, items: desktopCtx() }); }}
       onTouchStart={(e) => onTouchStart(e, desktopCtx())}
       onTouchEnd={onTouchEnd}
     >
+      {/* Busy cursor spinner overlay */}
+      {busyCursor && (
+        <div className="fixed bottom-16 right-4 z-[99998] pointer-events-none" style={{ animation: "puei-spin 0.8s linear infinite" }}>
+          <div style={{ width: 28, height: 28, borderRadius: "50%", border: "3px solid rgba(255,255,255,0.25)", borderTopColor: "rgba(255,255,255,0.9)", boxShadow: "0 0 8px rgba(100,130,255,0.5)" }} />
+        </div>
+      )}
       {/* Desktop icons */}
       <div className="absolute inset-0" style={{ pointerEvents: "none" }}>
         {desktopIcons.map((ic, idx) => {
@@ -1967,21 +2000,23 @@ button, a, [role="button"], select, label[for] { cursor: ${hand(c)} 6 0, pointer
             <PueiLogoSvg size={26} bigEyes />
           </button>
           {/* Pinned apps */}
-          {pinnedApps.map((id) => {
-            const hasWin = windows.some((w) => w.appId === id);
-            const activeWin = windows.find((w) => w.appId === id && !w.minimized);
+          {pinnedApps.map((p) => {
+            const pKey = p.webUrl ?? p.appId;
+            const hasWin = windows.some((w) => p.appId === "web-app" ? w.appId === "web-app" && w.webUrl === p.webUrl : w.appId === p.appId);
+            const activeWin = windows.find((w) => (p.appId === "web-app" ? w.appId === "web-app" && w.webUrl === p.webUrl : w.appId === p.appId) && !w.minimized);
+            const label = p.label ?? APP_TITLES[p.appId] ?? p.appId;
             return (
-              <div key={id} className="relative flex flex-col items-center">
-                <button onClick={(e) => { e.stopPropagation(); openApp(id); }}
-                  onMouseEnter={() => blip("hover")} title={APP_TITLES[id]}
+              <div key={pKey} className="relative flex flex-col items-center">
+                <button onClick={(e) => { e.stopPropagation(); openPinned(p); }}
+                  onMouseEnter={() => blip("hover")} title={label}
                   onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); setCtxMenu({ x: e.clientX, y: e.clientY, items: [
-                    { label: "Open", action: () => openApp(id) },
+                    { label: "Open", action: () => openPinned(p) },
                     { sep: true },
-                    { label: "📌 Unpin from taskbar", action: () => unpinFromTaskbar(id) },
+                    { label: "🖇️ Unpin from taskbar", action: () => unpinFromTaskbar(pKey) },
                   ]}); }}
                   className="w-10 h-10 rounded-xl flex items-center justify-center text-lg transition-colors hover:bg-white/10"
                   style={{ background: activeWin ? "rgba(99,102,241,0.35)" : hasWin ? "rgba(255,255,255,0.08)" : "transparent" }}>
-                  {appIcon(id, 22)}
+                  {appIcon(p.appId, 22)}
                 </button>
                 {hasWin && <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-indigo-400" />}
               </div>
@@ -1994,12 +2029,15 @@ button, a, [role="button"], select, label[for] { cursor: ${hand(c)} 6 0, pointer
               className="h-9 px-2.5 rounded-xl flex items-center gap-2 text-xs transition-colors hover:bg-white/10"
               style={{ background: (w.z === Math.max(...windows.map((x)=>x.z)) && !w.minimized) ? "rgba(99,102,241,0.3)" : "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.85)", maxWidth: 140 }}
               onClick={(e) => { e.stopPropagation(); if (w.minimized) focusWin(w.id); else minWin(w.id); }}
-              onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); const isWinPinned = pinnedApps.includes(w.appId); setCtxMenu({ x: e.clientX, y: e.clientY, items: [
+              onContextMenu={(e) => { e.preventDefault(); e.stopPropagation();
+                const wKey = w.appId === "web-app" ? (w.webUrl ?? w.appId) : w.appId;
+                const isWinPinned = pinnedApps.some((p) => (p.webUrl ?? p.appId) === wKey);
+                setCtxMenu({ x: e.clientX, y: e.clientY, items: [
                 { label: "Restore", action: () => focusWin(w.id) },
                 { label: "Minimize", action: () => minWin(w.id) },
                 { label: "Maximize", action: () => maxWin(w.id) },
                 { sep: true },
-                isWinPinned ? { label: "📌 Unpin from taskbar", action: () => unpinFromTaskbar(w.appId) } : { label: "📌 Pin to taskbar", action: () => pinToTaskbar(w.appId) },
+                isWinPinned ? { label: "🖇️ Unpin from taskbar", action: () => unpinFromTaskbar(wKey) } : { label: "🖇️ Pin to taskbar", action: () => pinToTaskbar({ appId: w.appId, webUrl: w.webUrl, label: w.title }) },
                 { sep: true },
                 { label: "Close", action: () => closeWin(w.id) },
               ]});}}>
@@ -2032,30 +2070,37 @@ button, a, [role="button"], select, label[for] { cursor: ${hand(c)} 6 0, pointer
             onClick={(e) => { e.stopPropagation(); blip("click"); setStartOpen(!startOpen); setShowCalendar(false); }}>
             <PueiLogoSvg size={26} bigEyes />
           </button>
-          {pinnedApps.map((id) => (
-            <button key={id} onClick={(e) => { e.stopPropagation(); openApp(id); }}
-              onMouseEnter={() => blip("hover")}
-              title={APP_TITLES[id]}
-              onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); setCtxMenu({ x: e.clientX, y: e.clientY, items: [
-                { label: "Open", action: () => openApp(id) },
-                { sep: true },
-                { label: "📌 Unpin from taskbar", action: () => unpinFromTaskbar(id) },
-              ]}); }}
-              className="taskbar-item w-9 h-9 rounded flex items-center justify-center text-lg">
-              {appIcon(id, 22)}
-            </button>
-          ))}
+          {pinnedApps.map((p) => {
+            const pKey2 = p.webUrl ?? p.appId;
+            const label2 = p.label ?? APP_TITLES[p.appId] ?? p.appId;
+            return (
+              <button key={pKey2} onClick={(e) => { e.stopPropagation(); openPinned(p); }}
+                onMouseEnter={() => blip("hover")}
+                title={label2}
+                onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); setCtxMenu({ x: e.clientX, y: e.clientY, items: [
+                  { label: "Open", action: () => openPinned(p) },
+                  { sep: true },
+                  { label: "🖇️ Unpin from taskbar", action: () => unpinFromTaskbar(pKey2) },
+                ]}); }}
+                className="taskbar-item w-9 h-9 rounded flex items-center justify-center text-lg">
+                {appIcon(p.appId, 22)}
+              </button>
+            );
+          })}
           <div className="w-px h-7 bg-white/20 mx-1" />
           {windows.map((w) => (
             <button key={w.id}
               className={`taskbar-item h-9 px-3 rounded flex items-center gap-2 text-xs ${w.z === Math.max(...windows.map((x)=>x.z)) && !w.minimized ? "active" : ""}`}
               onClick={(e) => { e.stopPropagation(); if (w.minimized) focusWin(w.id); else minWin(w.id); }}
-              onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); const isWPinned = pinnedApps.includes(w.appId); setCtxMenu({ x: e.clientX, y: e.clientY, items: [
+              onContextMenu={(e) => { e.preventDefault(); e.stopPropagation();
+                const wKey2 = w.appId === "web-app" ? (w.webUrl ?? w.appId) : w.appId;
+                const isWPinned = pinnedApps.some((p) => (p.webUrl ?? p.appId) === wKey2);
+                setCtxMenu({ x: e.clientX, y: e.clientY, items: [
                 { label: "Restore", action: () => focusWin(w.id) },
                 { label: "Minimize", action: () => minWin(w.id) },
                 { label: "Maximize", action: () => maxWin(w.id) },
                 { sep: true },
-                isWPinned ? { label: "📌 Unpin from taskbar", action: () => unpinFromTaskbar(w.appId) } : { label: "📌 Pin to taskbar", action: () => pinToTaskbar(w.appId) },
+                isWPinned ? { label: "🖇️ Unpin from taskbar", action: () => unpinFromTaskbar(wKey2) } : { label: "🖇️ Pin to taskbar", action: () => pinToTaskbar({ appId: w.appId, webUrl: w.webUrl, label: w.title }) },
                 { sep: true },
                 { label: "Close", action: () => closeWin(w.id) },
               ]});}}>

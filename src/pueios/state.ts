@@ -7,6 +7,8 @@ export function compareVersion(a: SystemVersion, b: SystemVersion): number {
 
 export type Theme = {
   accentH: number;
+  accentC?: number; // chroma override (0 = white/black)
+  accentL?: number; // lightness override
   dark: boolean;
   transparency: boolean;
   fullWindowTransparency: boolean;
