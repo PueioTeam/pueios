@@ -9,6 +9,7 @@ export type Theme = {
   accentH: number;
   accentC?: number; // chroma override (0 = white/black)
   accentL?: number; // lightness override
+  taskbarColor?: string; // hex override for taskbar, e.g. "#1a1a2e"
   dark: boolean;
   transparency: boolean;
   fullWindowTransparency: boolean;

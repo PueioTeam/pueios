@@ -294,6 +294,23 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, curren
                 className="w-10 h-10 rounded-full border-2 border-gray-600 shadow"
                 title="Black" style={{ background: "#1a1a1a" }} />
             </div>
+            <div className="mt-6">
+              <div className="text-sm font-semibold mb-2">Taskbar color</div>
+              <div className="flex gap-2 flex-wrap items-center">
+                {["#0d1117","#1a1a2e","#16213e","#0f3460","#1a3a1a","#3a1a1a","#1a1a1a","#2d1b69","#0a2e0a","#2e0a2e"].map((c) => (
+                  <button key={c} onClick={() => setTheme({ ...theme, taskbarColor: theme.taskbarColor === c ? undefined : c })}
+                    className="w-9 h-9 rounded-lg border-2 transition-all"
+                    style={{ background: c, borderColor: theme.taskbarColor === c ? "#fff" : "rgba(255,255,255,0.2)", boxShadow: theme.taskbarColor === c ? "0 0 0 2px var(--accent)" : "none" }} />
+                ))}
+                <input type="color" value={theme.taskbarColor ?? "#0d1117"}
+                  onChange={(e) => setTheme({ ...theme, taskbarColor: e.target.value })}
+                  className="w-9 h-9 rounded-lg cursor-pointer border-2 border-white/20" title="Custom color" />
+                {theme.taskbarColor && (
+                  <button onClick={() => setTheme({ ...theme, taskbarColor: undefined })}
+                    className="text-xs opacity-60 hover:opacity-100 px-2 py-1 rounded">Reset</button>
+                )}
+              </div>
+            </div>
             <div className="mt-6 space-y-3">
               <label className="flex items-center gap-2 text-sm">
                 <input type="checkbox" checked={theme.dark} onChange={(e) => setTheme({ ...theme, dark: e.target.checked })} /> Dark mode <span className="text-xs opacity-60">(global — applies to every system surface)</span>
@@ -1489,7 +1506,7 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
     "puei://home": "Home", "puei://search": "Puei Copilot", "puei://about": "About",
     "puei://updates": "Updates", "puei://social": "PueiSocial", "puei://board": "PueiBoard",
     "puei://wallpapers": "Wallpapers", "puei://chat": "Chat", "puei://os3": "PueiOS 3",
-    "puei://films": "Puei Films",
+    "puei://films": "Puei Videos",
   };
   const navigate = (target: string) => {
     let u = target.trim();
@@ -1511,7 +1528,7 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
             ["puei://search", "✨ Puei Copilot"],
             ["puei://forum", "💼 PueiForum"],
             ["puei://wallpapers", "🖼️ Puei Wallpapers"],
-            ["puei://films", "🎬 Puei Films"],
+            ["puei://films", "🎬 Puei Videos"],
             ["puei://os3", "🚀 PueiOS 3"],
             ["puei://about", "ℹ️ About"],
           ].map(([u, l]) => (
@@ -3511,7 +3528,7 @@ function AppStoreApp({ installWebApp, openApp, openWebApp, systemVersion, addNat
   const installTimers = useRef<Record<string, number>>({});
   type StoreApp = { name: string; icon: string; desc: string; appId?: AppId; preInstalled?: boolean; webUrl?: string; desktopLabel?: string };
   const official: StoreApp[] = [
-    { name: "Puei Films",     icon: "/puei-films-icon.svg",   desc: "Watch official videos posted by pueioficial.",          webUrl: "puei://films",   desktopLabel: "Puei Films",   preInstalled: false },
+    { name: "Puei Videos",     icon: "/puei-films-icon.svg",   desc: "Watch official videos posted by pueioficial.",          webUrl: "puei://films",   desktopLabel: "Puei Videos",   preInstalled: false },
     { name: "Puei Updater",   icon: "/puei-updater-icon.svg", desc: "Required for installing ISO system updates.",            webUrl: "puei://updates", desktopLabel: "Puei Updater", preInstalled: false },
     { name: "PueiSocial",     icon: "📢", desc: "The official PueiOS social network.",          appId: "puei-social",    preInstalled: true },
     { name: "PueiCloudChat",  icon: "💬", desc: "Chat by PueiNumber — cross-device, real-time.", appId: "puei-cloud-chat", preInstalled: true },
@@ -3901,7 +3918,8 @@ function InstallerPane({ installWebApp }: { installWebApp: (label: string, url: 
 }
 
 function PueiBoardApp({ user, users }: { user: string; users: User[] }) {
-  const [pins, setPins] = useState<PueiBoardPin[]>(() => loadPueiBoard());
+  const [pins, setPins] = useState<PueiBoardPin[]>([]);
+  const [loading, setLoading] = useState(true);
   const [boardDialog, , boardConfirm] = useLocalDialog();
 
   // Create-pin form state
@@ -3928,14 +3946,18 @@ function PueiBoardApp({ user, users }: { user: string; users: User[] }) {
     other: "#94a3b8",
   };
 
+  const fetchPins = async () => {
+    try {
+      const res = await fetch("/api/board");
+      if (res.ok) { const data = await res.json() as PueiBoardPin[]; setPins(data); }
+    } catch {}
+    setLoading(false);
+  };
+
   useEffect(() => {
-    const refresh = () => setPins(loadPueiBoard());
-    window.addEventListener("pueios-board", refresh);
-    window.addEventListener("storage", refresh);
-    return () => {
-      window.removeEventListener("pueios-board", refresh);
-      window.removeEventListener("storage", refresh);
-    };
+    fetchPins();
+    const t = setInterval(fetchPins, 15000);
+    return () => clearInterval(t);
   }, []);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -3949,7 +3971,7 @@ function PueiBoardApp({ user, users }: { user: string; users: User[] }) {
     reader.readAsDataURL(file);
   };
 
-  const submitPin = () => {
+  const submitPin = async () => {
     if (!formTitle.trim()) { blip("error"); return; }
     const pin: PueiBoardPin = {
       id: `pin-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`,
@@ -3963,33 +3985,37 @@ function PueiBoardApp({ user, users }: { user: string; users: User[] }) {
       likes: 0,
       likedBy: [],
     };
-    const next = [pin, ...pins];
-    setPins(next);
-    savePueiBoard(next);
+    setPins((prev) => [pin, ...prev]);
     setFormTitle(""); setFormDesc(""); setFormLink(""); setFormTag(""); setFormImgData(undefined); setFormImgName("");
     setShowCreate(false);
     blip("notify");
+    try {
+      await fetch("/api/board", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "add", pin }) });
+      fetchPins();
+    } catch {}
   };
 
-  const toggleLike = (pinId: string) => {
-    const next = pins.map((p) => {
+  const toggleLike = async (pinId: string) => {
+    setPins((prev) => prev.map((p) => {
       if (p.id !== pinId) return p;
       const likedBy = p.likedBy || [];
       const hasLiked = likedBy.includes(user);
       const nextLikedBy = hasLiked ? likedBy.filter((n) => n !== user) : [...likedBy, user];
       return { ...p, likedBy: nextLikedBy, likes: nextLikedBy.length };
-    });
-    setPins(next);
-    savePueiBoard(next);
+    }));
     blip("click");
+    try {
+      await fetch("/api/board", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "like", id: pinId, liker: user }) });
+    } catch {}
   };
 
   const deletePin = (pinId: string) => {
-    boardConfirm("Delete this pin?", () => {
-      const next = pins.filter((p) => p.id !== pinId);
-      setPins(next);
-      savePueiBoard(next);
+    boardConfirm("Delete this pin?", async () => {
+      setPins((prev) => prev.filter((p) => p.id !== pinId));
       blip("click");
+      try {
+        await fetch("/api/board", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "delete", id: pinId }) });
+      } catch {}
     });
   };
 
@@ -4209,7 +4235,9 @@ function PueiBoardApp({ user, users }: { user: string; users: User[] }) {
 
       {/* Main masonry grid */}
       <div className="flex-1 overflow-auto px-3 py-3">
-        {visiblePins.length === 0 ? (
+        {loading ? (
+          <div className="flex items-center justify-center h-full text-sm opacity-50">Loading…</div>
+        ) : visiblePins.length === 0 ? (
           <div className="flex items-center justify-center h-full text-sm opacity-50">
             {pins.length === 0 ? "No pins yet — create your first pin!" : "No pins match your search."}
           </div>
@@ -4284,7 +4312,7 @@ function WebAppFrame({ url, currentUser, startUpgrade, systemVersion }: { url: s
       <div className="flex flex-col h-full">
         <div className="aero-titlebar text-xs px-3 py-1 flex items-center gap-2">
           <img src="/puei-films-icon.svg" alt="" style={{ width: 16, height: 16 }} />
-          <span className="truncate flex-1">Puei Films</span>
+          <span className="truncate flex-1">Puei Videos</span>
         </div>
         <div className="flex-1 overflow-auto">
           <PueiFilmsPage currentUser={currentUser} />
@@ -4526,6 +4554,12 @@ function PueiUpdaterApp({ currentUser, startUpgrade, systemVersion }: { currentU
                       } else {
                         setEolMsg(`As of June 6th, ${v} is no longer supported. Please install PueiOS 3 instead.`);
                       }
+                      return;
+                    }
+                    // PueiOS 3 install from PueiOS 2+ requires pueios3.iso
+                    const isoName3 = mountedIso?.name.trim().toLowerCase() ?? "";
+                    if (v === "PueiOS 3" && isoName3 !== "pueios3.iso") {
+                      setEolMsg("Mount pueios3.iso in the installer area below first to install PueiOS 3.");
                       return;
                     }
                     setEolMsg(null);
@@ -4854,7 +4888,7 @@ function PueiStudioApp({ currentUser, users, icons, setWallpaper }: { currentUse
       likes: 0,
       likedBy: [],
     };
-    savePueiBoard([p, ...posts]);
+    fetch("/api/board", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "add", pin: p }) }).catch(() => {});
     setSavedMsg("Shared to PueiBoard!"); setTimeout(() => setSavedMsg(""), 2500);
     blip("notify");
   };
@@ -5034,7 +5068,7 @@ function PueiStudioApp({ currentUser, users, icons, setWallpaper }: { currentUse
   );
 }
 
-// ---------- Puei Films ----------
+// ---------- Puei Videos ----------
 const FILMS_KEY = "pueios2-films-v1";
 type FilmPost = { id: string; title: string; desc: string; videoSrc: string; postedAt: number };
 function loadFilms(): FilmPost[] { try { return JSON.parse(localStorage.getItem(FILMS_KEY) || "[]"); } catch { return []; } }
@@ -5090,7 +5124,7 @@ function PueiFilmsPage({ currentUser }: { currentUser: string }) {
   return (
     <div className="flex flex-col h-full">
       <div className="aero-titlebar px-4 py-2 flex items-center gap-3 flex-shrink-0">
-        <span className="font-bold text-base">🎬 Puei Films</span>
+        <span className="font-bold text-base">🎬 Puei Videos</span>
         <span className="text-xs opacity-50">Official videos posted by pueioficial</span>
       </div>
       <div className="flex-1 overflow-auto p-4 space-y-4">

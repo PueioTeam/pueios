@@ -15,6 +15,7 @@ import { Route as ApiFilesRouteImport } from './routes/api/files'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
 import { Route as ApiAccountRouteImport } from './routes/api/account'
 import { Route as ApiProxyRouteImport } from './routes/api/proxy'
+import { Route as ApiBoardRouteImport } from './routes/api/board'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -46,10 +47,16 @@ const ApiProxyRoute = ApiProxyRouteImport.update({
   path: '/api/proxy',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiBoardRoute = ApiBoardRouteImport.update({
+  id: '/api/board',
+  path: '/api/board',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/api/account': typeof ApiAccountRoute
+  '/api/board': typeof ApiBoardRoute
   '/api/chat': typeof ApiChatRoute
   '/api/files': typeof ApiFilesRoute
   '/api/mail': typeof ApiMailRoute
@@ -58,6 +65,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/api/account': typeof ApiAccountRoute
+  '/api/board': typeof ApiBoardRoute
   '/api/chat': typeof ApiChatRoute
   '/api/files': typeof ApiFilesRoute
   '/api/mail': typeof ApiMailRoute
@@ -67,6 +75,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/api/account': typeof ApiAccountRoute
+  '/api/board': typeof ApiBoardRoute
   '/api/chat': typeof ApiChatRoute
   '/api/files': typeof ApiFilesRoute
   '/api/mail': typeof ApiMailRoute
@@ -74,13 +83,14 @@ export interface FileRoutesById {
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/api/account' | '/api/chat' | '/api/files' | '/api/mail' | '/api/proxy'
+  fullPaths: '/' | '/api/account' | '/api/board' | '/api/chat' | '/api/files' | '/api/mail' | '/api/proxy'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/api/account' | '/api/chat' | '/api/files' | '/api/mail' | '/api/proxy'
+  to: '/' | '/api/account' | '/api/board' | '/api/chat' | '/api/files' | '/api/mail' | '/api/proxy'
   id:
     | '__root__'
     | '/'
     | '/api/account'
+    | '/api/board'
     | '/api/chat'
     | '/api/files'
     | '/api/mail'
@@ -90,6 +100,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ApiAccountRoute: typeof ApiAccountRoute
+  ApiBoardRoute: typeof ApiBoardRoute
   ApiChatRoute: typeof ApiChatRoute
   ApiFilesRoute: typeof ApiFilesRoute
   ApiMailRoute: typeof ApiMailRoute
@@ -133,6 +144,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAccountRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/board': {
+      id: '/api/board'
+      path: '/api/board'
+      fullPath: '/api/board'
+      preLoaderRoute: typeof ApiBoardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/proxy': {
       id: '/api/proxy'
       path: '/api/proxy'
@@ -146,6 +164,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ApiAccountRoute: ApiAccountRoute,
+  ApiBoardRoute: ApiBoardRoute,
   ApiChatRoute: ApiChatRoute,
   ApiFilesRoute: ApiFilesRoute,
   ApiMailRoute: ApiMailRoute,

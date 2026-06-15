@@ -582,7 +582,7 @@ canvas[style*="crosshair"] { cursor: url("data:image/svg+xml,%3Csvg xmlns='http:
 ::-webkit-scrollbar { width: 12px; height: 12px; }
 ::-webkit-scrollbar-track { background: oklch(0.9 0.02 220 / 0.4); }
 ::-webkit-scrollbar-thumb {
-  background: linear-gradient(to right, oklch(0.7 0.1 var(--accent-h)), oklch(0.5 0.15 var(--accent-h)));
+  background: linear-gradient(to right, oklch(0.7 var(--accent-c, 0.1) var(--accent-h)), oklch(0.5 var(--accent-c, 0.15) var(--accent-h)));
   border-radius: 6px;
   border: 2px solid transparent;
   background-clip: padding-box;

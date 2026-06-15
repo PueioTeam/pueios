@@ -137,6 +137,12 @@ export function PueiOS() {
   const [netInfo, setNetInfo] = useState<{ ping: number | null; speed: number | null; type: string; online: boolean }>({ ping: null, speed: null, type: "?", online: true });
   const [cursorPos, setCursorPos] = useState({ x: 0, y: 0 });
   const [busyCursor, setBusyCursor] = useState(false);
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+  useEffect(() => {
+    const track = (e: MouseEvent) => setMousePos({ x: e.clientX, y: e.clientY });
+    window.addEventListener("mousemove", track);
+    return () => window.removeEventListener("mousemove", track);
+  }, []);
   const [pueiDialog, setPueiDialog] = useState<{ msg: string; onOk: () => void; onCancel?: () => void } | null>(null);
   type PinnedEntry = { appId: AppId; webUrl?: string; label?: string };
   const DEFAULT_PINNED: PinnedEntry[] = [
@@ -424,6 +430,8 @@ export function PueiOS() {
     else root.style.removeProperty("--accent-c");
     if (theme.accentL !== undefined) root.style.setProperty("--accent-l", String(theme.accentL));
     else root.style.removeProperty("--accent-l");
+    if (theme.taskbarColor) root.style.setProperty("--taskbar", theme.taskbarColor);
+    else root.style.removeProperty("--taskbar");
     root.classList.toggle("dark", theme.dark);
     root.classList.toggle("high-contrast", !!theme.highContrast);
     root.classList.toggle("win7-aero", !!theme.win7Aero);
@@ -446,6 +454,34 @@ export function PueiOS() {
       root.style.removeProperty("--glass-strong");
       root.style.removeProperty("--accent");
       root.style.removeProperty("--foreground");
+    }
+    // When accentC=0 (white/black preset), override titlebar and all chrome vars — runs after transparency/contrast to win
+    if (!theme.highContrast && theme.accentC === 0 && theme.accentL !== undefined) {
+      const isWhite = theme.accentL > 0.5;
+      root.style.setProperty("--titlebar", isWhite
+        ? "linear-gradient(180deg,rgba(240,240,240,0.45) 0%,rgba(220,220,220,0.30) 40%,rgba(200,200,200,0.18) 100%)"
+        : "linear-gradient(180deg,rgba(30,30,30,0.55) 0%,rgba(18,18,18,0.45) 40%,rgba(10,10,10,0.35) 100%)");
+      root.style.setProperty("--titlebar-text", isWhite ? "oklch(0.15 0 0)" : "oklch(0.9 0 0)");
+      root.style.setProperty("--background", isWhite ? "oklch(0.97 0 0)" : "oklch(0.12 0 0)");
+      root.style.setProperty("--foreground", isWhite ? "oklch(0.1 0 0)" : "oklch(0.92 0 0)");
+      root.style.setProperty("--muted", isWhite ? "oklch(0.92 0 0)" : "oklch(0.18 0 0)");
+      root.style.setProperty("--muted-foreground", isWhite ? "oklch(0.45 0 0)" : "oklch(0.65 0 0)");
+      root.style.setProperty("--border", isWhite ? "oklch(0.7 0 0 / 0.4)" : "oklch(0.4 0 0 / 0.5)");
+      root.style.setProperty("--glass", isWhite ? "oklch(0.96 0 0 / 0.18)" : "oklch(0.15 0 0 / 0.35)");
+      root.style.setProperty("--glass-strong", isWhite ? "oklch(0.98 0 0 / 0.38)" : "oklch(0.12 0 0 / 0.55)");
+      root.style.setProperty("--accent-2", isWhite ? "oklch(0.88 0 0)" : "oklch(0.25 0 0)");
+      root.style.setProperty("--gradient-aero", isWhite
+        ? "linear-gradient(135deg,oklch(0.88 0 0 / 0.9),oklch(0.78 0 0 / 0.9))"
+        : "linear-gradient(135deg,oklch(0.22 0 0 / 0.9),oklch(0.15 0 0 / 0.9))");
+    } else if (theme.accentC !== 0) {
+      root.style.removeProperty("--titlebar");
+      root.style.removeProperty("--titlebar-text");
+      root.style.removeProperty("--background");
+      root.style.removeProperty("--muted");
+      root.style.removeProperty("--muted-foreground");
+      root.style.removeProperty("--border");
+      root.style.removeProperty("--accent-2");
+      root.style.removeProperty("--gradient-aero");
     }
     saveState({ installed, systemVersion, theme, icons, users, lastUser: loginUser, remember });
     users.forEach((u) => { if (u.pueiNumber) registerInDirectory(u); });
@@ -1714,10 +1750,17 @@ button, a, [role="button"], select, label[for] { cursor: ${hand(c)} 6 0, pointer
       onTouchStart={(e) => onTouchStart(e, desktopCtx())}
       onTouchEnd={onTouchEnd}
     >
-      {/* Busy cursor spinner overlay */}
+      {/* Busy cursor spinner — follows mouse like Windows */}
       {busyCursor && (
-        <div className="fixed bottom-16 right-4 z-[99998] pointer-events-none" style={{ animation: "puei-spin 0.8s linear infinite" }}>
-          <div style={{ width: 28, height: 28, borderRadius: "50%", border: "3px solid rgba(255,255,255,0.25)", borderTopColor: "rgba(255,255,255,0.9)", boxShadow: "0 0 8px rgba(100,130,255,0.5)" }} />
+        <div className="fixed z-[99998] pointer-events-none"
+          style={{ left: mousePos.x + 14, top: mousePos.y + 4, animation: "puei-spin 0.7s linear infinite", transformOrigin: "center" }}>
+          <div style={{
+            width: 20, height: 20, borderRadius: "50%",
+            border: "2.5px solid rgba(255,255,255,0.15)",
+            borderTopColor: "rgba(255,255,255,0.95)",
+            borderRightColor: "rgba(150,180,255,0.7)",
+            boxShadow: "0 0 6px rgba(100,140,255,0.6)"
+          }} />
         </div>
       )}
       {/* Desktop icons */}
@@ -1875,94 +1918,135 @@ button, a, [role="button"], select, label[for] { cursor: ${hand(c)} 6 0, pointer
       )}
 
       {/* Start menu */}
+      {/* PueiOS 2/2+ Start Menu — Windows 7 Aero style */}
       {startOpen && systemVersion !== "PueiOS 3" && (
-        <div className="fixed bottom-12 left-2 rounded-xl w-[440px] z-[9000] overflow-hidden shadow-2xl"
-          style={{ animation: "fade-scale 0.18s ease-out", background: "var(--background)", border: "1px solid var(--border)" }} onMouseDown={(e) => e.stopPropagation()}>
-          <div className="aero-titlebar px-4 py-2 flex items-center gap-2">
-            <div className="w-10 h-10 rounded-full flex items-center justify-center text-xl overflow-hidden"
-              style={{ background: avatarBg }}>
-              {currentAvatar?.startsWith("data:")
-                ? <img src={currentAvatar} alt="" className="w-full h-full object-cover" />
-                : (currentAvatar || "👤")}
+        <div className="fixed bottom-12 left-2 z-[9000] flex overflow-hidden rounded-xl shadow-2xl"
+          style={{ width: 480, maxHeight: "calc(100vh - 60px)", animation: "fade-scale 0.15s ease-out", background: "rgba(20,30,60,0.97)", backdropFilter: "blur(30px)", border: "1px solid rgba(100,140,255,0.25)", boxShadow: "0 -4px 40px rgba(0,0,80,0.7)" }}
+          onMouseDown={(e) => e.stopPropagation()}>
+          {/* Left panel — pinned/recent apps */}
+          <div className="flex flex-col flex-1 overflow-hidden" style={{ borderRight: "1px solid rgba(255,255,255,0.08)" }}>
+            {/* User strip */}
+            <div className="flex items-center gap-3 px-4 py-3" style={{ background: "linear-gradient(135deg,rgba(40,60,120,0.8),rgba(20,35,90,0.8))", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+              <div className="w-12 h-12 rounded-lg flex items-center justify-center text-2xl overflow-hidden flex-shrink-0 border-2 border-white/30"
+                style={{ background: avatarBg }}>
+                {currentAvatar?.startsWith("data:")
+                  ? <img src={currentAvatar} alt="" className="w-full h-full object-cover" />
+                  : (currentAvatar || "👤")}
+              </div>
+              <div>
+                <div className="text-white font-bold text-sm">{currentUser}</div>
+                <div className="text-white/50 text-xs">{systemVersion}</div>
+              </div>
             </div>
-            <div className="font-semibold">{currentUser}</div>
+            {/* App list */}
+            <div className="overflow-y-auto flex-1 py-1">
+              {[...new Set([
+                ...icons.filter(i => !i.fileId && !i.webUrl && i.appId !== "folder" && i.appId !== "web-app" && i.appId !== "recycle-bin").map(i => i.appId),
+                "settings" as const, "about" as const,
+              ])].filter(id => id in APP_TITLES).map((id) => (
+                <button key={id} onClick={() => { openApp(id); setStartOpen(false); }}
+                  className="flex items-center gap-3 px-4 py-2 w-full text-sm text-left transition-colors"
+                  style={{ color: "rgba(255,255,255,0.85)" }}
+                  onMouseEnter={e => (e.currentTarget.style.background = "rgba(80,120,255,0.25)")}
+                  onMouseLeave={e => (e.currentTarget.style.background = "")}>
+                  <span className="flex-shrink-0">{appIcon(id, 24)}</span>
+                  <span className="font-medium">{APP_TITLES[id]}</span>
+                </button>
+              ))}
+            </div>
           </div>
-          <div className="grid grid-cols-2 gap-1 p-2">
-            {[...new Set([
-              ...icons.filter(i => !i.fileId && !i.webUrl && i.appId !== "folder" && i.appId !== "web-app" && i.appId !== "recycle-bin").map(i => i.appId),
-              "settings" as const, "about" as const,
-            ])].filter(id => id in APP_TITLES).map((id) => (
-              <button key={id} onClick={() => { openApp(id); setStartOpen(false); }}
-                className="flex items-center gap-2 px-3 py-2 rounded text-sm text-left"
-                style={{ color: "var(--foreground)" }}
-                onMouseEnter={e => (e.currentTarget.style.background = "var(--glass-strong)")}
-                onMouseLeave={e => (e.currentTarget.style.background = "")}>
-                {appIcon(id, 26)}<span>{APP_TITLES[id]}</span>
-              </button>
-            ))}
-          </div>
-          <div className="border-t flex justify-between p-2" style={{ background: "var(--glass)" }}>
-            <button className="aero-button rounded px-3 py-1 text-xs"
-              onClick={() => { setLocked(true); setStartOpen(false); setPwInput(""); }}>🔒 Lock</button>
-            <button className="aero-button rounded px-3 py-1 text-xs"
-              onClick={() => { setStartOpen(false); setPhase("login"); setPwInput(""); }}>🔄 Switch User</button>
-            <button className="aero-button rounded px-3 py-1 text-xs"
-              onClick={() => { blip("shutdown"); setStartOpen(false); setPhase("shutdown"); setWindows([]); }}>⏻ Shut down</button>
+          {/* Right panel — quick links + power */}
+          <div className="flex flex-col w-44" style={{ background: "rgba(10,18,50,0.7)" }}>
+            <div className="flex-1 py-2">
+              {([
+                ["file-explorer", "Documents"],
+                ["app-store", "App Store"],
+                ["settings", "Control Panel"],
+                ["about", "About PueiOS"],
+              ] as [AppId, string][]).map(([id, label]) => (
+                <button key={id} onClick={() => { openApp(id); setStartOpen(false); }}
+                  className="flex items-center gap-2 px-4 py-2 w-full text-xs text-left transition-colors"
+                  style={{ color: "rgba(255,255,255,0.7)" }}
+                  onMouseEnter={e => (e.currentTarget.style.background = "rgba(80,120,255,0.2)")}
+                  onMouseLeave={e => (e.currentTarget.style.background = "")}>
+                  <span>{appIcon(id, 18)}</span><span>{label}</span>
+                </button>
+              ))}
+            </div>
+            {/* Divider */}
+            <div style={{ height: 1, background: "rgba(255,255,255,0.1)", margin: "0 12px" }} />
+            {/* Power buttons */}
+            <div className="flex flex-col gap-0.5 py-2">
+              <button className="flex items-center gap-2 px-4 py-2 text-xs text-left transition-colors"
+                style={{ color: "rgba(255,255,255,0.6)" }}
+                onMouseEnter={e => (e.currentTarget.style.background = "rgba(80,120,255,0.2)")}
+                onMouseLeave={e => (e.currentTarget.style.background = "")}
+                onClick={() => { setLocked(true); setStartOpen(false); setPwInput(""); }}>🔒 Lock</button>
+              <button className="flex items-center gap-2 px-4 py-2 text-xs text-left transition-colors"
+                style={{ color: "rgba(255,255,255,0.6)" }}
+                onMouseEnter={e => (e.currentTarget.style.background = "rgba(80,120,255,0.2)")}
+                onMouseLeave={e => (e.currentTarget.style.background = "")}
+                onClick={() => { setStartOpen(false); setPhase("login"); setPwInput(""); }}>🔄 Switch User</button>
+              <button className="flex items-center gap-2 px-4 py-2 text-xs text-left transition-colors"
+                style={{ color: "rgba(255,120,100,0.8)" }}
+                onMouseEnter={e => (e.currentTarget.style.background = "rgba(200,50,30,0.2)")}
+                onMouseLeave={e => (e.currentTarget.style.background = "")}
+                onClick={() => { blip("shutdown"); setStartOpen(false); setPhase("shutdown"); setWindows([]); }}>⏻ Shut Down</button>
+            </div>
           </div>
         </div>
       )}
 
-      {/* PueiOS 3 launcher — panel above taskbar, bottom-left */}
+      {/* PueiOS 3 launcher — clean fullscreen-style panel */}
       {startOpen && systemVersion === "PueiOS 3" && (
-        <div className="fixed bottom-12 left-2 z-[9000] flex flex-col rounded-2xl overflow-hidden"
-          style={{ width: 420, maxHeight: "calc(100vh - 72px)", background: "rgba(10,10,22,0.93)", backdropFilter: "blur(40px) saturate(180%)", border: "1px solid rgba(255,255,255,0.12)", animation: "fade-scale 0.18s ease-out", boxShadow: "0 -4px 40px rgba(0,0,0,0.6)" }}
+        <div className="fixed bottom-14 left-2 z-[9000] flex flex-col rounded-2xl overflow-hidden"
+          style={{ width: 400, maxHeight: "calc(100vh - 80px)", background: "rgba(8,8,20,0.95)", backdropFilter: "blur(48px) saturate(200%)", border: "1px solid rgba(255,255,255,0.10)", animation: "fade-scale 0.15s ease-out", boxShadow: "0 -8px 50px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.05)" }}
           onMouseDown={(e) => e.stopPropagation()}>
-          {/* User header */}
-          <div className="flex items-center gap-3 px-5 pt-5 pb-4">
-            <div className="w-11 h-11 rounded-xl flex items-center justify-center text-2xl overflow-hidden flex-shrink-0"
-              style={{ background: avatarBg }}>
-              {currentAvatar?.startsWith("data:")
-                ? <img src={currentAvatar} alt="" className="w-full h-full object-cover" />
-                : (currentAvatar || "👤")}
-            </div>
-            <div>
-              <div className="text-white font-bold text-sm leading-tight">{currentUser}</div>
-              <div className="text-white/40 text-xs">PueiOS 3</div>
+          {/* Search bar */}
+          <div className="px-4 pt-4 pb-3">
+            <div className="flex items-center gap-2 px-3 py-2 rounded-xl" style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.1)" }}>
+              <span className="text-white/40 text-sm">🔍</span>
+              <span className="text-white/35 text-sm">Search apps…</span>
             </div>
           </div>
-
-          <div className="h-px mx-4 bg-white/10" />
-
           {/* App grid */}
-          <div className="overflow-y-auto px-4 py-3" style={{ maxHeight: "calc(100vh - 220px)" }}>
-            <div className="text-white/35 text-[9px] uppercase tracking-widest mb-2 px-1">Apps</div>
-            <div className="grid grid-cols-5 gap-2">
+          <div className="overflow-y-auto flex-1 px-3 pb-2">
+            <div className="text-white/30 text-[9px] uppercase tracking-widest mb-2 px-1">All Apps</div>
+            <div className="grid grid-cols-4 gap-2">
               {[...new Set([
                 ...icons.filter(i => !i.fileId && !i.webUrl && i.appId !== "recycle-bin").map(i => i.appId),
                 "settings" as const, "about" as const,
               ])].filter(id => id in APP_TITLES).map((id) => (
                 <button key={id} onClick={() => { openApp(id); setStartOpen(false); }}
-                  className="flex flex-col items-center gap-1 p-2 rounded-xl transition-all"
-                  style={{ background: "rgba(255,255,255,0.06)" }}
-                  onMouseEnter={e => { e.currentTarget.style.background = "rgba(99,102,241,0.3)"; e.currentTarget.style.transform = "scale(1.05)"; }}
-                  onMouseLeave={e => { e.currentTarget.style.background = "rgba(255,255,255,0.06)"; e.currentTarget.style.transform = ""; }}>
-                  {appIcon(id, 30)}
-                  <span className="text-white/75 text-[8px] text-center truncate w-full leading-tight">{APP_TITLES[id]}</span>
+                  className="flex flex-col items-center gap-1.5 p-2.5 rounded-2xl transition-all group"
+                  style={{ background: "rgba(255,255,255,0.05)" }}
+                  onMouseEnter={e => { e.currentTarget.style.background = "rgba(99,102,241,0.22)"; e.currentTarget.style.transform = "scale(1.06)"; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = "rgba(255,255,255,0.05)"; e.currentTarget.style.transform = ""; }}>
+                  {appIcon(id, 32)}
+                  <span className="text-white/70 text-[9px] text-center truncate w-full leading-tight">{APP_TITLES[id]}</span>
                 </button>
               ))}
             </div>
           </div>
-
-          <div className="h-px mx-4 bg-white/10" />
-
-          {/* Power row */}
-          <div className="flex items-center justify-between px-4 py-3">
-            <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs text-white/60 hover:text-white hover:bg-white/10 transition-all"
-              onClick={() => { setLocked(true); setStartOpen(false); setPwInput(""); }}>🔒 Lock</button>
-            <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs text-white/60 hover:text-white hover:bg-white/10 transition-all"
-              onClick={() => { setStartOpen(false); setPhase("login"); setPwInput(""); }}>🔄 Switch</button>
-            <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs text-white/60 hover:text-white hover:bg-red-500/25 transition-all"
-              onClick={() => { blip("shutdown"); setStartOpen(false); setPhase("shutdown"); setWindows([]); }}>⏻ Shut down</button>
+          {/* Bottom bar */}
+          <div className="flex items-center justify-between px-4 py-3" style={{ borderTop: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.03)" }}>
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-xl flex items-center justify-center text-lg overflow-hidden flex-shrink-0"
+                style={{ background: avatarBg }}>
+                {currentAvatar?.startsWith("data:")
+                  ? <img src={currentAvatar} alt="" className="w-full h-full object-cover" />
+                  : (currentAvatar || "👤")}
+              </div>
+              <span className="text-white/70 text-xs font-medium">{currentUser}</span>
+            </div>
+            <div className="flex gap-1">
+              <button className="px-3 py-1.5 rounded-xl text-xs text-white/50 hover:text-white hover:bg-white/10 transition-all"
+                onClick={() => { setLocked(true); setStartOpen(false); setPwInput(""); }}>🔒</button>
+              <button className="px-3 py-1.5 rounded-xl text-xs text-white/50 hover:text-white hover:bg-white/10 transition-all"
+                onClick={() => { setStartOpen(false); setPhase("login"); setPwInput(""); }}>🔄</button>
+              <button className="px-3 py-1.5 rounded-xl text-xs text-white/50 hover:text-white hover:bg-red-500/30 transition-all"
+                onClick={() => { blip("shutdown"); setStartOpen(false); setPhase("shutdown"); setWindows([]); }}>⏻</button>
+            </div>
           </div>
         </div>
       )}
@@ -2194,7 +2278,7 @@ button, a, [role="button"], select, label[for] { cursor: ${hand(c)} 6 0, pointer
             ["puei-mansion","Puei Mansion","👻"],
           ] as [AppId, string, string][]).map(([appId, label, icon]) => ({ id: `native-${appId}`, label, icon, kind: "native" as const, appId }))),
           ...(([
-            ["puei://films","Puei Films","/puei-films-icon.svg"],
+            ["puei://films","Puei Videos","/puei-films-icon.svg"],
             ["puei://updates","Puei Updater","/puei-updater-icon.svg"],
             ["https://bezosmp.lovable.app","BezosMP","/bezosmp-icon.svg"],
           ] as [string, string, string][]).map(([url, label, icon]) => ({ id: `web-${url}`, label, icon, kind: "web" as const, url }))),
