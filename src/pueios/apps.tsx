@@ -90,7 +90,7 @@ export function AppRenderer(p: AppRendererProps) {
     case "iso-viewer": return <IsoViewerApp fileId={p.fileId} />;
     case "zip-viewer": return <ZipViewerApp fileId={p.fileId} />;
     case "pmail": return <PMailApp currentUser={p.currentUser} users={p.users} />;
-    case "racing-3d": return <Racing3DApp currentUser={p.currentUser} />;
+    case "pueyracing": return <PueiRacingApp currentUser={p.currentUser} />;
   }
 }
 
@@ -400,10 +400,10 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, curren
             <div className="grid grid-cols-2 gap-3">
               {([
                 ["default", "Default"], ["pueisky", "PueiSKY"],
-                ["aero-blue", "Aero Blue"], ["aero-pink", "Aero Pink"],
-                ["aero-neon", "Aero Neon"], ["aero-dusk", "Aero Dusk"],
-                ["aero-forest", "Aero Forest"], ["aero-ember", "Aero Ember"],
-                ["aero-arctic", "Aero Arctic"], ["aero-galaxy", "Aero Galaxy"],
+                ["aero-blue", "Meadow"], ["aero-pink", "Sunset"],
+                ["aero-neon", "Morning"], ["aero-dusk", "Lake"],
+                ["aero-forest", "Autumn"], ["aero-ember", "Snow"],
+                ["aero-arctic", "Night"], ["aero-galaxy", "Space"],
               ] as [WallpaperId, string][]).map(([w, label]) => (
                 <button key={w} onClick={() => setWallpaper(w)}
                   className={`wallpaper-${w} h-28 rounded-lg border-2 text-white font-semibold text-sm`}
@@ -493,12 +493,14 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, curren
               </div>
               <div>
                 <div className="text-sm font-semibold mb-1">Touch cursor</div>
-                <div className="text-xs opacity-60 mb-3">On touchscreen devices, a dot follows your finger since the system cursor is invisible on touch.</div>
-                <div className="aero-glass-light rounded-xl px-4 py-3 flex items-center gap-3">
-                  <div className="w-5 h-5 rounded-full border-2 flex-shrink-0"
-                    style={{ background: theme.cursorColor ?? "#ffffff", borderColor: "rgba(255,255,255,0.5)" }} />
-                  <span className="text-xs opacity-70">Touch dot matches your cursor color automatically.</span>
-                </div>
+                <div className="text-xs opacity-60 mb-3">Shows a custom cursor arrow that follows your finger on touchscreen devices.</div>
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <div className="relative" onClick={() => setTheme({ ...theme, touchCursor: !(theme.touchCursor ?? true) })}>
+                    <div className="w-12 h-6 rounded-full transition-colors" style={{ background: (theme.touchCursor ?? true) ? "var(--accent)" : "rgba(128,128,128,0.4)" }} />
+                    <div className="absolute top-0.5 transition-all w-5 h-5 rounded-full bg-white shadow" style={{ left: (theme.touchCursor ?? true) ? "26px" : "2px" }} />
+                  </div>
+                  <span className="text-sm">{(theme.touchCursor ?? true) ? "Enabled" : "Disabled"}</span>
+                </label>
               </div>
             </div>
           </div>
@@ -1416,9 +1418,53 @@ function PueiCopilotPage() {
   );
 }
 
+// Detect iOS standalone PWA — iframes are blocked for cross-origin sites in this mode
+const isIosPwa = () =>
+  typeof navigator !== "undefined" &&
+  /iphone|ipad|ipod/i.test(navigator.userAgent) &&
+  (navigator as any).standalone === true;
+
 function PueiNetIframe({ url, hostname }: { url: string; hostname: string }) {
   const [loaded, setLoaded] = useState(false);
-  useEffect(() => { setLoaded(false); }, [url]);
+  const [iframeBlocked, setIframeBlocked] = useState(false);
+  const iosPwa = isIosPwa();
+
+  useEffect(() => { setLoaded(false); setIframeBlocked(false); }, [url]);
+
+  // On iOS PWA, iframes for cross-origin sites are silently blocked — show open-in-safari UI instead
+  if (iosPwa || iframeBlocked) {
+    return (
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", gap: 16, padding: 24, textAlign: "center" }}>
+        <div style={{ fontSize: 48 }}>🌐</div>
+        <div style={{ fontSize: 15, fontWeight: 600 }}>{hostname}</div>
+        <div style={{ fontSize: 12, opacity: 0.6, maxWidth: 280 }}>
+          {iosPwa
+            ? "iOS doesn't allow websites to load inside PueiOS when running as a Home Screen app."
+            : "This site blocked loading inside PueiOS."}
+        </div>
+        <a
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            background: "var(--accent)",
+            color: "#fff",
+            border: "none",
+            borderRadius: 10,
+            padding: "10px 22px",
+            fontSize: 14,
+            fontWeight: 600,
+            textDecoration: "none",
+            display: "inline-block",
+            boxShadow: "0 2px 12px rgba(0,0,0,0.3)",
+          }}>
+          Open in Safari
+        </a>
+        <div style={{ fontSize: 11, opacity: 0.4 }}>{url}</div>
+      </div>
+    );
+  }
+
   return (
     <div style={{ position: "relative", width: "100%", height: "100%" }}>
       {!loaded && (
@@ -1433,6 +1479,7 @@ function PueiNetIframe({ url, hostname }: { url: string; hostname: string }) {
         style={{ width: "100%", height: "100%", border: "none", opacity: loaded ? 1 : 0, transition: "opacity 0.3s" }}
         allow="fullscreen; autoplay; camera; microphone"
         onLoad={() => setLoaded(true)}
+        onError={() => setIframeBlocked(true)}
       />
     </div>
   );
@@ -3628,7 +3675,7 @@ function AppStoreApp({ installWebApp, openApp, openWebApp, systemVersion, addNat
   ];
   const games: StoreApp[] = [
     { name: "Puei Mansion",  icon: "👻", desc: "Funny spooky adventure. Solve puzzles, find hidden secrets, and meet weird Puei creatures.", appId: "puei-mansion", preInstalled: false },
-    { name: "Puei Racing 3D", icon: "🏎️", desc: "Top-down arcade racing with AI opponents — 3 laps, full keyboard and touch controls.", appId: "racing-3d", preInstalled: false },
+    { name: "PueiRacing", icon: "🏎️", desc: "Real 3D racing with Three.js — drive fast, drift corners, feel the speed.", appId: "pueyracing", preInstalled: false },
   ];
   const community: StoreApp[] = [
     { name: "bezosmp", icon: "/bezosmp-icon.svg", desc: "A community Minecraft SMP server project. Made by bazicioschi and catotherat.", webUrl: "https://bezosmp.lovable.app", desktopLabel: "BezosMP", preInstalled: false },
@@ -4704,13 +4751,23 @@ function PueiUpdaterApp({ currentUser, startUpgrade, systemVersion }: { currentU
                       setDraggingIsoId(file.id);
                     }}
                     onDragEnd={() => setDraggingIsoId(null)}
-                    className="rounded-lg px-3 py-3 cursor-grab active:cursor-grabbing border"
+                    className="rounded-lg px-3 py-3 border flex items-center justify-between gap-2"
                     style={{
                       background: mountedIsoId === file.id ? "rgba(80,200,120,0.16)" : "rgba(255,255,255,0.08)",
-                      borderColor: draggingIsoId === file.id ? "rgba(125,211,252,0.8)" : "rgba(255,255,255,0.14)",
+                      borderColor: draggingIsoId === file.id ? "rgba(125,211,252,0.8)" : mountedIsoId === file.id ? "rgba(80,200,120,0.7)" : "rgba(255,255,255,0.14)",
+                      cursor: isInstalling ? "default" : "grab",
                     }}>
-                    <div className="text-sm font-semibold">{file.name}</div>
-                    <div className="text-[11px] opacity-60">Ready in Downloads</div>
+                    <div>
+                      <div className="text-sm font-semibold">{file.name}</div>
+                      <div className="text-[11px] opacity-60">{mountedIsoId === file.id ? "Mounted ✓" : "Ready in Downloads"}</div>
+                    </div>
+                    {mountedIsoId !== file.id && !isInstalling && (
+                      <button
+                        className="aero-button rounded px-3 py-1 text-xs shrink-0"
+                        onClick={() => { setMountedIsoId(file.id); setInstallStopped(false); blip("click"); }}>
+                        Mount
+                      </button>
+                    )}
                   </div>
                 ))}
               </div>
@@ -4743,9 +4800,9 @@ function PueiUpdaterApp({ currentUser, startUpgrade, systemVersion }: { currentU
                 borderColor: dropActive ? "rgba(125,211,252,0.9)" : mountedIso ? "rgba(80,200,120,0.7)" : "rgba(255,255,255,0.22)",
                 background: dropActive ? "rgba(14,165,233,0.14)" : mountedIso ? "rgba(80,200,120,0.1)" : "rgba(255,255,255,0.05)",
               }}>
-              <div className="text-sm font-semibold">{mountedIso ? `${mountedIso.name} mounted` : "Drop ISO here to prepare installation"}</div>
+              <div className="text-sm font-semibold">{mountedIso ? `${mountedIso.name} mounted ✓` : "Drop or tap Mount to load ISO"}</div>
               <div className="text-xs opacity-65 mt-1">
-                {mountedIso ? `Puei Updater is ready to install ${mountedVersion} from this ISO.` : "Drag pueios2-plus.iso or pueios3.iso from Files/Downloads."}
+                {mountedIso ? `Ready to install ${mountedVersion}.` : "Drag an ISO here, or use the Mount button on touchscreen."}
               </div>
             </div>
 
@@ -6215,10 +6272,32 @@ function PMailApp({ currentUser, users }: { currentUser: string; users: { name: 
   const [sentMsg, setSentMsg] = useState("");
 
   const reload = () => setMsgs(loadMail(currentUser));
+
+  // Pull new messages from server into local storage, then reload
+  const pullFromServer = async () => {
+    try {
+      const res = await fetch(`/api/mail?owner=${encodeURIComponent(currentUser.toLowerCase())}`);
+      if (!res.ok) return;
+      const incoming = (await res.json()) as { id: string; from: string; to: string; subject: string; body: string; at: number }[];
+      if (!incoming.length) return;
+      const existing = loadMail(currentUser);
+      const existingIds = new Set(existing.map((m) => m.id));
+      const newMsgs: MailMessage[] = incoming
+        .filter((m) => !existingIds.has(m.id))
+        .map((m) => ({ id: m.id, from: m.from, to: m.to, subject: m.subject, body: m.body, at: m.at, read: false, folder: "inbox" as const, owner: currentUser }));
+      if (newMsgs.length) {
+        replaceMailFor(currentUser, [...existing, ...newMsgs]);
+        reload();
+      }
+    } catch { /* network unavailable */ }
+  };
+
   useEffect(() => {
+    pullFromServer();
     const h = () => reload();
     window.addEventListener("pueios-mail", h);
-    return () => window.removeEventListener("pueios-mail", h);
+    const interval = setInterval(pullFromServer, 15000);
+    return () => { window.removeEventListener("pueios-mail", h); clearInterval(interval); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUser]);
 
@@ -6273,7 +6352,7 @@ function PMailApp({ currentUser, users }: { currentUser: string; users: { name: 
       await fetch("/api/mail", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "deliver", from: currentUser, to: recipient, subject: subjField || "(no subject)", body: bodyField }),
+        body: JSON.stringify({ from: currentUser, to: recipient, subject: subjField || "(no subject)", body: bodyField }),
       }).catch(() => {});
       setSentMsg("Sent!");
       setToField(""); setSubjField(""); setBodyField("");
@@ -6430,248 +6509,347 @@ function PMailApp({ currentUser, users }: { currentUser: string; users: { name: 
   );
 }
 
-// ---------- Puei Racing 3D ----------
-type RacerPos = { x: number; z: number; angle: number; speed: number; lap: number; checkpoint: number };
-const TRACK_WAYPOINTS = [
-  { x: 0, z: 0 }, { x: 200, z: -40 }, { x: 380, z: 80 }, { x: 420, z: 260 },
-  { x: 300, z: 400 }, { x: 100, z: 450 }, { x: -80, z: 380 }, { x: -200, z: 200 },
-  { x: -180, z: 40 },
-];
-const TRACK_W = 600; const TRACK_H = 500;
+// ---------- PueiRacing 3D ----------
 
-function Racing3DApp({ currentUser }: { currentUser: string }) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const playerRef = useRef<RacerPos>({ x: 0, z: 0, angle: 0, speed: 0, lap: 1, checkpoint: 0 });
+function PueiRacingApp({ currentUser }: { currentUser: string }) {
+  const mountRef = useRef<HTMLDivElement>(null);
   const keysRef = useRef<Set<string>>(new Set());
-  const botsRef = useRef<RacerPos[]>([
-    { x: -15, z: 20, angle: 0, speed: 0, lap: 1, checkpoint: 0 },
-    { x: 15, z: 20, angle: 0, speed: 0, lap: 1, checkpoint: 0 },
+  const stateRef = useRef({ x: 0, z: 0, angle: 0, speed: 0, lap: 1, cp: 0, finished: false });
+  const botsRef = useRef([
+    { x: -3, z: 3, angle: 0, speed: 0, lap: 1, cp: 0 },
+    { x: 3, z: 3, angle: 0, speed: 0, lap: 1, cp: 0 },
   ]);
-  const rafRef = useRef<number>(0);
-  const [status, setStatus] = useState("Press WASD or Arrow keys to drive!");
-  const [lap, setLap] = useState(1);
-  const [finished, setFinished] = useState(false);
+  const [hud, setHud] = useState({ lap: 1, speed: 0, msg: "Drive with WASD / Arrow keys" });
   const totalLaps = 3;
-  const MAX_SPEED = 5;
-  const ACCEL = 0.18;
-  const BRAKE = 0.1;
-  const FRICTION = 0.96;
-  const TURN_SPEED = 0.045;
+
+  // Track waypoints (world coords, closed loop)
+  const WPS = [
+    [0,0],[40,0],[80,10],[110,30],[120,70],[100,110],[60,130],[20,120],
+    [-20,110],[-50,80],[-60,40],[-50,10],[-20,0],
+  ] as [number,number][];
 
   useEffect(() => {
-    const down = (e: KeyboardEvent) => { keysRef.current.add(e.key); e.preventDefault(); };
+    const mount = mountRef.current; if (!mount) return;
+    let raf = 0;
+    const down = (e: KeyboardEvent) => { keysRef.current.add(e.key); if (["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"," "].includes(e.key)) e.preventDefault(); };
     const up = (e: KeyboardEvent) => keysRef.current.delete(e.key);
     window.addEventListener("keydown", down);
     window.addEventListener("keyup", up);
 
-    const W = TRACK_W; const H = TRACK_H;
-    const WPS = TRACK_WAYPOINTS;
-    const cpRadius = 60;
+    // Dynamic Three.js CDN import
+    let cleanup = () => {};
 
-    function nextWp(cp: number) { return (cp + 1) % WPS.length; }
-    function wpAngle(from: { x: number; z: number }, to: { x: number; z: number }) {
-      return Math.atan2(to.x - from.x, to.z - from.z);
-    }
+    import("https://cdn.jsdelivr.net/npm/three@0.160/build/three.module.js" as any).then((THREE: any) => {
+      const W = mount.clientWidth || 860, H = mount.clientHeight || 520;
 
-    function updateBot(b: RacerPos) {
-      const target = WPS[nextWp(b.checkpoint)];
-      const dx = target.x - b.x; const dz = target.z - b.z;
-      const dist = Math.sqrt(dx * dx + dz * dz);
-      const targetAngle = Math.atan2(dx, dz);
-      let da = targetAngle - b.angle;
-      while (da > Math.PI) da -= Math.PI * 2;
-      while (da < -Math.PI) da += Math.PI * 2;
-      b.angle += Math.sign(da) * Math.min(Math.abs(da), TURN_SPEED * 1.2);
-      b.speed = Math.min(MAX_SPEED * 0.78, b.speed + ACCEL * 0.7);
-      b.x += Math.sin(b.angle) * b.speed;
-      b.z += Math.cos(b.angle) * b.speed;
-      if (dist < cpRadius) {
-        b.checkpoint = nextWp(b.checkpoint);
-        if (b.checkpoint === 0) b.lap++;
-      }
-    }
+      // Renderer
+      const renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer.setSize(W, H);
+      renderer.shadowMap.enabled = true;
+      renderer.setClearColor(0x87ceeb);
+      mount.appendChild(renderer.domElement);
 
-    function render() {
-      const c = canvasRef.current; if (!c) return;
-      const ctx = c.getContext("2d")!;
-      const p = playerRef.current;
-      const ks = keysRef.current;
+      // Scene & camera
+      const scene = new THREE.Scene();
+      scene.fog = new THREE.FogExp2(0x87ceeb, 0.012);
 
-      // Input
-      if (!finished) {
-        if (ks.has("ArrowUp") || ks.has("w") || ks.has("W")) p.speed = Math.min(MAX_SPEED, p.speed + ACCEL);
-        if (ks.has("ArrowDown") || ks.has("s") || ks.has("S")) p.speed = Math.max(-MAX_SPEED * 0.4, p.speed - BRAKE);
-        if ((ks.has("ArrowLeft") || ks.has("a") || ks.has("A")) && Math.abs(p.speed) > 0.1) p.angle -= TURN_SPEED * Math.sign(p.speed);
-        if ((ks.has("ArrowRight") || ks.has("d") || ks.has("D")) && Math.abs(p.speed) > 0.1) p.angle += TURN_SPEED * Math.sign(p.speed);
-        p.speed *= FRICTION;
-        p.x += Math.sin(p.angle) * p.speed;
-        p.z += Math.cos(p.angle) * p.speed;
-        // Checkpoint
-        const targetCp = WPS[nextWp(p.checkpoint)];
-        const dx = targetCp.x - p.x; const dz = targetCp.z - p.z;
-        if (Math.sqrt(dx * dx + dz * dz) < cpRadius) {
-          p.checkpoint = nextWp(p.checkpoint);
-          if (p.checkpoint === 0) {
-            p.lap++;
-            if (p.lap > totalLaps) { setFinished(true); setStatus("You finished!"); }
-            else setLap(p.lap);
-          }
+      const camera = new THREE.PerspectiveCamera(60, W / H, 0.1, 500);
+
+      // Lighting
+      const sun = new THREE.DirectionalLight(0xfff8e0, 1.4);
+      sun.position.set(30, 60, 20);
+      sun.castShadow = true;
+      scene.add(sun);
+      scene.add(new THREE.AmbientLight(0x88aacc, 0.6));
+
+      // Ground plane (grass)
+      const ground = new THREE.Mesh(
+        new THREE.PlaneGeometry(400, 400),
+        new THREE.MeshLambertMaterial({ color: 0x3a8c3a })
+      );
+      ground.rotation.x = -Math.PI / 2;
+      ground.receiveShadow = true;
+      scene.add(ground);
+
+      // Build track from waypoints (extruded path)
+      const trackWidth = 10;
+      const buildTrackMesh = () => {
+        const group = new THREE.Group();
+        const n = WPS.length;
+        for (let i = 0; i < n; i++) {
+          const a = WPS[i], b = WPS[(i + 1) % n];
+          const dx = b[0] - a[0], dz = b[1] - a[1];
+          const len = Math.sqrt(dx * dx + dz * dz);
+          const seg = new THREE.Mesh(
+            new THREE.PlaneGeometry(len + 1, trackWidth),
+            new THREE.MeshLambertMaterial({ color: 0x303030 })
+          );
+          seg.rotation.x = -Math.PI / 2;
+          seg.position.set((a[0] + b[0]) / 2, 0.01, (a[1] + b[1]) / 2);
+          seg.rotation.z = -Math.atan2(dz, dx);
+          // Fix: PlaneGeometry is in XY plane, rotated to XZ, so need to apply heading in Y
+          seg.rotation.y = Math.atan2(dz, dx);
+          seg.rotation.x = -Math.PI / 2;
+          group.add(seg);
+          // White center stripe
+          const stripe = new THREE.Mesh(
+            new THREE.PlaneGeometry(len + 0.5, 0.4),
+            new THREE.MeshLambertMaterial({ color: 0xffff88 })
+          );
+          stripe.rotation.x = -Math.PI / 2;
+          stripe.rotation.y = Math.atan2(dz, dx);
+          stripe.position.set((a[0] + b[0]) / 2, 0.02, (a[1] + b[1]) / 2);
+          group.add(stripe);
         }
-        botsRef.current.forEach(updateBot);
+        return group;
+      };
+      scene.add(buildTrackMesh());
+
+      // Start/finish gate
+      const gateGeom = new THREE.BoxGeometry(trackWidth + 2, 3, 0.3);
+      const gateMat = new THREE.MeshLambertMaterial({ color: 0xffffff });
+      const gate = new THREE.Mesh(gateGeom, gateMat);
+      gate.position.set(WPS[0][0], 1.5, WPS[0][1]);
+      scene.add(gate);
+
+      // Trees along track edges
+      const addTree = (x: number, z: number) => {
+        const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.3, 2, 6), new THREE.MeshLambertMaterial({ color: 0x8B4513 }));
+        trunk.position.set(x, 1, z);
+        const leaves = new THREE.Mesh(new THREE.ConeGeometry(1.8, 3, 7), new THREE.MeshLambertMaterial({ color: 0x228B22 }));
+        leaves.position.set(x, 3.5, z);
+        scene.add(trunk); scene.add(leaves);
+      };
+      for (let i = 0; i < WPS.length; i++) {
+        const a = WPS[i], b = WPS[(i + 1) % WPS.length];
+        const mx = (a[0] + b[0]) / 2, mz = (a[1] + b[1]) / 2;
+        const dx = b[0] - a[0], dz = b[1] - a[1];
+        const len = Math.sqrt(dx * dx + dz * dz);
+        const nx = -dz / len, nz = dx / len;
+        addTree(mx + nx * 9, mz + nz * 9);
+        addTree(mx - nx * 9, mz - nz * 9);
       }
-
-      // Draw top-down view
-      const cx = W / 2 - p.x; const cz = H / 2 - p.z;
-      ctx.clearRect(0, 0, W, H);
-
-      // Sky/ground
-      ctx.fillStyle = "#1a2a1a";
-      ctx.fillRect(0, 0, W, H);
-
-      // Track
-      ctx.save();
-      ctx.translate(cx, cz);
-      ctx.strokeStyle = "#888";
-      ctx.lineWidth = 42;
-      ctx.lineCap = "round";
-      ctx.lineJoin = "round";
-      ctx.beginPath();
-      WPS.forEach((wp, i) => {
-        if (i === 0) ctx.moveTo(wp.x, wp.z);
-        else ctx.lineTo(wp.x, wp.z);
-      });
-      ctx.closePath();
-      ctx.stroke();
-      // Track surface
-      ctx.strokeStyle = "#333";
-      ctx.lineWidth = 38;
-      ctx.stroke();
-      // Center line
-      ctx.strokeStyle = "rgba(255,255,100,0.4)";
-      ctx.lineWidth = 2;
-      ctx.setLineDash([12, 8]);
-      ctx.stroke();
-      ctx.setLineDash([]);
-
-      // Checkpoints
-      WPS.forEach((wp, i) => {
-        const isNext = i === nextWp(p.checkpoint);
-        ctx.beginPath();
-        ctx.arc(wp.x, wp.z, isNext ? 10 : 5, 0, Math.PI * 2);
-        ctx.fillStyle = isNext ? "rgba(100,200,255,0.8)" : "rgba(255,255,255,0.2)";
-        ctx.fill();
-      });
-
-      // Bots
-      botsRef.current.forEach((b, bi) => {
-        ctx.save();
-        ctx.translate(b.x, b.z);
-        ctx.rotate(b.angle);
-        ctx.fillStyle = bi === 0 ? "#e74c3c" : "#9b59b6";
-        ctx.fillRect(-7, -12, 14, 24);
-        ctx.fillStyle = "rgba(255,255,255,0.4)";
-        ctx.fillRect(-5, -14, 10, 6);
-        ctx.restore();
-      });
 
       // Player car
-      ctx.save();
-      ctx.translate(0, 0); // player is always centered when camera follows
-      ctx.rotate(p.angle);
-      // Car body
-      const grad = ctx.createLinearGradient(-9, -14, 9, 14);
-      grad.addColorStop(0, "#3498db");
-      grad.addColorStop(1, "#1a5f8c");
-      ctx.fillStyle = grad;
-      ctx.fillRect(-9, -16, 18, 32);
-      ctx.fillStyle = "rgba(255,255,255,0.5)";
-      ctx.fillRect(-7, -18, 14, 8);
-      ctx.fillStyle = "#f39c12";
-      ctx.fillRect(-9, 13, 5, 4);
-      ctx.fillRect(4, 13, 5, 4);
-      ctx.restore();
+      const makeCar = (color: number) => {
+        const g = new THREE.Group();
+        const body = new THREE.Mesh(new THREE.BoxGeometry(2, 0.7, 4), new THREE.MeshLambertMaterial({ color }));
+        body.position.y = 0.5;
+        body.castShadow = true;
+        g.add(body);
+        const roof = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.6, 2), new THREE.MeshLambertMaterial({ color: 0xeeeeee }));
+        roof.position.set(0, 1.15, -0.2);
+        g.add(roof);
+        const windshield = new THREE.Mesh(new THREE.BoxGeometry(1.55, 0.55, 0.1), new THREE.MeshLambertMaterial({ color: 0x88ccff, transparent: true, opacity: 0.7 }));
+        windshield.position.set(0, 1.1, 0.85);
+        g.add(windshield);
+        // Wheels
+        [[1.1,-0.05,1.4],[-1.1,-0.05,1.4],[1.1,-0.05,-1.4],[-1.1,-0.05,-1.4]].forEach(([wx,wy,wz]) => {
+          const wheel = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.4, 0.3, 10), new THREE.MeshLambertMaterial({ color: 0x111111 }));
+          wheel.rotation.z = Math.PI / 2;
+          wheel.position.set(wx, wy, wz);
+          g.add(wheel);
+        });
+        return g;
+      };
 
-      ctx.restore();
+      const playerCar = makeCar(0x2266dd);
+      scene.add(playerCar);
+      const botCars = [makeCar(0xdd2222), makeCar(0xaa22cc)];
+      botCars.forEach(c => scene.add(c));
 
-      // HUD
-      ctx.fillStyle = "rgba(0,0,0,0.5)";
-      ctx.fillRect(8, 8, 160, 50);
-      ctx.fillStyle = "#fff";
-      ctx.font = "bold 13px system-ui";
-      ctx.fillText(`Lap ${Math.min(p.lap, totalLaps)} / ${totalLaps}`, 16, 26);
-      ctx.font = "11px system-ui";
-      ctx.fillStyle = "#aaa";
-      ctx.fillText(`Speed: ${Math.abs(p.speed * 20).toFixed(0)} km/h`, 16, 42);
+      // HUD overlay (canvas-based)
+      const hudCanvas = document.createElement("canvas");
+      hudCanvas.style.cssText = "position:absolute;top:0;left:0;pointer-events:none;";
+      hudCanvas.width = W; hudCanvas.height = H;
+      mount.appendChild(hudCanvas);
+      const hctx = hudCanvas.getContext("2d")!;
 
-      // Speedo bar
-      ctx.fillStyle = "rgba(0,0,0,0.4)";
-      ctx.fillRect(W - 90, 8, 82, 14);
-      ctx.fillStyle = "#3498db";
-      ctx.fillRect(W - 89, 9, Math.max(0, Math.abs(p.speed / MAX_SPEED) * 80), 12);
-      ctx.fillStyle = "#fff";
-      ctx.font = "9px system-ui";
-      ctx.fillText("SPEED", W - 85, 19);
+      const drawHUD = (lap: number, speed: number, msg: string) => {
+        hctx.clearRect(0, 0, W, H);
+        hctx.fillStyle = "rgba(0,0,0,0.5)";
+        hctx.beginPath(); hctx.roundRect(12, 12, 170, 55, 8); hctx.fill();
+        hctx.fillStyle = "#fff";
+        hctx.font = "bold 15px system-ui";
+        hctx.fillText(`Lap ${Math.min(lap, totalLaps)} / ${totalLaps}`, 22, 34);
+        hctx.font = "12px system-ui";
+        hctx.fillStyle = "#aae";
+        hctx.fillText(`${(speed * 22).toFixed(0)} km/h`, 22, 55);
+        if (msg) {
+          hctx.fillStyle = "rgba(0,0,0,0.6)";
+          hctx.font = "bold 13px system-ui";
+          const tw = hctx.measureText(msg).width;
+          hctx.beginPath(); hctx.roundRect(W/2 - tw/2 - 10, H - 50, tw + 20, 30, 6); hctx.fill();
+          hctx.fillStyle = "#fff";
+          hctx.fillText(msg, W/2 - tw/2, H - 28);
+        }
+        // Speed bar
+        hctx.fillStyle = "rgba(0,0,0,0.4)";
+        hctx.fillRect(W - 100, 14, 88, 12);
+        hctx.fillStyle = "#3388ff";
+        hctx.fillRect(W - 99, 15, Math.max(0, Math.min(1, speed / 0.5) * 86), 10);
+        hctx.fillStyle = "rgba(255,255,255,0.6)";
+        hctx.font = "9px system-ui";
+        hctx.fillText("SPEED", W - 95, 23);
+      };
 
-      rafRef.current = requestAnimationFrame(render);
-    }
-    render();
+      const ACCEL = 0.012, BRAKE = 0.009, FRICTION = 0.97, TURN = 0.042, MAX_SPEED = 0.55;
+      const cpRadius = 12;
+
+      const nextCp = (cp: number) => (cp + 1) % WPS.length;
+
+      const updateBot = (b: typeof botsRef.current[0]) => {
+        const target = WPS[nextCp(b.cp)];
+        const dx = target[0] - b.x, dz = target[1] - b.z;
+        const dist = Math.sqrt(dx * dx + dz * dz);
+        const ta = Math.atan2(dx, dz);
+        let da = ta - b.angle;
+        while (da > Math.PI) da -= Math.PI * 2;
+        while (da < -Math.PI) da += Math.PI * 2;
+        b.angle += Math.sign(da) * Math.min(Math.abs(da), TURN * 1.1);
+        b.speed = Math.min(MAX_SPEED * 0.72, b.speed + ACCEL * 0.8);
+        b.x += Math.sin(b.angle) * b.speed;
+        b.z += Math.cos(b.angle) * b.speed;
+        if (dist < cpRadius) {
+          b.cp = nextCp(b.cp);
+          if (b.cp === 0) b.lap++;
+        }
+      };
+
+      // Initial bot positions
+      botsRef.current[0].x = WPS[0][0] - 2;
+      botsRef.current[0].z = WPS[0][1] + 3;
+      botsRef.current[1].x = WPS[0][0] + 2;
+      botsRef.current[1].z = WPS[0][1] + 3;
+      stateRef.current.x = WPS[0][0];
+      stateRef.current.z = WPS[0][1];
+
+      const animate = () => {
+        raf = requestAnimationFrame(animate);
+        const p = stateRef.current;
+        const ks = keysRef.current;
+
+        if (!p.finished) {
+          if (ks.has("ArrowUp") || ks.has("w") || ks.has("W")) p.speed = Math.min(MAX_SPEED, p.speed + ACCEL);
+          else if (ks.has("ArrowDown") || ks.has("s") || ks.has("S")) p.speed = Math.max(-MAX_SPEED * 0.3, p.speed - BRAKE);
+          if ((ks.has("ArrowLeft") || ks.has("a") || ks.has("A")) && Math.abs(p.speed) > 0.01) p.angle -= TURN * Math.sign(p.speed);
+          if ((ks.has("ArrowRight") || ks.has("d") || ks.has("D")) && Math.abs(p.speed) > 0.01) p.angle += TURN * Math.sign(p.speed);
+          p.speed *= FRICTION;
+          p.x += Math.sin(p.angle) * p.speed;
+          p.z += Math.cos(p.angle) * p.speed;
+
+          const tcp = WPS[nextCp(p.cp)];
+          const ddx = tcp[0] - p.x, ddz = tcp[1] - p.z;
+          if (Math.sqrt(ddx * ddx + ddz * ddz) < cpRadius) {
+            p.cp = nextCp(p.cp);
+            if (p.cp === 0) {
+              p.lap++;
+              if (p.lap > totalLaps) {
+                p.finished = true;
+                setHud(h => ({ ...h, msg: "YOU WIN! 🏆" }));
+              } else {
+                setHud(h => ({ ...h, lap: p.lap }));
+              }
+            }
+          }
+          botsRef.current.forEach(updateBot);
+          setHud(h => ({ ...h, speed: Math.abs(p.speed) }));
+        }
+
+        // Update car meshes
+        playerCar.position.set(p.x, 0, p.z);
+        playerCar.rotation.y = -p.angle;
+        botsRef.current.forEach((b, i) => {
+          botCars[i].position.set(b.x, 0, b.z);
+          botCars[i].rotation.y = -b.angle;
+        });
+
+        // Chase camera behind player car
+        const camDist = 12, camH = 5;
+        camera.position.set(
+          p.x - Math.sin(p.angle) * camDist,
+          camH,
+          p.z - Math.cos(p.angle) * camDist,
+        );
+        camera.lookAt(p.x, 0.5, p.z);
+
+        drawHUD(p.lap, Math.abs(p.speed), p.finished ? "YOU WIN! Press Restart" : "");
+        renderer.render(scene, camera);
+      };
+      animate();
+
+      // Resize
+      const onResize = () => {
+        const nw = mount.clientWidth, nh = mount.clientHeight;
+        renderer.setSize(nw, nh);
+        camera.aspect = nw / nh;
+        camera.updateProjectionMatrix();
+        hudCanvas.width = nw; hudCanvas.height = nh;
+      };
+      window.addEventListener("resize", onResize);
+
+      cleanup = () => {
+        cancelAnimationFrame(raf);
+        window.removeEventListener("resize", onResize);
+        renderer.dispose();
+        if (mount.contains(renderer.domElement)) mount.removeChild(renderer.domElement);
+        if (mount.contains(hudCanvas)) mount.removeChild(hudCanvas);
+      };
+    }).catch(() => {
+      const err = document.createElement("div");
+      err.style.cssText = "color:white;padding:20px;font-family:system-ui";
+      err.textContent = "Failed to load Three.js. Check your internet connection.";
+      mount?.appendChild(err);
+    });
 
     return () => {
-      cancelAnimationFrame(rafRef.current);
       window.removeEventListener("keydown", down);
       window.removeEventListener("keyup", up);
+      cleanup();
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [finished]);
+  }, []);
 
   const restart = () => {
-    playerRef.current = { x: 0, z: 0, angle: 0, speed: 0, lap: 1, checkpoint: 0 };
-    botsRef.current = [
-      { x: -15, z: 20, angle: 0, speed: 0, lap: 1, checkpoint: 0 },
-      { x: 15, z: 20, angle: 0, speed: 0, lap: 1, checkpoint: 0 },
-    ];
-    setLap(1); setFinished(false); setStatus("Press WASD or Arrow keys to drive!");
+    stateRef.current = { x: WPS[0][0], z: WPS[0][1], angle: 0, speed: 0, lap: 1, cp: 0, finished: false };
+    botsRef.current[0] = { x: WPS[0][0] - 2, z: WPS[0][1] + 3, angle: 0, speed: 0, lap: 1, cp: 0 };
+    botsRef.current[1] = { x: WPS[0][0] + 2, z: WPS[0][1] + 3, angle: 0, speed: 0, lap: 1, cp: 0 };
+    setHud({ lap: 1, speed: 0, msg: "Drive with WASD / Arrow keys" });
   };
 
-  // Touch controls
   const touchDir = useRef<string | null>(null);
   const addTouch = (dir: string) => { keysRef.current.add(dir); touchDir.current = dir; };
-  const removeTouch = () => { if (touchDir.current) keysRef.current.delete(touchDir.current); touchDir.current = null; };
-
+  const removeTouch = () => { if (touchDir.current) { keysRef.current.delete(touchDir.current); touchDir.current = null; } };
   const touchBtn = (label: string, key: string) => (
-    <button
-      onPointerDown={() => addTouch(key)} onPointerUp={removeTouch} onPointerLeave={removeTouch}
-      className="rounded-xl text-white font-bold text-lg select-none"
-      style={{ background: "rgba(255,255,255,0.18)", border: "1px solid rgba(255,255,255,0.25)", width: 52, height: 52, backdropFilter: "blur(8px)", touchAction: "none" }}>
+    <button onPointerDown={() => addTouch(key)} onPointerUp={removeTouch} onPointerLeave={removeTouch}
+      className="rounded-xl text-white font-bold text-xl select-none"
+      style={{ background: "rgba(255,255,255,0.18)", border: "1px solid rgba(255,255,255,0.25)", width: 56, height: 56, touchAction: "none" }}>
       {label}
     </button>
   );
 
   return (
-    <div className="flex flex-col h-full items-center justify-center" style={{ background: "#0a1a0a" }}>
-      <div className="flex items-center gap-3 mb-2">
-        <span className="text-white font-bold text-sm">🏎️ Puei Racing 3D</span>
-        <span className="text-xs text-white/50">{status}</span>
-        {finished && (
-          <button onClick={restart} className="ml-2 rounded-lg px-3 py-1 text-xs font-semibold text-white" style={{ background: "var(--accent)" }}>
-            Race again
-          </button>
-        )}
+    <div className="flex flex-col h-full" style={{ background: "#0a1220" }}>
+      {/* Toolbar */}
+      <div className="flex items-center gap-3 px-3 py-1.5 shrink-0" style={{ background: "rgba(0,0,0,0.5)", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+        <span className="text-white font-bold text-sm tracking-wide">PueiRacing 3D</span>
+        <span className="text-xs text-white/40">{hud.msg || `Lap ${hud.lap}/${totalLaps}`}</span>
+        <button onClick={restart} className="ml-auto rounded-lg px-3 py-1 text-xs font-semibold text-white" style={{ background: "var(--accent)" }}>Restart</button>
       </div>
-      <canvas ref={canvasRef} width={TRACK_W} height={TRACK_H}
-        style={{ borderRadius: 12, border: "2px solid rgba(255,255,255,0.1)", display: "block", maxWidth: "100%", maxHeight: "calc(100vh - 160px)", objectFit: "contain" }} />
-      {/* Touch controls */}
-      <div className="flex items-center gap-3 mt-3">
+      {/* Three.js mount */}
+      <div ref={mountRef} className="flex-1 relative" style={{ minHeight: 0 }} />
+      {/* Touch d-pad */}
+      <div className="flex items-center justify-center gap-8 py-2 shrink-0" style={{ background: "rgba(0,0,0,0.4)" }}>
         <div className="flex flex-col items-center gap-1">
-          {touchBtn("⬆", "ArrowUp")}
+          {touchBtn("▲", "ArrowUp")}
           <div className="flex gap-1">
-            {touchBtn("⬅", "ArrowLeft")}
-            {touchBtn("⬇", "ArrowDown")}
-            {touchBtn("➡", "ArrowRight")}
+            {touchBtn("◀", "ArrowLeft")}
+            {touchBtn("▼", "ArrowDown")}
+            {touchBtn("▶", "ArrowRight")}
           </div>
         </div>
+        <div className="text-white/25 text-[10px] text-center">WASD or Arrow keys<br/>Blue = You · Red/Purple = Bots</div>
       </div>
-      <div className="text-white/30 text-[10px] mt-1">Blue = You · Red/Purple = Bots · {totalLaps} laps</div>
     </div>
   );
 }

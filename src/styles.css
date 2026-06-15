@@ -509,80 +509,178 @@ canvas[style*="crosshair"] { cursor: url("data:image/svg+xml,%3Csvg xmlns='http:
     radial-gradient(ellipse at 70% 80%, oklch(0.6 0.2 calc(var(--accent-h) + 30) / 0.5), transparent 50%),
     linear-gradient(135deg, oklch(0.25 0.1 240), oklch(0.45 0.15 var(--accent-h)));
 }
-/* PueiSKY: vivid green hills + blue sky (formerly Bliss) */
+/* PueiSKY — bright blue sky with fluffy clouds and vivid green meadow */
 .wallpaper-bliss, .wallpaper-pueisky {
   background:
-    radial-gradient(ellipse 180px 60px at 25% 28%, rgba(255,255,255,0.85), transparent),
-    radial-gradient(ellipse 120px 45px at 60% 22%, rgba(255,255,255,0.7), transparent),
-    radial-gradient(ellipse 90px 35px at 78% 32%, rgba(255,255,255,0.6), transparent),
-    linear-gradient(to bottom, #4a90d9 0%, #6db3f2 35%, #a8d8f8 55%, #c8e8ff 62%),
-    radial-gradient(ellipse 120% 50% at 50% 120%, #3a8c2a 0%, #4caa35 30%, #5fc040 55%, #70cc50 70%, transparent 100%);
+    /* sun glow top-right */
+    radial-gradient(circle 160px at 82% 8%, rgba(255,255,220,0.95), transparent 55%),
+    /* clouds */
+    radial-gradient(ellipse 220px 70px at 22% 26%, rgba(255,255,255,0.92), transparent 70%),
+    radial-gradient(ellipse 160px 50px at 55% 20%, rgba(255,255,255,0.85), transparent 65%),
+    radial-gradient(ellipse 110px 40px at 75% 30%, rgba(255,255,255,0.75), transparent 60%),
+    radial-gradient(ellipse 80px 30px at 38% 32%, rgba(255,255,255,0.6), transparent 55%),
+    /* sky gradient */
+    linear-gradient(to bottom, #1a7fd4 0%, #3a9fe8 18%, #5ab8f5 36%, #8dd4f8 52%, #b8e8ff 60%, #cff0f8 65%),
+    /* green hills */
+    radial-gradient(ellipse 140% 55% at 50% 125%, #2a7a18 0%, #3a9424 25%, #52b030 50%, #6acc3e 65%, #8ade50 75%, transparent 90%);
   background-size: 100% 100%;
 }
 
-/* Aero Blue — deep navy shimmer */
+/* Aero Meadow — sunny meadow with flowers and distant city */
 .wallpaper-aero-blue {
   background:
-    radial-gradient(ellipse at 45% 62%, rgba(190, 235, 255, 0.62), transparent 54%),
-    radial-gradient(ellipse at 8% 18%, rgba(80, 190, 255, 0.35), transparent 50%),
-    linear-gradient(155deg, #03144f 0%, #0a3f9a 44%, #062b83 68%, #02164f 100%);
+    /* bright sun */
+    radial-gradient(circle 120px at 78% 10%, rgba(255,255,180,0.9), transparent 50%),
+    /* sun rays */
+    conic-gradient(from 265deg at 78% 10%, transparent 0deg, rgba(255,255,200,0.08) 3deg, transparent 6deg, transparent 30deg, rgba(255,255,200,0.06) 33deg, transparent 36deg),
+    /* sky clouds */
+    radial-gradient(ellipse 200px 60px at 30% 22%, rgba(255,255,255,0.9), transparent 70%),
+    radial-gradient(ellipse 140px 45px at 62% 28%, rgba(255,255,255,0.8), transparent 65%),
+    /* sky */
+    linear-gradient(to bottom, #0d6ebd 0%, #2089d8 15%, #42a8ee 35%, #6dc4f8 52%, #a0deff 62%, #c8f0ff 66%),
+    /* far tree line */
+    radial-gradient(ellipse 160% 18% at 50% 98%, #1e6610 0%, #2a7a1a 40%, #3a9020 70%, transparent 100%),
+    /* meadow */
+    radial-gradient(ellipse 140% 50% at 50% 130%, #1e8010 0%, #2a9818 20%, #3db028 45%, #55c83a 62%, #72e04e 75%, transparent 90%);
+  background-size: 100% 100%;
 }
 
-/* Aero Pink — soft rose-azure */
+/* Aero Sunset — warm golden hour, pink-orange sky, dark silhouette hills */
 .wallpaper-aero-pink {
   background:
-    radial-gradient(ellipse at 50% 70%, rgba(214, 236, 255, 0.62), transparent 56%),
-    linear-gradient(140deg, rgba(99, 196, 255, 0.48) 0%, rgba(255, 130, 210, 0.38) 62%, rgba(99, 168, 255, 0.24) 100%),
-    linear-gradient(160deg, #02185e 0%, #0940a9 52%, #032578 100%);
+    /* sun disc */
+    radial-gradient(circle 80px at 55% 52%, rgba(255,240,120,0.98), transparent 45%),
+    /* horizon glow */
+    radial-gradient(ellipse 90% 30% at 50% 58%, rgba(255,200,80,0.8), transparent 65%),
+    /* sky layers */
+    linear-gradient(to bottom,
+      #1a1a60 0%, #3a2080 8%, #7030a0 18%, #c04080 30%, #e86030 42%,
+      #f09020 52%, #f8c040 58%, #fde888 63%, #fff5c0 67%),
+    /* hill silhouette */
+    radial-gradient(ellipse 160% 45% at 50% 130%, #0a0a20 0%, #151530 30%, #201840 55%, transparent 80%);
+  background-size: 100% 100%;
 }
 
-/* Aero Neon — cyberpunk blue-magenta */
+/* Aero Morning — misty forest with light rays through trees */
 .wallpaper-aero-neon {
   background:
-    radial-gradient(ellipse at 72% 72%, rgba(255, 132, 205, 0.46), transparent 55%),
-    radial-gradient(ellipse at 22% 74%, rgba(94, 230, 255, 0.44), transparent 52%),
-    linear-gradient(150deg, #020b45 0%, #053491 46%, #041f73 66%, #2d0b63 100%);
+    /* light rays */
+    repeating-conic-gradient(from 275deg at 50% -5%, rgba(255,255,220,0.07) 0deg 4deg, transparent 4deg 12deg),
+    /* sun glow */
+    radial-gradient(circle 200px at 50% 2%, rgba(255,250,200,0.75), transparent 60%),
+    /* misty air */
+    radial-gradient(ellipse 100% 25% at 50% 62%, rgba(200,230,255,0.45), transparent 70%),
+    /* sky */
+    linear-gradient(to bottom, #1a4a8a 0%, #2a6ab8 15%, #4a90d8 30%, #7ab8ee 46%, #a8d8f8 58%, #cceeff 64%),
+    /* forest floor light */
+    radial-gradient(ellipse 120% 30% at 50% 110%, rgba(80,160,40,0.9), transparent 70%),
+    /* ground */
+    linear-gradient(to bottom, transparent 60%, #1a5010 65%, #266018 75%, #356e22 85%, #3e7a28 100%);
+  background-size: 100% 100%;
 }
 
-/* Aero Dusk — amber twilight */
+/* Aero Lake — calm blue lake reflecting sky and mountains */
 .wallpaper-aero-dusk {
   background:
-    radial-gradient(ellipse at 72% 74%, rgba(255, 186, 116, 0.48), transparent 48%),
-    radial-gradient(ellipse at 32% 76%, rgba(125, 205, 255, 0.3), transparent 52%),
-    linear-gradient(180deg, #06194d 0%, #143d86 54%, #072252 100%);
+    /* mountain snow caps */
+    radial-gradient(ellipse 30% 12% at 32% 42%, rgba(255,255,255,0.9), transparent 70%),
+    radial-gradient(ellipse 22% 10% at 62% 38%, rgba(255,255,255,0.8), transparent 65%),
+    /* sky with clouds */
+    radial-gradient(ellipse 180px 55px at 25% 18%, rgba(255,255,255,0.85), transparent 65%),
+    radial-gradient(ellipse 130px 45px at 70% 14%, rgba(255,255,255,0.75), transparent 60%),
+    /* sky */
+    linear-gradient(to bottom, #1060b0 0%, #2080d0 20%, #40a0e8 38%, #70c0f5 54%, #a0dcff 62%),
+    /* water reflection */
+    linear-gradient(to top, #0a5090 0%, #1870b8 15%, #2a90d5 30%, transparent 55%),
+    /* mountain silhouette */
+    radial-gradient(ellipse 180% 40% at 50% 108%, #2a5020 0%, #3a6028 30%, #486830 50%, transparent 75%);
+  background-size: 100% 100%;
 }
 
-/* Aero Forest — deep green canopy */
+/* Aero Autumn — warm fall forest, orange-red leaves */
 .wallpaper-aero-forest {
   background:
-    radial-gradient(ellipse at 50% 80%, rgba(80, 220, 100, 0.35), transparent 55%),
-    radial-gradient(ellipse at 15% 20%, rgba(60, 200, 80, 0.25), transparent 45%),
-    linear-gradient(160deg, #021a04 0%, #0a4a10 45%, #063008 68%, #021505 100%);
+    /* sky */
+    linear-gradient(to bottom, #4090d0 0%, #60a8e0 20%, #88c4f0 38%, #b0dcf8 52%, #d0eeff 60%),
+    /* autumn clouds */
+    radial-gradient(ellipse 200px 60px at 20% 20%, rgba(255,255,255,0.85), transparent 65%),
+    radial-gradient(ellipse 140px 45px at 65% 16%, rgba(255,255,255,0.75), transparent 60%),
+    /* warm tree canopy */
+    radial-gradient(ellipse 50% 30% at 20% 72%, #c04010 0%, #d05820 35%, #e07030 60%, transparent 85%),
+    radial-gradient(ellipse 45% 28% at 75% 70%, #a83010 0%, #c04818 30%, #d86028 55%, transparent 80%),
+    radial-gradient(ellipse 40% 25% at 48% 75%, #b83820 0%, #d05530 30%, #e87040 55%, transparent 80%),
+    /* ground */
+    radial-gradient(ellipse 140% 35% at 50% 120%, #5a2808 0%, #7a3810 25%, #9a4c18 50%, transparent 80%);
+  background-size: 100% 100%;
 }
 
-/* Aero Ember — warm orange-red */
+/* Aero Snow — winter wonderland, bright white snow, icy blue sky */
 .wallpaper-aero-ember {
   background:
-    radial-gradient(ellipse at 60% 70%, rgba(255, 140, 60, 0.5), transparent 52%),
-    radial-gradient(ellipse at 25% 30%, rgba(255, 80, 40, 0.3), transparent 48%),
-    linear-gradient(150deg, #1a0500 0%, #5a1200 45%, #3a0800 70%, #1a0200 100%);
+    /* snowflake shimmer */
+    radial-gradient(circle 3px at 15% 25%, rgba(255,255,255,0.9), transparent 80%),
+    radial-gradient(circle 2px at 35% 15%, rgba(255,255,255,0.8), transparent 80%),
+    radial-gradient(circle 3px at 60% 20%, rgba(255,255,255,0.9), transparent 80%),
+    radial-gradient(circle 2px at 80% 30%, rgba(255,255,255,0.7), transparent 80%),
+    radial-gradient(circle 4px at 48% 10%, rgba(255,255,255,0.95), transparent 80%),
+    /* cold pale sky */
+    linear-gradient(to bottom, #a0c8e8 0%, #c0ddf5 25%, #d8eefc 45%, #eef8ff 58%, #f5fbff 62%),
+    /* snow drifts */
+    radial-gradient(ellipse 200% 55% at 50% 140%, #ffffff 0%, #e8f5ff 25%, #d0eeff 50%, transparent 80%),
+    /* ice tree silhouettes */
+    radial-gradient(ellipse 60% 30% at 15% 105%, #2a4060 0%, #3a5070 35%, transparent 75%),
+    radial-gradient(ellipse 50% 28% at 85% 110%, #2a4060 0%, #3a5070 35%, transparent 75%);
+  background-size: 100% 100%;
 }
 
-/* Aero Arctic — ice white-blue */
+/* Aero Night — starry night sky with full moon over ocean */
 .wallpaper-aero-arctic {
   background:
-    radial-gradient(ellipse at 40% 30%, rgba(210, 245, 255, 0.7), transparent 50%),
-    radial-gradient(ellipse at 75% 75%, rgba(160, 220, 255, 0.5), transparent 45%),
-    linear-gradient(150deg, #0a2a3a 0%, #1050a0 40%, #0a3070 65%, #052050 100%);
+    /* moon */
+    radial-gradient(circle 60px at 72% 18%, rgba(255,255,220,0.98), rgba(240,248,200,0.4) 40%, transparent 60%),
+    /* moon glow */
+    radial-gradient(circle 180px at 72% 18%, rgba(200,230,255,0.25), transparent 70%),
+    /* stars */
+    radial-gradient(circle 1.5px at 8% 8%, rgba(255,255,255,0.9), transparent 80%),
+    radial-gradient(circle 1px at 22% 5%, rgba(255,255,255,0.8), transparent 80%),
+    radial-gradient(circle 2px at 38% 12%, rgba(255,255,255,0.7), transparent 80%),
+    radial-gradient(circle 1px at 55% 6%, rgba(255,255,255,0.9), transparent 80%),
+    radial-gradient(circle 1.5px at 68% 9%, rgba(255,255,255,0.6), transparent 80%),
+    radial-gradient(circle 1px at 88% 7%, rgba(255,255,255,0.8), transparent 80%),
+    radial-gradient(circle 1px at 14% 22%, rgba(255,255,255,0.5), transparent 80%),
+    radial-gradient(circle 2px at 45% 30%, rgba(255,255,255,0.4), transparent 80%),
+    radial-gradient(circle 1px at 80% 25%, rgba(255,255,255,0.6), transparent 80%),
+    /* deep night sky */
+    linear-gradient(to bottom, #020614 0%, #040c28 15%, #070f38 30%, #0a1248 42%, #0a1540 56%, #081030 65%),
+    /* ocean reflection */
+    radial-gradient(ellipse 100% 40% at 50% 140%, rgba(10,50,120,0.9), transparent 70%),
+    /* horizon glow */
+    radial-gradient(ellipse 80% 12% at 50% 68%, rgba(30,80,160,0.5), transparent 70%);
+  background-size: 100% 100%;
 }
 
-/* Aero Galaxy — deep space nebula */
+/* Aero Space — vibrant deep space with nebula colours */
 .wallpaper-aero-galaxy {
   background:
-    radial-gradient(ellipse at 30% 40%, rgba(160, 80, 255, 0.45), transparent 42%),
-    radial-gradient(ellipse at 70% 60%, rgba(80, 140, 255, 0.4), transparent 40%),
-    radial-gradient(ellipse at 50% 10%, rgba(255, 100, 200, 0.25), transparent 35%),
-    linear-gradient(135deg, #06010f 0%, #150830 50%, #060115 100%);
+    /* nebula core */
+    radial-gradient(ellipse 55% 45% at 35% 45%, rgba(100,40,200,0.7), transparent 65%),
+    radial-gradient(ellipse 45% 40% at 70% 55%, rgba(40,100,220,0.6), transparent 60%),
+    radial-gradient(ellipse 35% 30% at 55% 25%, rgba(220,60,180,0.45), transparent 55%),
+    radial-gradient(ellipse 25% 20% at 20% 70%, rgba(80,200,240,0.35), transparent 55%),
+    /* star clusters */
+    radial-gradient(circle 1.5px at 12% 10%, white, transparent 80%),
+    radial-gradient(circle 1px at 28% 18%, white, transparent 80%),
+    radial-gradient(circle 2px at 45% 8%, rgba(255,255,255,0.9), transparent 80%),
+    radial-gradient(circle 1px at 60% 15%, white, transparent 80%),
+    radial-gradient(circle 1.5px at 75% 10%, rgba(255,255,255,0.8), transparent 80%),
+    radial-gradient(circle 1px at 90% 20%, white, transparent 80%),
+    radial-gradient(circle 1px at 5% 40%, rgba(255,255,255,0.7), transparent 80%),
+    radial-gradient(circle 2px at 85% 45%, rgba(255,255,255,0.9), transparent 80%),
+    radial-gradient(circle 1px at 50% 75%, rgba(255,255,255,0.6), transparent 80%),
+    radial-gradient(circle 1.5px at 30% 85%, rgba(255,255,255,0.7), transparent 80%),
+    /* deep space */
+    linear-gradient(135deg, #020008 0%, #0a0520 35%, #040212 65%, #020008 100%);
+  background-size: 100% 100%;
 }
 
 

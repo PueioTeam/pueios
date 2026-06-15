@@ -34,7 +34,7 @@ const APP_TITLES: Record<AppId, string> = {
   "chess": "Chess",
   "puei-mansion": "Puei Mansion",
   "pmail": "PMail",
-  "racing-3d": "Puei Racing 3D",
+  "pueyracing": "PueiRacing",
   "iso-viewer": "ISO Viewer",
   "zip-viewer": "ZIP Viewer",
 };
@@ -57,7 +57,7 @@ const APP_SIZES: Partial<Record<AppId, { w: number; h: number }>> = {
   "chess": { w: 560, h: 600 },
   "puei-mansion": { w: 720, h: 540 },
   "pmail": { w: 860, h: 580 },
-  "racing-3d": { w: 900, h: 620 },
+  "pueyracing": { w: 900, h: 620 },
 };
 
 const GRID_W = 96;
@@ -525,21 +525,31 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
     return () => clearInterval(t);
   }, []);
 
+  const touchHideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
-    const onMove = (e: TouchEvent) => {
-      const t = e.touches[0];
-      if (t) setTouchDot({ x: t.clientX, y: t.clientY, visible: true });
+    const onTouch = (e: TouchEvent) => {
+      const t = e.touches[0] ?? e.changedTouches[0];
+      if (!t) return;
+      if (touchHideTimer.current) clearTimeout(touchHideTimer.current);
+      setTouchDot({ x: t.clientX, y: t.clientY, visible: true });
     };
-    const onEnd = () => setTouchDot(d => ({ ...d, visible: false }));
-    window.addEventListener("touchmove", onMove, { passive: true });
-    window.addEventListener("touchstart", onMove as any, { passive: true });
-    window.addEventListener("touchend", onEnd);
-    window.addEventListener("touchcancel", onEnd);
+    const onEnd = (e: TouchEvent) => {
+      const t = e.changedTouches[0];
+      if (t) setTouchDot({ x: t.clientX, y: t.clientY, visible: true });
+      // Keep cursor visible for 1.2s after lift so it doesn't vanish instantly
+      if (touchHideTimer.current) clearTimeout(touchHideTimer.current);
+      touchHideTimer.current = setTimeout(() => setTouchDot(d => ({ ...d, visible: false })), 1200);
+    };
+    window.addEventListener("touchstart", onTouch as any, { passive: true });
+    window.addEventListener("touchmove", onTouch as any, { passive: true });
+    window.addEventListener("touchend", onEnd as any, { passive: true });
+    window.addEventListener("touchcancel", onEnd as any, { passive: true });
     return () => {
-      window.removeEventListener("touchmove", onMove);
-      window.removeEventListener("touchstart", onMove as any);
-      window.removeEventListener("touchend", onEnd);
-      window.removeEventListener("touchcancel", onEnd);
+      window.removeEventListener("touchstart", onTouch as any);
+      window.removeEventListener("touchmove", onTouch as any);
+      window.removeEventListener("touchend", onEnd as any);
+      window.removeEventListener("touchcancel", onEnd as any);
+      if (touchHideTimer.current) clearTimeout(touchHideTimer.current);
     };
   }, []);
 
@@ -987,7 +997,7 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
                 </div>
               ))}
             </div>
-            <div className="text-[10px] opacity-40 mt-4">Your PC will restart several times. This might take a while.</div>
+            <div className="text-[10px] opacity-40 mt-4">Your device will restart several times. This might take a while.</div>
           </div>
         );
       })(),
@@ -1491,11 +1501,6 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
                     </button>
                   );
                 })}
-                <button onClick={() => { setCreating(true); setPwError(""); }}
-                  style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 16px", borderRadius: 14, border: "1px dashed rgba(255,255,255,0.2)", background: "rgba(255,255,255,0.04)", cursor: "pointer", minWidth: 180 }}>
-                  <div style={{ width: 40, height: 40, borderRadius: 12, background: "rgba(255,255,255,0.08)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, color: "rgba(255,255,255,0.5)" }}>+</div>
-                  <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 12 }}>Add account</div>
-                </button>
               </div>
             )}
 
@@ -2150,6 +2155,9 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
             const hasWin = windows.some((w) => p.appId === "web-app" ? w.appId === "web-app" && w.webUrl === p.webUrl : w.appId === p.appId);
             const activeWin = windows.find((w) => (p.appId === "web-app" ? w.appId === "web-app" && w.webUrl === p.webUrl : w.appId === p.appId) && !w.minimized);
             const label = p.label ?? APP_TITLES[p.appId] ?? p.appId;
+            const desktopIc = icons.find((i) => i.appId === p.appId && (p.appId !== "web-app" || i.webUrl === p.webUrl));
+            const pinnedIconUrl = desktopIc?.iconUrl;
+            const pinnedIconEmoji = desktopIc?.iconEmoji;
             return (
               <div key={pKey} className="relative flex flex-col items-center">
                 <button onClick={(e) => { e.stopPropagation(); openPinned(p); }}
@@ -2161,7 +2169,7 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
                   ]}); }}
                   className="w-10 h-10 rounded-xl flex items-center justify-center text-lg transition-colors hover:bg-white/10"
                   style={{ background: activeWin ? "rgba(99,102,241,0.35)" : hasWin ? "rgba(255,255,255,0.08)" : "transparent" }}>
-                  {appIcon(p.appId, 22)}
+                  {appIcon(p.appId, 22, pinnedIconEmoji, pinnedIconUrl)}
                 </button>
                 {hasWin && <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-indigo-400" />}
               </div>
@@ -2186,7 +2194,7 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
                 { sep: true },
                 { label: "Close", action: () => closeWin(w.id) },
               ]});}}>
-              {appIcon(w.appId, 16)}
+              {appIcon(w.appId, 16, undefined, w.appId === "web-app" ? icons.find(i => i.appId === "web-app" && i.webUrl === w.webUrl)?.iconUrl : undefined)}
               <span className="truncate max-w-[80px]">{w.title}</span>
             </button>
           ))}
@@ -2296,12 +2304,13 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
         </div>
       )}
 
-      {touchDot.visible && (
+      {touchDot.visible && theme.touchCursor !== false && (
         <div style={{
           position: "fixed", left: touchDot.x, top: touchDot.y,
           width: 28, height: 28, pointerEvents: "none",
-          zIndex: 999999, transition: "left 0.04s, top 0.04s",
+          zIndex: 999999,
           transform: "translate(-2px, -2px)",
+          willChange: "transform",
         }}>
           <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" style={{ display: "block", filter: "drop-shadow(0 1px 3px rgba(0,0,0,0.7))" }}>
             <path d="M3 2 L3 18 L7 14 L10.5 21 L12.5 20 L9 13 L15 13 Z" fill="white" stroke={theme.cursorColor ?? "#888"} strokeWidth="1.5" strokeLinejoin="round" />

@@ -24,6 +24,7 @@ export type Theme = {
   glassSaturation: number;
   aeroGlow: number;
   cursorColor: string; // hex, e.g. "#ffffff"
+  touchCursor?: boolean; // show custom cursor on touch screens
 };
 
 // Trusted domains for the Installer (closed-ecosystem rule)
@@ -140,7 +141,7 @@ export type AppId =
   | "iso-viewer"
   | "zip-viewer"
   | "pmail"
-  | "racing-3d";
+  | "pueyracing";
 
 export type WindowState = {
   id: string;
