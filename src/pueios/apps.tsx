@@ -4528,20 +4528,24 @@ function FolderApp({ folderIconId, icons, openApp, openWebApp }: {
 }
 
 // ---------- Web App frame ----------
-// Sites that work fine directly in an iframe (allow-listed)
-const DIRECT_IFRAME_HOSTS = new Set([
-  "youtube.com", "www.youtube.com",
-  "bezosmp.lovable.app",
+// Sites known to block iframe embedding — show an "open externally" page instead
+const IFRAME_BLOCKED_HOSTS = new Set([
+  "youtube.com", "www.youtube.com", "youtu.be",
+  "google.com", "www.google.com",
+  "facebook.com", "www.facebook.com",
+  "twitter.com", "x.com",
+  "instagram.com", "www.instagram.com",
+  "reddit.com", "www.reddit.com",
+  "tiktok.com", "www.tiktok.com",
+  "netflix.com", "www.netflix.com",
+  "twitch.tv", "www.twitch.tv",
 ]);
 
-function proxyUrl(url: string): string {
+function isIframeBlocked(url: string): boolean {
   try {
     const { hostname } = new URL(url);
-    if (DIRECT_IFRAME_HOSTS.has(hostname)) return url;
-  } catch {
-    return url;
-  }
-  return `/api/proxy?url=${encodeURIComponent(url)}`;
+    return IFRAME_BLOCKED_HOSTS.has(hostname);
+  } catch { return false; }
 }
 
 function WebAppFrame({ url, currentUser, startUpgrade, systemVersion }: { url: string; currentUser: string; startUpgrade: (target: SystemVersion) => void; systemVersion?: SystemVersion }) {
@@ -4561,7 +4565,31 @@ function WebAppFrame({ url, currentUser, startUpgrade, systemVersion }: { url: s
       </div>
     );
   }
-  const src = url.startsWith("http") ? proxyUrl(url) : url;
+  // Sites that block iframe embedding — open externally
+  if (url.startsWith("http") && isIframeBlocked(url)) {
+    return (
+      <div className="flex flex-col h-full">
+        <div className="aero-titlebar text-xs px-3 py-1 flex items-center gap-2">
+          <span className="opacity-60">🔗</span>
+          <span className="truncate flex-1">{url}</span>
+        </div>
+        <div className="flex-1 flex flex-col items-center justify-center gap-4 p-6" style={{ background: "var(--background)" }}>
+          <div style={{ fontSize: 48 }}>🌐</div>
+          <div className="text-center">
+            <div className="font-semibold mb-1" style={{ color: "var(--foreground)" }}>This site can't be opened inside PueiOS</div>
+            <div className="text-sm opacity-60 mb-4" style={{ color: "var(--foreground)" }}>
+              {(() => { try { return new URL(url).hostname; } catch { return url; } })()} blocks embedded browsing.
+            </div>
+            <a href={url} target="_blank" rel="noreferrer"
+              className="aero-button rounded-xl px-5 py-2.5 text-sm font-semibold inline-block"
+              style={{ textDecoration: "none", color: "var(--foreground)" }}>
+              🚀 Open in real browser
+            </a>
+          </div>
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="flex flex-col h-full">
       <div className="aero-titlebar text-xs px-3 py-1 flex items-center gap-2">
@@ -4569,7 +4597,7 @@ function WebAppFrame({ url, currentUser, startUpgrade, systemVersion }: { url: s
         <span className="truncate flex-1">{url}</span>
       </div>
       <div className="flex-1 relative panel-light">
-        <iframe src={src} title={url} className="w-full h-full border-0" allow="fullscreen" />
+        <iframe src={url} title={url} className="w-full h-full border-0" allow="fullscreen" />
       </div>
     </div>
   );
@@ -6353,6 +6381,28 @@ const PMAIL_FOLDERS_DEF = [
 ];
 type PMFolder = "inbox" | "important" | "sent" | "drafts" | "spam" | "trash";
 
+function resolveSenderInfo(name: string, users: { name: string; avatar?: string; color?: string }[]): { av: string; col: string } {
+  const lower = name.toLowerCase();
+  const local = users.find((u) => u.name.toLowerCase() === lower);
+  if (local) return { av: (local.avatar ?? "").trim(), col: local.color ?? "220" };
+  const dir = loadDirectory().find((e) => e.name.toLowerCase() === lower);
+  if (dir) return { av: (dir.avatar ?? "").trim(), col: dir.color ?? "220" };
+  return { av: "", col: "220" };
+}
+
+function SenderAvatar({ name, size = 32, users }: { name: string; size?: number; users: { name: string; avatar?: string; color?: string }[] }) {
+  const { av, col } = resolveSenderInfo(name, users);
+  const isImg = av.startsWith("data:") || av.startsWith("http");
+  const isEmoji = av.length > 0 && !isImg;
+  return (
+    <div style={{ width: size, height: size, borderRadius: size * 0.28, background: `linear-gradient(135deg, oklch(0.65 0.2 ${col}), oklch(0.4 0.22 ${col}))`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: size * 0.55, flexShrink: 0, overflow: "hidden", boxShadow: "0 2px 6px rgba(0,0,0,0.3)" }}>
+      {isImg ? <img src={av} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+        : isEmoji ? <span style={{ lineHeight: 1 }}>{av}</span>
+        : <span style={{ color: "#fff", fontWeight: 700, fontSize: size * 0.42, lineHeight: 1 }}>{(name[0] ?? "?").toUpperCase()}</span>}
+    </div>
+  );
+}
+
 function PMailApp({ currentUser, users }: { currentUser: string; users: { name: string; pueiNumber?: string; avatar?: string; color?: string }[] }) {
   const [folder, setFolder] = useState<PMFolder>("inbox");
   const [msgs, setMsgs] = useState<MailMessage[]>(() => loadMail(currentUser));
@@ -6522,26 +6572,32 @@ function PMailApp({ currentUser, users }: { currentUser: string; users: { name: 
               <span className="text-2xl">📭</span>
               <span className="text-xs">Empty</span>
             </div>
-          ) : folderMsgs.map((m) => (
-            <div key={m.id} onClick={() => openMsg(m)}
-              className="flex flex-col gap-0.5 px-3 py-2.5 border-b cursor-pointer transition-colors"
-              style={{ borderColor: "var(--border)", background: selected?.id === m.id ? "var(--accent)" : "transparent" }}>
-              <div className="flex justify-between items-center gap-1">
-                <span className="text-xs font-semibold truncate" style={{ color: selected?.id === m.id ? "#fff" : "var(--foreground)", opacity: m.read ? 0.7 : 1, maxWidth: 130 }}>
-                  {folder === "sent" ? `To: ${m.to}` : m.from}
-                </span>
-                <span className="text-[10px] opacity-60 shrink-0" style={{ color: selected?.id === m.id ? "#fff" : undefined }}>
-                  {new Date(m.at).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
-                </span>
+          ) : folderMsgs.map((m) => {
+            const displayName = folder === "sent" ? m.to : m.from;
+            return (
+              <div key={m.id} onClick={() => openMsg(m)}
+                className="flex items-start gap-2 px-3 py-2.5 border-b cursor-pointer transition-colors"
+                style={{ borderColor: "var(--border)", background: selected?.id === m.id ? "var(--accent)" : "transparent" }}>
+                <SenderAvatar name={displayName} size={34} users={users} />
+                <div className="flex flex-col gap-0.5 min-w-0 flex-1">
+                  <div className="flex justify-between items-center gap-1">
+                    <span className="text-xs font-semibold truncate" style={{ color: selected?.id === m.id ? "#fff" : "var(--foreground)", opacity: m.read ? 0.7 : 1, maxWidth: 120 }}>
+                      {displayName}
+                    </span>
+                    <span className="text-[10px] opacity-60 shrink-0" style={{ color: selected?.id === m.id ? "#fff" : undefined }}>
+                      {new Date(m.at).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+                    </span>
+                  </div>
+                  <div className="text-xs truncate" style={{ fontWeight: m.read ? 400 : 700, color: selected?.id === m.id ? "#fff" : "var(--foreground)" }}>
+                    {m.subject || "(no subject)"}
+                  </div>
+                  <div className="text-[10px] truncate opacity-60" style={{ color: selected?.id === m.id ? "#fff" : undefined }}>
+                    {m.body.slice(0, 60)}
+                  </div>
+                </div>
               </div>
-              <div className="text-xs truncate" style={{ fontWeight: m.read ? 400 : 700, color: selected?.id === m.id ? "#fff" : "var(--foreground)" }}>
-                {m.subject || "(no subject)"}
-              </div>
-              <div className="text-[10px] truncate opacity-60" style={{ color: selected?.id === m.id ? "#fff" : undefined }}>
-                {m.body.slice(0, 60)}
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
@@ -6580,26 +6636,7 @@ function PMailApp({ currentUser, users }: { currentUser: string; users: { name: 
         ) : selected ? (
           <div className="flex flex-col h-full">
             <div className="flex items-start gap-3 p-4 border-b" style={{ borderColor: "var(--border)", background: "var(--glass)" }}>
-              {(() => {
-                const fromLower = (selected.from ?? "").toLowerCase();
-                const localSender = users.find(u => u.name.toLowerCase() === fromLower);
-                const dirEntry = !localSender ? loadDirectory().find(e => e.name.toLowerCase() === fromLower) : null;
-                const sender = localSender ?? dirEntry;
-                const av: string = ((sender as any)?.avatar ?? "").trim();
-                const col: string = (sender as any)?.color ?? "220";
-                const isImg = av.startsWith("data:") || av.startsWith("http");
-                const isEmoji = av.length > 0 && !isImg;
-                return (
-                  <div style={{ width: 44, height: 44, borderRadius: 12, background: `linear-gradient(135deg, oklch(0.65 0.2 ${col}), oklch(0.4 0.22 ${col}))`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, flexShrink: 0, overflow: "hidden", boxShadow: "0 2px 8px rgba(0,0,0,0.3)" }}>
-                    {isImg
-                      ? <img src={av} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                      : isEmoji
-                        ? <span style={{ lineHeight: 1 }}>{av}</span>
-                        : <span style={{ color: "#fff", fontWeight: 700, fontSize: 18, lineHeight: 1 }}>{(selected.from?.[0] ?? "?").toUpperCase()}</span>
-                    }
-                  </div>
-                );
-              })()}
+              <SenderAvatar name={selected.from ?? "?"} size={44} users={users} />
               <div className="flex-1 min-w-0">
                 <div className="font-semibold text-sm">{selected.subject || "(no subject)"}</div>
                 <div className="text-xs opacity-60">From: {selected.from} → {selected.to}</div>

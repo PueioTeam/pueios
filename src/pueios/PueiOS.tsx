@@ -756,19 +756,31 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
   // Touch long-press for right click
   const touchTimer = useRef<number | null>(null);
   const touchStart = useRef<{ x: number; y: number } | null>(null);
+  const touchMoved = useRef(false);
   const onTouchStart = (e: React.TouchEvent, items: any[]) => {
     if (e.touches.length !== 1) return;
     touchStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    touchMoved.current = false;
     touchTimer.current = window.setTimeout(() => {
-      if (touchStart.current) {
+      if (touchStart.current && !touchMoved.current) {
         navigator.vibrate?.(30);
         setCtxMenu({ x: touchStart.current.x, y: touchStart.current.y, items });
       }
     }, 600);
   };
+  const onTouchMove = (e: React.TouchEvent) => {
+    if (!touchStart.current) return;
+    const dx = e.touches[0].clientX - touchStart.current.x;
+    const dy = e.touches[0].clientY - touchStart.current.y;
+    if (Math.sqrt(dx * dx + dy * dy) > 8) {
+      touchMoved.current = true;
+      if (touchTimer.current) { clearTimeout(touchTimer.current); touchTimer.current = null; }
+    }
+  };
   const onTouchEnd = () => {
     if (touchTimer.current) { clearTimeout(touchTimer.current); touchTimer.current = null; }
     touchStart.current = null;
+    touchMoved.current = false;
   };
 
   // Icon helpers
@@ -1417,37 +1429,39 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
       // PueiOS 3 — split-panel login
       const selectedU = users.find((u) => u.name === loginUser) ?? users[0];
       const p3Input: React.CSSProperties = {
-        background: "rgba(255,255,255,0.07)",
-        border: "1px solid rgba(255,255,255,0.18)",
-        borderRadius: 12,
-        padding: "12px 16px",
-        fontSize: 15,
-        color: "#fff",
+        background: "rgba(255,255,255,0.1)",
+        border: "1px solid rgba(100,150,220,0.35)",
+        borderRadius: 3,
+        padding: "10px 14px",
+        fontSize: 14,
+        color: "#dce8ff",
         outline: "none",
         width: "100%",
         boxSizing: "border-box",
+        boxShadow: "inset 0 1px 3px rgba(0,0,0,0.35)",
       };
       const p3Btn: React.CSSProperties = {
-        background: "rgba(255,255,255,0.1)",
-        border: "1px solid rgba(255,255,255,0.2)",
-        borderRadius: 12,
-        color: "#fff",
+        background: "linear-gradient(180deg, rgba(80,130,200,0.35) 0%, rgba(30,70,150,0.45) 100%)",
+        border: "1px solid rgba(100,160,230,0.4)",
+        borderRadius: 3,
+        color: "#d8eaff",
         fontWeight: 600,
-        fontSize: 14,
-        padding: "11px 24px",
+        fontSize: 13,
+        padding: "10px 22px",
         cursor: "pointer",
+        boxShadow: "0 1px 0 rgba(255,255,255,0.1)",
       };
       const p3BtnPrimary: React.CSSProperties = {
         ...p3Btn,
-        background: "linear-gradient(135deg, #6366f1, #4f46e5)",
-        border: "1px solid rgba(139,92,246,0.6)",
-        boxShadow: "0 4px 20px rgba(99,102,241,0.5)",
+        background: "linear-gradient(180deg, rgba(60,120,220,0.7) 0%, rgba(20,60,160,0.85) 100%)",
+        border: "1px solid rgba(80,140,240,0.6)",
+        boxShadow: "0 2px 12px rgba(30,80,200,0.5), 0 1px 0 rgba(255,255,255,0.15)",
       };
 
       const renderForm = () => {
         if (creating) return (
           <>
-            <div style={{ color: "#e0e0ff", fontWeight: 700, fontSize: 20, marginBottom: 28 }}>Create account</div>
+            <div style={{ color: "#dce8ff", fontWeight: 600, fontSize: 18, marginBottom: 28 }}>Create account</div>
             <div style={{ marginBottom: 14 }}>
               <div style={{ fontSize: 11, color: "rgba(200,200,255,0.5)", marginBottom: 6, letterSpacing: 1, textTransform: "uppercase" }}>Name</div>
               <input value={newAcc.name} onChange={(e) => setNewAcc({ ...newAcc, name: e.target.value })} style={p3Input} autoFocus placeholder="Your name" />
@@ -1460,7 +1474,7 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
             <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 22 }}>
               {["🧑","👩","🧔","👵","🧑‍💻","🦸","🧙","🐱","🤖","👽","🎩","🌟"].map((a) => (
                 <button key={a} onClick={() => setNewAcc({ ...newAcc, avatar: a })}
-                  style={{ width: 36, height: 36, borderRadius: 9, fontSize: 18, border: newAcc.avatar === a ? "2px solid #6366f1" : "1px solid rgba(255,255,255,0.12)", background: newAcc.avatar === a ? "rgba(99,102,241,0.25)" : "transparent", cursor: "pointer" }}>{a}</button>
+                  style={{ width: 36, height: 36, borderRadius: 3, fontSize: 18, border: newAcc.avatar === a ? "2px solid rgba(80,150,230,0.8)" : "1px solid rgba(255,255,255,0.12)", background: newAcc.avatar === a ? "rgba(50,100,210,0.3)" : "transparent", cursor: "pointer" }}>{a}</button>
               ))}
             </div>
             {pwError && <div style={{ color: "#f87171", fontSize: 12, marginBottom: 12 }}>{pwError}</div>}
@@ -1472,7 +1486,7 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
         );
         if (switching) return (
           <>
-            <div style={{ color: "#e0e0ff", fontWeight: 700, fontSize: 20, marginBottom: 28 }}>Other account</div>
+            <div style={{ color: "#dce8ff", fontWeight: 600, fontSize: 18, marginBottom: 28 }}>Other account</div>
             <div style={{ marginBottom: 14 }}>
               <div style={{ fontSize: 11, color: "rgba(200,200,255,0.5)", marginBottom: 6, letterSpacing: 1, textTransform: "uppercase" }}>Username</div>
               <input value={switchName} onChange={(e) => { setSwitchName(e.target.value); setSwitchErr(""); }} onKeyDown={(e) => { if (e.key === "Enter") switchToAccount(); }} autoFocus style={p3Input} placeholder="Username" />
@@ -1493,11 +1507,11 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
           <>
             {/* User avatar + name */}
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: 32 }}>
-              <div style={{ width: 88, height: 88, borderRadius: "50%", background: `linear-gradient(135deg, oklch(0.7 0.18 ${selectedU.color}), oklch(0.45 0.2 ${selectedU.color}))`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 46, overflow: "hidden", marginBottom: 14, boxShadow: "0 0 0 4px rgba(99,102,241,0.3), 0 8px 32px rgba(0,0,0,0.5)" }}>
+              <div style={{ width: 96, height: 96, borderRadius: "50%", background: `linear-gradient(135deg, oklch(0.7 0.18 ${selectedU.color}), oklch(0.45 0.2 ${selectedU.color}))`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 50, overflow: "hidden", marginBottom: 14, boxShadow: "0 0 0 3px rgba(80,140,230,0.5), 0 0 0 5px rgba(40,90,180,0.25), 0 8px 32px rgba(0,0,0,0.6)" }}>
                 {selectedU.avatar.startsWith("data:") ? <img src={selectedU.avatar} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : selectedU.avatar}
               </div>
-              <div style={{ color: "#e0e0ff", fontWeight: 700, fontSize: 22 }}>{selectedU.name}</div>
-              <div style={{ color: "rgba(180,180,255,0.45)", fontSize: 12, marginTop: 3 }}>{locked ? "Screen locked" : "Welcome back"}</div>
+              <div style={{ color: "#dce8ff", fontWeight: 600, fontSize: 22, letterSpacing: 0.3 }}>{selectedU.name}</div>
+              <div style={{ color: "rgba(160,200,255,0.5)", fontSize: 12, marginTop: 3 }}>{locked ? "Screen locked" : "Welcome"}</div>
             </div>
             {/* User selector if multiple accounts */}
             {!locked && users.filter(u => typeof u.password !== "undefined").length > 1 && (
@@ -1506,7 +1520,7 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
                   const isSel = loginUser === u.name;
                   return (
                     <button key={u.name} onClick={() => { setLoginUser(u.name); setPwError(""); setPwInput(""); }}
-                      style={{ display: "flex", alignItems: "center", gap: 6, padding: "5px 12px 5px 6px", borderRadius: 30, border: isSel ? "1px solid #6366f1" : "1px solid rgba(255,255,255,0.1)", background: isSel ? "rgba(99,102,241,0.2)" : "transparent", cursor: "pointer", color: "#fff" }}>
+                      style={{ display: "flex", alignItems: "center", gap: 6, padding: "5px 12px 5px 6px", borderRadius: 2, border: isSel ? "1px solid rgba(80,140,230,0.6)" : "1px solid rgba(255,255,255,0.1)", background: isSel ? "rgba(50,100,200,0.3)" : "transparent", cursor: "pointer", color: "#dce8ff" }}>
                       <div style={{ width: 24, height: 24, borderRadius: "50%", background: `linear-gradient(135deg, oklch(0.7 0.18 ${u.color}), oklch(0.45 0.2 ${u.color}))`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, overflow: "hidden", flexShrink: 0 }}>
                         {u.avatar.startsWith("data:") ? <img src={u.avatar} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : u.avatar}
                       </div>
@@ -1526,9 +1540,9 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
               Sign In →
             </button>
             <div style={{ display: "flex", justifyContent: "center", gap: 18 }}>
-              <button style={{ background: "none", border: "none", color: "rgba(180,180,255,0.45)", cursor: "pointer", fontSize: 12 }} onClick={() => setPhase("recovery")}>Recovery</button>
-              {!locked && <button style={{ background: "none", border: "none", color: "rgba(180,180,255,0.45)", cursor: "pointer", fontSize: 12 }} onClick={() => { setSwitching(true); setSwitchName(""); setSwitchPw(""); setSwitchErr(""); }}>Other account</button>}
-              {!locked && <button style={{ background: "none", border: "none", color: "rgba(180,180,255,0.45)", cursor: "pointer", fontSize: 12 }} onClick={() => {
+              <button style={{ background: "none", border: "none", color: "rgba(140,190,255,0.5)", cursor: "pointer", fontSize: 12 }} onClick={() => setPhase("recovery")}>Recovery</button>
+              {!locked && <button style={{ background: "none", border: "none", color: "rgba(140,190,255,0.5)", cursor: "pointer", fontSize: 12 }} onClick={() => { setSwitching(true); setSwitchName(""); setSwitchPw(""); setSwitchErr(""); }}>Other account</button>}
+              {!locked && <button style={{ background: "none", border: "none", color: "rgba(140,190,255,0.5)", cursor: "pointer", fontSize: 12 }} onClick={() => {
                 const guestName = "Guest";
                 const existing = users.find((u) => u.name === guestName);
                 if (!existing) {
@@ -1545,32 +1559,31 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
       };
 
       return (
-        <div className="fixed inset-0 flex" style={{ fontFamily: "'Segoe UI', system-ui, sans-serif", overflow: "hidden" }}>
-          {/* Left panel — decorative */}
-          <div style={{ flex: 1, position: "relative", background: "linear-gradient(160deg, #0f0c29, #302b63, #24243e)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
-            {/* Animated rings */}
-            <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none" }}>
-              {[340, 260, 180, 100].map((r, i) => (
-                <div key={r} style={{ position: "absolute", width: r * 2, height: r * 2, borderRadius: "50%", border: `1px solid rgba(139,92,246,${0.08 + i * 0.04})`, animation: `p3ring${i} ${14 + i * 4}s linear infinite` }} />
-              ))}
-            </div>
-            {/* Glow center */}
-            <div style={{ position: "absolute", width: 300, height: 300, borderRadius: "50%", background: "radial-gradient(ellipse, rgba(99,102,241,0.25) 0%, transparent 70%)", filter: "blur(40px)" }} />
-            {/* Logo + branding */}
-            <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 18 }}>
-              <PueiLogoSvg size={80} bigEyes />
-              <div style={{ color: "rgba(255,255,255,0.9)", fontSize: 32, fontWeight: 700, letterSpacing: 2 }}>PueiOS 3</div>
-              <div style={{ color: "rgba(180,180,255,0.5)", fontSize: 13, letterSpacing: 1 }}>The future of Puei</div>
-            </div>
-            {/* Clock bottom of left panel */}
-            <div style={{ position: "absolute", bottom: 28, left: 0, right: 0, textAlign: "center", color: "rgba(180,180,255,0.45)", fontSize: 12, letterSpacing: 2 }}>
-              {now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} · {now.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })}
+        <div className="fixed inset-0 flex flex-col" style={{ fontFamily: "'Segoe UI', system-ui, sans-serif", background: "linear-gradient(180deg, #0c1a35 0%, #102244 35%, #071428 100%)", overflow: "hidden" }}>
+          {/* Win7-style top stripe */}
+          <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 3, background: "linear-gradient(90deg, #1a3f7a, #3074c2, #1a3f7a)" }} />
+
+          {/* Clock top-left */}
+          <div style={{ position: "absolute", top: 20, left: 28, color: "rgba(190,215,255,0.55)", fontSize: 13, letterSpacing: 1, zIndex: 1, pointerEvents: "none" }}>
+            {now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} · {now.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })}
+          </div>
+
+          {/* Centered user card area */}
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", zIndex: 1 }}>
+            <div style={{
+              width: 340, background: "rgba(255,255,255,0.055)", backdropFilter: "blur(18px)", WebkitBackdropFilter: "blur(18px)",
+              border: "1px solid rgba(255,255,255,0.13)", borderRadius: 3,
+              padding: "44px 38px 36px",
+              boxShadow: "0 10px 50px rgba(0,0,0,0.65), inset 0 1px 0 rgba(255,255,255,0.18)",
+            }}>
+              {renderForm()}
             </div>
           </div>
 
-          {/* Right panel — login form */}
-          <div style={{ width: 420, flexShrink: 0, background: "#0d0d1a", display: "flex", flexDirection: "column", justifyContent: "center", padding: "48px 40px", overflow: "auto" }}>
-            {renderForm()}
+          {/* Win7-style bottom bar */}
+          <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 52, background: "linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(5,15,40,0.9) 100%)", display: "flex", alignItems: "center", justifyContent: "flex-end", padding: "0 24px", gap: 12, zIndex: 1 }}>
+            <button onClick={() => setPhase("recovery")} style={{ background: "none", border: "none", color: "rgba(170,200,255,0.45)", cursor: "pointer", fontSize: 11, display: "flex", alignItems: "center", gap: 4 }}>⚙️ Ease of Access</button>
+            <button style={{ background: "none", border: "none", color: "rgba(170,200,255,0.45)", cursor: "pointer", fontSize: 11, display: "flex", alignItems: "center", gap: 4 }} onClick={() => setPhase("off")}>⏻ Shut down</button>
           </div>
 
           <style>{`
@@ -1794,6 +1807,7 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
       onMouseDown={() => { setCtxMenu(null); setStartOpen(false); setShowCalendar(false); setSelectedIcon(null); setShowVolume(false); setShowNetwork(false); }}
       onContextMenu={(e) => { e.preventDefault(); setCtxMenu({ x: e.clientX, y: e.clientY, items: desktopCtx() }); }}
       onTouchStart={(e) => onTouchStart(e, desktopCtx())}
+      onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
     >
       {/* Busy cursor spinner — follows mouse like Windows */}
@@ -1812,7 +1826,7 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
       {/* Desktop icons */}
       <div className="absolute inset-0" style={{ pointerEvents: "none" }}>
         {desktopIcons.map((ic, idx) => {
-          const iconPx = theme.iconSize === "small" ? 32 : theme.iconSize === "large" ? 56 : 44;
+          const iconPx = theme.iconSize === "small" ? 36 : theme.iconSize === "large" ? 64 : 52;
           const dbl = () => {
             if (ic.appId === "folder") openApp("folder", { folderIconId: ic.id, title: ic.label });
             else if (ic.appId === "web-app") openApp("web-app", { webUrl: ic.webUrl, title: ic.label });
@@ -1852,6 +1866,7 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
                 startIconTouchDrag(e, ic, idx);
                 onTouchStart(e, iconCtx(ic));
               }}
+              onTouchMove={onTouchMove}
               onTouchEnd={onTouchEnd}
             >
               <div className="flex justify-center mb-1">{appIcon(ic.appId, iconPx, ic.iconEmoji, ic.iconUrl)}</div>
@@ -2118,80 +2133,93 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
 
       {/* Taskbar */}
       {systemVersion === "PueiOS 3" ? (
-        /* PueiOS 3 — bottom bar, dark glass style */
-        <div className="fixed bottom-0 left-0 right-0 h-12 flex items-center px-1 gap-1 z-[8000]"
-          style={{ background: theme.taskbarColor ?? "rgba(8,8,20,0.88)", backdropFilter: "blur(24px) saturate(160%)", borderTop: "1px solid rgba(255,255,255,0.10)", boxShadow: "0 -2px 24px rgba(0,0,0,0.5)" }}
+        /* PueiOS 3 — Win7 glass taskbar */
+        <div className="fixed bottom-0 left-0 right-0 flex items-stretch z-[8000]"
+          style={{ height: 44, background: theme.taskbarColor ?? "linear-gradient(180deg, rgba(20,50,100,0.82) 0%, rgba(10,25,60,0.95) 100%)", backdropFilter: "blur(20px) saturate(180%)", borderTop: "1px solid rgba(100,160,240,0.25)", boxShadow: "0 -1px 0 rgba(255,255,255,0.08), 0 -4px 20px rgba(0,0,20,0.6)" }}
           onMouseDown={(e) => e.stopPropagation()}
           onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); setCtxMenu({ x: e.clientX, y: e.clientY, items: taskbarCtx() }); }}>
-          {/* Start button */}
-          <button className="w-10 h-10 rounded-xl flex items-center justify-center mx-1 overflow-hidden hover:bg-white/10 transition-colors"
-            style={{ background: startOpen ? "rgba(99,102,241,0.4)" : "rgba(99,102,241,0.2)" }}
-            title="Start" onClick={(e) => { e.stopPropagation(); blip("click"); setStartOpen(!startOpen); setShowCalendar(false); }}>
-            <PueiLogoSvg size={26} bigEyes />
+          {/* Win7-style Start orb */}
+          <button
+            title="Start" onClick={(e) => { e.stopPropagation(); blip("click"); setStartOpen(!startOpen); setShowCalendar(false); }}
+            style={{ width: 52, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", background: startOpen ? "linear-gradient(180deg,rgba(60,120,220,0.7) 0%,rgba(20,60,180,0.9) 100%)" : "linear-gradient(180deg,rgba(40,100,200,0.5) 0%,rgba(15,50,140,0.7) 100%)", borderRight: "1px solid rgba(100,160,240,0.2)", cursor: "pointer", position: "relative" }}>
+            {/* Orb glow */}
+            <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at 50% 30%, rgba(100,180,255,0.35) 0%, transparent 70%)", pointerEvents: "none" }} />
+            <PueiLogoSvg size={28} bigEyes />
           </button>
-          {/* Pinned apps */}
-          {pinnedApps.map((p) => {
-            const pKey = p.webUrl ?? p.appId;
-            const hasWin = windows.some((w) => p.appId === "web-app" ? w.appId === "web-app" && w.webUrl === p.webUrl : w.appId === p.appId);
-            const activeWin = windows.find((w) => (p.appId === "web-app" ? w.appId === "web-app" && w.webUrl === p.webUrl : w.appId === p.appId) && !w.minimized);
-            const label = p.label ?? APP_TITLES[p.appId] ?? p.appId;
-            const desktopIc = icons.find((i) => i.appId === p.appId && (p.appId !== "web-app" || i.webUrl === p.webUrl));
-            const pinnedIconUrl = desktopIc?.iconUrl;
-            const pinnedIconEmoji = desktopIc?.iconEmoji;
-            return (
-              <div key={pKey} className="relative flex flex-col items-center">
-                <button onClick={(e) => { e.stopPropagation(); openPinned(p); }}
-                  onMouseEnter={() => blip("hover")} title={label}
-                  onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); setCtxMenu({ x: e.clientX, y: e.clientY, items: [
-                    { label: "Open", action: () => openPinned(p) },
+          {/* Pinned + open apps area */}
+          <div className="flex items-center flex-1 overflow-hidden" style={{ gap: 2, padding: "0 4px" }}>
+            {pinnedApps.map((p) => {
+              const pKey = p.webUrl ?? p.appId;
+              const hasWin = windows.some((w) => p.appId === "web-app" ? w.appId === "web-app" && w.webUrl === p.webUrl : w.appId === p.appId);
+              const activeWin = windows.find((w) => (p.appId === "web-app" ? w.appId === "web-app" && w.webUrl === p.webUrl : w.appId === p.appId) && !w.minimized);
+              const label = p.label ?? APP_TITLES[p.appId] ?? p.appId;
+              const desktopIc = icons.find((i) => i.appId === p.appId && (p.appId !== "web-app" || i.webUrl === p.webUrl));
+              const pinnedIconUrl = desktopIc?.iconUrl;
+              const pinnedIconEmoji = desktopIc?.iconEmoji;
+              const isActive = !!activeWin;
+              return (
+                <div key={pKey} style={{ position: "relative", flexShrink: 0 }}>
+                  <button onClick={(e) => { e.stopPropagation(); openPinned(p); }}
+                    onMouseEnter={() => blip("hover")} title={label}
+                    onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); setCtxMenu({ x: e.clientX, y: e.clientY, items: [
+                      { label: "Open", action: () => openPinned(p) },
+                      { sep: true },
+                      { label: "🖇️ Unpin from taskbar", action: () => unpinFromTaskbar(pKey) },
+                    ]}); }}
+                    style={{ width: 44, height: 40, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 2, border: isActive ? "1px solid rgba(120,180,255,0.55)" : hasWin ? "1px solid rgba(255,255,255,0.12)" : "1px solid transparent", background: isActive ? "linear-gradient(180deg,rgba(60,140,255,0.35) 0%,rgba(20,80,200,0.4) 100%)" : hasWin ? "rgba(255,255,255,0.07)" : "transparent", cursor: "pointer", position: "relative", overflow: "hidden" }}>
+                    {/* Glass gloss on active */}
+                    {isActive && <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "50%", background: "linear-gradient(180deg,rgba(255,255,255,0.2) 0%,rgba(255,255,255,0) 100%)", pointerEvents: "none" }} />}
+                    {appIcon(p.appId, 26, pinnedIconEmoji, pinnedIconUrl)}
+                  </button>
+                  {hasWin && <div style={{ position: "absolute", bottom: 1, left: "50%", transform: "translateX(-50%)", width: isActive ? 24 : 8, height: 2, borderRadius: 1, background: isActive ? "rgba(100,180,255,0.9)" : "rgba(150,200,255,0.5)", transition: "width 0.2s", boxShadow: isActive ? "0 0 6px rgba(80,160,255,0.7)" : "none" }} />}
+                </div>
+              );
+            })}
+            {pinnedApps.length > 0 && windows.filter(w => !pinnedApps.some(p => p.appId === "web-app" ? w.appId === "web-app" && w.webUrl === p.webUrl : w.appId === p.appId)).length > 0 && (
+              <div style={{ width: 1, height: 28, background: "rgba(255,255,255,0.12)", margin: "0 3px", flexShrink: 0 }} />
+            )}
+            {/* Non-pinned open windows */}
+            {windows.filter(w => !pinnedApps.some(p => p.appId === "web-app" ? w.appId === "web-app" && w.webUrl === p.webUrl : w.appId === p.appId)).map((w) => {
+              const isActive2 = w.z === Math.max(...windows.map((x) => x.z)) && !w.minimized;
+              return (
+                <button key={w.id}
+                  style={{ height: 40, padding: "0 10px", display: "flex", alignItems: "center", gap: 6, borderRadius: 2, border: isActive2 ? "1px solid rgba(120,180,255,0.55)" : "1px solid rgba(255,255,255,0.1)", background: isActive2 ? "linear-gradient(180deg,rgba(60,140,255,0.35) 0%,rgba(20,80,200,0.4) 100%)" : "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.9)", fontSize: 11, maxWidth: 140, flexShrink: 0, cursor: "pointer", position: "relative", overflow: "hidden" }}
+                  onClick={(e) => { e.stopPropagation(); if (w.minimized) focusWin(w.id); else minWin(w.id); }}
+                  onContextMenu={(e) => { e.preventDefault(); e.stopPropagation();
+                    const wKey = w.appId === "web-app" ? (w.webUrl ?? w.appId) : w.appId;
+                    const isWinPinned = pinnedApps.some((p) => (p.webUrl ?? p.appId) === wKey);
+                    setCtxMenu({ x: e.clientX, y: e.clientY, items: [
+                    { label: "Restore", action: () => focusWin(w.id) },
+                    { label: "Minimize", action: () => minWin(w.id) },
+                    { label: "Maximize", action: () => maxWin(w.id) },
                     { sep: true },
-                    { label: "🖇️ Unpin from taskbar", action: () => unpinFromTaskbar(pKey) },
-                  ]}); }}
-                  className="w-10 h-10 rounded-xl flex items-center justify-center text-lg transition-colors hover:bg-white/10"
-                  style={{ background: activeWin ? "rgba(99,102,241,0.35)" : hasWin ? "rgba(255,255,255,0.08)" : "transparent" }}>
-                  {appIcon(p.appId, 22, pinnedIconEmoji, pinnedIconUrl)}
+                    isWinPinned ? { label: "🖇️ Unpin from taskbar", action: () => unpinFromTaskbar(wKey) } : { label: "🖇️ Pin to taskbar", action: () => pinToTaskbar({ appId: w.appId, webUrl: w.webUrl, label: w.title }) },
+                    { sep: true },
+                    { label: "Close", action: () => closeWin(w.id) },
+                  ]});}}>
+                  {isActive2 && <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "50%", background: "linear-gradient(180deg,rgba(255,255,255,0.18) 0%,rgba(255,255,255,0) 100%)", pointerEvents: "none" }} />}
+                  {appIcon(w.appId, 18, undefined, w.appId === "web-app" ? icons.find(i => i.appId === "web-app" && i.webUrl === w.webUrl)?.iconUrl : undefined)}
+                  <span className="truncate" style={{ maxWidth: 90 }}>{w.title}</span>
                 </button>
-                {hasWin && <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-indigo-400" />}
-              </div>
-            );
-          })}
-          <div className="w-px h-7 bg-white/15 mx-1" />
-          {/* Open windows */}
-          {windows.map((w) => (
-            <button key={w.id}
-              className="h-9 px-2.5 rounded-xl flex items-center gap-2 text-xs transition-colors hover:bg-white/10"
-              style={{ background: (w.z === Math.max(...windows.map((x)=>x.z)) && !w.minimized) ? "rgba(99,102,241,0.3)" : "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.85)", maxWidth: 140 }}
-              onClick={(e) => { e.stopPropagation(); if (w.minimized) focusWin(w.id); else minWin(w.id); }}
-              onContextMenu={(e) => { e.preventDefault(); e.stopPropagation();
-                const wKey = w.appId === "web-app" ? (w.webUrl ?? w.appId) : w.appId;
-                const isWinPinned = pinnedApps.some((p) => (p.webUrl ?? p.appId) === wKey);
-                setCtxMenu({ x: e.clientX, y: e.clientY, items: [
-                { label: "Restore", action: () => focusWin(w.id) },
-                { label: "Minimize", action: () => minWin(w.id) },
-                { label: "Maximize", action: () => maxWin(w.id) },
-                { sep: true },
-                isWinPinned ? { label: "🖇️ Unpin from taskbar", action: () => unpinFromTaskbar(wKey) } : { label: "🖇️ Pin to taskbar", action: () => pinToTaskbar({ appId: w.appId, webUrl: w.webUrl, label: w.title }) },
-                { sep: true },
-                { label: "Close", action: () => closeWin(w.id) },
-              ]});}}>
-              {appIcon(w.appId, 16, undefined, w.appId === "web-app" ? icons.find(i => i.appId === "web-app" && i.webUrl === w.webUrl)?.iconUrl : undefined)}
-              <span className="truncate max-w-[80px]">{w.title}</span>
-            </button>
-          ))}
-          <div className="flex-1" />
-          {/* Tray */}
-          <div className="flex items-center gap-1 px-2 text-white text-xs">
-            <span title="Network" className="cursor-pointer hover:opacity-80 px-1"
+              );
+            })}
+          </div>
+          {/* Win7 tray */}
+          <div style={{ display: "flex", alignItems: "center", borderLeft: "1px solid rgba(100,160,240,0.2)", padding: "0 8px", gap: 4, flexShrink: 0 }}>
+            <span title="Network" style={{ cursor: "pointer", fontSize: 14, opacity: 0.7, padding: "0 3px" }}
               onClick={(e) => { e.stopPropagation(); setShowNetwork(!showNetwork); setShowVolume(false); }}>📶</span>
-            <span title="Sound" className="cursor-pointer hover:opacity-80 px-1"
+            <span title="Sound" style={{ cursor: "pointer", fontSize: 14, opacity: 0.7, padding: "0 3px" }}
               onClick={(e) => { e.stopPropagation(); setShowVolume(!showVolume); setShowNetwork(false); blip("notify"); }}>🔊</span>
-            <button className="rounded-xl px-2 py-1 text-[10px] text-center hover:bg-white/10"
+            <button
               onClick={(e) => { e.stopPropagation(); setShowCalendar(!showCalendar); setStartOpen(false); }}
-              style={{ color: "rgba(255,255,255,0.85)", lineHeight: 1.4 }}>
-              {now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}<br />
-              {now.toLocaleDateString()}
+              style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: "none", border: "none", color: "rgba(200,225,255,0.85)", fontSize: 10, lineHeight: 1.5, cursor: "pointer", padding: "0 6px", textAlign: "center" }}>
+              <span style={{ fontWeight: 500 }}>{now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
+              <span style={{ opacity: 0.7 }}>{now.toLocaleDateString()}</span>
             </button>
           </div>
+          {/* Show Desktop button */}
+          <div title="Show Desktop" style={{ width: 8, flexShrink: 0, background: "rgba(255,255,255,0.06)", borderLeft: "1px solid rgba(100,160,240,0.2)", cursor: "pointer" }}
+            onClick={(e) => { e.stopPropagation(); windows.forEach((w) => minWin(w.id)); }} />
         </div>
       ) : (
         /* PueiOS 2 / 2+ — classic taskbar */
