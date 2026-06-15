@@ -251,7 +251,37 @@ export function appIcon(appId: AppId, size = 32, override?: string, iconUrl?: st
     "recycle-bin": "🗑️",
     "chess": "♟️",
     "puei-mansion": "👻",
+    "iso-viewer": "💿",
+    "zip-viewer": "📦",
+    "pmail": "✉️",
+    "racing-3d": "🏎️",
   };
+  // Win7-style per-app icon colors
+  const colorMap: Partial<Record<AppId, [string, string]>> = {
+    "settings":       ["#607d8b","#37474f"],
+    "file-explorer":  ["#f9a825","#e65100"],
+    "notepad":        ["#42a5f5","#1565c0"],
+    "calculator":     ["#26c6da","#00838f"],
+    "puei-paint":     ["#ec407a","#880e4f"],
+    "puei-board":     ["#ef5350","#b71c1c"],
+    "pueinet":        ["#29b6f6","#0277bd"],
+    "puei-cloud-chat":["#66bb6a","#1b5e20"],
+    "puei-studio":    ["#ab47bc","#4a148c"],
+    "app-store":      ["#26a69a","#004d40"],
+    "puei-social":    ["#ff7043","#bf360c"],
+    "folder":         ["#ffa726","#e65100"],
+    "web-app":        ["#78909c","#37474f"],
+    "recycle-bin":    ["#78909c","#455a64"],
+    "chess":          ["#8d6e63","#3e2723"],
+    "puei-mansion":   ["#7e57c2","#311b92"],
+    "about":          ["#5c6bc0","#1a237e"],
+    "iso-viewer":     ["#8d6e63","#4e342e"],
+    "zip-viewer":     ["#78909c","#37474f"],
+    "pmail":          ["#ef5350","#c62828"],
+    "racing-3d":      ["#ffca28","#f57f17"],
+  };
+  const [c1, c2] = colorMap[appId] ?? ["#546e7a","#263238"];
+
   const isImg = typeof override === "string" && override.startsWith("data:");
   const useUrl = !isImg && !override && !!iconUrl;
   const fallbackGlyph = override || map[appId];
@@ -262,18 +292,20 @@ export function appIcon(appId: AppId, size = 32, override?: string, iconUrl?: st
     if (!host) return "";
     return `https://www.google.com/s2/favicons?sz=${Math.max(32, Math.round(s))}&domain_url=${encodeURIComponent(`https://${host}`)}`;
   })();
+  const radius = Math.round(s * 0.2);
   return (
     <div
-      className="flex items-center justify-center rounded-md overflow-hidden"
+      className="flex items-center justify-center overflow-hidden relative"
       style={{
-        width: s, height: s, fontSize: s * 0.72,
-        background: "linear-gradient(135deg, rgba(255,255,255,0.7), rgba(180,220,255,0.4))",
-        border: "1px solid rgba(255,255,255,0.5)",
-        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8), 0 2px 4px rgba(0,0,0,0.2)",
+        width: s, height: s, fontSize: s * 0.62,
+        borderRadius: radius,
+        background: isImg || useUrl ? "transparent" : `linear-gradient(145deg, ${c1} 0%, ${c2} 100%)`,
+        boxShadow: `0 ${Math.round(s*0.06)}px ${Math.round(s*0.18)}px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.35)`,
+        flexShrink: 0,
       }}
     >
       {isImg
-        ? <img src={override} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+        ? <img src={override} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: radius }} />
         : useUrl
           ? <>
               <img
@@ -295,7 +327,16 @@ export function appIcon(appId: AppId, size = 32, override?: string, iconUrl?: st
               />
               <span style={{ display: "none", width: "100%", height: "100%", alignItems: "center", justifyContent: "center" }}>{fallbackGlyph}</span>
             </>
-          : fallbackGlyph}
+          : <span style={{ filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.4))", lineHeight: 1 }}>{fallbackGlyph}</span>}
+      {/* Win7-style gloss overlay — top 45% white shine */}
+      {!isImg && !useUrl && (
+        <div style={{
+          position: "absolute", top: 0, left: 0, right: 0,
+          height: "45%", borderRadius: `${radius}px ${radius}px 50% 50%`,
+          background: "linear-gradient(to bottom, rgba(255,255,255,0.45) 0%, rgba(255,255,255,0.08) 100%)",
+          pointerEvents: "none",
+        }} />
+      )}
     </div>
   );
 }

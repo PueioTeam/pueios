@@ -138,7 +138,9 @@ export type AppId =
   | "chess"
   | "puei-mansion"
   | "iso-viewer"
-  | "zip-viewer";
+  | "zip-viewer"
+  | "pmail"
+  | "racing-3d";
 
 export type WindowState = {
   id: string;

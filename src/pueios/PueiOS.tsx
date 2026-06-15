@@ -33,6 +33,10 @@ const APP_TITLES: Record<AppId, string> = {
   "recycle-bin": "Recycle Bin",
   "chess": "Chess",
   "puei-mansion": "Puei Mansion",
+  "pmail": "PMail",
+  "racing-3d": "Puei Racing 3D",
+  "iso-viewer": "ISO Viewer",
+  "zip-viewer": "ZIP Viewer",
 };
 const APP_SIZES: Partial<Record<AppId, { w: number; h: number }>> = {
   "calculator": { w: 280, h: 380 },
@@ -52,6 +56,8 @@ const APP_SIZES: Partial<Record<AppId, { w: number; h: number }>> = {
   "recycle-bin": { w: 640, h: 460 },
   "chess": { w: 560, h: 600 },
   "puei-mansion": { w: 720, h: 540 },
+  "pmail": { w: 860, h: 580 },
+  "racing-3d": { w: 900, h: 620 },
 };
 
 const GRID_W = 96;
@@ -1399,140 +1405,195 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
     const activeUser = users.find((u) => u.name === loginUser);
 
     if (systemVersion === "PueiOS 3") {
-      // PueiOS 3 login — Windows XP style
-      const xpBlue = "#245ecc";
-      const xpHeaderGrad = `linear-gradient(180deg, #3a7bd5 0%, ${xpBlue} 40%, #1a4faa 100%)`;
-      const xpBg = "linear-gradient(180deg, #1a3f80 0%, #3a6fd8 50%, #1a3f80 100%)";
-      const xpBtn = { background: "linear-gradient(180deg,#6ea8ee 0%,#3e7fd6 45%,#2b68c8 55%,#4a8fe0 100%)", border: "1px solid #1a50a0", borderRadius: 4, color: "#fff", fontWeight: 700, fontSize: 13, padding: "4px 20px", cursor: "pointer", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.3),0 2px 4px rgba(0,0,0,0.4)" };
-      const xpInput = { background: "#fff", border: "2px inset #7090c0", borderRadius: 2, padding: "3px 6px", fontSize: 13, color: "#000", outline: "none", width: "100%", boxSizing: "border-box" as const };
+      // PueiOS 3 login — modern ambient glass style
+      const glassCard: React.CSSProperties = {
+        background: "rgba(255,255,255,0.10)",
+        backdropFilter: "blur(40px) saturate(180%)",
+        WebkitBackdropFilter: "blur(40px) saturate(180%)",
+        border: "1px solid rgba(255,255,255,0.22)",
+        borderRadius: 24,
+        boxShadow: "0 32px 64px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.25)",
+      };
+      const p3Input: React.CSSProperties = {
+        background: "rgba(255,255,255,0.12)",
+        border: "1px solid rgba(255,255,255,0.25)",
+        borderRadius: 10,
+        padding: "9px 14px",
+        fontSize: 14,
+        color: "#fff",
+        outline: "none",
+        width: "100%",
+        boxSizing: "border-box",
+      };
+      const p3Btn: React.CSSProperties = {
+        background: "linear-gradient(135deg, rgba(255,255,255,0.35) 0%, rgba(255,255,255,0.18) 100%)",
+        border: "1px solid rgba(255,255,255,0.35)",
+        borderRadius: 10,
+        color: "#fff",
+        fontWeight: 600,
+        fontSize: 14,
+        padding: "9px 24px",
+        cursor: "pointer",
+        backdropFilter: "blur(10px)",
+        boxShadow: "0 2px 12px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.3)",
+        transition: "all 0.15s ease",
+      };
+      const p3BtnPrimary: React.CSSProperties = {
+        ...p3Btn,
+        background: "linear-gradient(135deg, rgba(120,180,255,0.55) 0%, rgba(80,120,220,0.45) 100%)",
+        border: "1px solid rgba(140,200,255,0.5)",
+      };
       const selectedU = users.find((u) => u.name === loginUser) ?? users[0];
 
       return (
-        <div className="fixed inset-0 flex flex-col" style={{ background: xpBg, fontFamily: "Tahoma, 'Segoe UI', sans-serif" }}>
-          {/* XP top header bar */}
-          <div style={{ background: xpHeaderGrad, padding: "10px 24px", display: "flex", alignItems: "center", gap: 14, borderBottom: "2px solid #1a4faa", boxShadow: "0 3px 10px rgba(0,0,0,0.4)", flexShrink: 0 }}>
-            <PueiLogoSvg size={40} bigEyes />
-            <div>
-              <div style={{ color: "#fff", fontSize: 22, fontWeight: 700, letterSpacing: 0.5 }}>PueiOS 3</div>
-              <div style={{ color: "rgba(255,255,255,0.75)", fontSize: 12 }}>{locked ? "Computer is locked" : "To begin, click your user name"}</div>
+        <div className="fixed inset-0 flex flex-col" style={{
+          background: "linear-gradient(135deg, #0d1b3e 0%, #1a0d3e 25%, #0d2e1a 50%, #3e1a0d 75%, #0d1b3e 100%)",
+          fontFamily: "'Segoe UI', system-ui, sans-serif",
+          overflow: "hidden",
+        }}>
+          {/* Animated ambient blobs */}
+          <div style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 0 }}>
+            <div style={{ position: "absolute", top: "-10%", left: "-5%", width: "50%", height: "60%", borderRadius: "50%", background: "radial-gradient(ellipse, rgba(80,140,255,0.22) 0%, transparent 70%)", filter: "blur(40px)", animation: "p3blob1 12s ease-in-out infinite alternate" }} />
+            <div style={{ position: "absolute", bottom: "-15%", right: "-5%", width: "55%", height: "65%", borderRadius: "50%", background: "radial-gradient(ellipse, rgba(160,80,255,0.18) 0%, transparent 70%)", filter: "blur(50px)", animation: "p3blob2 15s ease-in-out infinite alternate" }} />
+            <div style={{ position: "absolute", top: "30%", left: "40%", width: "35%", height: "40%", borderRadius: "50%", background: "radial-gradient(ellipse, rgba(80,200,160,0.14) 0%, transparent 70%)", filter: "blur(35px)", animation: "p3blob3 10s ease-in-out infinite alternate" }} />
+          </div>
+
+          {/* Top bar */}
+          <div style={{ position: "relative", zIndex: 1, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 28px", flexShrink: 0 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <PueiLogoSvg size={32} bigEyes />
+              <span style={{ color: "rgba(255,255,255,0.9)", fontSize: 16, fontWeight: 600, letterSpacing: 0.3 }}>PueiOS 3</span>
             </div>
-            <div style={{ marginLeft: "auto", color: "rgba(255,255,255,0.7)", fontSize: 12, textAlign: "right" }}>
-              <div>{now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</div>
-              <div>{now.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })}</div>
+            <div style={{ color: "rgba(255,255,255,0.65)", fontSize: 13, textAlign: "right" }}>
+              <div style={{ fontSize: 22, fontWeight: 300, letterSpacing: 1 }}>{now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</div>
+              <div style={{ fontSize: 11 }}>{now.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })}</div>
             </div>
           </div>
 
-          {/* Main content — users left, sign-in right */}
-          <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
-            {/* Left panel — user list */}
-            <div style={{ width: 220, background: "rgba(0,0,80,0.35)", borderRight: "2px solid rgba(255,255,255,0.15)", padding: "20px 0", overflowY: "auto" }}>
-              {users.filter(u => typeof u.password !== "undefined").map((u) => (
-                <button key={u.name} onClick={() => { setLoginUser(u.name); setPwError(""); setPwInput(""); }}
-                  style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "8px 16px", background: loginUser === u.name ? "rgba(255,255,255,0.18)" : "transparent", border: "none", cursor: "pointer", borderLeft: loginUser === u.name ? "3px solid #fff" : "3px solid transparent", textAlign: "left" }}>
-                  <div style={{ width: 44, height: 44, borderRadius: 4, background: `linear-gradient(135deg, oklch(0.7 0.18 ${u.color}), oklch(0.45 0.2 ${u.color}))`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, flexShrink: 0, overflow: "hidden", border: loginUser === u.name ? "2px solid #fff" : "2px solid transparent" }}>
-                    {u.avatar.startsWith("data:") ? <img src={u.avatar} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : u.avatar}
-                  </div>
-                  <div>
-                    <div style={{ color: loginUser === u.name ? "#fff" : "rgba(255,255,255,0.8)", fontSize: 13, fontWeight: loginUser === u.name ? 700 : 400 }}>{u.name}</div>
-                    {u.limitedMode && <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 10 }}>Limited</div>}
-                  </div>
-                </button>
-              ))}
-              {!locked && (
-                <button onClick={() => { setCreating(true); setPwError(""); }}
-                  style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "8px 16px", background: "transparent", border: "none", cursor: "pointer", marginTop: 8 }}>
-                  <div style={{ width: 44, height: 44, borderRadius: 4, background: "rgba(255,255,255,0.12)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0, border: "1px dashed rgba(255,255,255,0.3)" }}>+</div>
-                  <div style={{ color: "rgba(255,255,255,0.6)", fontSize: 12 }}>Add account</div>
-                </button>
-              )}
-            </div>
+          {/* Main layout */}
+          <div style={{ position: "relative", zIndex: 1, flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 32, padding: "0 32px 24px", overflow: "hidden" }}>
 
-            {/* Right panel — sign-in area */}
-            <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
-              {creating ? (
-                <div style={{ background: "rgba(255,255,255,0.92)", borderRadius: 6, padding: 24, width: 320, boxShadow: "0 8px 32px rgba(0,0,80,0.5)" }}>
-                  <div style={{ color: "#1a3f80", fontWeight: 700, fontSize: 14, marginBottom: 14, display: "flex", alignItems: "center", gap: 8 }}><PueiLogoSvg size={20} /> Create account</div>
-                  <div style={{ marginBottom: 8 }}>
-                    <div style={{ fontSize: 11, color: "#444", marginBottom: 3 }}>Account name</div>
-                    <input value={newAcc.name} onChange={(e) => setNewAcc({ ...newAcc, name: e.target.value })} style={xpInput} autoFocus />
-                  </div>
-                  <div style={{ marginBottom: 8 }}>
-                    <div style={{ fontSize: 11, color: "#444", marginBottom: 3 }}>Password (optional)</div>
-                    <input type="password" value={newAcc.password} onChange={(e) => setNewAcc({ ...newAcc, password: e.target.value })} style={xpInput} />
-                  </div>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 10 }}>
-                    {["🧑","👩","🧔","👵","🧑‍💻","🦸","🧙","🐱","🤖","👽","🎩","🌟"].map((a) => (
-                      <button key={a} onClick={() => setNewAcc({ ...newAcc, avatar: a })}
-                        style={{ width: 32, height: 32, borderRadius: 3, fontSize: 16, border: newAcc.avatar === a ? "2px solid #245ecc" : "2px solid transparent", background: newAcc.avatar === a ? "#ddeeff" : "#eee", cursor: "pointer" }}>{a}</button>
-                    ))}
-                  </div>
-                  {pwError && <div style={{ color: "red", fontSize: 11, marginBottom: 6 }}>{pwError}</div>}
-                  <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
-                    <button style={{ ...xpBtn, background: "linear-gradient(180deg,#e0e0e0,#b0b0b0)", color: "#000", border: "1px solid #888" }} onClick={() => { setCreating(false); setPwError(""); }}>Back</button>
-                    <button style={xpBtn} onClick={createAccount}>Create</button>
-                  </div>
+            {/* User picker */}
+            {!locked && !creating && !switching && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: "80vh", overflowY: "auto", padding: "4px 2px" }}>
+                {users.filter(u => typeof u.password !== "undefined").map((u) => {
+                  const isSelected = loginUser === u.name;
+                  return (
+                    <button key={u.name} onClick={() => { setLoginUser(u.name); setPwError(""); setPwInput(""); }}
+                      style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 16px", borderRadius: 14, border: isSelected ? "1px solid rgba(255,255,255,0.35)" : "1px solid rgba(255,255,255,0.08)", background: isSelected ? "rgba(255,255,255,0.15)" : "rgba(255,255,255,0.05)", cursor: "pointer", backdropFilter: "blur(20px)", transition: "all 0.15s", minWidth: 180, textAlign: "left" }}>
+                      <div style={{ width: 40, height: 40, borderRadius: 12, background: `linear-gradient(135deg, oklch(0.7 0.18 ${u.color}), oklch(0.45 0.2 ${u.color}))`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0, overflow: "hidden", boxShadow: isSelected ? "0 0 0 2px rgba(255,255,255,0.6)" : "none" }}>
+                        {u.avatar.startsWith("data:") ? <img src={u.avatar} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : u.avatar}
+                      </div>
+                      <div>
+                        <div style={{ color: "#fff", fontSize: 13, fontWeight: isSelected ? 600 : 400 }}>{u.name}</div>
+                        {u.limitedMode && <div style={{ color: "rgba(255,255,255,0.45)", fontSize: 10 }}>Limited account</div>}
+                      </div>
+                    </button>
+                  );
+                })}
+                <button onClick={() => { setCreating(true); setPwError(""); }}
+                  style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 16px", borderRadius: 14, border: "1px dashed rgba(255,255,255,0.2)", background: "rgba(255,255,255,0.04)", cursor: "pointer", minWidth: 180 }}>
+                  <div style={{ width: 40, height: 40, borderRadius: 12, background: "rgba(255,255,255,0.08)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, color: "rgba(255,255,255,0.5)" }}>+</div>
+                  <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 12 }}>Add account</div>
+                </button>
+              </div>
+            )}
+
+            {/* Sign-in card */}
+            <div style={{ ...glassCard, padding: 36, width: 340, flexShrink: 0 }}>
+              {creating ? (<>
+                <div style={{ color: "#fff", fontWeight: 700, fontSize: 18, marginBottom: 20, display: "flex", alignItems: "center", gap: 8 }}>
+                  <PueiLogoSvg size={22} /> Create account
                 </div>
-              ) : switching ? (
-                <div style={{ background: "rgba(255,255,255,0.92)", borderRadius: 6, padding: 24, width: 300, boxShadow: "0 8px 32px rgba(0,0,80,0.5)" }}>
-                  <div style={{ color: "#1a3f80", fontWeight: 700, fontSize: 13, marginBottom: 14 }}>Sign in to another account</div>
-                  <div style={{ marginBottom: 8 }}>
-                    <div style={{ fontSize: 11, color: "#444", marginBottom: 3 }}>Account name</div>
-                    <input value={switchName} onChange={(e) => { setSwitchName(e.target.value); setSwitchErr(""); }} onKeyDown={(e) => { if (e.key === "Enter") switchToAccount(); }} autoFocus style={xpInput} />
-                  </div>
-                  <div style={{ marginBottom: 8 }}>
-                    <div style={{ fontSize: 11, color: "#444", marginBottom: 3 }}>Password</div>
-                    <input type="password" value={switchPw} onChange={(e) => setSwitchPw(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") switchToAccount(); }} style={xpInput} />
-                  </div>
-                  {switchErr && <div style={{ color: "red", fontSize: 11, marginBottom: 6 }}>{switchErr}</div>}
-                  <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
-                    <button style={{ ...xpBtn, background: "linear-gradient(180deg,#e0e0e0,#b0b0b0)", color: "#000", border: "1px solid #888" }} onClick={() => { setSwitching(false); setSwitchErr(""); }}>Back</button>
-                    <button style={xpBtn} onClick={switchToAccount}>Sign in</button>
-                  </div>
+                <div style={{ marginBottom: 12 }}>
+                  <div style={{ fontSize: 11, color: "rgba(255,255,255,0.6)", marginBottom: 5 }}>Account name</div>
+                  <input value={newAcc.name} onChange={(e) => setNewAcc({ ...newAcc, name: e.target.value })} style={p3Input} autoFocus placeholder="Your name" />
                 </div>
-              ) : selectedU ? (
-                <div style={{ background: "rgba(255,255,255,0.92)", borderRadius: 6, padding: 24, width: 300, boxShadow: "0 8px 32px rgba(0,0,80,0.5)", textAlign: "center" }}>
-                  <div style={{ width: 64, height: 64, borderRadius: 4, background: `linear-gradient(135deg, oklch(0.7 0.18 ${selectedU.color}), oklch(0.45 0.2 ${selectedU.color}))`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 36, margin: "0 auto 10px", overflow: "hidden", border: "2px solid #245ecc" }}>
+                <div style={{ marginBottom: 14 }}>
+                  <div style={{ fontSize: 11, color: "rgba(255,255,255,0.6)", marginBottom: 5 }}>Password (optional)</div>
+                  <input type="password" value={newAcc.password} onChange={(e) => setNewAcc({ ...newAcc, password: e.target.value })} style={p3Input} placeholder="••••••••" />
+                </div>
+                <div style={{ fontSize: 11, color: "rgba(255,255,255,0.6)", marginBottom: 8 }}>Avatar</div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 16 }}>
+                  {["🧑","👩","🧔","👵","🧑‍💻","🦸","🧙","🐱","🤖","👽","🎩","🌟"].map((a) => (
+                    <button key={a} onClick={() => setNewAcc({ ...newAcc, avatar: a })}
+                      style={{ width: 34, height: 34, borderRadius: 8, fontSize: 17, border: newAcc.avatar === a ? "2px solid rgba(255,255,255,0.8)" : "1px solid rgba(255,255,255,0.15)", background: newAcc.avatar === a ? "rgba(255,255,255,0.2)" : "rgba(255,255,255,0.06)", cursor: "pointer" }}>{a}</button>
+                  ))}
+                </div>
+                {pwError && <div style={{ color: "#ff8080", fontSize: 12, marginBottom: 10 }}>{pwError}</div>}
+                <div style={{ display: "flex", gap: 10 }}>
+                  <button style={{ ...p3Btn, flex: 1 }} onClick={() => { setCreating(false); setPwError(""); }}>Back</button>
+                  <button style={{ ...p3BtnPrimary, flex: 1 }} onClick={createAccount}>Create</button>
+                </div>
+              </>) : switching ? (<>
+                <div style={{ color: "#fff", fontWeight: 700, fontSize: 18, marginBottom: 20 }}>Other account</div>
+                <div style={{ marginBottom: 12 }}>
+                  <div style={{ fontSize: 11, color: "rgba(255,255,255,0.6)", marginBottom: 5 }}>Account name</div>
+                  <input value={switchName} onChange={(e) => { setSwitchName(e.target.value); setSwitchErr(""); }} onKeyDown={(e) => { if (e.key === "Enter") switchToAccount(); }} autoFocus style={p3Input} placeholder="Username" />
+                </div>
+                <div style={{ marginBottom: 16 }}>
+                  <div style={{ fontSize: 11, color: "rgba(255,255,255,0.6)", marginBottom: 5 }}>Password</div>
+                  <input type="password" value={switchPw} onChange={(e) => setSwitchPw(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") switchToAccount(); }} style={p3Input} placeholder="••••••••" />
+                </div>
+                {switchErr && <div style={{ color: "#ff8080", fontSize: 12, marginBottom: 10 }}>{switchErr}</div>}
+                <div style={{ display: "flex", gap: 10 }}>
+                  <button style={{ ...p3Btn, flex: 1 }} onClick={() => { setSwitching(false); setSwitchErr(""); }}>Back</button>
+                  <button style={{ ...p3BtnPrimary, flex: 1 }} onClick={switchToAccount}>Sign in</button>
+                </div>
+              </>) : selectedU ? (<>
+                {/* Avatar */}
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: 24 }}>
+                  <div style={{ width: 88, height: 88, borderRadius: 22, background: `linear-gradient(135deg, oklch(0.7 0.18 ${selectedU.color}), oklch(0.45 0.2 ${selectedU.color}))`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 46, overflow: "hidden", boxShadow: "0 8px 32px rgba(0,0,0,0.4), 0 0 0 3px rgba(255,255,255,0.2)", marginBottom: 12 }}>
                     {selectedU.avatar.startsWith("data:") ? <img src={selectedU.avatar} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : selectedU.avatar}
                   </div>
-                  <div style={{ color: "#1a3f80", fontWeight: 700, fontSize: 15, marginBottom: 12 }}>{selectedU.name}</div>
-                  {!users.filter(u => typeof u.password !== "undefined").length && (
-                    <div style={{ marginBottom: 8 }}>
-                      <input value={loginUser} onChange={(e) => { setLoginUser(e.target.value); setPwError(""); }} onKeyDown={(e) => { if (e.key === "Enter") trySignIn(); }} placeholder="Username" style={xpInput} />
-                    </div>
-                  )}
-                  <div style={{ marginBottom: 10, textAlign: "left" }}>
-                    <div style={{ fontSize: 11, color: "#444", marginBottom: 3 }}>Password</div>
-                    <input type="password" value={pwInput} onChange={(e) => setPwInput(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") trySignIn(); }}
-                      placeholder={selectedU.password ? "" : "(no password)"} style={xpInput} autoFocus />
-                  </div>
-                  {pwError && <div style={{ color: "red", fontSize: 11, marginBottom: 8 }}>{pwError}</div>}
-                  <button style={{ ...xpBtn, width: "100%", padding: "6px 0", fontSize: 14 }} onClick={trySignIn}>Sign In →</button>
-                  <div style={{ display: "flex", justifyContent: "space-between", marginTop: 12, fontSize: 11, color: "#245ecc" }}>
-                    <button style={{ background: "none", border: "none", color: "#245ecc", cursor: "pointer", fontSize: 11, textDecoration: "underline" }} onClick={() => setPhase("recovery")}>Recovery</button>
-                    {!locked && <button style={{ background: "none", border: "none", color: "#245ecc", cursor: "pointer", fontSize: 11, textDecoration: "underline" }} onClick={() => { setSwitching(true); setSwitchName(""); setSwitchPw(""); setSwitchErr(""); }}>Other account</button>}
-                    {!locked && <button style={{ background: "none", border: "none", color: "#245ecc", cursor: "pointer", fontSize: 11, textDecoration: "underline" }} onClick={() => {
-                      const guestName = "Guest";
-                      const existing = users.find((u) => u.name === guestName);
-                      if (!existing) {
-                        const nu: User = { name: guestName, password: "", avatar: "👤", color: "220", pueiNumber: "", friends: [], noPassword: true, limitedMode: true };
-                        const next = [...users, nu];
-                        setUsers(next);
-                        saveState({ installed, systemVersion, theme, icons, users: next, lastUser: guestName, remember: false });
-                      }
-                      setLoginUser(guestName); setPwInput(""); enterDesktop(guestName);
-                    }}>Guest</button>}
-                  </div>
+                  <div style={{ color: "#fff", fontWeight: 700, fontSize: 20, letterSpacing: 0.3 }}>{selectedU.name}</div>
+                  {locked && <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 11, marginTop: 3 }}>Screen is locked</div>}
                 </div>
-              ) : (
-                <div style={{ color: "rgba(255,255,255,0.7)", fontSize: 14 }}>Select an account on the left</div>
+                {!users.filter(u => typeof u.password !== "undefined").length && (
+                  <div style={{ marginBottom: 12 }}>
+                    <input value={loginUser} onChange={(e) => { setLoginUser(e.target.value); setPwError(""); }} onKeyDown={(e) => { if (e.key === "Enter") trySignIn(); }} placeholder="Username" style={p3Input} />
+                  </div>
+                )}
+                <div style={{ marginBottom: 16 }}>
+                  <input type="password" value={pwInput} onChange={(e) => setPwInput(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") trySignIn(); }}
+                    placeholder={selectedU.password ? "Password" : "No password — press Sign In"} style={p3Input} autoFocus />
+                </div>
+                {pwError && <div style={{ color: "#ff8080", fontSize: 12, marginBottom: 12, textAlign: "center" }}>{pwError}</div>}
+                <button style={{ ...p3BtnPrimary, width: "100%", marginBottom: 16, justifyContent: "center", display: "flex", alignItems: "center", gap: 8, padding: "11px 0" }} onClick={trySignIn}>
+                  Sign In →
+                </button>
+                <div style={{ display: "flex", justifyContent: "center", gap: 16 }}>
+                  <button style={{ background: "none", border: "none", color: "rgba(255,255,255,0.5)", cursor: "pointer", fontSize: 12, textDecoration: "underline", textUnderlineOffset: 2 }} onClick={() => setPhase("recovery")}>Recovery</button>
+                  {!locked && <button style={{ background: "none", border: "none", color: "rgba(255,255,255,0.5)", cursor: "pointer", fontSize: 12, textDecoration: "underline", textUnderlineOffset: 2 }} onClick={() => { setSwitching(true); setSwitchName(""); setSwitchPw(""); setSwitchErr(""); }}>Other account</button>}
+                  {!locked && <button style={{ background: "none", border: "none", color: "rgba(255,255,255,0.5)", cursor: "pointer", fontSize: 12, textDecoration: "underline", textUnderlineOffset: 2 }} onClick={() => {
+                    const guestName = "Guest";
+                    const existing = users.find((u) => u.name === guestName);
+                    if (!existing) {
+                      const nu: User = { name: guestName, password: "", avatar: "👤", color: "220", pueiNumber: "", friends: [], noPassword: true, limitedMode: true };
+                      const next = [...users, nu];
+                      setUsers(next);
+                      saveState({ installed, systemVersion, theme, icons, users: next, lastUser: guestName, remember: false });
+                    }
+                    setLoginUser(guestName); setPwInput(""); enterDesktop(guestName);
+                  }}>Guest</button>}
+                </div>
+              </>) : (
+                <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 14, textAlign: "center", padding: "40px 0" }}>Select an account</div>
               )}
             </div>
           </div>
 
-          {/* XP bottom bar */}
-          <div style={{ background: xpHeaderGrad, padding: "8px 24px", display: "flex", justifyContent: "flex-end", gap: 12, borderTop: "2px solid #1a4faa", boxShadow: "0 -3px 10px rgba(0,0,0,0.4)", flexShrink: 0 }}>
-            <button style={{ ...xpBtn, fontSize: 12, display: "flex", alignItems: "center", gap: 6 }} onClick={() => setPhase("recovery")}>🔑 Recovery</button>
+          {/* Bottom bar */}
+          <div style={{ position: "relative", zIndex: 1, display: "flex", justifyContent: "center", gap: 12, padding: "12px 28px 20px", flexShrink: 0 }}>
+            <button style={{ ...p3Btn, fontSize: 12, display: "flex", alignItems: "center", gap: 6, padding: "7px 18px" }} onClick={() => setPhase("recovery")}>🔑 Recovery</button>
           </div>
+
+          {/* CSS for blob animations */}
+          <style>{`
+            @keyframes p3blob1 { 0%{transform:translate(0,0) scale(1)} 100%{transform:translate(6%,8%) scale(1.12)} }
+            @keyframes p3blob2 { 0%{transform:translate(0,0) scale(1)} 100%{transform:translate(-8%,-6%) scale(1.08)} }
+            @keyframes p3blob3 { 0%{transform:translate(0,0) scale(1)} 100%{transform:translate(10%,-10%) scale(1.15)} }
+          `}</style>
         </div>
       );
     }
@@ -2237,13 +2298,15 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
 
       {touchDot.visible && (
         <div style={{
-          position: "fixed", left: touchDot.x - 12, top: touchDot.y - 12,
-          width: 24, height: 24, borderRadius: "50%", pointerEvents: "none",
-          background: theme.cursorColor ?? "#ffffff",
-          border: "2px solid rgba(0,0,0,0.25)",
-          boxShadow: `0 0 8px 2px ${theme.cursorColor ?? "#ffffff"}88`,
+          position: "fixed", left: touchDot.x, top: touchDot.y,
+          width: 28, height: 28, pointerEvents: "none",
           zIndex: 999999, transition: "left 0.04s, top 0.04s",
-        }} />
+          transform: "translate(-2px, -2px)",
+        }}>
+          <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" style={{ display: "block", filter: "drop-shadow(0 1px 3px rgba(0,0,0,0.7))" }}>
+            <path d="M3 2 L3 18 L7 14 L10.5 21 L12.5 20 L9 13 L15 13 Z" fill="white" stroke={theme.cursorColor ?? "#888"} strokeWidth="1.5" strokeLinejoin="round" />
+          </svg>
+        </div>
       )}
 
       {ctxMenu && <ContextMenu x={ctxMenu.x} y={ctxMenu.y} items={ctxMenu.items} onClose={() => setCtxMenu(null)} />}

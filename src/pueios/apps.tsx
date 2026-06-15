@@ -89,6 +89,8 @@ export function AppRenderer(p: AppRendererProps) {
     case "puei-mansion": return <PueiMansionApp />;
     case "iso-viewer": return <IsoViewerApp fileId={p.fileId} />;
     case "zip-viewer": return <ZipViewerApp fileId={p.fileId} />;
+    case "pmail": return <PMailApp currentUser={p.currentUser} users={p.users} />;
+    case "racing-3d": return <Racing3DApp currentUser={p.currentUser} />;
   }
 }
 
@@ -396,11 +398,17 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, curren
             <h2 className="text-xl font-semibold mb-4">Wallpaper</h2>
             <div className="text-xs opacity-70 mb-2">Built-in</div>
             <div className="grid grid-cols-2 gap-3">
-              {(["default", "bliss", "aurora", "sunset", "aero-blue", "aero-pink", "aero-neon", "aero-dusk"] as WallpaperId[]).map((w) => (
+              {([
+                ["default", "Default"], ["pueisky", "PueiSKY"],
+                ["aero-blue", "Aero Blue"], ["aero-pink", "Aero Pink"],
+                ["aero-neon", "Aero Neon"], ["aero-dusk", "Aero Dusk"],
+                ["aero-forest", "Aero Forest"], ["aero-ember", "Aero Ember"],
+                ["aero-arctic", "Aero Arctic"], ["aero-galaxy", "Aero Galaxy"],
+              ] as [WallpaperId, string][]).map(([w, label]) => (
                 <button key={w} onClick={() => setWallpaper(w)}
-                  className={`wallpaper-${w} h-28 rounded-lg border-2 capitalize text-white font-semibold`}
-                  style={{ borderColor: wallpaper === w ? "white" : "transparent", boxShadow: wallpaper === w ? "0 0 0 3px var(--accent)" : undefined }}>
-                  {w}
+                  className={`wallpaper-${w} h-28 rounded-lg border-2 text-white font-semibold text-sm`}
+                  style={{ borderColor: wallpaper === w ? "white" : "transparent", boxShadow: wallpaper === w ? "0 0 0 3px var(--accent)" : undefined, textShadow: "0 1px 3px rgba(0,0,0,0.8)" }}>
+                  {label}
                 </button>
               ))}
             </div>
@@ -3615,10 +3623,12 @@ function AppStoreApp({ installWebApp, openApp, openWebApp, systemVersion, addNat
     { name: "Notepad",        icon: "📝", desc: "Write and save text files.",                   appId: "notepad",        preInstalled: true },
     { name: "Calculator",     icon: "🧮", desc: "Glossy arithmetic.",                            appId: "calculator",     preInstalled: true },
     { name: "Chess",          icon: "♟️", desc: "Chess vs Puei Bot AI — fully functional.",     appId: "chess",          preInstalled: false },
+    { name: "PMail",          icon: "✉️", desc: "Native Puei mail client — compose, reply, folders, search.", appId: "pmail", preInstalled: false },
     { name: "Installer",      icon: "📑", desc: "Install trusted web apps as desktop shortcuts.",appId: "app-store",      preInstalled: true },
   ];
   const games: StoreApp[] = [
     { name: "Puei Mansion",  icon: "👻", desc: "Funny spooky adventure. Solve puzzles, find hidden secrets, and meet weird Puei creatures.", appId: "puei-mansion", preInstalled: false },
+    { name: "Puei Racing 3D", icon: "🏎️", desc: "Top-down arcade racing with AI opponents — 3 laps, full keyboard and touch controls.", appId: "racing-3d", preInstalled: false },
   ];
   const community: StoreApp[] = [
     { name: "bezosmp", icon: "/bezosmp-icon.svg", desc: "A community Minecraft SMP server project. Made by bazicioschi and catotherat.", webUrl: "https://bezosmp.lovable.app", desktopLabel: "BezosMP", preInstalled: false },
@@ -4791,8 +4801,8 @@ function PueiUpdaterApp({ currentUser, startUpgrade, systemVersion }: { currentU
 }
 
 // ---------- Puei Studio ----------
-type StudioTool = "brush" | "eraser" | "fill" | "eyedropper" | "text" | "shape";
-type StudioShape = "rect" | "ellipse" | "line";
+type StudioTool = "brush" | "eraser" | "fill" | "eyedropper" | "text" | "shape" | "spray";
+type StudioShape = "rect" | "ellipse" | "line" | "triangle" | "pentagon";
 
 function PueiStudioApp({ currentUser, users, icons, setWallpaper }: { currentUser: string; users: User[]; icons: DesktopIcon[]; setWallpaper: (w: WallpaperId) => void }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -4807,13 +4817,56 @@ function PueiStudioApp({ currentUser, users, icons, setWallpaper }: { currentUse
   );
   const [sharedMsg, setSharedMsg] = useState("");
   const [savedMsg, setSavedMsg] = useState("");
+  const [textInput, setTextInput] = useState("");
+  const [textPos, setTextPos] = useState<{ x: number; y: number } | null>(null);
+  const [fontSize, setFontSize] = useState(20);
+  const [fillEnabled, setFillEnabled] = useState(false);
+  const [fillColor, setFillColor] = useState("#ffffff");
+  const [lineOpacity, setLineOpacity] = useState(100);
   const drawing = useRef(false);
   const lastPos = useRef<{ x: number; y: number } | null>(null);
   const fillRef = useRef<string>(color);
   const shapeStart = useRef<{ x: number; y: number } | null>(null);
   const snapRef = useRef<ImageData | null>(null);
+  const undoStack = useRef<ImageData[]>([]);
+  const redoStack = useRef<ImageData[]>([]);
+  const importRef = useRef<HTMLInputElement>(null);
 
   fillRef.current = color;
+
+  const pushUndo = () => {
+    const c = canvasRef.current;
+    if (!c) return;
+    const ctx = c.getContext("2d")!;
+    undoStack.current = [...undoStack.current.slice(-30), ctx.getImageData(0, 0, c.width, c.height)];
+    redoStack.current = [];
+  };
+  const doUndo = () => {
+    const c = canvasRef.current; if (!c) return;
+    const ctx = c.getContext("2d")!;
+    const snap = undoStack.current.pop();
+    if (!snap) return;
+    redoStack.current.push(ctx.getImageData(0, 0, c.width, c.height));
+    ctx.putImageData(snap, 0, 0);
+  };
+  const doRedo = () => {
+    const c = canvasRef.current; if (!c) return;
+    const ctx = c.getContext("2d")!;
+    const snap = redoStack.current.pop();
+    if (!snap) return;
+    undoStack.current.push(ctx.getImageData(0, 0, c.width, c.height));
+    ctx.putImageData(snap, 0, 0);
+  };
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "z" && !e.shiftKey) { e.preventDefault(); doUndo(); }
+      if ((e.ctrlKey || e.metaKey) && (e.key === "y" || (e.key === "z" && e.shiftKey))) { e.preventDefault(); doRedo(); }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     const c = canvasRef.current;
@@ -4859,17 +4912,52 @@ function PueiStudioApp({ currentUser, users, icons, setWallpaper }: { currentUse
     ctx.putImageData(img, 0, 0);
   };
 
+  const drawShape = (ctx: CanvasRenderingContext2D, sx: number, sy: number, ex: number, ey: number) => {
+    ctx.strokeStyle = `${color}${Math.round(lineOpacity * 2.55).toString(16).padStart(2,"0")}`;
+    ctx.lineWidth = brushSize;
+    ctx.beginPath();
+    if (shape === "rect") {
+      ctx.strokeRect(sx, sy, ex - sx, ey - sy);
+      if (fillEnabled) { ctx.fillStyle = fillColor; ctx.fillRect(sx, sy, ex - sx, ey - sy); }
+    } else if (shape === "ellipse") {
+      ctx.ellipse(sx + (ex-sx)/2, sy + (ey-sy)/2, Math.abs(ex-sx)/2, Math.abs(ey-sy)/2, 0, 0, Math.PI*2);
+      ctx.stroke();
+      if (fillEnabled) { ctx.fillStyle = fillColor; ctx.fill(); }
+    } else if (shape === "line") {
+      ctx.moveTo(sx, sy); ctx.lineTo(ex, ey); ctx.stroke();
+    } else if (shape === "triangle") {
+      const mx = (sx + ex) / 2;
+      ctx.moveTo(mx, sy); ctx.lineTo(ex, ey); ctx.lineTo(sx, ey); ctx.closePath(); ctx.stroke();
+      if (fillEnabled) { ctx.fillStyle = fillColor; ctx.fill(); }
+    } else if (shape === "pentagon") {
+      const cx = (sx + ex) / 2; const cy = (sy + ey) / 2;
+      const rx = Math.abs(ex - sx) / 2; const ry = Math.abs(ey - sy) / 2;
+      for (let i = 0; i < 5; i++) {
+        const ang = (i * 2 * Math.PI / 5) - Math.PI / 2;
+        if (i === 0) ctx.moveTo(cx + rx * Math.cos(ang), cy + ry * Math.sin(ang));
+        else ctx.lineTo(cx + rx * Math.cos(ang), cy + ry * Math.sin(ang));
+      }
+      ctx.closePath(); ctx.stroke();
+      if (fillEnabled) { ctx.fillStyle = fillColor; ctx.fill(); }
+    }
+  };
+
   const onDown = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
     e.preventDefault();
     const c = canvasRef.current!;
     const ctx = c.getContext("2d")!;
     const pos = getPos(e);
-    if (tool === "fill") { floodFill(ctx, pos.x, pos.y, color); return; }
+    if (tool === "text") {
+      setTextPos(pos);
+      return;
+    }
+    if (tool === "fill") { pushUndo(); floodFill(ctx, pos.x, pos.y, color); return; }
     if (tool === "eyedropper") {
       const px = ctx.getImageData(Math.round(pos.x), Math.round(pos.y), 1, 1).data;
       setColor(`#${[px[0],px[1],px[2]].map(v=>v.toString(16).padStart(2,"0")).join("")}`);
       return;
     }
+    pushUndo();
     if (tool === "shape") {
       shapeStart.current = pos;
       snapRef.current = ctx.getImageData(0, 0, c.width, c.height);
@@ -4884,22 +4972,26 @@ function PueiStudioApp({ currentUser, users, icons, setWallpaper }: { currentUse
 
   const onMove = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
     e.preventDefault();
-    if (!drawing.current || tool === "fill" || tool === "eyedropper") return;
+    if (!drawing.current || tool === "fill" || tool === "eyedropper" || tool === "text") return;
     const c = canvasRef.current!;
     const ctx = c.getContext("2d")!;
     const pos = getPos(e);
     if (tool === "shape" && shapeStart.current && snapRef.current) {
       ctx.putImageData(snapRef.current, 0, 0);
-      ctx.strokeStyle = color;
-      ctx.lineWidth = brushSize;
-      ctx.beginPath();
       const sx = shapeStart.current.x, sy = shapeStart.current.y;
-      if (shape === "rect") ctx.strokeRect(sx, sy, pos.x - sx, pos.y - sy);
-      else if (shape === "ellipse") {
-        ctx.ellipse(sx + (pos.x-sx)/2, sy + (pos.y-sy)/2, Math.abs(pos.x-sx)/2, Math.abs(pos.y-sy)/2, 0, 0, Math.PI*2);
-        ctx.stroke();
-      } else {
-        ctx.moveTo(sx, sy); ctx.lineTo(pos.x, pos.y); ctx.stroke();
+      drawShape(ctx, sx, sy, pos.x, pos.y);
+      return;
+    }
+    if (tool === "spray") {
+      const density = 20;
+      const radius = brushSize * 2;
+      ctx.fillStyle = color;
+      for (let i = 0; i < density; i++) {
+        const a = Math.random() * 2 * Math.PI;
+        const r = Math.random() * radius;
+        ctx.beginPath();
+        ctx.arc(pos.x + r * Math.cos(a), pos.y + r * Math.sin(a), 0.8, 0, Math.PI * 2);
+        ctx.fill();
       }
       return;
     }
@@ -4915,7 +5007,16 @@ function PueiStudioApp({ currentUser, users, icons, setWallpaper }: { currentUse
     lastPos.current = pos;
   };
 
-  const onUp = () => { drawing.current = false; lastPos.current = null; shapeStart.current = null; snapRef.current = null; };
+  const onUp = (e?: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+    if (tool === "shape" && shapeStart.current && snapRef.current && e) {
+      const c = canvasRef.current!;
+      const ctx = c.getContext("2d")!;
+      ctx.putImageData(snapRef.current, 0, 0);
+      const pos = getPos(e as any);
+      drawShape(ctx, shapeStart.current.x, shapeStart.current.y, pos.x, pos.y);
+    }
+    drawing.current = false; lastPos.current = null; shapeStart.current = null; snapRef.current = null;
+  };
 
   const clearCanvas = () => {
     const c = canvasRef.current!;
@@ -5017,33 +5118,59 @@ function PueiStudioApp({ currentUser, users, icons, setWallpaper }: { currentUse
           {/* Toolbar */}
           <div className="flex flex-col gap-1 p-2 border-r overflow-y-auto" style={{ borderColor: "var(--border)", background: "var(--glass)", width: 64 }}>
             {toolBtn("brush","✏️","Brush")}
+            {toolBtn("spray","🖌️","Spray")}
             {toolBtn("eraser","⬜","Erase")}
             {toolBtn("fill","🪣","Fill")}
             {toolBtn("eyedropper","💉","Pick")}
+            {toolBtn("text","T","Text")}
             {toolBtn("shape","⬡","Shape")}
             <div className="border-t my-1" style={{ borderColor: "var(--border)" }} />
-            {tool === "shape" && (["rect","ellipse","line"] as StudioShape[]).map(s => (
+            {tool === "shape" && (["rect","ellipse","line","triangle","pentagon"] as StudioShape[]).map(s => (
               <button key={s} title={s} onClick={() => setShape(s)}
                 className="text-xs rounded px-1 py-1"
                 style={{ background: shape === s ? "var(--accent)" : "transparent", color: shape === s ? "#fff" : "var(--foreground)" }}>
-                {s === "rect" ? "▭" : s === "ellipse" ? "⬬" : "╱"}
+                {s === "rect" ? "▭" : s === "ellipse" ? "⬬" : s === "line" ? "╱" : s === "triangle" ? "△" : "⬠"}
               </button>
             ))}
+            {tool === "text" && (
+              <>
+                <div className="text-[9px] opacity-50 text-center mt-1">Size</div>
+                <input type="range" min={8} max={72} value={fontSize} onChange={e => setFontSize(+e.target.value)}
+                  className="w-full" style={{ cursor: "pointer" }} />
+                <div className="text-[9px] opacity-50 text-center">{fontSize}px</div>
+              </>
+            )}
+            {tool === "shape" && (
+              <div className="flex flex-col gap-1 mt-1">
+                <label className="flex items-center gap-1 text-[9px] opacity-70 cursor-pointer">
+                  <input type="checkbox" checked={fillEnabled} onChange={e => setFillEnabled(e.target.checked)} />
+                  Fill
+                </label>
+                {fillEnabled && <input type="color" value={fillColor} onChange={e => setFillColor(e.target.value)} className="w-full h-6 rounded cursor-pointer" />}
+                <div className="text-[9px] opacity-50">Opacity</div>
+                <input type="range" min={10} max={100} value={lineOpacity} onChange={e => setLineOpacity(+e.target.value)} className="w-full" style={{ cursor: "pointer" }} />
+                <div className="text-[9px] opacity-50 text-center">{lineOpacity}%</div>
+              </div>
+            )}
             <div className="border-t my-1" style={{ borderColor: "var(--border)" }} />
             <div className="text-[9px] opacity-50 text-center">Size</div>
             <input type="range" min={1} max={40} value={brushSize} onChange={e => setBrushSize(+e.target.value)}
               className="w-full" style={{ writingMode: "vertical-lr" as any, height: 60, cursor: "pointer" }} />
             <div className="text-[9px] opacity-50 text-center">{brushSize}px</div>
+            <div className="border-t my-1" style={{ borderColor: "var(--border)" }} />
+            <button title="Undo (Ctrl+Z)" onClick={doUndo} className="text-[9px] rounded px-1 py-1" style={{ background: "transparent", color: "var(--foreground)" }}>↩ Undo</button>
+            <button title="Redo (Ctrl+Y)" onClick={doRedo} className="text-[9px] rounded px-1 py-1" style={{ background: "transparent", color: "var(--foreground)" }}>↪ Redo</button>
           </div>
 
           {/* Canvas */}
-          <div className="flex-1 flex flex-col overflow-hidden">
+          <div className="flex-1 flex flex-col overflow-hidden relative">
             <canvas
               ref={canvasRef}
               width={800} height={520}
               className="flex-1 block"
               style={{ touchAction: "none", cursor: (() => {
                 if (tool === "eyedropper") return "crosshair";
+                if (tool === "text") return "text";
                 const r = brushSize; const c = encodeURIComponent(color);
                 const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='${r+10}' height='${r+10}' viewBox='0 0 ${r+10} ${r+10}'><circle cx='${(r+10)/2}' cy='${(r+10)/2}' r='${r/2}' fill='${color}' stroke='white' stroke-width='1.5'/><circle cx='${(r+10)/2}' cy='${(r+10)/2}' r='${r/2}' fill='none' stroke='black' stroke-width='0.5' opacity='0.5'/></svg>`;
                 return `url("data:image/svg+xml,${encodeURIComponent(svg)}") ${Math.round((r+10)/2)} ${Math.round((r+10)/2)}, crosshair`;
@@ -5051,6 +5178,32 @@ function PueiStudioApp({ currentUser, users, icons, setWallpaper }: { currentUse
               onMouseDown={onDown} onMouseMove={onMove} onMouseUp={onUp} onMouseLeave={onUp}
               onTouchStart={onDown} onTouchMove={onMove} onTouchEnd={onUp}
             />
+            {/* Text tool input overlay */}
+            {tool === "text" && textPos && (
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <div className="pointer-events-auto" style={{ position: "absolute", left: textPos.x / (canvasRef.current?.width ?? 800) * 100 + "%", top: textPos.y / (canvasRef.current?.height ?? 520) * 100 + "%" }}>
+                  <input
+                    autoFocus
+                    value={textInput}
+                    onChange={(e) => setTextInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        const c = canvasRef.current!;
+                        const ctx = c.getContext("2d")!;
+                        pushUndo();
+                        ctx.font = `${fontSize}px system-ui, sans-serif`;
+                        ctx.fillStyle = color;
+                        ctx.fillText(textInput, textPos.x, textPos.y);
+                        setTextInput(""); setTextPos(null);
+                      }
+                      if (e.key === "Escape") { setTextPos(null); setTextInput(""); }
+                    }}
+                    placeholder="Type & press Enter"
+                    style={{ background: "rgba(255,255,255,0.85)", border: "1px dashed var(--accent)", borderRadius: 4, padding: "2px 6px", fontSize: `${fontSize}px`, color, outline: "none", minWidth: 80, transform: "translateY(-50%)" }}
+                  />
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Right panel */}
@@ -5075,6 +5228,23 @@ function PueiStudioApp({ currentUser, users, icons, setWallpaper }: { currentUse
                 className="w-full rounded px-2 py-1 text-xs input-field" />
             </div>
             <button onClick={clearCanvas} className="aero-button rounded px-2 py-1 text-xs">🗑 Clear</button>
+            <button onClick={doUndo} className="aero-button rounded px-2 py-1 text-xs">↩ Undo</button>
+            <button onClick={doRedo} className="aero-button rounded px-2 py-1 text-xs">↪ Redo</button>
+            <button onClick={() => importRef.current?.click()} className="aero-button rounded px-2 py-1 text-xs">📷 Import image</button>
+            <input ref={importRef} type="file" accept="image/*" style={{ display: "none" }} onChange={(e) => {
+              const f = e.target.files?.[0]; if (!f) return;
+              const url = URL.createObjectURL(f);
+              const img = new Image();
+              img.onload = () => {
+                const c = canvasRef.current!;
+                const ctx = c.getContext("2d")!;
+                pushUndo();
+                ctx.drawImage(img, 0, 0, c.width, c.height);
+                URL.revokeObjectURL(url);
+              };
+              img.src = url;
+              e.target.value = "";
+            }} />
             <button onClick={saveProject} className="aero-button rounded px-2 py-1 text-xs">💾 Save project</button>
             <button onClick={saveToFiles} className="aero-button rounded px-2 py-1 text-xs">📤 Export to Files</button>
             <button onClick={() => {
@@ -6017,6 +6187,491 @@ function ChessApp() {
         </button>
         <div className="text-[10px] text-white/30">You = White · Bot = Black</div>
       </div>
+    </div>
+  );
+}
+
+// ---------- PMail ----------
+const PMAIL_FOLDERS_DEF = [
+  { id: "inbox" as const, label: "Inbox", icon: "📥" },
+  { id: "important" as const, label: "Important", icon: "⭐" },
+  { id: "sent" as const, label: "Sent", icon: "📤" },
+  { id: "drafts" as const, label: "Drafts", icon: "📝" },
+  { id: "spam" as const, label: "Spam", icon: "🚫" },
+  { id: "trash" as const, label: "Trash", icon: "🗑️" },
+];
+type PMFolder = "inbox" | "important" | "sent" | "drafts" | "spam" | "trash";
+
+function PMailApp({ currentUser, users }: { currentUser: string; users: { name: string; pueiNumber?: string }[] }) {
+  const [folder, setFolder] = useState<PMFolder>("inbox");
+  const [msgs, setMsgs] = useState<MailMessage[]>(() => loadMail(currentUser));
+  const [selected, setSelected] = useState<MailMessage | null>(null);
+  const [composing, setComposing] = useState(false);
+  const [toField, setToField] = useState("");
+  const [subjField, setSubjField] = useState("");
+  const [bodyField, setBodyField] = useState("");
+  const [search, setSearch] = useState("");
+  const [sending, setSending] = useState(false);
+  const [sentMsg, setSentMsg] = useState("");
+
+  const reload = () => setMsgs(loadMail(currentUser));
+  useEffect(() => {
+    const h = () => reload();
+    window.addEventListener("pueios-mail", h);
+    return () => window.removeEventListener("pueios-mail", h);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentUser]);
+
+  const myAddress = mailAddressFor(currentUser);
+
+  const folderMsgs = msgs
+    .filter((m) => m.folder === folder)
+    .filter((m) => !search || m.subject.toLowerCase().includes(search.toLowerCase()) ||
+      m.from.toLowerCase().includes(search.toLowerCase()) ||
+      m.body.toLowerCase().includes(search.toLowerCase()))
+    .sort((a, b) => b.at - a.at);
+
+  const unreadCount = (f: PMFolder) => msgs.filter((m) => m.folder === f && !m.read).length;
+
+  const openMsg = (m: MailMessage) => {
+    setSelected(m);
+    if (!m.read) {
+      const updated = msgs.map((x) => x.id === m.id ? { ...x, read: true } : x);
+      replaceMailFor(currentUser, updated);
+      setMsgs(updated);
+    }
+    setComposing(false);
+  };
+
+  const moveMsg = (m: MailMessage, dest: PMFolder) => {
+    const updated = msgs.map((x) => x.id === m.id ? { ...x, folder: dest } : x);
+    replaceMailFor(currentUser, updated);
+    setMsgs(updated);
+    if (selected?.id === m.id) setSelected({ ...m, folder: dest });
+  };
+
+  const deleteMsg = (m: MailMessage) => {
+    if (m.folder === "trash") {
+      const updated = msgs.filter((x) => x.id !== m.id);
+      replaceMailFor(currentUser, updated);
+      setMsgs(updated);
+      if (selected?.id === m.id) setSelected(null);
+    } else {
+      moveMsg(m, "trash");
+    }
+  };
+
+  const doSend = async () => {
+    if (!toField.trim()) { setSentMsg("Enter a recipient."); return; }
+    const recipient = resolveMailRecipient(toField, users) ?? toField.trim();
+    setSending(true);
+    try {
+      const msg = sendMail(currentUser, recipient, subjField || "(no subject)", bodyField, users);
+      const myMails = [...msgs, msg];
+      replaceMailFor(currentUser, myMails);
+      setMsgs(myMails);
+      await fetch("/api/mail", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "deliver", from: currentUser, to: recipient, subject: subjField || "(no subject)", body: bodyField }),
+      }).catch(() => {});
+      setSentMsg("Sent!");
+      setToField(""); setSubjField(""); setBodyField("");
+      setTimeout(() => { setSentMsg(""); setComposing(false); setFolder("sent"); }, 1200);
+    } catch {
+      setSentMsg("Send failed.");
+    }
+    setSending(false);
+  };
+
+  const startCompose = (replyTo?: MailMessage) => {
+    setComposing(true);
+    setSelected(null);
+    setSentMsg("");
+    if (replyTo) {
+      setToField(replyTo.from);
+      setSubjField(`Re: ${replyTo.subject}`);
+      setBodyField(`\n\n--- Original message from ${replyTo.from} ---\n${replyTo.body}`);
+    } else {
+      setToField(""); setSubjField(""); setBodyField("");
+    }
+  };
+
+  return (
+    <div className="flex h-full" style={{ background: "var(--background)" }}>
+      {/* Sidebar */}
+      <div className="flex flex-col p-3 gap-1 border-r shrink-0" style={{ width: 176, borderColor: "var(--border)", background: "var(--glass)" }}>
+        <div className="flex items-center gap-2 mb-3 px-1">
+          <span className="text-xl">✉️</span>
+          <span className="font-bold text-sm">PMail</span>
+        </div>
+        <button onClick={() => startCompose()}
+          className="rounded-xl px-3 py-2 text-sm font-semibold text-white flex items-center gap-2 mb-2"
+          style={{ background: "var(--accent)" }}>
+          ✏️ Compose
+        </button>
+        {PMAIL_FOLDERS_DEF.map((f) => {
+          const cnt = unreadCount(f.id);
+          return (
+            <button key={f.id} onClick={() => { setFolder(f.id); setSelected(null); setComposing(false); }}
+              className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-left"
+              style={{ background: folder === f.id ? "var(--accent)" : "transparent", color: folder === f.id ? "#fff" : "var(--foreground)", fontWeight: folder === f.id ? 600 : 400 }}>
+              <span>{f.icon}</span>
+              <span className="flex-1">{f.label}</span>
+              {cnt > 0 && (
+                <span className="text-[10px] px-1.5 py-0.5 rounded-full text-white" style={{ background: "rgba(255,255,255,0.3)", minWidth: 18, textAlign: "center" }}>{cnt}</span>
+              )}
+            </button>
+          );
+        })}
+        <div className="mt-auto pt-3 border-t text-[10px] opacity-40 break-all" style={{ borderColor: "var(--border)" }}>{myAddress}</div>
+      </div>
+
+      {/* Message list */}
+      <div className="flex flex-col border-r shrink-0 overflow-hidden" style={{ width: 236, borderColor: "var(--border)" }}>
+        <div className="p-2 border-b" style={{ borderColor: "var(--border)" }}>
+          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search…"
+            className="w-full rounded-lg px-3 py-1.5 text-xs input-field" />
+        </div>
+        <div className="flex-1 overflow-y-auto">
+          {folderMsgs.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-32 opacity-30 gap-1">
+              <span className="text-2xl">📭</span>
+              <span className="text-xs">Empty</span>
+            </div>
+          ) : folderMsgs.map((m) => (
+            <div key={m.id} onClick={() => openMsg(m)}
+              className="flex flex-col gap-0.5 px-3 py-2.5 border-b cursor-pointer transition-colors"
+              style={{ borderColor: "var(--border)", background: selected?.id === m.id ? "var(--accent)" : "transparent" }}>
+              <div className="flex justify-between items-center gap-1">
+                <span className="text-xs font-semibold truncate" style={{ color: selected?.id === m.id ? "#fff" : "var(--foreground)", opacity: m.read ? 0.7 : 1, maxWidth: 130 }}>
+                  {folder === "sent" ? `To: ${m.to}` : m.from}
+                </span>
+                <span className="text-[10px] opacity-60 shrink-0" style={{ color: selected?.id === m.id ? "#fff" : undefined }}>
+                  {new Date(m.at).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+                </span>
+              </div>
+              <div className="text-xs truncate" style={{ fontWeight: m.read ? 400 : 700, color: selected?.id === m.id ? "#fff" : "var(--foreground)" }}>
+                {m.subject || "(no subject)"}
+              </div>
+              <div className="text-[10px] truncate opacity-60" style={{ color: selected?.id === m.id ? "#fff" : undefined }}>
+                {m.body.slice(0, 60)}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Reading / compose pane */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {composing ? (
+          <div className="flex flex-col h-full p-5 gap-3">
+            <div className="flex items-center gap-3 mb-1">
+              <span className="text-lg font-semibold">New Message</span>
+              <button onClick={() => setComposing(false)} className="ml-auto text-xs opacity-50 hover:opacity-80">✕ Discard</button>
+            </div>
+            <div className="flex items-center gap-2 border-b pb-2" style={{ borderColor: "var(--border)" }}>
+              <span className="text-xs opacity-50 w-14 shrink-0">To</span>
+              <input value={toField} onChange={(e) => setToField(e.target.value)}
+                placeholder="Name or @pueimail.puei address"
+                className="flex-1 bg-transparent outline-none text-sm" />
+            </div>
+            <div className="flex items-center gap-2 border-b pb-2" style={{ borderColor: "var(--border)" }}>
+              <span className="text-xs opacity-50 w-14 shrink-0">Subject</span>
+              <input value={subjField} onChange={(e) => setSubjField(e.target.value)}
+                placeholder="(no subject)"
+                className="flex-1 bg-transparent outline-none text-sm" />
+            </div>
+            <textarea value={bodyField} onChange={(e) => setBodyField(e.target.value)}
+              placeholder="Write your message…"
+              className="flex-1 bg-transparent outline-none resize-none text-sm leading-relaxed" />
+            <div className="flex items-center gap-3">
+              <button onClick={doSend} disabled={sending}
+                className="rounded-xl px-5 py-2 text-sm font-semibold text-white"
+                style={{ background: "var(--accent)", opacity: sending ? 0.6 : 1 }}>
+                {sending ? "Sending…" : "Send ✈️"}
+              </button>
+              {sentMsg && <span className="text-sm font-semibold" style={{ color: sentMsg === "Sent!" ? "#4ade80" : "#f87171" }}>{sentMsg}</span>}
+            </div>
+          </div>
+        ) : selected ? (
+          <div className="flex flex-col h-full">
+            <div className="flex items-start gap-3 p-4 border-b" style={{ borderColor: "var(--border)", background: "var(--glass)" }}>
+              <div style={{ width: 40, height: 40, borderRadius: 10, background: "var(--accent)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0, color: "#fff", fontWeight: 700 }}>
+                {(selected.from[0] ?? "?").toUpperCase()}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="font-semibold text-sm">{selected.subject || "(no subject)"}</div>
+                <div className="text-xs opacity-60">From: {selected.from} → {selected.to}</div>
+                <div className="text-xs opacity-40">{new Date(selected.at).toLocaleString()}</div>
+              </div>
+              <div className="flex gap-1 shrink-0 flex-wrap justify-end">
+                <button onClick={() => startCompose(selected)} className="aero-button rounded-lg px-2 py-1 text-xs">↩ Reply</button>
+                <button onClick={() => moveMsg(selected, selected.folder === "important" ? "inbox" : "important")}
+                  className="aero-button rounded-lg px-2 py-1 text-xs">
+                  {selected.folder === "important" ? "★ Unmark" : "☆ Star"}
+                </button>
+                <button onClick={() => moveMsg(selected, "spam")} className="aero-button rounded-lg px-2 py-1 text-xs">🚫</button>
+                <button onClick={() => { deleteMsg(selected); setSelected(null); }} className="aero-button rounded-lg px-2 py-1 text-xs">🗑</button>
+              </div>
+            </div>
+            <div className="flex-1 overflow-y-auto p-5 text-sm leading-relaxed whitespace-pre-wrap">
+              {selected.body || <span className="opacity-30">(empty message)</span>}
+            </div>
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center h-full gap-2" style={{ opacity: 0.25 }}>
+            <span className="text-5xl">✉️</span>
+            <span className="text-sm">Select a message</span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ---------- Puei Racing 3D ----------
+type RacerPos = { x: number; z: number; angle: number; speed: number; lap: number; checkpoint: number };
+const TRACK_WAYPOINTS = [
+  { x: 0, z: 0 }, { x: 200, z: -40 }, { x: 380, z: 80 }, { x: 420, z: 260 },
+  { x: 300, z: 400 }, { x: 100, z: 450 }, { x: -80, z: 380 }, { x: -200, z: 200 },
+  { x: -180, z: 40 },
+];
+const TRACK_W = 600; const TRACK_H = 500;
+
+function Racing3DApp({ currentUser }: { currentUser: string }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const playerRef = useRef<RacerPos>({ x: 0, z: 0, angle: 0, speed: 0, lap: 1, checkpoint: 0 });
+  const keysRef = useRef<Set<string>>(new Set());
+  const botsRef = useRef<RacerPos[]>([
+    { x: -15, z: 20, angle: 0, speed: 0, lap: 1, checkpoint: 0 },
+    { x: 15, z: 20, angle: 0, speed: 0, lap: 1, checkpoint: 0 },
+  ]);
+  const rafRef = useRef<number>(0);
+  const [status, setStatus] = useState("Press WASD or Arrow keys to drive!");
+  const [lap, setLap] = useState(1);
+  const [finished, setFinished] = useState(false);
+  const totalLaps = 3;
+  const MAX_SPEED = 5;
+  const ACCEL = 0.18;
+  const BRAKE = 0.1;
+  const FRICTION = 0.96;
+  const TURN_SPEED = 0.045;
+
+  useEffect(() => {
+    const down = (e: KeyboardEvent) => { keysRef.current.add(e.key); e.preventDefault(); };
+    const up = (e: KeyboardEvent) => keysRef.current.delete(e.key);
+    window.addEventListener("keydown", down);
+    window.addEventListener("keyup", up);
+
+    const W = TRACK_W; const H = TRACK_H;
+    const WPS = TRACK_WAYPOINTS;
+    const cpRadius = 60;
+
+    function nextWp(cp: number) { return (cp + 1) % WPS.length; }
+    function wpAngle(from: { x: number; z: number }, to: { x: number; z: number }) {
+      return Math.atan2(to.x - from.x, to.z - from.z);
+    }
+
+    function updateBot(b: RacerPos) {
+      const target = WPS[nextWp(b.checkpoint)];
+      const dx = target.x - b.x; const dz = target.z - b.z;
+      const dist = Math.sqrt(dx * dx + dz * dz);
+      const targetAngle = Math.atan2(dx, dz);
+      let da = targetAngle - b.angle;
+      while (da > Math.PI) da -= Math.PI * 2;
+      while (da < -Math.PI) da += Math.PI * 2;
+      b.angle += Math.sign(da) * Math.min(Math.abs(da), TURN_SPEED * 1.2);
+      b.speed = Math.min(MAX_SPEED * 0.78, b.speed + ACCEL * 0.7);
+      b.x += Math.sin(b.angle) * b.speed;
+      b.z += Math.cos(b.angle) * b.speed;
+      if (dist < cpRadius) {
+        b.checkpoint = nextWp(b.checkpoint);
+        if (b.checkpoint === 0) b.lap++;
+      }
+    }
+
+    function render() {
+      const c = canvasRef.current; if (!c) return;
+      const ctx = c.getContext("2d")!;
+      const p = playerRef.current;
+      const ks = keysRef.current;
+
+      // Input
+      if (!finished) {
+        if (ks.has("ArrowUp") || ks.has("w") || ks.has("W")) p.speed = Math.min(MAX_SPEED, p.speed + ACCEL);
+        if (ks.has("ArrowDown") || ks.has("s") || ks.has("S")) p.speed = Math.max(-MAX_SPEED * 0.4, p.speed - BRAKE);
+        if ((ks.has("ArrowLeft") || ks.has("a") || ks.has("A")) && Math.abs(p.speed) > 0.1) p.angle -= TURN_SPEED * Math.sign(p.speed);
+        if ((ks.has("ArrowRight") || ks.has("d") || ks.has("D")) && Math.abs(p.speed) > 0.1) p.angle += TURN_SPEED * Math.sign(p.speed);
+        p.speed *= FRICTION;
+        p.x += Math.sin(p.angle) * p.speed;
+        p.z += Math.cos(p.angle) * p.speed;
+        // Checkpoint
+        const targetCp = WPS[nextWp(p.checkpoint)];
+        const dx = targetCp.x - p.x; const dz = targetCp.z - p.z;
+        if (Math.sqrt(dx * dx + dz * dz) < cpRadius) {
+          p.checkpoint = nextWp(p.checkpoint);
+          if (p.checkpoint === 0) {
+            p.lap++;
+            if (p.lap > totalLaps) { setFinished(true); setStatus("You finished!"); }
+            else setLap(p.lap);
+          }
+        }
+        botsRef.current.forEach(updateBot);
+      }
+
+      // Draw top-down view
+      const cx = W / 2 - p.x; const cz = H / 2 - p.z;
+      ctx.clearRect(0, 0, W, H);
+
+      // Sky/ground
+      ctx.fillStyle = "#1a2a1a";
+      ctx.fillRect(0, 0, W, H);
+
+      // Track
+      ctx.save();
+      ctx.translate(cx, cz);
+      ctx.strokeStyle = "#888";
+      ctx.lineWidth = 42;
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      ctx.beginPath();
+      WPS.forEach((wp, i) => {
+        if (i === 0) ctx.moveTo(wp.x, wp.z);
+        else ctx.lineTo(wp.x, wp.z);
+      });
+      ctx.closePath();
+      ctx.stroke();
+      // Track surface
+      ctx.strokeStyle = "#333";
+      ctx.lineWidth = 38;
+      ctx.stroke();
+      // Center line
+      ctx.strokeStyle = "rgba(255,255,100,0.4)";
+      ctx.lineWidth = 2;
+      ctx.setLineDash([12, 8]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Checkpoints
+      WPS.forEach((wp, i) => {
+        const isNext = i === nextWp(p.checkpoint);
+        ctx.beginPath();
+        ctx.arc(wp.x, wp.z, isNext ? 10 : 5, 0, Math.PI * 2);
+        ctx.fillStyle = isNext ? "rgba(100,200,255,0.8)" : "rgba(255,255,255,0.2)";
+        ctx.fill();
+      });
+
+      // Bots
+      botsRef.current.forEach((b, bi) => {
+        ctx.save();
+        ctx.translate(b.x, b.z);
+        ctx.rotate(b.angle);
+        ctx.fillStyle = bi === 0 ? "#e74c3c" : "#9b59b6";
+        ctx.fillRect(-7, -12, 14, 24);
+        ctx.fillStyle = "rgba(255,255,255,0.4)";
+        ctx.fillRect(-5, -14, 10, 6);
+        ctx.restore();
+      });
+
+      // Player car
+      ctx.save();
+      ctx.translate(0, 0); // player is always centered when camera follows
+      ctx.rotate(p.angle);
+      // Car body
+      const grad = ctx.createLinearGradient(-9, -14, 9, 14);
+      grad.addColorStop(0, "#3498db");
+      grad.addColorStop(1, "#1a5f8c");
+      ctx.fillStyle = grad;
+      ctx.fillRect(-9, -16, 18, 32);
+      ctx.fillStyle = "rgba(255,255,255,0.5)";
+      ctx.fillRect(-7, -18, 14, 8);
+      ctx.fillStyle = "#f39c12";
+      ctx.fillRect(-9, 13, 5, 4);
+      ctx.fillRect(4, 13, 5, 4);
+      ctx.restore();
+
+      ctx.restore();
+
+      // HUD
+      ctx.fillStyle = "rgba(0,0,0,0.5)";
+      ctx.fillRect(8, 8, 160, 50);
+      ctx.fillStyle = "#fff";
+      ctx.font = "bold 13px system-ui";
+      ctx.fillText(`Lap ${Math.min(p.lap, totalLaps)} / ${totalLaps}`, 16, 26);
+      ctx.font = "11px system-ui";
+      ctx.fillStyle = "#aaa";
+      ctx.fillText(`Speed: ${Math.abs(p.speed * 20).toFixed(0)} km/h`, 16, 42);
+
+      // Speedo bar
+      ctx.fillStyle = "rgba(0,0,0,0.4)";
+      ctx.fillRect(W - 90, 8, 82, 14);
+      ctx.fillStyle = "#3498db";
+      ctx.fillRect(W - 89, 9, Math.max(0, Math.abs(p.speed / MAX_SPEED) * 80), 12);
+      ctx.fillStyle = "#fff";
+      ctx.font = "9px system-ui";
+      ctx.fillText("SPEED", W - 85, 19);
+
+      rafRef.current = requestAnimationFrame(render);
+    }
+    render();
+
+    return () => {
+      cancelAnimationFrame(rafRef.current);
+      window.removeEventListener("keydown", down);
+      window.removeEventListener("keyup", up);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [finished]);
+
+  const restart = () => {
+    playerRef.current = { x: 0, z: 0, angle: 0, speed: 0, lap: 1, checkpoint: 0 };
+    botsRef.current = [
+      { x: -15, z: 20, angle: 0, speed: 0, lap: 1, checkpoint: 0 },
+      { x: 15, z: 20, angle: 0, speed: 0, lap: 1, checkpoint: 0 },
+    ];
+    setLap(1); setFinished(false); setStatus("Press WASD or Arrow keys to drive!");
+  };
+
+  // Touch controls
+  const touchDir = useRef<string | null>(null);
+  const addTouch = (dir: string) => { keysRef.current.add(dir); touchDir.current = dir; };
+  const removeTouch = () => { if (touchDir.current) keysRef.current.delete(touchDir.current); touchDir.current = null; };
+
+  const touchBtn = (label: string, key: string) => (
+    <button
+      onPointerDown={() => addTouch(key)} onPointerUp={removeTouch} onPointerLeave={removeTouch}
+      className="rounded-xl text-white font-bold text-lg select-none"
+      style={{ background: "rgba(255,255,255,0.18)", border: "1px solid rgba(255,255,255,0.25)", width: 52, height: 52, backdropFilter: "blur(8px)", touchAction: "none" }}>
+      {label}
+    </button>
+  );
+
+  return (
+    <div className="flex flex-col h-full items-center justify-center" style={{ background: "#0a1a0a" }}>
+      <div className="flex items-center gap-3 mb-2">
+        <span className="text-white font-bold text-sm">🏎️ Puei Racing 3D</span>
+        <span className="text-xs text-white/50">{status}</span>
+        {finished && (
+          <button onClick={restart} className="ml-2 rounded-lg px-3 py-1 text-xs font-semibold text-white" style={{ background: "var(--accent)" }}>
+            Race again
+          </button>
+        )}
+      </div>
+      <canvas ref={canvasRef} width={TRACK_W} height={TRACK_H}
+        style={{ borderRadius: 12, border: "2px solid rgba(255,255,255,0.1)", display: "block", maxWidth: "100%", maxHeight: "calc(100vh - 160px)", objectFit: "contain" }} />
+      {/* Touch controls */}
+      <div className="flex items-center gap-3 mt-3">
+        <div className="flex flex-col items-center gap-1">
+          {touchBtn("⬆", "ArrowUp")}
+          <div className="flex gap-1">
+            {touchBtn("⬅", "ArrowLeft")}
+            {touchBtn("⬇", "ArrowDown")}
+            {touchBtn("➡", "ArrowRight")}
+          </div>
+        </div>
+      </div>
+      <div className="text-white/30 text-[10px] mt-1">Blue = You · Red/Purple = Bots · {totalLaps} laps</div>
     </div>
   );
 }

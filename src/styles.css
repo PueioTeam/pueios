@@ -411,9 +411,7 @@
   gap: 8px;
 }
 .context-item:hover {
-  background: linear-gradient(to bottom,
-    oklch(0.75 0.12 var(--accent-h)),
-    oklch(0.55 0.18 var(--accent-h)));
+  background: var(--accent);
   color: white;
 }
 .context-sep { height: 1px; background: var(--border); margin: 4px 2px; }
@@ -511,39 +509,18 @@ canvas[style*="crosshair"] { cursor: url("data:image/svg+xml,%3Csvg xmlns='http:
     radial-gradient(ellipse at 70% 80%, oklch(0.6 0.2 calc(var(--accent-h) + 30) / 0.5), transparent 50%),
     linear-gradient(135deg, oklch(0.25 0.1 240), oklch(0.45 0.15 var(--accent-h)));
 }
-/* Win7 Bliss-style wallpaper: vivid green hills + blue sky */
-.wallpaper-bliss {
+/* PueiSKY: vivid green hills + blue sky (formerly Bliss) */
+.wallpaper-bliss, .wallpaper-pueisky {
   background:
-    /* clouds */
     radial-gradient(ellipse 180px 60px at 25% 28%, rgba(255,255,255,0.85), transparent),
     radial-gradient(ellipse 120px 45px at 60% 22%, rgba(255,255,255,0.7), transparent),
     radial-gradient(ellipse 90px 35px at 78% 32%, rgba(255,255,255,0.6), transparent),
-    /* sky-to-horizon */
-    linear-gradient(to bottom,
-      #4a90d9 0%,
-      #6db3f2 35%,
-      #a8d8f8 55%,
-      #c8e8ff 62%),
-    /* green hills */
-    radial-gradient(ellipse 120% 50% at 50% 120%,
-      #3a8c2a 0%,
-      #4caa35 30%,
-      #5fc040 55%,
-      #70cc50 70%,
-      transparent 100%);
+    linear-gradient(to bottom, #4a90d9 0%, #6db3f2 35%, #a8d8f8 55%, #c8e8ff 62%),
+    radial-gradient(ellipse 120% 50% at 50% 120%, #3a8c2a 0%, #4caa35 30%, #5fc040 55%, #70cc50 70%, transparent 100%);
   background-size: 100% 100%;
 }
-.wallpaper-aurora {
-  background:
-    radial-gradient(circle at 20% 30%, oklch(0.7 0.25 290 / 0.6), transparent 40%),
-    radial-gradient(circle at 80% 60%, oklch(0.75 0.2 180 / 0.6), transparent 50%),
-    linear-gradient(160deg, oklch(0.15 0.08 260), oklch(0.25 0.1 240));
-}
-.wallpaper-sunset {
-  background: linear-gradient(to bottom,
-    oklch(0.4 0.12 280), oklch(0.6 0.2 30), oklch(0.75 0.18 60));
-}
 
+/* Aero Blue — deep navy shimmer */
 .wallpaper-aero-blue {
   background:
     radial-gradient(ellipse at 45% 62%, rgba(190, 235, 255, 0.62), transparent 54%),
@@ -551,6 +528,7 @@ canvas[style*="crosshair"] { cursor: url("data:image/svg+xml,%3Csvg xmlns='http:
     linear-gradient(155deg, #03144f 0%, #0a3f9a 44%, #062b83 68%, #02164f 100%);
 }
 
+/* Aero Pink — soft rose-azure */
 .wallpaper-aero-pink {
   background:
     radial-gradient(ellipse at 50% 70%, rgba(214, 236, 255, 0.62), transparent 56%),
@@ -558,6 +536,7 @@ canvas[style*="crosshair"] { cursor: url("data:image/svg+xml,%3Csvg xmlns='http:
     linear-gradient(160deg, #02185e 0%, #0940a9 52%, #032578 100%);
 }
 
+/* Aero Neon — cyberpunk blue-magenta */
 .wallpaper-aero-neon {
   background:
     radial-gradient(ellipse at 72% 72%, rgba(255, 132, 205, 0.46), transparent 55%),
@@ -565,11 +544,45 @@ canvas[style*="crosshair"] { cursor: url("data:image/svg+xml,%3Csvg xmlns='http:
     linear-gradient(150deg, #020b45 0%, #053491 46%, #041f73 66%, #2d0b63 100%);
 }
 
+/* Aero Dusk — amber twilight */
 .wallpaper-aero-dusk {
   background:
     radial-gradient(ellipse at 72% 74%, rgba(255, 186, 116, 0.48), transparent 48%),
     radial-gradient(ellipse at 32% 76%, rgba(125, 205, 255, 0.3), transparent 52%),
     linear-gradient(180deg, #06194d 0%, #143d86 54%, #072252 100%);
+}
+
+/* Aero Forest — deep green canopy */
+.wallpaper-aero-forest {
+  background:
+    radial-gradient(ellipse at 50% 80%, rgba(80, 220, 100, 0.35), transparent 55%),
+    radial-gradient(ellipse at 15% 20%, rgba(60, 200, 80, 0.25), transparent 45%),
+    linear-gradient(160deg, #021a04 0%, #0a4a10 45%, #063008 68%, #021505 100%);
+}
+
+/* Aero Ember — warm orange-red */
+.wallpaper-aero-ember {
+  background:
+    radial-gradient(ellipse at 60% 70%, rgba(255, 140, 60, 0.5), transparent 52%),
+    radial-gradient(ellipse at 25% 30%, rgba(255, 80, 40, 0.3), transparent 48%),
+    linear-gradient(150deg, #1a0500 0%, #5a1200 45%, #3a0800 70%, #1a0200 100%);
+}
+
+/* Aero Arctic — ice white-blue */
+.wallpaper-aero-arctic {
+  background:
+    radial-gradient(ellipse at 40% 30%, rgba(210, 245, 255, 0.7), transparent 50%),
+    radial-gradient(ellipse at 75% 75%, rgba(160, 220, 255, 0.5), transparent 45%),
+    linear-gradient(150deg, #0a2a3a 0%, #1050a0 40%, #0a3070 65%, #052050 100%);
+}
+
+/* Aero Galaxy — deep space nebula */
+.wallpaper-aero-galaxy {
+  background:
+    radial-gradient(ellipse at 30% 40%, rgba(160, 80, 255, 0.45), transparent 42%),
+    radial-gradient(ellipse at 70% 60%, rgba(80, 140, 255, 0.4), transparent 40%),
+    radial-gradient(ellipse at 50% 10%, rgba(255, 100, 200, 0.25), transparent 35%),
+    linear-gradient(135deg, #06010f 0%, #150830 50%, #060115 100%);
 }
 
 
