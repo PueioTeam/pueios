@@ -4147,6 +4147,8 @@ function PueiUpdaterApp({ currentUser, startUpgrade, systemVersion }: { currentU
   const [installProgress, setInstallProgress] = useState(0);
   const [isInstalling, setIsInstalling] = useState(false);
   const [installStopped, setInstallStopped] = useState(false);
+  // Pueio Reverse — XP-style EOL warning before installing legacy ISO or downgrading
+  const [reverseWarning, setReverseWarning] = useState<{ version: SystemVersion; fromIso?: boolean } | null>(null);
   const [restartQueued, setRestartQueued] = useState(false);
   const restartTimer = useRef<number | null>(null);
 
@@ -4209,23 +4211,33 @@ function PueiUpdaterApp({ currentUser, startUpgrade, systemVersion }: { currentU
     }
   }, [filesVersion, isoFiles, mountedIsoId]);
 
-  const beginInstall = () => {
-    if (!mountedIso) {
-      blip("error");
-      alert("Drag an ISO into the installer area first.");
-      return;
-    }
-    if (mountedVersion !== "PueiOS 3") {
-      blip("error");
-      alert(`As of June 6th, ${mountedVersion} is no longer supported and cannot be installed. Please download pueios3.iso from puei://updates instead.`);
-      return;
-    }
-    if (!confirm(`Install ${mountedVersion} from ${mountedIso.name}? Your device will restart when installation finishes.`)) return;
+  const beginInstallActual = () => {
     setInstallStopped(false);
     setRestartQueued(false);
     setInstallProgress(0);
     setIsInstalling(true);
     blip("start");
+  };
+
+  const beginInstall = () => {
+    if (!mountedIso) {
+      blip("error");
+      // styled inline error — no browser alert
+      setEolMsg("Drag an ISO into the installer area first.");
+      return;
+    }
+    if (mountedVersion !== "PueiOS 3") {
+      blip("error");
+      // On PueiOS 3: show the XP-style Pueio Reverse warning instead of browser alert
+      if (systemVersion === "PueiOS 3") {
+        setReverseWarning({ version: mountedVersion, fromIso: true });
+      } else {
+        alert(`As of June 6th, ${mountedVersion} is no longer supported and cannot be installed. Please download pueios3.iso from puei://updates instead.`);
+      }
+      return;
+    }
+    if (!confirm(`Install ${mountedVersion} from ${mountedIso.name}? Your device will restart when installation finishes.`)) return;
+    beginInstallActual();
   };
 
   const stopInstall = () => {
@@ -4249,7 +4261,53 @@ function PueiUpdaterApp({ currentUser, startUpgrade, systemVersion }: { currentU
   ];
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full relative">
+      {/* Pueio Reverse — XP-style EOL warning modal (PueiOS 3 only) */}
+      {reverseWarning && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center" style={{ background: "rgba(0,0,0,0.55)" }}>
+          <div className="w-[420px] rounded shadow-2xl overflow-hidden" style={{ border: "2px solid #0a246a", fontFamily: "Tahoma, sans-serif" }}>
+            {/* XP-style titlebar */}
+            <div className="flex items-center justify-between px-2 py-1 select-none"
+              style={{ background: "linear-gradient(to bottom, #0a5db5 0%, #0a246a 100%)", color: "white" }}>
+              <div className="flex items-center gap-1.5 text-[11px] font-bold">
+                <span>⚠️</span> Pueio Reverse — Compatibility Warning
+              </div>
+              <button className="w-5 h-5 rounded flex items-center justify-center text-[10px] hover:bg-red-500"
+                style={{ background: "rgba(255,255,255,0.2)" }}
+                onClick={() => setReverseWarning(null)}>✕</button>
+            </div>
+            {/* XP-style content */}
+            <div style={{ background: "#ece9d8", color: "#000" }}>
+              <div className="flex gap-3 p-4">
+                <div className="text-4xl flex-shrink-0">🛡️</div>
+                <div>
+                  <div className="font-bold text-sm mb-1">This version of Windows is no longer supported</div>
+                  <div className="text-[11px] leading-relaxed" style={{ color: "#444" }}>
+                    <b>As of June 6th, {reverseWarning.version} is no longer supported</b> and cannot be installed normally.<br /><br />
+                    <b>by PueiOS</b><br /><br />
+                    You are using <b>Pueio Reverse</b>, which allows booting legacy ISOs whose support has ended. The system will show an end-of-support warning before booting.<br /><br />
+                    To continue installing {reverseWarning.version} with Pueio Reverse, click <b>Ignore and install anyway</b>. To cancel, click <b>Don't install</b>.
+                  </div>
+                </div>
+              </div>
+              <div className="flex justify-end gap-2 px-4 pb-3">
+                <button className="px-4 py-1 text-[11px] rounded border"
+                  style={{ background: "#ece9d8", borderColor: "#888", cursor: "pointer" }}
+                  onClick={() => setReverseWarning(null)}>Don't install</button>
+                <button className="px-4 py-1 text-[11px] rounded border font-bold"
+                  style={{ background: "#ece9d8", borderColor: "#0a246a", cursor: "pointer" }}
+                  onClick={() => {
+                  const w = reverseWarning;
+                  setReverseWarning(null);
+                  if (w?.fromIso) { beginInstallActual(); }
+                  else if (w?.version) { startUpgrade(w.version); }
+                }}>Ignore and install anyway</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="aero-titlebar text-xs px-3 py-1 flex items-center gap-2">
         <span className="opacity-60">Update</span>
         <span className="truncate flex-1">Puei Updater</span>
@@ -4281,11 +4339,18 @@ function PueiUpdaterApp({ currentUser, startUpgrade, systemVersion }: { currentU
                 <button
                   className="aero-button rounded-lg px-4 py-2 text-sm flex-shrink-0"
                   onClick={() => {
-                    if (eol) { setEolMsg(`As of June 6th, ${v} is no longer supported. Please install PueiOS 3 instead.`); return; }
+                    if (eol) {
+                      if (systemVersion === "PueiOS 3") {
+                        setReverseWarning({ version: v, fromIso: false });
+                      } else {
+                        setEolMsg(`As of June 6th, ${v} is no longer supported. Please install PueiOS 3 instead.`);
+                      }
+                      return;
+                    }
                     setEolMsg(null);
                     startUpgrade(v);
                   }}>
-                  {eol ? "Info" : "Install →"}
+                  {eol && systemVersion === "PueiOS 3" ? "🔄 Pueio Reverse" : eol ? "Info" : "Install →"}
                 </button>
               )}
             </div>
@@ -4806,22 +4871,27 @@ function PueiFilmsPage({ currentUser }: { currentUser: string }) {
   const [title, setTitle] = useState("");
   const [desc, setDesc] = useState("");
   const [videoSrc, setVideoSrc] = useState("");
+  const [videoName, setVideoName] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [showPost, setShowPost] = useState(false);
 
   const onFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
     if (!f) return;
-    setUploading(true);
-    const r = new FileReader();
-    r.onload = () => { setVideoSrc(String(r.result)); setUploading(false); };
-    r.readAsDataURL(f);
+    // Use blob URL for large files — avoids localStorage size limits (supports up to 10 GB)
+    const url = URL.createObjectURL(f);
+    setVideoSrc(url);
+    setVideoName(f.name);
+    setUploading(false);
   };
 
   const post = () => {
     if (!title.trim() || !videoSrc) return;
     const next: FilmPost[] = [{ id: `film-${Date.now().toString(36)}`, title: title.trim(), desc: desc.trim(), videoSrc, postedAt: Date.now() }, ...films];
-    setFilms(next); saveFilms(next);
-    setTitle(""); setDesc(""); setVideoSrc(""); blip("notify");
+    setFilms(next);
+    // Only save to localStorage if admin (blob URLs don't persist across sessions anyway)
+    if (isAdmin) saveFilms(next);
+    setTitle(""); setDesc(""); setVideoSrc(""); setVideoName(""); setShowPost(false); blip("notify");
   };
 
   const remove = (id: string) => {
@@ -4838,24 +4908,32 @@ function PueiFilmsPage({ currentUser }: { currentUser: string }) {
         <span className="text-xs opacity-50">Official videos posted by pueioficial</span>
       </div>
       <div className="flex-1 overflow-auto p-4 space-y-4">
-        {isAdmin && (
-          <div className="aero-glass-light rounded-xl p-4 space-y-3">
-            <div className="text-xs font-semibold opacity-70">📤 Post a new film</div>
-            <input value={title} onChange={e => setTitle(e.target.value)} placeholder="Title" className="w-full rounded px-3 py-1.5 text-sm input-field" />
-            <input value={desc} onChange={e => setDesc(e.target.value)} placeholder="Description (optional)" className="w-full rounded px-3 py-1.5 text-sm input-field" />
-            <div className="flex items-center gap-3">
-              <label className="aero-button rounded px-3 py-1.5 text-xs cursor-pointer">
-                {uploading ? "Loading…" : videoSrc ? "✅ Video ready" : "📁 Choose video"}
-                <input type="file" accept="video/*" className="hidden" onChange={onFile} />
-              </label>
-              <button onClick={post} disabled={!title.trim() || !videoSrc || uploading}
-                className="aero-button rounded px-4 py-1.5 text-xs font-semibold"
-                style={{ opacity: (!title.trim() || !videoSrc || uploading) ? 0.4 : 1 }}>
-                Post Film
-              </button>
+        {/* Post a film — available to all users */}
+        <div className="aero-glass-light rounded-xl overflow-hidden">
+          <button className="w-full flex items-center justify-between px-4 py-2.5 text-sm font-semibold hover:bg-white/5 transition-colors"
+            onClick={() => setShowPost(p => !p)}>
+            <span>📤 Post a film</span>
+            <span className="opacity-50 text-xs">{showPost ? "▲" : "▼"}</span>
+          </button>
+          {showPost && (
+            <div className="px-4 pb-4 space-y-2.5 border-t" style={{ borderColor: "var(--border)" }}>
+              <input value={title} onChange={e => setTitle(e.target.value)} placeholder="Title *" className="w-full rounded px-3 py-1.5 text-sm input-field mt-3" />
+              <input value={desc} onChange={e => setDesc(e.target.value)} placeholder="Description (optional)" className="w-full rounded px-3 py-1.5 text-sm input-field" />
+              <div className="flex items-center gap-3 flex-wrap">
+                <label className="aero-button rounded px-3 py-1.5 text-xs cursor-pointer flex items-center gap-1.5">
+                  📁 {videoSrc ? `✅ ${videoName || "Video ready"}` : "Choose video (up to 10 GB)"}
+                  <input type="file" accept="video/*,video/mp4,video/quicktime,video/webm,video/ogg,video/avi,video/x-matroska,.mp4,.mov,.webm,.ogg,.avi,.mkv,.flv,.wmv,.m4v" className="hidden" onChange={onFile} />
+                </label>
+                <button onClick={post} disabled={!title.trim() || !videoSrc}
+                  className="aero-button rounded px-4 py-1.5 text-xs font-semibold"
+                  style={{ opacity: (!title.trim() || !videoSrc) ? 0.4 : 1 }}>
+                  Post Film
+                </button>
+              </div>
+              <div className="text-[10px] opacity-40">Supports: MP4, MOV, WebM, AVI, MKV, WMV — works on Windows, macOS, Linux, iOS, Android</div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
         {fetching && films.length === 0 && (
           <div className="text-center text-sm opacity-50 py-12 animate-pulse">Loading films… 🎬</div>
         )}

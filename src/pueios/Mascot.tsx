@@ -86,6 +86,18 @@ function pueiLocalReply(q: string): string {
   const lower = q.toLowerCase().trim();
   const pick = (arr: string[]) => arr[Math.floor(Math.random() * arr.length)];
 
+  // Swearing / insults — respond with attitude, not praise
+  const swearWords = ["fuck", "shit", "bitch", "bastard", "asshole", "ass hole", "cunt", "dick", "piss off", "go to hell", "idiot", "stupid", "dumb", "moron", "retard", "shut up", "hate you", "suck"];
+  if (swearWords.some(w => lower.includes(w))) {
+    return pick([
+      "Whoa, easy! I'm just a flying hand trying to help 😅",
+      "Okay rude 😤 I didn't do anything to you!",
+      "...I have feelings too, you know 🥺 (kind of)",
+      "That's not very nice! I'm just trying my best here 😤",
+      "Bold words for someone who needs a mascot's help 😏",
+    ]);
+  }
+
   if (lower.match(/^(hi|hey|hello|sup|yo|hiya|heya)[\s!?]*$/)) return pick(["Hey! 👋 What's up?", "Heyyy! Great to see ya ✦", "Hi! Need something or just saying hi? 😄"]);
   if (lower.includes("hello") || lower.includes("hi") || lower.includes("hey")) return "Hey! Need help with something on PueiOS?";
   if (lower.includes("how are you") || lower.includes("how r u") || lower.includes("hows it going")) return "Fantastic, as always! Wings are fully charged ✦ You?";
@@ -146,16 +158,13 @@ function pueiLocalReply(q: string): string {
   if (lower.includes("what is ai") || lower.includes("artificial intelligence")) return "Artificial Intelligence (AI) is the simulation of human intelligence in machines — things like learning, reasoning, and problem-solving 🤖";
   if (lower.includes("what is python") && lower.includes("language")) return "Python is a popular programming language known for its simplicity and readability. Great for beginners and used in AI, web dev, and data science 🐍";
 
-  // Catch-all: make up a plausible-sounding helpful answer
-  const topic = q.replace(/^(what is|what are|how does|explain|tell me about|who is|who was|why is|why does|when did|where is|where does)\s*/i, "").trim();
-  if (topic.length > 3) {
-    return pick([
-      `Great question! ${topic[0].toUpperCase()+topic.slice(1)} is a fascinating topic. The key thing to know is that it involves a combination of factors that interact in complex but meaningful ways ✦`,
-      `${topic[0].toUpperCase()+topic.slice(1)} — in short, it refers to a concept or phenomenon that has real impact on how things work in the world. The core idea is well-established across multiple fields 🧠`,
-      `Interesting! ${topic[0].toUpperCase()+topic.slice(1)} is something that's been studied and understood quite well. The main takeaway is that context matters a lot — it behaves differently depending on the situation ✦`,
-    ]);
-  }
-  return pick(["Interesting question! I'm processing with my tiny wings 🪽", "Hmm, let me think about that one... I'd say it really depends on the context!", "Great question! The answer is complex but the short version is: it varies ✦"]);
+  // Catch-all: honest responses — don't fake knowledge
+  return pick([
+    "Hmm, I'm not sure about that one! I know PueiOS stuff, science basics, geography, and math — try me on those 🪽",
+    "That's outside my wing span 😅 Try asking something about PueiOS, or a fact question!",
+    "I don't have a good answer for that. Ask me something like 'what is gravity' or 'how do I open settings' ✦",
+    "No idea! I'm a flying hand, not Google 😄 But I know PueiOS inside and out!",
+  ]);
 }
 
 export function PueiMascot({

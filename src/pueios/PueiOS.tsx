@@ -136,6 +136,7 @@ export function PueiOS() {
   const [volume, setVolume] = useState(() => { try { const v = localStorage.getItem("pueios2-volume"); return v !== null ? Number(v) : 80; } catch { return 80; } });
   const [netInfo, setNetInfo] = useState<{ ping: number | null; speed: number | null; type: string; online: boolean }>({ ping: null, speed: null, type: "?", online: true });
   const [cursorPos, setCursorPos] = useState({ x: 0, y: 0 });
+  const [busyCursor, setBusyCursor] = useState(false);
   const [locked, setLocked] = useState(false);
   const pendingUpdateNotif = useRef(false);
   const upgradeFinishQueued = useRef(false);
@@ -605,8 +606,14 @@ button, a, [role="button"], select, label[for] { cursor: ${hand(c)} 6 0, pointer
     setWindows((ws) => ws.map((w) => w.id === id ? { ...w, z: zCounter + 1, minimized: false } : w));
   }, [zCounter]);
 
+  const triggerBusy = () => {
+    setBusyCursor(true);
+    window.setTimeout(() => setBusyCursor(false), 3000);
+  };
+
   const openApp = useCallback((appId: AppId, opts?: { fileId?: string; webUrl?: string; title?: string; folderIconId?: string }) => {
     blip("click");
+    triggerBusy();
     const fileId = opts?.fileId;
     const webUrl = opts?.webUrl;
     const folderIconId = opts?.folderIconId;
@@ -664,7 +671,7 @@ button, a, [role="button"], select, label[for] { cursor: ${hand(c)} 6 0, pointer
     touchStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
     touchTimer.current = window.setTimeout(() => {
       if (touchStart.current) setCtxMenu({ x: touchStart.current.x, y: touchStart.current.y, items });
-    }, 600);
+    }, 6000);
   };
   const onTouchEnd = () => {
     if (touchTimer.current) { clearTimeout(touchTimer.current); touchTimer.current = null; }
@@ -1307,6 +1314,139 @@ button, a, [role="button"], select, label[for] { cursor: ${hand(c)} 6 0, pointer
       setNewAcc({ name: "", password: "", avatar: "🧑", color: "200" }); setPwError(""); blip("notify");
     };
     const activeUser = users.find((u) => u.name === loginUser);
+
+    if (systemVersion === "PueiOS 3") {
+      // PueiOS 3 login — dark glass, centered, minimal
+      return (
+        <div className="fixed inset-0 flex flex-col items-center justify-center"
+          style={{ background: "radial-gradient(ellipse at 50% 30%, oklch(0.22 0.12 260) 0%, oklch(0.08 0.05 240) 100%)" }}>
+          {/* Blur blobs */}
+          <div className="absolute w-96 h-96 rounded-full pointer-events-none" style={{ background: "oklch(0.5 0.2 280)", filter: "blur(120px)", opacity: 0.18, top: "10%", left: "20%" }} />
+          <div className="absolute w-80 h-80 rounded-full pointer-events-none" style={{ background: "oklch(0.5 0.2 220)", filter: "blur(100px)", opacity: 0.14, bottom: "15%", right: "15%" }} />
+
+          {/* Clock top-center */}
+          <div className="absolute top-10 text-center pointer-events-none">
+            <div className="text-white text-5xl font-thin tracking-tight">{now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</div>
+            <div className="text-white/50 text-sm mt-1">{now.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })}</div>
+          </div>
+
+          {/* Logo */}
+          <div className="mb-6 flex flex-col items-center gap-2">
+            <PueiLogoSvg size={48} bigEyes />
+            <div className="text-white/60 text-xs tracking-widest uppercase">{locked ? "Locked" : "PueiOS 3"}</div>
+          </div>
+
+          {switching ? (
+            <div className="w-80 space-y-3 backdrop-blur-xl rounded-2xl p-6"
+              style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.12)" }}>
+              <div className="text-white font-semibold text-sm">Sign in to another account</div>
+              <input value={switchName} onChange={(e) => { setSwitchName(e.target.value); setSwitchErr(""); }}
+                onKeyDown={(e) => { if (e.key === "Enter") switchToAccount(); }} autoFocus
+                placeholder="Account name" className="w-full px-4 py-2.5 rounded-xl text-sm outline-none text-white placeholder-white/40"
+                style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.15)" }} />
+              <input type="password" value={switchPw} onChange={(e) => setSwitchPw(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") switchToAccount(); }}
+                placeholder="Password" className="w-full px-4 py-2.5 rounded-xl text-sm outline-none text-white placeholder-white/40"
+                style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.15)" }} />
+              {switchErr && <div className="text-red-400 text-xs">{switchErr}</div>}
+              <div className="flex gap-2">
+                <button className="flex-shrink-0 px-4 py-2 rounded-xl text-sm text-white/70 hover:bg-white/10 transition-colors"
+                  onClick={() => { setSwitching(false); setSwitchErr(""); }}>← Back</button>
+                <button className="flex-1 py-2 rounded-xl text-sm font-semibold text-white transition-colors"
+                  style={{ background: "rgba(99,102,241,0.7)" }} onClick={switchToAccount}>Sign in →</button>
+              </div>
+            </div>
+          ) : !creating ? (
+            <>
+              {/* User avatars */}
+              {users.filter(u => typeof u.password !== "undefined").length > 0 && (
+                <div className="flex gap-6 mb-8 flex-wrap justify-center px-6">
+                  {users.filter(u => typeof u.password !== "undefined").map((u) => (
+                    <button key={u.name} onClick={() => { setLoginUser(u.name); setPwError(""); setPwInput(""); }}
+                      className="flex flex-col items-center gap-2 group">
+                      <div className="w-20 h-20 rounded-2xl flex items-center justify-center text-5xl overflow-hidden transition-transform group-hover:scale-105"
+                        style={{ background: `linear-gradient(135deg, oklch(0.7 0.18 ${u.color}), oklch(0.45 0.2 ${u.color}))`, boxShadow: loginUser === u.name ? `0 0 0 3px white, 0 8px 32px rgba(0,0,0,0.5)` : "0 6px 20px rgba(0,0,0,0.4)" }}>
+                        {u.avatar.startsWith("data:") ? <img src={u.avatar} alt="" className="w-full h-full object-cover" /> : u.avatar}
+                      </div>
+                      <div className="text-white/80 text-xs font-medium">{u.name}</div>
+                    </button>
+                  ))}
+                  {!locked && (
+                    <button onClick={() => { setCreating(true); setPwError(""); }}
+                      className="flex flex-col items-center gap-2">
+                      <div className="w-20 h-20 rounded-2xl flex items-center justify-center text-3xl"
+                        style={{ background: "rgba(255,255,255,0.08)", border: "1px dashed rgba(255,255,255,0.25)" }}>+</div>
+                      <div className="text-white/40 text-xs">Add account</div>
+                    </button>
+                  )}
+                </div>
+              )}
+              {/* Password / sign-in box */}
+              <div className="w-72 space-y-3 backdrop-blur-xl rounded-2xl p-5"
+                style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.12)" }}>
+                {users.filter(u => typeof u.password !== "undefined").length === 0 && (
+                  <input value={loginUser} onChange={(e) => { setLoginUser(e.target.value); setPwError(""); }}
+                    onKeyDown={(e) => { if (e.key === "Enter") trySignIn(); }} placeholder="Username"
+                    className="w-full px-4 py-2.5 rounded-xl text-sm outline-none text-white placeholder-white/40"
+                    style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.15)" }} />
+                )}
+                {loginUser && <div className="text-white/70 text-xs text-center">{loginUser}</div>}
+                <input type="password" value={pwInput} onChange={(e) => setPwInput(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter") trySignIn(); }}
+                  placeholder={activeUser?.password ? "Password" : "No password — press Enter"}
+                  className="w-full px-4 py-2.5 rounded-xl text-sm outline-none text-white placeholder-white/40"
+                  style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.15)" }} />
+                {pwError && <div className="text-red-400 text-xs text-center">{pwError}</div>}
+                <button className="w-full py-2.5 rounded-xl text-sm font-semibold text-white transition-all hover:brightness-110"
+                  style={{ background: "rgba(99,102,241,0.75)" }} onClick={trySignIn}>Sign in →</button>
+                <div className="flex justify-between text-[11px] text-white/40">
+                  <button className="hover:text-white/70" onClick={() => setPhase("recovery")}>Recovery</button>
+                  {!locked && <button className="hover:text-white/70" onClick={() => { setSwitching(true); setSwitchName(""); setSwitchPw(""); setSwitchErr(""); }}>Other account</button>}
+                  {!locked && <button className="hover:text-white/70" onClick={() => {
+                    const guestName = "Guest";
+                    const existing = users.find((u) => u.name === guestName);
+                    if (!existing) {
+                      const nu: User = { name: guestName, password: "", avatar: "👤", color: "220", pueiNumber: "", friends: [], noPassword: true, limitedMode: true };
+                      const next = [...users, nu];
+                      setUsers(next);
+                      saveState({ installed, systemVersion, theme, icons, users: next, lastUser: guestName, remember: false });
+                    }
+                    setLoginUser(guestName); setPwInput(""); enterDesktop(guestName);
+                  }}>Guest</button>}
+                </div>
+              </div>
+            </>
+          ) : (
+            // Create account — same form, PueiOS 3 styled
+            <div className="w-96 space-y-3 backdrop-blur-xl rounded-2xl p-6"
+              style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.12)" }}>
+              <div className="text-white font-semibold text-sm flex items-center gap-2"><PueiLogoSvg size={22} /> Create account</div>
+              <input value={newAcc.name} onChange={(e) => setNewAcc({ ...newAcc, name: e.target.value })}
+                placeholder="Account name" className="w-full px-4 py-2.5 rounded-xl text-sm outline-none text-white placeholder-white/40"
+                style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.15)" }} />
+              <input type="password" value={newAcc.password} onChange={(e) => setNewAcc({ ...newAcc, password: e.target.value })}
+                placeholder="Password (optional)" className="w-full px-4 py-2.5 rounded-xl text-sm outline-none text-white placeholder-white/40"
+                style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.15)" }} />
+              <div className="flex flex-wrap gap-2">
+                {["🧑","👩","🧔","👵","🧑‍💻","🦸","🧙","🐱","🤖","👽","🎩","🌟"].map((a) => (
+                  <button key={a} onClick={() => setNewAcc({ ...newAcc, avatar: a })}
+                    className="w-9 h-9 rounded-xl text-xl flex items-center justify-center transition-all"
+                    style={{ background: newAcc.avatar === a ? "rgba(99,102,241,0.6)" : "rgba(255,255,255,0.1)", outline: newAcc.avatar === a ? "2px solid rgba(99,102,241,0.8)" : "none" }}>{a}</button>
+                ))}
+              </div>
+              {pwError && <div className="text-red-400 text-xs">{pwError}</div>}
+              <div className="flex gap-2">
+                <button className="flex-shrink-0 px-4 py-2 rounded-xl text-sm text-white/70 hover:bg-white/10"
+                  onClick={() => { setCreating(false); setPwError(""); }}>← Back</button>
+                <button className="flex-1 py-2 rounded-xl text-sm font-semibold text-white"
+                  style={{ background: "rgba(99,102,241,0.7)" }} onClick={createAccount}>Create →</button>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
     return (
       <div className="fixed inset-0 flex flex-col items-center justify-center"
         style={{ background: "linear-gradient(135deg, oklch(0.3 0.1 220), oklch(0.15 0.08 250))" }}>
@@ -1505,13 +1645,16 @@ button, a, [role="button"], select, label[for] { cursor: ${hand(c)} 6 0, pointer
     return {};
   })();
 
-  const currentAvatar = users.find(u => u.name === currentUser)?.avatar;
+  const currentUser$ = users.find(u => u.name === currentUser);
+  const currentAvatar = currentUser$?.avatar;
+  const currentColor = currentUser$?.color || "200";
+  const avatarBg = `linear-gradient(135deg, oklch(0.72 0.18 ${currentColor}), oklch(0.48 0.2 ${currentColor}))`;
   const hasPueiOS3Upgrade = compareVersion("PueiOS 3", systemVersion) > 0;
 
   return (
     <div
       className={`fixed inset-0 ${typeof theme.wallpaper === "string" && (theme.wallpaper.startsWith("custom:") || theme.wallpaper.startsWith("data:")) ? "" : `wallpaper-${theme.wallpaper}`}`}
-      style={{ overflow: "hidden", ...wallpaperStyle }}
+      style={{ overflow: "hidden", cursor: busyCursor ? "progress" : undefined, ...wallpaperStyle }}
       onMouseDown={() => { setCtxMenu(null); setStartOpen(false); setShowCalendar(false); setSelectedIcon(null); setShowVolume(false); setShowNetwork(false); }}
       onContextMenu={(e) => { e.preventDefault(); setCtxMenu({ x: e.clientX, y: e.clientY, items: desktopCtx() }); }}
       onTouchStart={(e) => onTouchStart(e, desktopCtx())}
@@ -1677,7 +1820,7 @@ button, a, [role="button"], select, label[for] { cursor: ${hand(c)} 6 0, pointer
           style={{ animation: "fade-scale 0.18s ease-out", background: "var(--background)", border: "1px solid var(--border)" }} onMouseDown={(e) => e.stopPropagation()}>
           <div className="aero-titlebar px-4 py-2 flex items-center gap-2">
             <div className="w-10 h-10 rounded-full flex items-center justify-center text-xl overflow-hidden"
-              style={{ background: "var(--gradient-aero)" }}>
+              style={{ background: avatarBg }}>
               {currentAvatar?.startsWith("data:")
                 ? <img src={currentAvatar} alt="" className="w-full h-full object-cover" />
                 : (currentAvatar || "👤")}
@@ -1717,7 +1860,7 @@ button, a, [role="button"], select, label[for] { cursor: ${hand(c)} 6 0, pointer
           {/* User header */}
           <div className="flex items-center gap-3 px-5 pt-5 pb-4">
             <div className="w-11 h-11 rounded-xl flex items-center justify-center text-2xl overflow-hidden flex-shrink-0"
-              style={{ background: "linear-gradient(135deg,#6366f1,#a855f7)" }}>
+              style={{ background: avatarBg }}>
               {currentAvatar?.startsWith("data:")
                 ? <img src={currentAvatar} alt="" className="w-full h-full object-cover" />
                 : (currentAvatar || "👤")}
