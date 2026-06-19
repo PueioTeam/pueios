@@ -679,13 +679,23 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
 
 
   const [wallpaperTransitioning, setWallpaperTransitioning] = useState(false);
+  const [wallpaperProgress, setWallpaperProgress] = useState(0);
   const setTheme = (t: Theme) => setThemeState(t);
   const setWallpaper = (w: WallpaperId) => {
     setWallpaperTransitioning(true);
-    setTimeout(() => {
-      setThemeState({ ...theme, wallpaper: w });
-      setTimeout(() => setWallpaperTransitioning(false), 100);
-    }, 50);
+    setWallpaperProgress(0);
+    const start = Date.now();
+    const duration = 3000;
+    const tick = () => {
+      const pct = Math.min(100, ((Date.now() - start) / duration) * 100);
+      setWallpaperProgress(pct);
+      if (pct < 100) { requestAnimationFrame(tick); }
+      else {
+        setThemeState({ ...theme, wallpaper: w });
+        setTimeout(() => { setWallpaperTransitioning(false); setWallpaperProgress(0); }, 200);
+      }
+    };
+    requestAnimationFrame(tick);
   };
 
   const pushNotif = (title: string, body: string, kind: "default" | "update" = "default") => {
@@ -1882,13 +1892,25 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
   return (
     <div
       className={`fixed inset-0 ${typeof theme.wallpaper === "string" && (theme.wallpaper.startsWith("custom:") || theme.wallpaper.startsWith("data:")) ? "" : `wallpaper-${theme.wallpaper}`}`}
-      style={{ overflow: "hidden", ...wallpaperStyle, transition: "opacity 0.3s ease", opacity: wallpaperTransitioning ? 0 : 1 }}
+      style={{ overflow: "hidden", ...wallpaperStyle }}
       onMouseDown={() => { setCtxMenu(null); setStartOpen(false); setShowCalendar(false); setSelectedIcon(null); setShowVolume(false); setShowNetwork(false); }}
       onContextMenu={(e) => { e.preventDefault(); setCtxMenu({ x: e.clientX, y: e.clientY, items: desktopCtx() }); }}
       onTouchStart={(e) => onTouchStart(e, desktopCtx())}
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
     >
+      {/* Wallpaper changing overlay */}
+      {wallpaperTransitioning && (
+        <div className="fixed inset-0 z-[99999] flex flex-col items-center justify-center pointer-events-none"
+          style={{ background: "rgba(0,0,0,0.55)", backdropFilter: "blur(8px)" }}>
+          <div style={{ color: "#fff", fontSize: 13, marginBottom: 12, fontWeight: 500, opacity: 0.9 }}>Applying wallpaper…</div>
+          <div style={{ width: 220, height: 6, background: "rgba(255,255,255,0.18)", borderRadius: 99, overflow: "hidden" }}>
+            <div style={{ width: `${wallpaperProgress}%`, height: "100%", background: "linear-gradient(90deg,#60a5fa,#818cf8)", borderRadius: 99, transition: "width 0.08s linear" }} />
+          </div>
+          <div style={{ color: "#fff", fontSize: 11, marginTop: 8, opacity: 0.55 }}>{Math.round(wallpaperProgress)}%</div>
+        </div>
+      )}
+
       {/* Busy cursor spinner — follows mouse like Windows */}
       {busyCursor && (
         <div className="fixed z-[99998] pointer-events-none"
@@ -2041,7 +2063,14 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
                   <path d="M22 31 L29 39 L43 22" fill="none" stroke="#ffffff" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               ) : (
-                <div className="w-6 h-6 rounded-full bg-white/25 shrink-0 mt-0.5" />
+                <div className="shrink-0 mt-0.5" style={{ width: 26, height: 26, borderRadius: "50%", overflow: "hidden", background: avatarBg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, boxShadow: "0 1px 4px rgba(0,0,0,0.35)" }}>
+                  {currentAvatar && (currentAvatar.startsWith("data:") || currentAvatar.startsWith("http"))
+                    ? <img src={currentAvatar} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    : currentAvatar
+                      ? <span style={{ fontSize: 14, lineHeight: 1 }}>{currentAvatar}</span>
+                      : <span style={{ color: "#fff", fontWeight: 700, fontSize: 12 }}>{(currentUser[0] ?? "?").toUpperCase()}</span>
+                  }
+                </div>
               )}
               <div>
                 <div className="font-semibold" style={{ color: n.kind === "update" ? "#103f9a" : undefined }}>{n.title}</div>

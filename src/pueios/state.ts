@@ -557,6 +557,8 @@ export function sendMail(
   body: string,
   _users: { name: string }[],
   attachments?: MailAttachment[],
+  senderAvatar?: string,
+  senderColor?: string,
 ): MailMessage {
   const existing = loadAllMail();
   const cleanTo = to.trim();
@@ -565,6 +567,7 @@ export function sendMail(
   const sentCopy: MailMessage = {
     id: id + "-s", from, to: cleanTo, subject, body, at,
     read: true, folder: "sent", owner: from, attachments,
+    senderAvatar: senderAvatar ?? "", senderColor: senderColor ?? "220",
   };
   try {
     localStorage.setItem(MAIL_KEY, JSON.stringify([...existing, sentCopy]));

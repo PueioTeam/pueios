@@ -1350,12 +1350,21 @@ function generateWebResults(q: string): { title: string; url: string; site: stri
   ];
 }
 
-function PueiCopilotPage() {
-  const [query, setQuery] = useState("");
+function PueiCopilotPage({ initialQuery = "" }: { initialQuery?: string }) {
+  const [query, setQuery] = useState(initialQuery);
   const [thinking, setThinking] = useState(false);
   const [webResults, setWebResults] = useState<{ title: string; url: string; site: string; snippet: string }[] | null>(null);
   const [answer, setAnswer] = useState("");
   const totalResults = useRef(0);
+  const didInit = useRef(false);
+
+  useEffect(() => {
+    if (!didInit.current && initialQuery.trim()) {
+      didInit.current = true;
+      doSearch(initialQuery);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const doSearch = (q: string) => {
     if (!q.trim()) return;
@@ -1474,9 +1483,22 @@ function PueiMathPage() {
   const calculate = () => {
     if (!expr.trim()) return;
     try {
-      // safe eval: only allow math chars
-      if (!/^[\d\s+\-*/().^%,]+$/.test(expr.replace(/[a-z]/gi, "x"))) throw new Error("invalid");
-      const sanitized = expr.replace(/\^/g, "**");
+      const sanitized = expr
+        .replace(/\^/g, "**")
+        .replace(/\bsqrt\b/g, "Math.sqrt")
+        .replace(/\babs\b/g, "Math.abs")
+        .replace(/\bsin\b/g, "Math.sin")
+        .replace(/\bcos\b/g, "Math.cos")
+        .replace(/\btan\b/g, "Math.tan")
+        .replace(/\blog\b/g, "Math.log10")
+        .replace(/\bln\b/g, "Math.log")
+        .replace(/\bpi\b/gi, "Math.PI")
+        .replace(/\be\b/g, "Math.E")
+        .replace(/\bfloor\b/g, "Math.floor")
+        .replace(/\bceil\b/g, "Math.ceil")
+        .replace(/\bround\b/g, "Math.round");
+      const stripped = sanitized.replace(/Math\.[a-zA-Z]+/g, "0").replace(/Math\.PI|Math\.E/g, "0");
+      if (!/^[\d\s+\-*/().%,]+$/.test(stripped)) throw new Error("invalid");
       // eslint-disable-next-line no-new-func
       const val = Function(`"use strict"; return (${sanitized})`)();
       const res = typeof val === "number" ? (Number.isFinite(val) ? String(+val.toFixed(10)).replace(/\.?0+$/, "") : "Error") : String(val);
@@ -1855,27 +1877,45 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
   };
 
   const fakeSites: Record<string, React.ReactNode> = {
-    "puei://home": (
-      <div className="p-8 text-center">
-        <h1 className="text-5xl font-bold" style={{ color: "var(--accent)" }}>PueiNet</h1>
-        <p className="opacity-70 mt-2">The retro-futuristic web, circa 2020.</p>
-        <div className="mt-6 grid grid-cols-3 gap-3 max-w-2xl mx-auto">
-          {[
-            ["puei://board", "📌 PueiBoard"],
-            ["puei://updates", "⬆️ Puei Updates"],
-            ["puei://search", "✨ Puei Copilot"],
-            ["puei://mail", "✉️ PMail"],
-            ["puei://forum", "💼 PueiForum"],
-            ["puei://math", "🧮 Puei Math"],
-            ["puei://films", "🎬 Puei Videos"],
-            ["puei://os3", "🚀 PueiOS 3"],
-            ["puei://about", "ℹ️ About"],
-          ].map(([u, l]) => (
-            <button key={u} onClick={() => navigate(u)} className="aero-button rounded-lg p-4">{l}</button>
-          ))}
+    "puei://home": (() => {
+      const [homeQ, setHomeQ] = React.useState("");
+      const doHomeSearch = () => {
+        if (!homeQ.trim()) return;
+        navigate(`puei://search?q=${encodeURIComponent(homeQ.trim())}`);
+      };
+      return (
+        <div className="p-8 text-center">
+          <h1 className="text-5xl font-bold mb-1" style={{ color: "var(--accent)" }}>PueiNet</h1>
+          <p className="opacity-60 text-xs mb-6">The retro-futuristic web, circa 2020.</p>
+          {/* Search bar */}
+          <div className="flex items-center gap-2 max-w-lg mx-auto mb-8">
+            <div className="flex-1 flex items-center gap-2 aero-glass-light rounded-full px-4 py-2.5 border" style={{ borderColor: "var(--border)" }}>
+              <span className="opacity-50 text-sm">🔍</span>
+              <input value={homeQ} onChange={(e) => setHomeQ(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && doHomeSearch()}
+                placeholder="Search PueiNet or the web…"
+                className="flex-1 bg-transparent outline-none text-sm" />
+            </div>
+            <button onClick={doHomeSearch} className="aero-button rounded-full px-5 py-2.5 text-sm font-semibold">Search</button>
+          </div>
+          <div className="mt-2 grid grid-cols-3 gap-3 max-w-2xl mx-auto">
+            {[
+              ["puei://board", "📌 PueiBoard"],
+              ["puei://updates", "⬆️ Puei Updates"],
+              ["puei://search", "✨ Puei Copilot"],
+              ["puei://mail", "✉️ PMail"],
+              ["puei://forum", "💼 PueiForum"],
+              ["puei://math", "🧮 Puei Math"],
+              ["puei://films", "🎬 Puei Videos"],
+              ["puei://os3", "🚀 PueiOS 3"],
+              ["puei://about", "ℹ️ About"],
+            ].map(([u, l]) => (
+              <button key={u} onClick={() => navigate(u)} className="aero-button rounded-lg p-4">{l}</button>
+            ))}
+          </div>
         </div>
-      </div>
-    ),
+      );
+    })(),
     "puei://forum": (
       <div className="p-6 space-y-6 text-sm">
         <div>
@@ -1942,6 +1982,16 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
 
         <div className="text-sm">
           Puei Updater: {updaterInstalled ? <span className="font-semibold text-green-500">Installed</span> : <span className="font-semibold text-amber-500">Not installed</span>}
+        </div>
+
+        {/* PueiOS 1 */}
+        <div className="aero-glass-light rounded-xl p-4 space-y-2">
+          <div className="flex items-center gap-2">
+            <span className="font-semibold">PueiOS 1</span>
+            <span className="text-xs px-2 py-0.5 rounded" style={{ background: "rgba(220,50,50,0.18)", color: "#f87171" }}>End of Life</span>
+          </div>
+          <p className="text-xs opacity-60">The very first PueiOS release — classic minimalist shell.</p>
+          <p className="text-xs" style={{ color: "#f87171" }}>PueiOS 1 has reached end of life. Upgrade to PueiOS 2 or later. No download available.</p>
         </div>
 
         {/* PueiOS 2 */}
@@ -2063,8 +2113,10 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
   };
 
   let content: React.ReactNode;
-  if (navUrl === "puei://search") {
-    content = <PueiCopilotPage />;
+  if (navUrl === "puei://search" || navUrl.startsWith("puei://search?")) {
+    let initQ = "";
+    try { initQ = decodeURIComponent(navUrl.split("?q=")[1] ?? ""); } catch {}
+    content = <PueiCopilotPage initialQuery={initQ} />;
   } else if (navUrl === "puei://films") {
     content = <PueiFilmsPage currentUser={currentUser} />;
   } else if (navUrl.startsWith("puei://")) {
@@ -6615,11 +6667,11 @@ function PMailApp({ currentUser, users }: { currentUser: string; users: { name: 
     const recipientKey = recipient.toLowerCase().trim();
     setSending(true);
     try {
-      const msg = sendMail(currentUser, recipient, subjField || "(no subject)", bodyField, users);
+      const meUser = users.find((u) => u.name.toLowerCase() === currentUser.toLowerCase());
+      const msg = sendMail(currentUser, recipient, subjField || "(no subject)", bodyField, users, undefined, meUser?.avatar ?? "", meUser?.color ?? "220");
       const myMails = [...msgs, msg];
       replaceMailFor(currentUser, myMails);
       setMsgs(myMails);
-      const meUser = users.find((u) => u.name.toLowerCase() === currentUser.toLowerCase());
       const res = await fetch("/api/mail", {
         method: "POST",
         headers: { "Content-Type": "application/json" },

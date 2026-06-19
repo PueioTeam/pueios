@@ -340,7 +340,8 @@ export function appIcon(appId: AppId, size = 32, override?: string, iconUrl?: st
   const radius = Math.round(s * 0.22);
 
   const isImg = typeof override === "string" && override.startsWith("data:");
-  const useUrl = !isImg && !override && !!iconUrl;
+  const isEmoji = typeof override === "string" && !isImg && !!override && override.trim().length > 0;
+  const useUrl = !isImg && !isEmoji && !override && !!iconUrl;
   const fallbackIconUrl = (() => {
     if (!iconUrl) return "";
     const duckMatch = iconUrl.match(/\/ip3\/([^/?]+)\.ico/i);
@@ -363,11 +364,15 @@ export function appIcon(appId: AppId, size = 32, override?: string, iconUrl?: st
     </div>
   );
 
+  const emojiContent = isEmoji ? <span style={{ fontSize: Math.round(s * 0.62), lineHeight: 1 }}>{override}</span> : null;
+
   return (
     <div className="flex items-center justify-center relative" style={{ width: s, height: s, flexShrink: 0 }}>
       {isImg
         ? <img src={override} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: boxed ? radius : Math.round(s * 0.15) }} />
-        : useUrl
+        : isEmoji
+          ? boxed ? boxedWrapper(emojiContent) : <div style={{ display: "flex", alignItems: "center", justifyContent: "center", filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.5))" }}>{emojiContent}</div>
+          : useUrl
           ? <>
               <img
                 src={iconUrl}
