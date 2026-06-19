@@ -1601,6 +1601,45 @@ function PueiNetIframe({ url, hostname }: { url: string; hostname: string }) {
 }
 
 // ---------- PueiWeb ----------
+function PueiNetHomePage({ navigate }: { navigate: (url: string) => void }) {
+  const [homeQ, setHomeQ] = useState("");
+  const doSearch = () => {
+    if (!homeQ.trim()) return;
+    navigate(`puei://search?q=${encodeURIComponent(homeQ.trim())}`);
+  };
+  return (
+    <div className="p-8 text-center">
+      <h1 className="text-5xl font-bold mb-1" style={{ color: "var(--accent)" }}>PueiNet</h1>
+      <p className="opacity-60 text-xs mb-6">The retro-futuristic web, circa 2020.</p>
+      <div className="flex items-center gap-2 max-w-lg mx-auto mb-8">
+        <div className="flex-1 flex items-center gap-2 aero-glass-light rounded-full px-4 py-2.5 border" style={{ borderColor: "var(--border)" }}>
+          <span className="opacity-50 text-sm">🔍</span>
+          <input value={homeQ} onChange={(e) => setHomeQ(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && doSearch()}
+            placeholder="Search PueiNet or the web…"
+            className="flex-1 bg-transparent outline-none text-sm" />
+        </div>
+        <button onClick={doSearch} className="aero-button rounded-full px-5 py-2.5 text-sm font-semibold">Search</button>
+      </div>
+      <div className="mt-2 grid grid-cols-3 gap-3 max-w-2xl mx-auto">
+        {[
+          ["puei://board", "📌 PueiBoard"],
+          ["puei://updates", "⬆️ Puei Updates"],
+          ["puei://search", "✨ Puei Copilot"],
+          ["puei://mail", "✉️ PMail"],
+          ["puei://forum", "💼 PueiForum"],
+          ["puei://math", "🧮 Puei Math"],
+          ["puei://films", "🎬 Puei Videos"],
+          ["puei://os3", "🚀 PueiOS 3"],
+          ["puei://about", "ℹ️ About"],
+        ].map(([u, l]) => (
+          <button key={u} onClick={() => navigate(u)} className="aero-button rounded-lg p-4">{l}</button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users: User[]; icons: DesktopIcon[] }) {
   const [webDialog, webAlert] = useLocalDialog();
   const [tabs, setTabs] = useState([{ id: 1, title: "Home", url: "puei://home" }]);
@@ -1877,45 +1916,6 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
   };
 
   const fakeSites: Record<string, React.ReactNode> = {
-    "puei://home": (() => {
-      const [homeQ, setHomeQ] = React.useState("");
-      const doHomeSearch = () => {
-        if (!homeQ.trim()) return;
-        navigate(`puei://search?q=${encodeURIComponent(homeQ.trim())}`);
-      };
-      return (
-        <div className="p-8 text-center">
-          <h1 className="text-5xl font-bold mb-1" style={{ color: "var(--accent)" }}>PueiNet</h1>
-          <p className="opacity-60 text-xs mb-6">The retro-futuristic web, circa 2020.</p>
-          {/* Search bar */}
-          <div className="flex items-center gap-2 max-w-lg mx-auto mb-8">
-            <div className="flex-1 flex items-center gap-2 aero-glass-light rounded-full px-4 py-2.5 border" style={{ borderColor: "var(--border)" }}>
-              <span className="opacity-50 text-sm">🔍</span>
-              <input value={homeQ} onChange={(e) => setHomeQ(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && doHomeSearch()}
-                placeholder="Search PueiNet or the web…"
-                className="flex-1 bg-transparent outline-none text-sm" />
-            </div>
-            <button onClick={doHomeSearch} className="aero-button rounded-full px-5 py-2.5 text-sm font-semibold">Search</button>
-          </div>
-          <div className="mt-2 grid grid-cols-3 gap-3 max-w-2xl mx-auto">
-            {[
-              ["puei://board", "📌 PueiBoard"],
-              ["puei://updates", "⬆️ Puei Updates"],
-              ["puei://search", "✨ Puei Copilot"],
-              ["puei://mail", "✉️ PMail"],
-              ["puei://forum", "💼 PueiForum"],
-              ["puei://math", "🧮 Puei Math"],
-              ["puei://films", "🎬 Puei Videos"],
-              ["puei://os3", "🚀 PueiOS 3"],
-              ["puei://about", "ℹ️ About"],
-            ].map(([u, l]) => (
-              <button key={u} onClick={() => navigate(u)} className="aero-button rounded-lg p-4">{l}</button>
-            ))}
-          </div>
-        </div>
-      );
-    })(),
     "puei://forum": (
       <div className="p-6 space-y-6 text-sm">
         <div>
@@ -2113,7 +2113,9 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
   };
 
   let content: React.ReactNode;
-  if (navUrl === "puei://search" || navUrl.startsWith("puei://search?")) {
+  if (navUrl === "puei://home") {
+    content = <PueiNetHomePage navigate={navigate} />;
+  } else if (navUrl === "puei://search" || navUrl.startsWith("puei://search?")) {
     let initQ = "";
     try { initQ = decodeURIComponent(navUrl.split("?q=")[1] ?? ""); } catch {}
     content = <PueiCopilotPage initialQuery={initQ} />;

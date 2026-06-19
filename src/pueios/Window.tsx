@@ -310,7 +310,32 @@ const APP_ICON_SVGS: Partial<Record<AppId, (s: number) => React.ReactNode>> = {
   "pueyracing": (s) => <svg width={s} height={s} viewBox="0 0 48 48"><defs><linearGradient id="rs1" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#e8f0ff"/><stop offset="100%" stopColor="#8090d0"/></linearGradient><linearGradient id="rs2" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#ff9040"/><stop offset="100%" stopColor="#ff3000"/></linearGradient></defs><path d="M24 4 C24 4 16 14 16 26 L20 28 L24 30 L28 28 L32 26 C32 14 24 4 24 4z" fill="url(#rs1)" stroke="#6070b0" strokeWidth="1"/><ellipse cx="24" cy="18" rx="5" ry="6" fill="#80c8ff" stroke="#4090d0" strokeWidth="0.8" opacity="0.8"/><path d="M16 26 L8 32 L12 30 L16 30z" fill="#c03020" stroke="#801010" strokeWidth="0.8"/><path d="M32 26 L40 32 L36 30 L32 30z" fill="#c03020" stroke="#801010" strokeWidth="0.8"/><ellipse cx="24" cy="32" rx="5" ry="3" fill="#ff8020" stroke="#c04000" strokeWidth="0.8"/><ellipse cx="24" cy="36" rx="4" ry="6" fill="url(#rs2)" opacity="0.85"/><ellipse cx="22" cy="14" rx="3" ry="5" fill="rgba(255,255,255,0.4)" transform="rotate(-15 22 14)"/></svg>,
 };
 
-// Win7/Vista color pairs for boxed mode (PueiOS 3)
+// PueiOS 3 — modern flat icons (full SVG with rounded-square bg, macOS/Android style)
+const APP_ICON_SVGS_P3: Partial<Record<AppId, (s: number) => React.ReactNode>> = {
+  "settings": (s) => <svg width={s} height={s} viewBox="0 0 48 48"><rect width="48" height="48" rx="11" fill="#6c757d"/><circle cx="24" cy="24" r="9" fill="none" stroke="white" strokeWidth="3.5"/><circle cx="24" cy="24" r="3.5" fill="white"/>{[0,45,90,135,180,225,270,315].map(a=><rect key={a} x="22.5" y="10" width="3" height="5" rx="1.5" fill="white" transform={`rotate(${a} 24 24)`}/>)}</svg>,
+  "file-explorer": (s) => <svg width={s} height={s} viewBox="0 0 48 48"><rect width="48" height="48" rx="11" fill="#f9a825"/><path d="M8 18a3 3 0 013-3h7l3 3h14a3 3 0 013 3v12a3 3 0 01-3 3H11a3 3 0 01-3-3z" fill="white"/><path d="M8 17h10l3-3h14" fill="none" stroke="white" strokeWidth="2"/></svg>,
+  "notepad": (s) => <svg width={s} height={s} viewBox="0 0 48 48"><rect width="48" height="48" rx="11" fill="#42a5f5"/><rect x="12" y="10" width="24" height="28" rx="3" fill="white"/><rect x="16" y="17" width="16" height="2" rx="1" fill="#90caf9"/><rect x="16" y="22" width="16" height="2" rx="1" fill="#90caf9"/><rect x="16" y="27" width="11" height="2" rx="1" fill="#90caf9"/></svg>,
+  "calculator": (s) => <svg width={s} height={s} viewBox="0 0 48 48"><rect width="48" height="48" rx="11" fill="#66bb6a"/><rect x="12" y="10" width="24" height="28" rx="3" fill="white"/><rect x="14" y="12" width="20" height="8" rx="2" fill="#a5d6a7"/><text x="32" y="20" textAnchor="end" fontSize="7" fill="#2e7d32" fontFamily="monospace" fontWeight="bold">0</text>{[[14,23],[21,23],[28,23],[14,29],[21,29],[28,29],[14,35],[21,35]].map(([x,y],i)=><rect key={i} x={x} y={y} width="5" height="4" rx="1" fill={i===7?"#ef9a9a":"#c8e6c9"}/>)}</svg>,
+  "puei-paint": (s) => <svg width={s} height={s} viewBox="0 0 48 48"><rect width="48" height="48" rx="11" fill="#ec407a"/><ellipse cx="22" cy="26" rx="11" ry="9" fill="white"/>{[["#e53935",14,25],["#43a047",21,19],["#1e88e5",29,20],["#fdd835",29,29],["#8e24aa",18,30]].map(([c,cx,cy],i)=><circle key={i} cx={cx} cy={cy} r="3.5" fill={c}/>)}<circle cx="22" cy="26" r="2.5" fill="white"/><path d="M34 9 Q38 6 40 11 Q42 15 38 17 L35 16 Q33 13 34 9z" fill="#bf360c"/><rect x="36" y="17" width="3" height="9" rx="1.5" fill="#e8b86d" transform="rotate(15 37 17)"/></svg>,
+  "puei-board": (s) => <svg width={s} height={s} viewBox="0 0 48 48"><rect width="48" height="48" rx="11" fill="#8d6e63"/><rect x="9" y="9" width="30" height="30" rx="4" fill="#d7b896"/><rect x="12" y="12" width="11" height="9" rx="2" fill="white"/><rect x="25" y="12" width="11" height="6" rx="2" fill="#fff9c4"/><rect x="25" y="20" width="11" height="9" rx="2" fill="#fce4ec"/><rect x="12" y="23" width="11" height="14" rx="2" fill="#e8f5e9"/><circle cx="17" cy="12" r="2" fill="#e53935"/><circle cx="30" cy="12" r="2" fill="#43a047"/></svg>,
+  "pueinet": (s) => <svg width={s} height={s} viewBox="0 0 48 48"><rect width="48" height="48" rx="11" fill="#1e88e5"/><circle cx="24" cy="24" r="13" fill="none" stroke="white" strokeWidth="2.5"/><ellipse cx="24" cy="24" rx="6" ry="13" fill="none" stroke="white" strokeWidth="1.5"/><line x1="11" y1="24" x2="37" y2="24" stroke="white" strokeWidth="1.5"/><line x1="24" y1="11" x2="24" y2="37" stroke="white" strokeWidth="1.5"/></svg>,
+  "puei-cloud-chat": (s) => <svg width={s} height={s} viewBox="0 0 48 48"><rect width="48" height="48" rx="11" fill="#26a69a"/><path d="M9 14a4 4 0 014-4h22a4 4 0 014 4v14a4 4 0 01-4 4H29l-7 6v-6h-9a4 4 0 01-4-4z" fill="white"/><rect x="14" y="19" width="7" height="2.5" rx="1.25" fill="#b2dfdb"/><rect x="14" y="24" width="16" height="2.5" rx="1.25" fill="#b2dfdb"/></svg>,
+  "puei-studio": (s) => <svg width={s} height={s} viewBox="0 0 48 48"><rect width="48" height="48" rx="11" fill="#7b1fa2"/><path d="M24 11 L27 19 H36 L29 24 L32 32 L24 27 L16 32 L19 24 L12 19 H21 Z" fill="#f3e5f5"/><circle cx="24" cy="22" r="4" fill="white" opacity="0.3"/></svg>,
+  "app-store": (s) => <svg width={s} height={s} viewBox="0 0 48 48"><rect width="48" height="48" rx="11" fill="#00acc1"/><path d="M24 10 L28 18 H37 L30 23 L33 31 L24 26 L15 31 L18 23 L11 18 H20 Z" fill="white"/></svg>,
+  "puei-social": (s) => <svg width={s} height={s} viewBox="0 0 48 48"><rect width="48" height="48" rx="11" fill="#f4511e"/><circle cx="18" cy="19" r="5.5" fill="white"/><path d="M7 38c0-6.5 4.5-10 11-10s11 3.5 11 10z" fill="white"/><circle cx="32" cy="17" r="4.5" fill="#ffccbc"/><path d="M24 36c0-5 3.5-8 9-8s9 3 9 8z" fill="#ffccbc"/></svg>,
+  "folder": (s) => <svg width={s} height={s} viewBox="0 0 48 48"><rect width="48" height="48" rx="11" fill="#ffa726"/><path d="M8 18a3 3 0 013-3h8l3 3h13a3 3 0 013 3v13a3 3 0 01-3 3H11a3 3 0 01-3-3z" fill="white"/><path d="M8 17h10l3-3" fill="none" stroke="white" strokeWidth="2.5"/></svg>,
+  "recycle-bin": (s) => <svg width={s} height={s} viewBox="0 0 48 48"><rect width="48" height="48" rx="11" fill="#78909c"/><path d="M14 20h20l-2.5 18H16.5z" fill="white"/><rect x="11" y="16" width="26" height="3" rx="1.5" fill="white"/><path d="M20 16v-3h8v3" fill="none" stroke="white" strokeWidth="2"/><line x1="19" y1="24" x2="19" y2="34" stroke="#cfd8dc" strokeWidth="2" strokeLinecap="round"/><line x1="24" y1="24" x2="24" y2="34" stroke="#cfd8dc" strokeWidth="2" strokeLinecap="round"/><line x1="29" y1="24" x2="29" y2="34" stroke="#cfd8dc" strokeWidth="2" strokeLinecap="round"/></svg>,
+  "chess": (s) => <svg width={s} height={s} viewBox="0 0 48 48"><rect width="48" height="48" rx="11" fill="#5d4037"/><rect x="9" y="9" width="30" height="30" rx="3" fill="#efebe9"/>{[[9,9],[17,9],[25,9],[13,13],[21,13],[29,13],[9,17],[17,17],[25,17],[13,21],[21,21],[29,21],[9,25],[17,25],[25,25],[13,29],[21,29],[29,29]].filter((_,i)=>i%2===0).map(([x,y],i)=><rect key={i} x={x} y={y} width="8" height="4" fill="#8d6e63"/>)}<path d="M22 24 v-8 M19 18 h6 M20 21 Q22 16 24 21" fill="none" stroke="#3e2723" strokeWidth="2" strokeLinecap="round"/><rect x="18" y="30" width="12" height="2.5" rx="1" fill="#3e2723"/></svg>,
+  "puei-mansion": (s) => <svg width={s} height={s} viewBox="0 0 48 48"><rect width="48" height="48" rx="11" fill="#e53935"/><polygon points="24,8 39,20 36,20 36,38 12,38 12,20 9,20" fill="white"/><rect x="14" y="20" width="20" height="18" fill="#ffcdd2"/><rect x="19" y="28" width="10" height="10" rx="1" fill="#90caf9"/><rect x="14" y="22" width="7" height="6" rx="1" fill="#90caf9"/><rect x="27" y="22" width="7" height="6" rx="1" fill="#90caf9"/></svg>,
+  "about": (s) => <svg width={s} height={s} viewBox="0 0 48 48"><rect width="48" height="48" rx="11" fill="#3949ab"/><circle cx="24" cy="14" r="3" fill="white"/><rect x="21" y="20" width="6" height="14" rx="3" fill="white"/></svg>,
+  "iso-viewer": (s) => <svg width={s} height={s} viewBox="0 0 48 48"><rect width="48" height="48" rx="11" fill="#546e7a"/><circle cx="24" cy="24" r="13" fill="white" stroke="#cfd8dc" strokeWidth="1"/><circle cx="24" cy="24" r="4" fill="#b0bec5"/><circle cx="24" cy="24" r="2" fill="white"/><ellipse cx="20" cy="18" rx="5" ry="2.5" fill="rgba(255,255,255,0.6)" transform="rotate(-25 20 18)"/></svg>,
+  "zip-viewer": (s) => <svg width={s} height={s} viewBox="0 0 48 48"><rect width="48" height="48" rx="11" fill="#1565c0"/><path d="M11 11a3 3 0 013-3h14l9 9v20a3 3 0 01-3 3H14a3 3 0 01-3-3z" fill="white"/><path d="M25 8v9h9" fill="none" stroke="#90caf9" strokeWidth="2"/><rect x="20" y="18" width="8" height="3" rx="1" fill="#1565c0"/><rect x="20" y="23" width="8" height="3" rx="1" fill="#bbdefb"/><rect x="20" y="28" width="8" height="3" rx="1" fill="#1565c0"/><rect x="20" y="33" width="8" height="3" rx="1" fill="#bbdefb"/></svg>,
+  "pmail": (s) => <svg width={s} height={s} viewBox="0 0 48 48"><rect width="48" height="48" rx="11" fill="#1e88e5"/><rect x="9" y="14" width="30" height="20" rx="3" fill="white"/><path d="M9 17l15 10 15-10" fill="none" stroke="#1e88e5" strokeWidth="2.5" strokeLinejoin="round"/></svg>,
+  "web-app": (s) => <svg width={s} height={s} viewBox="0 0 48 48"><rect width="48" height="48" rx="11" fill="#0288d1"/><rect x="7" y="12" width="34" height="25" rx="4" fill="white"/><rect x="7" y="12" width="34" height="9" rx="4" fill="#b3e5fc"/><rect x="7" y="17" width="34" height="4" fill="#b3e5fc"/><circle cx="12" cy="16" r="2" fill="#ef5350"/><circle cx="18" cy="16" r="2" fill="#fdd835"/><circle cx="24" cy="16" r="2" fill="#66bb6a"/><rect x="12" y="26" width="24" height="2.5" rx="1.25" fill="#b3e5fc"/><rect x="12" y="30" width="16" height="2.5" rx="1.25" fill="#e1f5fe"/></svg>,
+  "pueyracing": (s) => <svg width={s} height={s} viewBox="0 0 48 48"><rect width="48" height="48" rx="11" fill="#e53935"/><path d="M24 8 C20 8 14 15 14 24 L17 26 L24 29 L31 26 L34 24 C34 15 28 8 24 8z" fill="white"/><ellipse cx="24" cy="20" rx="4" ry="5" fill="#ef9a9a"/><path d="M14 24 L7 29 L11 27z" fill="#ffcdd2"/><path d="M34 24 L41 29 L37 27z" fill="#ffcdd2"/><ellipse cx="24" cy="31" rx="4" ry="2.5" fill="#ff7043"/><ellipse cx="24" cy="35" rx="3" ry="5" fill="#ff3d00" opacity="0.8"/></svg>,
+};
+
+// Win7/Vista color pairs for boxed mode (PueiOS 3 legacy — kept for fallback)
 const WIN7_COLOR: Partial<Record<AppId, [string, string]>> = {
   "settings":        ["#c0c8e0", "#6878a0"],
   "file-explorer":   ["#ffe080", "#d08800"],
@@ -349,29 +374,27 @@ export function appIcon(appId: AppId, size = 32, override?: string, iconUrl?: st
     if (!host) return "";
     return `https://www.google.com/s2/favicons?sz=${Math.max(32, Math.round(s))}&domain_url=${encodeURIComponent(`https://${host}`)}`;
   })();
-  const [c1, c2] = WIN7_COLOR[appId] ?? ["#8090c8", "#2840a0"];
-  const customSvg = APP_ICON_SVGS[appId]?.(boxed ? Math.round(s * 0.62) : s);
-
-  const boxedWrapper = (children: React.ReactNode) => (
-    <div style={{
-      width: s, height: s, borderRadius: radius, flexShrink: 0, position: "relative", overflow: "hidden",
-      background: `linear-gradient(160deg, ${c1} 0%, ${c2} 100%)`,
-      boxShadow: `0 ${Math.round(s*0.06)}px ${Math.round(s*0.25)}px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.55)`,
-      display: "flex", alignItems: "center", justifyContent: "center",
-    }}>
-      {children}
-      <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "52%", borderRadius: `${radius}px ${radius}px 50% 50%`, background: "linear-gradient(180deg, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0.05) 100%)", pointerEvents: "none" }} />
-    </div>
-  );
+  // PueiOS 3: use flat modern icon (self-contained with background)
+  const p3Svg = boxed ? APP_ICON_SVGS_P3[appId]?.(s) : undefined;
+  // PueiOS 1/2: XP-style transparent SVG
+  const customSvg = p3Svg ? null : APP_ICON_SVGS[appId]?.(s);
 
   const emojiContent = isEmoji ? <span style={{ fontSize: Math.round(s * 0.62), lineHeight: 1 }}>{override}</span> : null;
+
+  // PueiOS 3 emoji fallback box (flat colored square)
+  const [c1, c2] = WIN7_COLOR[appId] ?? ["#8090c8", "#2840a0"];
+  const p3EmojiBox = (children: React.ReactNode) => (
+    <div style={{ width: s, height: s, borderRadius: radius, overflow: "hidden", background: `linear-gradient(135deg, ${c1}, ${c2})`, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: `0 ${Math.round(s*0.06)}px ${Math.round(s*0.2)}px rgba(0,0,0,0.35)` }}>
+      {children}
+    </div>
+  );
 
   return (
     <div className="flex items-center justify-center relative" style={{ width: s, height: s, flexShrink: 0 }}>
       {isImg
         ? <img src={override} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: boxed ? radius : Math.round(s * 0.15) }} />
         : isEmoji
-          ? boxed ? boxedWrapper(emojiContent) : <div style={{ display: "flex", alignItems: "center", justifyContent: "center", filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.5))" }}>{emojiContent}</div>
+          ? boxed ? p3EmojiBox(emojiContent) : <div style={{ display: "flex", alignItems: "center", justifyContent: "center", filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.5))" }}>{emojiContent}</div>
           : useUrl
           ? <>
               <img
@@ -388,13 +411,12 @@ export function appIcon(appId: AppId, size = 32, override?: string, iconUrl?: st
                   if (fallbackEl) fallbackEl.style.display = "flex";
                 }}
               />
-              {boxed
-                ? boxedWrapper(<div style={{ display: "none", alignItems: "center", justifyContent: "center" }}>{customSvg}</div>)
-                : <div style={{ display: "none", width: "100%", height: "100%", alignItems: "center", justifyContent: "center", filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.5))" }}>{customSvg}</div>
-              }
+              <div style={{ display: "none", alignItems: "center", justifyContent: "center" }}>
+                {p3Svg ?? customSvg}
+              </div>
             </>
-          : boxed
-            ? boxedWrapper(customSvg)
+          : p3Svg
+            ? <div style={{ borderRadius: radius, overflow: "hidden", boxShadow: `0 ${Math.round(s*0.06)}px ${Math.round(s*0.2)}px rgba(0,0,0,0.35)`, display: "flex" }}>{p3Svg}</div>
             : <div style={{ display: "flex", alignItems: "center", justifyContent: "center", filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.5))" }}>{customSvg}</div>
       }
     </div>
