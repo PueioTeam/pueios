@@ -158,30 +158,30 @@ export function AppWindow({
             borderBottom: "1px solid #b0b0b0",
           }}
         >
-          {/* macOS traffic-light buttons on left */}
-          <div style={{ display: "flex", alignItems: "center", gap: 6, marginRight: 10 }}>
-            <button title="Close" onClick={(e) => { e.stopPropagation(); onClose(); }}
-              style={{ width: 12, height: 12, borderRadius: "50%", background: "#ff5f57", border: "1px solid #e0443e", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 8, color: "transparent", lineHeight: 1 }}
-              onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#7a0000"; }}
-              onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "transparent"; }}
-            >✕</button>
-            <button title="Minimize" onClick={(e) => { e.stopPropagation(); onMinimize(); }}
-              style={{ width: 12, height: 12, borderRadius: "50%", background: "#ffbd2e", border: "1px solid #e0a116", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 8, color: "transparent", lineHeight: 1 }}
-              onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#7a5500"; }}
-              onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "transparent"; }}
-            >─</button>
+          {/* Spacer to balance the buttons on the right */}
+          <div style={{ width: 54 }} />
+          {/* Centered title */}
+          <div style={{ flex: 1, textAlign: "center", fontSize: 12, fontWeight: 600, color: focused ? "#222" : "#888", fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", letterSpacing: 0.1, pointerEvents: "none" }}>
+            {win.title}
+          </div>
+          {/* Traffic-light buttons on right */}
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginLeft: 10 }}>
             <button title={win.maximized ? "Restore" : "Maximize"} onClick={(e) => { e.stopPropagation(); onMaximize(); }}
               style={{ width: 12, height: 12, borderRadius: "50%", background: "#28c840", border: "1px solid #1aab29", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 7, color: "transparent", lineHeight: 1 }}
               onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#006300"; }}
               onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "transparent"; }}
             >+</button>
+            <button title="Minimize" onClick={(e) => { e.stopPropagation(); onMinimize(); }}
+              style={{ width: 12, height: 12, borderRadius: "50%", background: "#ffbd2e", border: "1px solid #e0a116", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 8, color: "transparent", lineHeight: 1 }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#7a5500"; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "transparent"; }}
+            >─</button>
+            <button title="Close" onClick={(e) => { e.stopPropagation(); onClose(); }}
+              style={{ width: 12, height: 12, borderRadius: "50%", background: "#ff5f57", border: "1px solid #e0443e", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 8, color: "transparent", lineHeight: 1 }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#7a0000"; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "transparent"; }}
+            >✕</button>
           </div>
-          {/* Centered title */}
-          <div style={{ flex: 1, textAlign: "center", fontSize: 12, fontWeight: 600, color: focused ? "#222" : "#888", fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", letterSpacing: 0.1, pointerEvents: "none" }}>
-            {win.title}
-          </div>
-          {/* Spacer to balance the buttons */}
-          <div style={{ width: 54 }} />
         </div>
       ) : (
         <div
