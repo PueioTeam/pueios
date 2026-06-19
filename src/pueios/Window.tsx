@@ -58,12 +58,13 @@ export function ContextMenu({
 }
 
 export function AppWindow({
-  win, focused, peek, fullWindowTransparency, onFocus, onClose, onMinimize, onMaximize, onMove, onResize, children,
+  win, focused, peek, fullWindowTransparency, systemVersion, onFocus, onClose, onMinimize, onMaximize, onMove, onResize, children,
 }: {
   win: WindowState;
   focused: boolean;
   peek?: boolean;
   fullWindowTransparency?: boolean;
+  systemVersion?: string;
   onFocus: () => void;
   onClose: () => void;
   onMinimize: () => void;
@@ -138,80 +139,86 @@ export function AppWindow({
       }}
       onMouseDown={onFocus}
     >
-      {/* Win7-style title bar */}
-      <div
-        className="aero-titlebar flex items-center justify-between select-none"
-        onPointerDown={onTitleDown}
-        onPointerMove={onTitleMove}
-        onPointerUp={onTitleUp}
-        onDoubleClick={onMaximize}
-        style={{
-          cursor: win.maximized ? "default" : "move",
-          touchAction: "none",
-          minHeight: 32,
-          padding: "0 4px 0 10px",
-          background: focused
-            ? "linear-gradient(180deg, rgba(255,255,255,0.62) 0%, var(--glass-strong) 28%, var(--glass) 60%, transparent 100%), var(--titlebar)"
-            : "linear-gradient(180deg, rgba(255,255,255,0.3) 0%, var(--glass) 50%, transparent 100%), var(--titlebar)",
-          borderBottom: "1px solid var(--border)",
-          boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9), inset 0 2px 6px rgba(255,255,255,0.3)",
-        }}
-      >
-        <div className="flex items-center gap-2 text-sm font-semibold truncate"
-          style={{ color: focused ? "var(--titlebar-text)" : "rgba(80,80,110,0.8)", textShadow: "0 1px 2px rgba(255,255,255,0.7)" }}>
-          <span>{win.title}</span>
+      {/* Title bar — macOS style for PueiOS 1, Win7 style otherwise */}
+      {systemVersion === "PueiOS 1" ? (
+        <div
+          className="flex items-center select-none"
+          onPointerDown={onTitleDown}
+          onPointerMove={onTitleMove}
+          onPointerUp={onTitleUp}
+          onDoubleClick={onMaximize}
+          style={{
+            cursor: win.maximized ? "default" : "move",
+            touchAction: "none",
+            minHeight: 30,
+            padding: "0 10px",
+            background: focused
+              ? "linear-gradient(180deg, #f0f0f0 0%, #d8d8d8 100%)"
+              : "linear-gradient(180deg, #e8e8e8 0%, #d0d0d0 100%)",
+            borderBottom: "1px solid #b0b0b0",
+          }}
+        >
+          {/* macOS traffic-light buttons on left */}
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginRight: 10 }}>
+            <button title="Close" onClick={(e) => { e.stopPropagation(); onClose(); }}
+              style={{ width: 12, height: 12, borderRadius: "50%", background: "#ff5f57", border: "1px solid #e0443e", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 8, color: "transparent", lineHeight: 1 }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#7a0000"; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "transparent"; }}
+            >✕</button>
+            <button title="Minimize" onClick={(e) => { e.stopPropagation(); onMinimize(); }}
+              style={{ width: 12, height: 12, borderRadius: "50%", background: "#ffbd2e", border: "1px solid #e0a116", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 8, color: "transparent", lineHeight: 1 }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#7a5500"; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "transparent"; }}
+            >─</button>
+            <button title={win.maximized ? "Restore" : "Maximize"} onClick={(e) => { e.stopPropagation(); onMaximize(); }}
+              style={{ width: 12, height: 12, borderRadius: "50%", background: "#28c840", border: "1px solid #1aab29", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 7, color: "transparent", lineHeight: 1 }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#006300"; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "transparent"; }}
+            >+</button>
+          </div>
+          {/* Centered title */}
+          <div style={{ flex: 1, textAlign: "center", fontSize: 12, fontWeight: 600, color: focused ? "#222" : "#888", fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", letterSpacing: 0.1, pointerEvents: "none" }}>
+            {win.title}
+          </div>
+          {/* Spacer to balance the buttons */}
+          <div style={{ width: 54 }} />
         </div>
-        {/* Win7-style window control buttons */}
-        <div className="flex items-center" style={{ gap: 2, paddingLeft: 4 }}>
-          {/* Minimize */}
-          <button
-            title="Minimize"
-            onClick={(e) => { e.stopPropagation(); onMinimize(); }}
-            style={{
-              width: 26, height: 20, fontSize: 12, fontWeight: "bold",
-              background: "linear-gradient(180deg, rgba(255,255,255,0.85) 0%, rgba(205,225,255,0.75) 45%, rgba(170,210,255,0.65) 50%, rgba(200,225,255,0.72) 100%)",
-              border: "1px solid rgba(100,150,220,0.45)",
-              borderRadius: 4,
-              boxShadow: "inset 0 1px 0 rgba(255,255,255,0.95), 0 1px 2px rgba(0,0,0,0.1)",
-              color: "#444",
-              cursor: "pointer",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              lineHeight: 1,
-            }}
-          >─</button>
-          {/* Maximize/Restore */}
-          <button
-            title={win.maximized ? "Restore" : "Maximize"}
-            onClick={(e) => { e.stopPropagation(); onMaximize(); }}
-            style={{
-              width: 26, height: 20, fontSize: 10, fontWeight: "bold",
-              background: "linear-gradient(180deg, rgba(255,255,255,0.85) 0%, rgba(205,225,255,0.75) 45%, rgba(170,210,255,0.65) 50%, rgba(200,225,255,0.72) 100%)",
-              border: "1px solid rgba(100,150,220,0.45)",
-              borderRadius: 4,
-              boxShadow: "inset 0 1px 0 rgba(255,255,255,0.95), 0 1px 2px rgba(0,0,0,0.1)",
-              color: "#444",
-              cursor: "pointer",
-              display: "flex", alignItems: "center", justifyContent: "center",
-            }}
-          >{win.maximized ? "❐" : "☐"}</button>
-          {/* Close — red */}
-          <button
-            title="Close"
-            onClick={(e) => { e.stopPropagation(); onClose(); }}
-            style={{
-              width: 28, height: 20, fontSize: 11, fontWeight: "bold",
-              background: "linear-gradient(180deg, #f77 0%, #e44 45%, #c22 50%, #d44 100%)",
-              border: "1px solid rgba(160,30,30,0.6)",
-              borderRadius: 4,
-              boxShadow: "inset 0 1px 0 rgba(255,200,200,0.8), 0 1px 3px rgba(0,0,0,0.2)",
-              color: "white",
-              textShadow: "0 1px 1px rgba(0,0,0,0.4)",
-              cursor: "pointer",
-              display: "flex", alignItems: "center", justifyContent: "center",
-            }}
-          >✕</button>
+      ) : (
+        <div
+          className="aero-titlebar flex items-center justify-between select-none"
+          onPointerDown={onTitleDown}
+          onPointerMove={onTitleMove}
+          onPointerUp={onTitleUp}
+          onDoubleClick={onMaximize}
+          style={{
+            cursor: win.maximized ? "default" : "move",
+            touchAction: "none",
+            minHeight: 32,
+            padding: "0 4px 0 10px",
+            background: focused
+              ? "linear-gradient(180deg, rgba(255,255,255,0.62) 0%, var(--glass-strong) 28%, var(--glass) 60%, transparent 100%), var(--titlebar)"
+              : "linear-gradient(180deg, rgba(255,255,255,0.3) 0%, var(--glass) 50%, transparent 100%), var(--titlebar)",
+            borderBottom: "1px solid var(--border)",
+            boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9), inset 0 2px 6px rgba(255,255,255,0.3)",
+          }}
+        >
+          <div className="flex items-center gap-2 text-sm font-semibold truncate"
+            style={{ color: focused ? "var(--titlebar-text)" : "rgba(80,80,110,0.8)", textShadow: "0 1px 2px rgba(255,255,255,0.7)" }}>
+            <span>{win.title}</span>
+          </div>
+          <div className="flex items-center" style={{ gap: 2, paddingLeft: 4 }}>
+            <button title="Minimize" onClick={(e) => { e.stopPropagation(); onMinimize(); }}
+              style={{ width: 26, height: 20, fontSize: 12, fontWeight: "bold", background: "linear-gradient(180deg, rgba(255,255,255,0.85) 0%, rgba(205,225,255,0.75) 45%, rgba(170,210,255,0.65) 50%, rgba(200,225,255,0.72) 100%)", border: "1px solid rgba(100,150,220,0.45)", borderRadius: 4, boxShadow: "inset 0 1px 0 rgba(255,255,255,0.95), 0 1px 2px rgba(0,0,0,0.1)", color: "#444", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1 }}
+            >─</button>
+            <button title={win.maximized ? "Restore" : "Maximize"} onClick={(e) => { e.stopPropagation(); onMaximize(); }}
+              style={{ width: 26, height: 20, fontSize: 10, fontWeight: "bold", background: "linear-gradient(180deg, rgba(255,255,255,0.85) 0%, rgba(205,225,255,0.75) 45%, rgba(170,210,255,0.65) 50%, rgba(200,225,255,0.72) 100%)", border: "1px solid rgba(100,150,220,0.45)", borderRadius: 4, boxShadow: "inset 0 1px 0 rgba(255,255,255,0.95), 0 1px 2px rgba(0,0,0,0.1)", color: "#444", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+            >{win.maximized ? "❐" : "☐"}</button>
+            <button title="Close" onClick={(e) => { e.stopPropagation(); onClose(); }}
+              style={{ width: 28, height: 20, fontSize: 11, fontWeight: "bold", background: "linear-gradient(180deg, #f77 0%, #e44 45%, #c22 50%, #d44 100%)", border: "1px solid rgba(160,30,30,0.6)", borderRadius: 4, boxShadow: "inset 0 1px 0 rgba(255,200,200,0.8), 0 1px 3px rgba(0,0,0,0.2)", color: "white", textShadow: "0 1px 1px rgba(0,0,0,0.4)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+            >✕</button>
+          </div>
         </div>
-      </div>
+      )}
       <div className="flex-1 overflow-auto" style={{ background: fullWindowTransparency ? "var(--glass-strong)" : "var(--background)" }}>
         {children}
       </div>
@@ -310,6 +317,31 @@ const APP_ICON_SVGS: Partial<Record<AppId, (s: number) => React.ReactNode>> = {
   "pueyracing": (s) => <svg width={s} height={s} viewBox="0 0 48 48"><defs><linearGradient id="rs1" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#e8f0ff"/><stop offset="100%" stopColor="#8090d0"/></linearGradient><linearGradient id="rs2" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#ff9040"/><stop offset="100%" stopColor="#ff3000"/></linearGradient></defs><path d="M24 4 C24 4 16 14 16 26 L20 28 L24 30 L28 28 L32 26 C32 14 24 4 24 4z" fill="url(#rs1)" stroke="#6070b0" strokeWidth="1"/><ellipse cx="24" cy="18" rx="5" ry="6" fill="#80c8ff" stroke="#4090d0" strokeWidth="0.8" opacity="0.8"/><path d="M16 26 L8 32 L12 30 L16 30z" fill="#c03020" stroke="#801010" strokeWidth="0.8"/><path d="M32 26 L40 32 L36 30 L32 30z" fill="#c03020" stroke="#801010" strokeWidth="0.8"/><ellipse cx="24" cy="32" rx="5" ry="3" fill="#ff8020" stroke="#c04000" strokeWidth="0.8"/><ellipse cx="24" cy="36" rx="4" ry="6" fill="url(#rs2)" opacity="0.85"/><ellipse cx="22" cy="14" rx="3" ry="5" fill="rgba(255,255,255,0.4)" transform="rotate(-15 22 14)"/></svg>,
 };
 
+// PueiOS 1 — minimal flat 2-color icons, simple shapes, no gradients
+const APP_ICON_SVGS_P1: Partial<Record<AppId, (s: number) => React.ReactNode>> = {
+  "settings": (s) => <svg width={s} height={s} viewBox="0 0 48 48"><circle cx="24" cy="24" r="10" fill="none" stroke="#444" strokeWidth="3"/><circle cx="24" cy="24" r="3" fill="#444"/>{[0,60,120,180,240,300].map(a=>{const r=14,x=24+r*Math.cos(a*Math.PI/180),y=24+r*Math.sin(a*Math.PI/180);return<circle key={a} cx={x} cy={y} r="3.5" fill="#444"/>})}</svg>,
+  "file-explorer": (s) => <svg width={s} height={s} viewBox="0 0 48 48"><path d="M6 16a2 2 0 012-2h9l3 2h20a2 2 0 012 2v18a2 2 0 01-2 2H8a2 2 0 01-2-2z" fill="#e8b400" stroke="#b08000" strokeWidth="1.5"/><path d="M6 14a2 2 0 012-2h9l3 2z" fill="#c89600" stroke="#b08000" strokeWidth="1.5"/></svg>,
+  "notepad": (s) => <svg width={s} height={s} viewBox="0 0 48 48"><rect x="8" y="4" width="32" height="40" rx="2" fill="white" stroke="#888" strokeWidth="2"/><line x1="14" y1="4" x2="14" y2="44" stroke="#f88" strokeWidth="1.5"/><line x1="8" y1="14" x2="40" y2="14" stroke="#aac" strokeWidth="1"/><line x1="8" y1="20" x2="40" y2="20" stroke="#aac" strokeWidth="1"/><line x1="8" y1="26" x2="40" y2="26" stroke="#aac" strokeWidth="1"/><line x1="8" y1="32" x2="40" y2="32" stroke="#aac" strokeWidth="1"/><line x1="8" y1="38" x2="40" y2="38" stroke="#aac" strokeWidth="1"/></svg>,
+  "calculator": (s) => <svg width={s} height={s} viewBox="0 0 48 48"><rect x="8" y="4" width="32" height="40" rx="3" fill="#dde" stroke="#888" strokeWidth="1.5"/><rect x="12" y="8" width="24" height="10" rx="1" fill="#b8e8b8" stroke="#60a060" strokeWidth="1"/><text x="34" y="17" textAnchor="end" fontSize="7" fill="#004000" fontFamily="monospace">0</text>{[0,1,2,3].map(r=>[0,1,2].map(c=><rect key={`${r}${c}`} x={13+c*8} y={22+r*7} width="6" height="5" rx="1" fill={r===3&&c===2?"#e88":"#f0f0f8"} stroke="#aaa" strokeWidth="0.5"/>))}</svg>,
+  "puei-paint": (s) => <svg width={s} height={s} viewBox="0 0 48 48"><circle cx="12" cy="24" r="5" fill="#e83"/><circle cx="24" cy="12" r="5" fill="#3a8"/><circle cx="36" cy="24" r="5" fill="#38e"/><circle cx="24" cy="36" r="5" fill="#e38"/><path d="M34 8 Q40 5 42 12 L38 16 Q34 14 34 8z" fill="#a64" stroke="#834" strokeWidth="1"/><rect x="37" y="16" width="3" height="12" rx="1.5" fill="#c84" transform="rotate(20 38 16)"/></svg>,
+  "puei-board": (s) => <svg width={s} height={s} viewBox="0 0 48 48"><rect x="4" y="4" width="40" height="40" rx="3" fill="#c8903c" stroke="#8a5c1c" strokeWidth="2"/><rect x="9" y="9" width="12" height="10" rx="1" fill="white"/><rect x="27" y="9" width="12" height="8" rx="1" fill="#ffffa0"/><rect x="27" y="22" width="12" height="10" rx="1" fill="#ffcccc"/><rect x="9" y="24" width="12" height="16" rx="1" fill="#ccffcc"/><circle cx="15" cy="9" r="2.5" fill="#e03"/><circle cx="33" cy="9" r="2.5" fill="#0a0"/></svg>,
+  "pueinet": (s) => <svg width={s} height={s} viewBox="0 0 48 48"><circle cx="24" cy="24" r="20" fill="none" stroke="#1a6" strokeWidth="3"/><ellipse cx="24" cy="24" rx="9" ry="20" fill="none" stroke="#1a6" strokeWidth="2"/><line x1="4" y1="24" x2="44" y2="24" stroke="#1a6" strokeWidth="2"/><line x1="24" y1="4" x2="24" y2="44" stroke="#1a6" strokeWidth="1.5"/><ellipse cx="24" cy="24" rx="20" ry="7" fill="none" stroke="#1a6" strokeWidth="1.5"/></svg>,
+  "puei-cloud-chat": (s) => <svg width={s} height={s} viewBox="0 0 48 48"><path d="M6 10a4 4 0 014-4h28a4 4 0 014 4v18a4 4 0 01-4 4H28l-8 8v-8H10a4 4 0 01-4-4z" fill="#4c4" stroke="#2a2" strokeWidth="2"/><rect x="11" y="13" width="26" height="2.5" rx="1.2" fill="white"/><rect x="11" y="19" width="20" height="2.5" rx="1.2" fill="white"/><rect x="11" y="25" width="14" height="2.5" rx="1.2" fill="white"/></svg>,
+  "puei-studio": (s) => <svg width={s} height={s} viewBox="0 0 48 48"><path d="M24 10 L27 19 H37 L29 25 L32 34 L24 28 L16 34 L19 25 L11 19 H21 Z" fill="#e8c" stroke="#a48" strokeWidth="1.5"/></svg>,
+  "app-store": (s) => <svg width={s} height={s} viewBox="0 0 48 48"><rect x="4" y="4" width="40" height="40" rx="5" fill="none" stroke="#08a" strokeWidth="2.5"/><path d="M24 10 L27 19 H37 L29 25 L32 34 L24 28 L16 34 L19 25 L11 19 H21 Z" fill="#08a"/></svg>,
+  "puei-social": (s) => <svg width={s} height={s} viewBox="0 0 48 48"><circle cx="16" cy="16" r="7" fill="#e84" stroke="#c63" strokeWidth="1.5"/><path d="M2 40c0-9 6-14 14-14s14 5 14 14z" fill="#e84" stroke="#c63" strokeWidth="1.5"/><circle cx="34" cy="14" r="6" fill="#48e" stroke="#36c" strokeWidth="1.5"/><path d="M24 38c0-7 4-11 10-11s10 4 10 11z" fill="#48e" stroke="#36c" strokeWidth="1.5"/></svg>,
+  "folder": (s) => <svg width={s} height={s} viewBox="0 0 48 48"><path d="M4 18a3 3 0 013-3h9l3 3h22a3 3 0 013 3v14a3 3 0 01-3 3H7a3 3 0 01-3-3z" fill="#f0c000" stroke="#b08800" strokeWidth="1.5"/><path d="M4 16a2 2 0 012-2h9l3 2z" fill="#d8a800" stroke="#b08800" strokeWidth="1.5"/></svg>,
+  "recycle-bin": (s) => <svg width={s} height={s} viewBox="0 0 48 48"><path d="M10 18h28l-3 24H13z" fill="#ddd" stroke="#888" strokeWidth="1.5"/><line x1="6" y1="14" x2="42" y2="14" stroke="#666" strokeWidth="2.5" strokeLinecap="round"/><path d="M16 14V10h16v4" fill="none" stroke="#666" strokeWidth="2"/><path d="M19 27 L24 22 L29 27 M24 22 v8" stroke="#3a3" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/></svg>,
+  "chess": (s) => <svg width={s} height={s} viewBox="0 0 48 48"><rect x="4" y="4" width="40" height="40" rx="2" fill="#f0d090" stroke="#806030" strokeWidth="1.5"/>{[0,1,2,3,4].map(r=>[0,1,2,3,4].map(c=>(r+c)%2===0?<rect key={`${r}${c}`} x={4+c*8} y={4+r*8} width="8" height="8" fill="#a06830"/>:null))}<path d="M20 36v-4l-2-4 2-2 4-1 4 1 2 2-2 4v4z" fill="white" stroke="#444" strokeWidth="1"/><rect x="17" y="36" width="14" height="3" rx="1" fill="white" stroke="#444" strokeWidth="1"/></svg>,
+  "puei-mansion": (s) => <svg width={s} height={s} viewBox="0 0 48 48"><polygon points="24,4 44,20 40,20 40,44 8,44 8,20 4,20" fill="#c05" stroke="#800" strokeWidth="1.5"/><rect x="10" y="20" width="28" height="24" fill="#f5f0e0" stroke="#aaa" strokeWidth="1"/><rect x="18" y="30" width="12" height="14" rx="1" fill="#8cf" stroke="#68a" strokeWidth="1"/><rect x="12" y="24" width="8" height="8" rx="1" fill="#8cf" stroke="#68a" strokeWidth="1"/><rect x="28" y="24" width="8" height="8" rx="1" fill="#8cf" stroke="#68a" strokeWidth="1"/></svg>,
+  "about": (s) => <svg width={s} height={s} viewBox="0 0 48 48"><circle cx="24" cy="24" r="20" fill="none" stroke="#48c" strokeWidth="3"/><circle cx="24" cy="15" r="3" fill="#48c"/><rect x="21" y="21" width="6" height="13" rx="2" fill="#48c"/></svg>,
+  "iso-viewer": (s) => <svg width={s} height={s} viewBox="0 0 48 48"><circle cx="24" cy="24" r="20" fill="#e8e8f0" stroke="#888" strokeWidth="2"/><circle cx="24" cy="24" r="6" fill="none" stroke="#aaa" strokeWidth="2"/><circle cx="24" cy="24" r="2.5" fill="#bbb"/></svg>,
+  "zip-viewer": (s) => <svg width={s} height={s} viewBox="0 0 48 48"><path d="M6 10a2 2 0 012-2h20l9 9v26a2 2 0 01-2 2H8a2 2 0 01-2-2z" fill="#d0e8ff" stroke="#4a8" strokeWidth="1.5"/><path d="M28 8v9h9" fill="none" stroke="#4a8" strokeWidth="1.5"/><rect x="20" y="16" width="8" height="3" rx="1" fill="white"/><rect x="20" y="21" width="8" height="3" rx="1" fill="#d0e8ff"/><rect x="20" y="26" width="8" height="3" rx="1" fill="white"/><rect x="20" y="31" width="8" height="3" rx="1" fill="#d0e8ff"/></svg>,
+  "pmail": (s) => <svg width={s} height={s} viewBox="0 0 48 48"><rect x="4" y="10" width="40" height="28" rx="2" fill="white" stroke="#48c" strokeWidth="2"/><path d="M4 12l20 14 20-14" stroke="#48c" strokeWidth="2" fill="none"/></svg>,
+  "web-app": (s) => <svg width={s} height={s} viewBox="0 0 48 48"><rect x="3" y="6" width="42" height="36" rx="3" fill="white" stroke="#48c" strokeWidth="2"/><rect x="3" y="6" width="42" height="11" rx="3" fill="#48c"/><circle cx="10" cy="11.5" r="2.5" fill="white" opacity="0.7"/><circle cx="17" cy="11.5" r="2.5" fill="white" opacity="0.7"/><rect x="8" y="22" width="32" height="2.5" rx="1.2" fill="#cce"/><rect x="8" y="28" width="22" height="2.5" rx="1.2" fill="#cce"/><rect x="8" y="34" width="28" height="2.5" rx="1.2" fill="#cce"/></svg>,
+  "pueyracing": (s) => <svg width={s} height={s} viewBox="0 0 48 48"><path d="M24 4 C24 4 16 14 16 26 L20 28 L24 30 L28 28 L32 26 C32 14 24 4 24 4z" fill="#ccf" stroke="#66a" strokeWidth="1.5"/><ellipse cx="24" cy="18" rx="5" ry="6" fill="#8af" stroke="#48c" strokeWidth="1"/><path d="M16 26 L8 31 L12 30z M32 26 L40 31 L36 30z" fill="#c44" stroke="#a22" strokeWidth="1"/><ellipse cx="24" cy="33" rx="4" ry="5" fill="#f84" stroke="#c62" strokeWidth="1"/></svg>,
+};
+
 // PueiOS 3 — modern flat icons (full SVG with rounded-square bg, macOS/Android style)
 const APP_ICON_SVGS_P3: Partial<Record<AppId, (s: number) => React.ReactNode>> = {
   "settings": (s) => <svg width={s} height={s} viewBox="0 0 48 48"><rect width="48" height="48" rx="11" fill="#6c757d"/><circle cx="24" cy="24" r="9" fill="none" stroke="white" strokeWidth="3.5"/><circle cx="24" cy="24" r="3.5" fill="white"/>{[0,45,90,135,180,225,270,315].map(a=><rect key={a} x="22.5" y="10" width="3" height="5" rx="1.5" fill="white" transform={`rotate(${a} 24 24)`}/>)}</svg>,
@@ -360,7 +392,7 @@ const WIN7_COLOR: Partial<Record<AppId, [string, string]>> = {
   "pueyracing":      ["#a0c8f8", "#2050a0"],
 };
 
-export function appIcon(appId: AppId, size = 32, override?: string, iconUrl?: string, boxed = false) {
+export function appIcon(appId: AppId, size = 32, override?: string, iconUrl?: string, boxed = false, p1 = false) {
   const s = size;
   const radius = Math.round(s * 0.22);
 
@@ -376,8 +408,10 @@ export function appIcon(appId: AppId, size = 32, override?: string, iconUrl?: st
   })();
   // PueiOS 3: use flat modern icon (self-contained with background)
   const p3Svg = boxed ? APP_ICON_SVGS_P3[appId]?.(s) : undefined;
-  // PueiOS 1/2: XP-style transparent SVG
-  const customSvg = p3Svg ? null : APP_ICON_SVGS[appId]?.(s);
+  // PueiOS 1: flat minimal 2-color icon
+  const p1Svg = (!p3Svg && p1) ? APP_ICON_SVGS_P1[appId]?.(s) : undefined;
+  // PueiOS 2: XP-style transparent SVG
+  const customSvg = (p3Svg || p1Svg) ? null : APP_ICON_SVGS[appId]?.(s);
 
   const emojiContent = isEmoji ? <span style={{ fontSize: Math.round(s * 0.62), lineHeight: 1 }}>{override}</span> : null;
 
@@ -412,12 +446,14 @@ export function appIcon(appId: AppId, size = 32, override?: string, iconUrl?: st
                 }}
               />
               <div style={{ display: "none", alignItems: "center", justifyContent: "center" }}>
-                {p3Svg ?? customSvg}
+                {p3Svg ?? p1Svg ?? customSvg}
               </div>
             </>
           : p3Svg
             ? <div style={{ borderRadius: radius, overflow: "hidden", boxShadow: `0 ${Math.round(s*0.06)}px ${Math.round(s*0.2)}px rgba(0,0,0,0.35)`, display: "flex" }}>{p3Svg}</div>
-            : <div style={{ display: "flex", alignItems: "center", justifyContent: "center", filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.5))" }}>{customSvg}</div>
+            : (p1Svg ?? customSvg)
+              ? <div style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>{p1Svg ?? customSvg}</div>
+              : null
       }
     </div>
   );

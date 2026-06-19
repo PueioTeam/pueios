@@ -2069,7 +2069,7 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
             {iso1File && <span className="text-xs px-2 py-0.5 rounded" style={{ background: "rgba(80,200,120,0.2)", color: "#4ade80" }}>Downloaded</span>}
           </div>
           <p className="text-xs opacity-60">The very first PueiOS release — classic minimalist shell.</p>
-          <p className="text-xs" style={{ color: "#f87171" }}>End of life. Use Pueio Reverse to boot.</p>
+          <p className="text-xs" style={{ color: "#f87171" }}>As of May 20, 2026, PueiOS 1 is no longer supported. Use Pueio Reverse to boot.</p>
           <div className="flex gap-2">
             {downloading === "pueios1.iso" ? (
               <div className="flex items-center gap-2 text-xs">

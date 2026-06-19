@@ -1253,7 +1253,7 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
             </h1>
             <div className="w-16 h-0.5 mb-6" style={{ background: "#1e90ff" }} />
             <p className="text-base mb-4 leading-relaxed" style={{ color: "rgba(200,220,255,0.9)" }}>
-              As of <strong>June 6th, 2026</strong>, {systemVersion} has reached its End of Life. PueiTeam no longer provides security updates, bug fixes, or technical support for this version.
+              As of <strong>{systemVersion === "PueiOS 1" ? "May 20, 2026" : "June 6th, 2026"}</strong>, {systemVersion} has reached its End of Life. PueiTeam no longer provides security updates, bug fixes, or technical support for this version.
             </p>
             <p className="text-sm mb-10" style={{ color: "rgba(160,190,255,0.7)" }}>
               Your device will not receive further updates. To continue using PueiOS safely, upgrade to <strong style={{ color: "#ffffff" }}>{systemVersion === "PueiOS 1" ? "PueiOS 2" : "PueiOS 3"}</strong>.
@@ -1887,12 +1887,13 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
   const avatarBg = `linear-gradient(135deg, oklch(0.72 0.18 ${currentColor}), oklch(0.48 0.2 ${currentColor}))`;
   const hasPueiOS3Upgrade = compareVersion("PueiOS 3", systemVersion) > 0;
   const isP3 = systemVersion === "PueiOS 3";
-  const aicon = (id: AppId, size: number, over?: string, url?: string) => appIcon(id, size, over, url, isP3);
+  const isP1 = systemVersion === "PueiOS 1";
+  const aicon = (id: AppId, size: number, over?: string, url?: string) => appIcon(id, size, over, url, isP3, isP1);
 
   return (
     <div
-      className={`fixed inset-0 ${typeof theme.wallpaper === "string" && (theme.wallpaper.startsWith("custom:") || theme.wallpaper.startsWith("data:")) ? "" : `wallpaper-${theme.wallpaper}`}`}
-      style={{ overflow: "hidden", ...wallpaperStyle }}
+      className={`fixed inset-0 ${systemVersion === "PueiOS 1" ? "wallpaper-p1" : typeof theme.wallpaper === "string" && (theme.wallpaper.startsWith("custom:") || theme.wallpaper.startsWith("data:")) ? "" : `wallpaper-${theme.wallpaper}`}`}
+      style={{ overflow: "hidden", ...(systemVersion === "PueiOS 1" ? {} : wallpaperStyle) }}
       onMouseDown={() => { setCtxMenu(null); setStartOpen(false); setShowCalendar(false); setSelectedIcon(null); setShowVolume(false); setShowNetwork(false); }}
       onContextMenu={(e) => { e.preventDefault(); setCtxMenu({ x: e.clientX, y: e.clientY, items: desktopCtx() }); }}
       onTouchStart={(e) => onTouchStart(e, desktopCtx())}
@@ -1971,7 +1972,7 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
               onTouchEnd={onTouchEnd}
             >
               <div className="flex justify-center mb-1">{aicon(ic.appId, iconPx, ic.iconEmoji, ic.iconUrl)}</div>
-              <div>{ic.label}</div>
+              <div style={systemVersion === "PueiOS 1" ? { color: "#111", textShadow: "none" } : undefined}>{ic.label}</div>
             </div>
           );
         })}
@@ -1996,6 +1997,7 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
           <AppWindow key={w.id} win={w} focused={focused}
             peek={aeroPeek}
             fullWindowTransparency={!!theme.transparency && !!theme.fullWindowTransparency}
+            systemVersion={systemVersion}
             onFocus={() => focusWin(w.id)}
             onClose={() => closeWin(w.id)}
             onMinimize={() => minWin(w.id)}

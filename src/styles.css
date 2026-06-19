@@ -750,6 +750,13 @@ canvas[style*="crosshair"] { cursor: url("data:image/svg+xml,%3Csvg xmlns='http:
   background-size: 100% 100%;
 }
 
+/* PueiOS 1 — flat teal-to-grey minimalist desktop */
+.wallpaper-p1 {
+  background:
+    radial-gradient(ellipse 60% 40% at 50% 100%, rgba(0,100,120,0.18), transparent 70%),
+    linear-gradient(160deg, #c8dde8 0%, #b0ccd8 30%, #9ab8c8 60%, #8aaab8 100%);
+}
+
 .window-shadow {
   box-shadow: 0 20px 60px -10px rgba(0,0,0,0.5), 0 6px 20px rgba(0,0,0,0.3);
 }
