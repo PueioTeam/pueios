@@ -1,6 +1,6 @@
-// PueiOS 2 state types and helpers
-export type SystemVersion = "PueiOS 2" | "PueiOS 2+" | "PueiOS 3";
-export const SYSTEM_ORDER: SystemVersion[] = ["PueiOS 2", "PueiOS 2+", "PueiOS 3"];
+// PueiOS state types and helpers
+export type SystemVersion = "PueiOS 1" | "PueiOS 2" | "PueiOS 2+" | "PueiOS 3";
+export const SYSTEM_ORDER: SystemVersion[] = ["PueiOS 1", "PueiOS 2", "PueiOS 2+", "PueiOS 3"];
 export function compareVersion(a: SystemVersion, b: SystemVersion): number {
   return SYSTEM_ORDER.indexOf(a) - SYSTEM_ORDER.indexOf(b);
 }
@@ -317,7 +317,7 @@ export function iconGridPos(index: number) {
 }
 
 export function loadState(): Persisted {
-  const base: Persisted = { installed: false, systemVersion: "PueiOS 2", theme: defaultTheme, icons: defaultIcons, users: [] };
+  const base: Persisted = { installed: false, systemVersion: "PueiOS 1", theme: defaultTheme, icons: defaultIcons, users: [] };
   if (typeof window === "undefined") return base;
   try {
     const raw = localStorage.getItem(KEY);
@@ -325,7 +325,7 @@ export function loadState(): Persisted {
     const p = JSON.parse(raw);
     return {
       installed: !!p.installed,
-      systemVersion: p.systemVersion || "PueiOS 2",
+      systemVersion: (p.systemVersion && SYSTEM_ORDER.includes(p.systemVersion)) ? p.systemVersion : "PueiOS 1",
       theme: { ...defaultTheme, ...(p.theme || {}) },
       icons: p.icons?.length ? p.icons : defaultIcons,
       users: Array.isArray(p.users) ? p.users : [],

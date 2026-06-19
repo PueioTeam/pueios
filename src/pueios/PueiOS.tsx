@@ -101,10 +101,10 @@ export function PueiOS() {
   const [icons, setIcons] = useState<DesktopIcon[]>(defaultIcons);
   const [users, setUsers] = useState<User[]>([]);
   const [installed, setInstalled] = useState(false);
-  const [systemVersion, setSystemVersion] = useState<SystemVersion>("PueiOS 2");
+  const [systemVersion, setSystemVersion] = useState<SystemVersion>("PueiOS 1");
   const [installMode, setInstallMode] = useState<"new" | "existing" | null>(null);
   const [pwOption, setPwOption] = useState<"have" | "none" | "create-now">("have");
-  const [upgradeTarget, setUpgradeTarget] = useState<SystemVersion>("PueiOS 2+");
+  const [upgradeTarget, setUpgradeTarget] = useState<SystemVersion>("PueiOS 2");
   const [upgradeProgress, setUpgradeProgress] = useState(0);
   const [upgradeStartedAt, setUpgradeStartedAt] = useState<number | null>(null);
   const [currentUser, setCurrentUser] = useState<string>("");
@@ -596,7 +596,7 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
     if (phase !== "upgrade") return;
     const started = upgradeStartedAt ?? Date.now();
     if (upgradeStartedAt === null) setUpgradeStartedAt(started);
-    const durationMs = upgradeTarget === "PueiOS 2+" ? 95000 : 125000;
+    const durationMs = upgradeTarget === "PueiOS 2" ? 70000 : upgradeTarget === "PueiOS 2+" ? 95000 : 125000;
     const timer = window.setInterval(() => {
       const elapsed = Date.now() - started;
       const progress01 = Math.min(1, elapsed / durationMs);
@@ -613,6 +613,9 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
     const done = window.setTimeout(() => {
       setSystemVersion(upgradeTarget);
       pendingUpdateNotif.current = true;
+      if (upgradeTarget === "PueiOS 2") {
+        setThemeState((prev) => ({ ...prev, accentH: 220, dark: false }));
+      }
       if (upgradeTarget === "PueiOS 2+") {
         setThemeState((prev) => ({
           ...prev,
@@ -675,8 +678,15 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
 
 
 
+  const [wallpaperTransitioning, setWallpaperTransitioning] = useState(false);
   const setTheme = (t: Theme) => setThemeState(t);
-  const setWallpaper = (w: WallpaperId) => setThemeState({ ...theme, wallpaper: w });
+  const setWallpaper = (w: WallpaperId) => {
+    setWallpaperTransitioning(true);
+    setTimeout(() => {
+      setThemeState({ ...theme, wallpaper: w });
+      setTimeout(() => setWallpaperTransitioning(false), 100);
+    }, 50);
+  };
 
   const pushNotif = (title: string, body: string, kind: "default" | "update" = "default") => {
     blip("notify");
@@ -1206,7 +1216,7 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
   }
 
   // ============ EOL WALL
-  if ((systemVersion === "PueiOS 2" || systemVersion === "PueiOS 2+") && !eolDismissed) {
+  if ((systemVersion === "PueiOS 1" || systemVersion === "PueiOS 2" || systemVersion === "PueiOS 2+") && !eolDismissed) {
     return (
       <div className="fixed inset-0 flex flex-col text-white select-none"
         style={{ background: "#0a2a6e", fontFamily: "'Segoe UI', Tahoma, Arial, sans-serif" }}>
@@ -1236,12 +1246,16 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
               As of <strong>June 6th, 2026</strong>, {systemVersion} has reached its End of Life. PueiTeam no longer provides security updates, bug fixes, or technical support for this version.
             </p>
             <p className="text-sm mb-10" style={{ color: "rgba(160,190,255,0.7)" }}>
-              Your device will not receive further updates. To continue using PueiOS safely, upgrade to <strong style={{ color: "#ffffff" }}>PueiOS 3</strong>.
+              Your device will not receive further updates. To continue using PueiOS safely, upgrade to <strong style={{ color: "#ffffff" }}>{systemVersion === "PueiOS 1" ? "PueiOS 2" : "PueiOS 3"}</strong>.
             </p>
 
             <div className="flex flex-col gap-3 max-w-sm">
               <button
-                onClick={() => { sessionStorage.removeItem("pueios-eol-dismissed"); setSystemVersion("PueiOS 3"); setPhase("boot"); setBootProgress(0); }}
+                onClick={() => {
+                  sessionStorage.removeItem("pueios-eol-dismissed");
+                  if (systemVersion === "PueiOS 1") { startSystemUpgrade("PueiOS 2"); }
+                  else { setSystemVersion("PueiOS 3"); setPhase("boot"); setBootProgress(0); }
+                }}
                 style={{
                   background: "linear-gradient(180deg, #2e7fd8 0%, #1455b0 100%)",
                   border: "1px solid rgba(255,255,255,0.35)",
@@ -1250,7 +1264,7 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
                   color: "#fff", fontWeight: 600, fontSize: 14, textAlign: "left",
                   display: "flex", alignItems: "center", justifyContent: "space-between",
                 }}>
-                <span>Upgrade to PueiOS 3</span>
+                <span>Upgrade to {systemVersion === "PueiOS 1" ? "PueiOS 2" : "PueiOS 3"}</span>
                 <span style={{ fontSize: 18, opacity: 0.8 }}>›</span>
               </button>
               <button
@@ -1425,6 +1439,69 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
     };
     const activeUser = users.find((u) => u.name === loginUser);
 
+    if (systemVersion === "PueiOS 1") {
+      // PueiOS 1 — minimalistic flat login
+      return (
+        <div className="fixed inset-0 flex flex-col items-center justify-center select-none"
+          style={{ background: "#e8e8e8", fontFamily: "Arial, sans-serif" }}>
+          <div style={{ width: 320, background: "#f4f4f4", border: "1px solid #aaa", boxShadow: "2px 2px 8px rgba(0,0,0,0.2)", padding: 24 }}>
+            <div className="flex flex-col items-center mb-6">
+              <PueiLogoSvg size={52} />
+              <div style={{ fontSize: 18, fontWeight: "bold", marginTop: 8, color: "#222" }}>PueiOS 1</div>
+              <div style={{ fontSize: 11, color: "#666", marginTop: 2 }}>Welcome. Please sign in.</div>
+            </div>
+            {!creating ? (
+              <>
+                <div style={{ marginBottom: 10 }}>
+                  <label style={{ fontSize: 11, color: "#444", display: "block", marginBottom: 3 }}>Username</label>
+                  <select value={loginUser} onChange={(e) => { setLoginUser(e.target.value); setPwInput(""); setPwError(""); }}
+                    style={{ width: "100%", padding: "5px 8px", border: "1px solid #aaa", background: "white", fontSize: 13, color: "#222" }}>
+                    {users.length === 0 && <option value="">-- no accounts --</option>}
+                    {users.map((u) => <option key={u.name} value={u.name}>{u.name}</option>)}
+                  </select>
+                </div>
+                <div style={{ marginBottom: 12 }}>
+                  <label style={{ fontSize: 11, color: "#444", display: "block", marginBottom: 3 }}>Password</label>
+                  <input type="password" value={pwInput} onChange={(e) => setPwInput(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter") trySignIn(); }}
+                    placeholder={activeUser?.password ? "Enter password" : "(no password)"}
+                    style={{ width: "100%", padding: "5px 8px", border: "1px solid #aaa", background: "white", fontSize: 13, color: "#222", boxSizing: "border-box" }} />
+                  {pwError && <div style={{ color: "#c00", fontSize: 11, marginTop: 3 }}>{pwError}</div>}
+                </div>
+                <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
+                  <button onClick={() => { setCreating(true); setPwError(""); }}
+                    style={{ padding: "4px 12px", fontSize: 12, border: "1px solid #999", background: "#ddd", cursor: "pointer" }}>New user</button>
+                  <button onClick={trySignIn}
+                    style={{ padding: "4px 14px", fontSize: 12, border: "1px solid #888", background: "#c8d8f0", cursor: "pointer", fontWeight: "bold" }}>Log On</button>
+                </div>
+              </>
+            ) : (
+              <>
+                <div style={{ marginBottom: 10 }}>
+                  <label style={{ fontSize: 11, color: "#444", display: "block", marginBottom: 3 }}>New username</label>
+                  <input value={newAcc.name} onChange={(e) => setNewAcc({ ...newAcc, name: e.target.value })}
+                    style={{ width: "100%", padding: "5px 8px", border: "1px solid #aaa", background: "white", fontSize: 13, color: "#222", boxSizing: "border-box" }} />
+                </div>
+                <div style={{ marginBottom: 12 }}>
+                  <label style={{ fontSize: 11, color: "#444", display: "block", marginBottom: 3 }}>Password (optional)</label>
+                  <input type="password" value={newAcc.password} onChange={(e) => setNewAcc({ ...newAcc, password: e.target.value })}
+                    style={{ width: "100%", padding: "5px 8px", border: "1px solid #aaa", background: "white", fontSize: 13, color: "#222", boxSizing: "border-box" }} />
+                  {pwError && <div style={{ color: "#c00", fontSize: 11, marginTop: 3 }}>{pwError}</div>}
+                </div>
+                <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
+                  <button onClick={() => { setCreating(false); setPwError(""); }}
+                    style={{ padding: "4px 12px", fontSize: 12, border: "1px solid #999", background: "#ddd", cursor: "pointer" }}>Cancel</button>
+                  <button onClick={async () => { await createAccount(); if (!pwError) setCreating(false); }}
+                    style={{ padding: "4px 14px", fontSize: 12, border: "1px solid #888", background: "#c8d8f0", cursor: "pointer", fontWeight: "bold" }}>Create</button>
+                </div>
+              </>
+            )}
+          </div>
+          <div style={{ marginTop: 10, fontSize: 10, color: "#999" }}>PueiOS 1.0 · pueios-2020-puei</div>
+        </div>
+      );
+    }
+
     if (systemVersion === "PueiOS 3") {
       // PueiOS 3 — split-panel login
       const selectedU = users.find((u) => u.name === loginUser) ?? users[0];
@@ -1559,7 +1636,7 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
       };
 
       return (
-        <div className="fixed inset-0 flex flex-col" style={{ fontFamily: "'Segoe UI', system-ui, sans-serif", background: "linear-gradient(180deg, #0c1a35 0%, #102244 35%, #071428 100%)", overflow: "hidden" }}>
+        <div className={`fixed inset-0 flex flex-col ${typeof theme.wallpaper === "string" && (theme.wallpaper.startsWith("data:") || theme.wallpaper.startsWith("custom:")) ? "" : `wallpaper-${theme.wallpaper}`}`} style={{ fontFamily: "'Segoe UI', system-ui, sans-serif", ...(typeof theme.wallpaper === "string" && theme.wallpaper.startsWith("data:") ? { backgroundImage: `url(${theme.wallpaper})`, backgroundSize: "cover", backgroundPosition: "center" } : {}), overflow: "hidden" }}>
           {/* Win7-style top stripe */}
           <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 3, background: "linear-gradient(90deg, #1a3f7a, #3074c2, #1a3f7a)" }} />
 
@@ -1799,11 +1876,13 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
   const currentColor = currentUser$?.color || "200";
   const avatarBg = `linear-gradient(135deg, oklch(0.72 0.18 ${currentColor}), oklch(0.48 0.2 ${currentColor}))`;
   const hasPueiOS3Upgrade = compareVersion("PueiOS 3", systemVersion) > 0;
+  const isP3 = systemVersion === "PueiOS 3";
+  const aicon = (id: AppId, size: number, over?: string, url?: string) => appIcon(id, size, over, url, isP3);
 
   return (
     <div
       className={`fixed inset-0 ${typeof theme.wallpaper === "string" && (theme.wallpaper.startsWith("custom:") || theme.wallpaper.startsWith("data:")) ? "" : `wallpaper-${theme.wallpaper}`}`}
-      style={{ overflow: "hidden", ...wallpaperStyle }}
+      style={{ overflow: "hidden", ...wallpaperStyle, transition: "opacity 0.3s ease", opacity: wallpaperTransitioning ? 0 : 1 }}
       onMouseDown={() => { setCtxMenu(null); setStartOpen(false); setShowCalendar(false); setSelectedIcon(null); setShowVolume(false); setShowNetwork(false); }}
       onContextMenu={(e) => { e.preventDefault(); setCtxMenu({ x: e.clientX, y: e.clientY, items: desktopCtx() }); }}
       onTouchStart={(e) => onTouchStart(e, desktopCtx())}
@@ -1869,7 +1948,7 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
               onTouchMove={onTouchMove}
               onTouchEnd={onTouchEnd}
             >
-              <div className="flex justify-center mb-1">{appIcon(ic.appId, iconPx, ic.iconEmoji, ic.iconUrl)}</div>
+              <div className="flex justify-center mb-1">{aicon(ic.appId, iconPx, ic.iconEmoji, ic.iconUrl)}</div>
               <div>{ic.label}</div>
             </div>
           );
@@ -1979,8 +2058,47 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
       )}
 
       {/* Start menu */}
+      {/* PueiOS 1 Start Menu — simple flat list */}
+      {startOpen && systemVersion === "PueiOS 1" && (
+        <div className="fixed bottom-9 left-0 z-[9000]"
+          style={{ width: 200, background: "#d4d0c8", border: "2px outset #fff", boxShadow: "3px 3px 8px rgba(0,0,0,0.4)", fontFamily: "Arial, sans-serif", animation: "fade-scale 0.1s ease-out" }}
+          onMouseDown={(e) => e.stopPropagation()}>
+          {/* Header strip */}
+          <div style={{ background: "linear-gradient(180deg,#000080,#0000c8)", padding: "8px 10px", color: "#fff", fontWeight: "bold", fontSize: 14, display: "flex", alignItems: "center", gap: 8 }}>
+            <PueiLogoSvg size={28} />
+            <div>
+              <div style={{ fontSize: 14, fontWeight: "bold" }}>PueiOS 1</div>
+              <div style={{ fontSize: 10, opacity: 0.7 }}>{currentUser}</div>
+            </div>
+          </div>
+          {/* App list */}
+          {icons.map((ic) => (
+            <button key={ic.id}
+              onClick={(e) => { e.stopPropagation(); openApp(ic.appId, ic.fileId); setStartOpen(false); }}
+              style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, padding: "5px 10px", background: "none", border: "none", cursor: "pointer", fontSize: 12, textAlign: "left", color: "#000" }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "#000080"; (e.currentTarget as HTMLElement).style.color = "#fff"; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "none"; (e.currentTarget as HTMLElement).style.color = "#000"; }}>
+              {aicon(ic.appId, 20, ic.iconEmoji, ic.iconUrl)}
+              <span>{ic.label}</span>
+            </button>
+          ))}
+          <div style={{ borderTop: "1px solid #888", margin: "4px 0" }} />
+          <button onClick={(e) => { e.stopPropagation(); setStartOpen(false); setPhase("login"); }}
+            style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, padding: "5px 10px", background: "none", border: "none", cursor: "pointer", fontSize: 12 }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "#000080"; (e.currentTarget as HTMLElement).style.color = "#fff"; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "none"; (e.currentTarget as HTMLElement).style.color = "#000"; }}>
+            🔒 Log Off
+          </button>
+          <button onClick={(e) => { e.stopPropagation(); setPhase("shutdown"); }}
+            style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, padding: "5px 10px", background: "none", border: "none", cursor: "pointer", fontSize: 12 }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "#000080"; (e.currentTarget as HTMLElement).style.color = "#fff"; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "none"; (e.currentTarget as HTMLElement).style.color = "#000"; }}>
+            ⏻ Shut Down
+          </button>
+        </div>
+      )}
       {/* PueiOS 2/2+ Start Menu — Windows 7 Aero style */}
-      {startOpen && systemVersion !== "PueiOS 3" && (
+      {startOpen && (systemVersion === "PueiOS 2" || systemVersion === "PueiOS 2+") && (
         <div className="fixed bottom-12 left-2 z-[9000] flex overflow-hidden rounded-xl shadow-2xl"
           style={{ width: 480, maxHeight: "calc(100vh - 60px)", animation: "fade-scale 0.15s ease-out", background: "rgba(20,30,60,0.97)", backdropFilter: "blur(30px)", border: "1px solid rgba(100,140,255,0.25)", boxShadow: "0 -4px 40px rgba(0,0,80,0.7)" }}
           onMouseDown={(e) => e.stopPropagation()}>
@@ -2010,7 +2128,7 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
                   style={{ color: "rgba(255,255,255,0.85)" }}
                   onMouseEnter={e => (e.currentTarget.style.background = "rgba(80,120,255,0.25)")}
                   onMouseLeave={e => (e.currentTarget.style.background = "")}>
-                  <span className="flex-shrink-0">{appIcon(id, 24)}</span>
+                  <span className="flex-shrink-0">{aicon(id, 24)}</span>
                   <span className="font-medium">{APP_TITLES[id]}</span>
                 </button>
               ))}
@@ -2030,7 +2148,7 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
                   style={{ color: "rgba(255,255,255,0.7)" }}
                   onMouseEnter={e => (e.currentTarget.style.background = "rgba(80,120,255,0.2)")}
                   onMouseLeave={e => (e.currentTarget.style.background = "")}>
-                  <span>{appIcon(id, 18)}</span><span>{label}</span>
+                  <span>{aicon(id, 18)}</span><span>{label}</span>
                 </button>
               ))}
             </div>
@@ -2083,7 +2201,7 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
                   style={{ background: "rgba(255,255,255,0.05)" }}
                   onMouseEnter={e => { e.currentTarget.style.background = "rgba(99,102,241,0.22)"; e.currentTarget.style.transform = "scale(1.06)"; }}
                   onMouseLeave={e => { e.currentTarget.style.background = "rgba(255,255,255,0.05)"; e.currentTarget.style.transform = ""; }}>
-                  {appIcon(id, 32)}
+                  {aicon(id, 32)}
                   <span className="text-white/70 text-[9px] text-center truncate w-full leading-tight">{APP_TITLES[id]}</span>
                 </button>
               ))}
@@ -2132,7 +2250,52 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
       )}
 
       {/* Taskbar */}
-      {systemVersion === "PueiOS 3" ? (
+      {systemVersion === "PueiOS 1" ? (
+        /* PueiOS 1 — flat minimalistic taskbar */
+        <div className="fixed bottom-0 left-0 right-0 flex items-center z-[8000]"
+          style={{ height: 36, background: "#c0c0c0", borderTop: "2px solid #fff", borderBottom: "1px solid #888", fontFamily: "Arial, sans-serif" }}
+          onMouseDown={(e) => e.stopPropagation()}
+          onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); setCtxMenu({ x: e.clientX, y: e.clientY, items: taskbarCtx() }); }}>
+          {/* Start button */}
+          <button onClick={(e) => { e.stopPropagation(); blip("click"); setStartOpen(!startOpen); setShowCalendar(false); }}
+            title="Start"
+            style={{ height: "100%", padding: "0 14px", background: startOpen ? "#a0a0a0" : "linear-gradient(180deg,#e0e0e0,#b0b0b0)", border: "none", borderRight: "1px solid #888", cursor: "pointer", fontWeight: "bold", fontSize: 13, color: "#000", display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+            <PueiLogoSvg size={18} />
+            Start
+          </button>
+          {/* Open windows */}
+          <div style={{ display: "flex", alignItems: "center", flex: 1, overflow: "hidden", gap: 2, padding: "0 4px" }}>
+            {windows.map((w) => {
+              const isActive2 = w.z === Math.max(...windows.map((x) => x.z)) && !w.minimized;
+              return (
+                <button key={w.id}
+                  onClick={(e) => { e.stopPropagation(); if (w.minimized) focusWin(w.id); else minWin(w.id); }}
+                  onContextMenu={(e) => { e.preventDefault(); e.stopPropagation();
+                    setCtxMenu({ x: e.clientX, y: e.clientY, items: [
+                      { label: "Restore", action: () => focusWin(w.id) },
+                      { label: "Minimize", action: () => minWin(w.id) },
+                      { sep: true },
+                      { label: "Close", action: () => closeWin(w.id) },
+                    ]});
+                  }}
+                  style={{ height: 26, padding: "0 8px", display: "flex", alignItems: "center", gap: 4, fontSize: 11, border: isActive2 ? "2px inset #888" : "2px outset #ddd", background: isActive2 ? "#b0b0b0" : "#d4d0c8", cursor: "pointer", maxWidth: 140, flexShrink: 0, overflow: "hidden" }}>
+                  {aicon(w.appId, 14)}
+                  <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 100 }}>{w.title}</span>
+                </button>
+              );
+            })}
+          </div>
+          {/* Tray */}
+          <div style={{ display: "flex", alignItems: "center", gap: 4, padding: "0 8px", borderLeft: "1px solid #888", height: "100%", flexShrink: 0, fontSize: 11 }}>
+            <span style={{ cursor: "pointer" }} onClick={(e) => { e.stopPropagation(); setShowNetwork(!showNetwork); setShowVolume(false); }}>📶</span>
+            <span style={{ cursor: "pointer" }} onClick={(e) => { e.stopPropagation(); setShowVolume(!showVolume); setShowNetwork(false); }}>🔊</span>
+            <button onClick={(e) => { e.stopPropagation(); setShowCalendar(!showCalendar); setStartOpen(false); }}
+              style={{ background: "none", border: "none", cursor: "pointer", fontSize: 10, fontFamily: "Arial, sans-serif", lineHeight: 1.4, textAlign: "center" }}>
+              {now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+            </button>
+          </div>
+        </div>
+      ) : systemVersion === "PueiOS 3" ? (
         /* PueiOS 3 — Win7 glass taskbar */
         <div className="fixed bottom-0 left-0 right-0 flex items-stretch z-[8000]"
           style={{ height: 44, background: theme.taskbarColor ?? "linear-gradient(180deg, rgba(20,50,100,0.82) 0%, rgba(10,25,60,0.95) 100%)", backdropFilter: "blur(20px) saturate(180%)", borderTop: "1px solid rgba(100,160,240,0.25)", boxShadow: "0 -1px 0 rgba(255,255,255,0.08), 0 -4px 20px rgba(0,0,20,0.6)" }}
@@ -2169,7 +2332,7 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
                     style={{ width: 44, height: 40, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 2, border: isActive ? "1px solid rgba(120,180,255,0.55)" : hasWin ? "1px solid rgba(255,255,255,0.12)" : "1px solid transparent", background: isActive ? "linear-gradient(180deg,rgba(60,140,255,0.35) 0%,rgba(20,80,200,0.4) 100%)" : hasWin ? "rgba(255,255,255,0.07)" : "transparent", cursor: "pointer", position: "relative", overflow: "hidden" }}>
                     {/* Glass gloss on active */}
                     {isActive && <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "50%", background: "linear-gradient(180deg,rgba(255,255,255,0.2) 0%,rgba(255,255,255,0) 100%)", pointerEvents: "none" }} />}
-                    {appIcon(p.appId, 26, pinnedIconEmoji, pinnedIconUrl)}
+                    {aicon(p.appId, 26, pinnedIconEmoji, pinnedIconUrl)}
                   </button>
                   {hasWin && <div style={{ position: "absolute", bottom: 1, left: "50%", transform: "translateX(-50%)", width: isActive ? 24 : 8, height: 2, borderRadius: 1, background: isActive ? "rgba(100,180,255,0.9)" : "rgba(150,200,255,0.5)", transition: "width 0.2s", boxShadow: isActive ? "0 0 6px rgba(80,160,255,0.7)" : "none" }} />}
                 </div>
@@ -2198,7 +2361,7 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
                     { label: "Close", action: () => closeWin(w.id) },
                   ]});}}>
                   {isActive2 && <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "50%", background: "linear-gradient(180deg,rgba(255,255,255,0.18) 0%,rgba(255,255,255,0) 100%)", pointerEvents: "none" }} />}
-                  {appIcon(w.appId, 18, undefined, w.appId === "web-app" ? icons.find(i => i.appId === "web-app" && i.webUrl === w.webUrl)?.iconUrl : undefined)}
+                  {aicon(w.appId, 18, undefined, w.appId === "web-app" ? icons.find(i => i.appId === "web-app" && i.webUrl === w.webUrl)?.iconUrl : undefined)}
                   <span className="truncate" style={{ maxWidth: 90 }}>{w.title}</span>
                 </button>
               );
@@ -2244,7 +2407,7 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
                   { label: "🖇️ Unpin from taskbar", action: () => unpinFromTaskbar(pKey2) },
                 ]}); }}
                 className="taskbar-item w-9 h-9 rounded flex items-center justify-center text-lg">
-                {appIcon(p.appId, 22)}
+                {aicon(p.appId, 22)}
               </button>
             );
           })}
@@ -2265,7 +2428,7 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
                 { sep: true },
                 { label: "Close", action: () => closeWin(w.id) },
               ]});}}>
-              {appIcon(w.appId, 18)}
+              {aicon(w.appId, 18)}
               <span className="max-w-[120px] truncate">{w.title}</span>
             </button>
           ))}

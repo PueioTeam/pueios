@@ -310,7 +310,7 @@ const APP_ICON_SVGS: Partial<Record<AppId, (s: number) => React.ReactNode>> = {
   "pueyracing": (s) => <svg width={s} height={s} viewBox="0 0 48 48"><defs><linearGradient id="rs1" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#e8f0ff"/><stop offset="100%" stopColor="#8090d0"/></linearGradient><linearGradient id="rs2" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#ff9040"/><stop offset="100%" stopColor="#ff3000"/></linearGradient></defs><path d="M24 4 C24 4 16 14 16 26 L20 28 L24 30 L28 28 L32 26 C32 14 24 4 24 4z" fill="url(#rs1)" stroke="#6070b0" strokeWidth="1"/><ellipse cx="24" cy="18" rx="5" ry="6" fill="#80c8ff" stroke="#4090d0" strokeWidth="0.8" opacity="0.8"/><path d="M16 26 L8 32 L12 30 L16 30z" fill="#c03020" stroke="#801010" strokeWidth="0.8"/><path d="M32 26 L40 32 L36 30 L32 30z" fill="#c03020" stroke="#801010" strokeWidth="0.8"/><ellipse cx="24" cy="32" rx="5" ry="3" fill="#ff8020" stroke="#c04000" strokeWidth="0.8"/><ellipse cx="24" cy="36" rx="4" ry="6" fill="url(#rs2)" opacity="0.85"/><ellipse cx="22" cy="14" rx="3" ry="5" fill="rgba(255,255,255,0.4)" transform="rotate(-15 22 14)"/></svg>,
 };
 
-// Win7 color map for gradient background boxes
+// Win7/Vista color pairs for boxed mode (PueiOS 3)
 const WIN7_COLOR: Partial<Record<AppId, [string, string]>> = {
   "settings":        ["#c0c8e0", "#6878a0"],
   "file-explorer":   ["#ffe080", "#d08800"],
@@ -335,7 +335,7 @@ const WIN7_COLOR: Partial<Record<AppId, [string, string]>> = {
   "pueyracing":      ["#a0c8f8", "#2050a0"],
 };
 
-export function appIcon(appId: AppId, size = 32, override?: string, iconUrl?: string) {
+export function appIcon(appId: AppId, size = 32, override?: string, iconUrl?: string, boxed = false) {
   const s = size;
   const radius = Math.round(s * 0.22);
 
@@ -349,9 +349,9 @@ export function appIcon(appId: AppId, size = 32, override?: string, iconUrl?: st
     return `https://www.google.com/s2/favicons?sz=${Math.max(32, Math.round(s))}&domain_url=${encodeURIComponent(`https://${host}`)}`;
   })();
   const [c1, c2] = WIN7_COLOR[appId] ?? ["#8090c8", "#2840a0"];
-  const customSvg = APP_ICON_SVGS[appId]?.(Math.round(s * 0.62));
+  const customSvg = APP_ICON_SVGS[appId]?.(boxed ? Math.round(s * 0.62) : s);
 
-  const iconBox = (children: React.ReactNode) => (
+  const boxedWrapper = (children: React.ReactNode) => (
     <div style={{
       width: s, height: s, borderRadius: radius, flexShrink: 0, position: "relative", overflow: "hidden",
       background: `linear-gradient(160deg, ${c1} 0%, ${c2} 100%)`,
@@ -359,38 +359,38 @@ export function appIcon(appId: AppId, size = 32, override?: string, iconUrl?: st
       display: "flex", alignItems: "center", justifyContent: "center",
     }}>
       {children}
-      {/* Win7 glass gloss overlay */}
       <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "52%", borderRadius: `${radius}px ${radius}px 50% 50%`, background: "linear-gradient(180deg, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0.05) 100%)", pointerEvents: "none" }} />
     </div>
   );
 
-  // Win7 style: colored gradient box with gloss, icon centered at ~62% size
   return (
     <div className="flex items-center justify-center relative" style={{ width: s, height: s, flexShrink: 0 }}>
       {isImg
-        ? <img src={override} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: radius }} />
+        ? <img src={override} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: boxed ? radius : Math.round(s * 0.15) }} />
         : useUrl
           ? <>
               <img
                 src={iconUrl}
                 alt=""
                 data-fallback={fallbackIconUrl}
-                style={{ width: "100%", height: "100%", objectFit: "contain", borderRadius: radius }}
+                style={{ width: "100%", height: "100%", objectFit: "contain", borderRadius: boxed ? radius : 0 }}
                 onError={(e) => {
                   const img = e.currentTarget as HTMLImageElement;
                   const fallback = img.dataset.fallback || "";
-                  if (fallback && img.src !== fallback) {
-                    img.src = fallback;
-                    return;
-                  }
+                  if (fallback && img.src !== fallback) { img.src = fallback; return; }
                   img.style.display = "none";
                   const fallbackEl = img.nextElementSibling as HTMLElement | null;
                   if (fallbackEl) fallbackEl.style.display = "flex";
                 }}
               />
-              {iconBox(<div style={{ display: "none", alignItems: "center", justifyContent: "center" }}>{customSvg}</div>)}
+              {boxed
+                ? boxedWrapper(<div style={{ display: "none", alignItems: "center", justifyContent: "center" }}>{customSvg}</div>)
+                : <div style={{ display: "none", width: "100%", height: "100%", alignItems: "center", justifyContent: "center", filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.5))" }}>{customSvg}</div>
+              }
             </>
-          : iconBox(customSvg)
+          : boxed
+            ? boxedWrapper(customSvg)
+            : <div style={{ display: "flex", alignItems: "center", justifyContent: "center", filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.5))" }}>{customSvg}</div>
       }
     </div>
   );

@@ -1313,30 +1313,60 @@ function generateCopilotAnswer(q: string): string {
   );
 }
 
+const WELL_KNOWN_RESULTS: Record<string, { title: string; url: string; site: string; snippet: string }[]> = {
+  "minecraft": [
+    { title: "Minecraft Official Site", url: "https://www.minecraft.net", site: "minecraft.net", snippet: "Explore your own unique world, survive the night, and create anything you can imagine. Play Minecraft across platforms." },
+    { title: "Minecraft – Wikipedia", url: "https://en.wikipedia.org/wiki/Minecraft", site: "en.wikipedia.org", snippet: "Minecraft is a sandbox video game developed by Mojang Studios. Players explore a 3D world made of blocks, gathering resources and building structures." },
+    { title: "Minecraft Wiki – Fandom", url: "https://minecraft.fandom.com/wiki/Minecraft_Wiki", site: "minecraft.fandom.com", snippet: "The Minecraft Wiki is the official wiki about Minecraft, covering everything from game mechanics, mobs, biomes and crafting recipes." },
+    { title: "Minecraft Marketplace – Skins, Worlds & More", url: "https://www.minecraft.net/en-us/marketplace", site: "minecraft.net › marketplace", snippet: "Browse the Minecraft Marketplace for community-created skins, maps, and texture packs. New content added weekly." },
+    { title: "r/Minecraft – Reddit", url: "https://reddit.com/r/Minecraft", site: "reddit.com › r/Minecraft", snippet: "The largest Minecraft community on Reddit. Share builds, ask questions, and discuss updates with over 8 million members." },
+  ],
+  "python": [
+    { title: "Welcome to Python.org", url: "https://www.python.org", site: "python.org", snippet: "The official home of the Python programming language. Downloads, documentation, tutorials and community resources." },
+    { title: "Python – Wikipedia", url: "https://en.wikipedia.org/wiki/Python_(programming_language)", site: "en.wikipedia.org", snippet: "Python is a high-level, general-purpose programming language. Its design philosophy emphasises code readability with the use of significant indentation." },
+    { title: "Python Tutorial – W3Schools", url: "https://www.w3schools.com/python/", site: "w3schools.com › python", snippet: "Well organised tutorials on Python syntax, data types, functions, modules, file handling, OOP, and more." },
+    { title: "Python Docs – docs.python.org", url: "https://docs.python.org/3/", site: "docs.python.org", snippet: "The official Python 3 documentation covering the standard library, language reference, and tutorial." },
+    { title: "r/learnpython – Reddit", url: "https://reddit.com/r/learnpython", site: "reddit.com › r/learnpython", snippet: "A subreddit for beginners and experienced programmers. Ask questions, share projects, and learn Python together." },
+  ],
+  "react": [
+    { title: "React – A JavaScript library for building UIs", url: "https://react.dev", site: "react.dev", snippet: "React lets you build user interfaces out of individual pieces called components. React apps are built from components." },
+    { title: "React – Wikipedia", url: "https://en.wikipedia.org/wiki/React_(JavaScript_library)", site: "en.wikipedia.org", snippet: "React is a free and open-source front-end JavaScript library for building UIs based on components." },
+    { title: "React Tutorial – W3Schools", url: "https://www.w3schools.com/react/", site: "w3schools.com › react", snippet: "W3Schools offers free tutorials on React. Learn JSX, components, state, props, hooks and more." },
+  ],
+};
+
+function generateWebResults(q: string): { title: string; url: string; site: string; snippet: string }[] {
+  const key = q.toLowerCase().trim();
+  if (WELL_KNOWN_RESULTS[key]) return WELL_KNOWN_RESULTS[key];
+  const slug = q.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
+  const count = Math.floor(Math.random() * 8_000_000) + 500_000;
+  return [
+    { title: `${q} — Wikipedia`, url: `https://en.wikipedia.org/wiki/${encodeURIComponent(q.replace(/ /g,"_"))}`, site: "en.wikipedia.org", snippet: `Wikipedia article about ${q}. Covers history, overview, related topics and external references. About ${(count/1000000).toFixed(1)}M results found.` },
+    { title: `${q} — Official Website`, url: `https://www.${slug}.com`, site: `www.${slug}.com`, snippet: `The official home of ${q}. Find the latest news, downloads, documentation and community resources.` },
+    { title: `What is ${q}? – HowStuffWorks`, url: `https://howstuffworks.com/${slug}`, site: "howstuffworks.com", snippet: `A beginner-friendly explanation of ${q}. Includes examples, history, and how it works in practice.` },
+    { title: `${q} Tutorial – W3Schools`, url: `https://www.w3schools.com/${slug}/`, site: `w3schools.com › ${slug}`, snippet: `Step-by-step tutorials for ${q}. Covers basics to advanced topics with interactive examples.` },
+    { title: `r/${slug.replace(/-/g,"")} – Reddit`, url: `https://reddit.com/r/${slug.replace(/-/g,"")}`, site: `reddit.com › r/${slug.replace(/-/g,"")}`, snippet: `Community discussion about ${q}. Share questions, tips, and resources with thousands of members.` },
+    { title: `${q} – YouTube`, url: `https://www.youtube.com/results?search_query=${encodeURIComponent(q)}`, site: "youtube.com", snippet: `Watch videos about ${q} on YouTube. Tutorials, reviews, news, and more from top creators.` },
+  ];
+}
+
 function PueiCopilotPage() {
   const [query, setQuery] = useState("");
   const [thinking, setThinking] = useState(false);
-  const [results, setResults] = useState<{ source: string; title: string; summary: string }[] | null>(null);
+  const [webResults, setWebResults] = useState<{ title: string; url: string; site: string; snippet: string }[] | null>(null);
   const [answer, setAnswer] = useState("");
+  const totalResults = useRef(0);
 
   const doSearch = (q: string) => {
     if (!q.trim()) return;
-    setThinking(true); setResults(null); setAnswer("");
+    setThinking(true); setWebResults(null); setAnswer("");
     blip("click");
+    totalResults.current = Math.floor(Math.random() * 900_000_000) + 1_000_000;
     setTimeout(() => {
-      const count1 = Math.floor(Math.random() * 900000) + 100000;
-      const count2 = Math.floor(Math.random() * 90000) + 10000;
-      const blocked = Math.floor(Math.random() * 5) + 1;
-      const sources = [
-        { source: "Google", title: `${q} — Overview`, summary: `Google: Found ${count1.toLocaleString()} results. Top results include reference articles, encyclopedias, and news. Authoritative sources verified.` },
-        { source: "Edge", title: `${q} — Microsoft Search`, summary: `Edge / Bing: Found ${count2.toLocaleString()} results. Multiple authoritative pages with consistent information confirmed.` },
-        { source: "Firefox", title: `${q} — Community sources`, summary: `Firefox: Community-curated results from open encyclopedias, forums, and educational sites. ${blocked} blocked sources filtered automatically.` },
-        { source: "Opera", title: `${q} — Global search`, summary: `Opera: Surfaced in international news and reference databases. Cross-referenced with Google and Edge — results are consistent.` },
-      ];
-      setResults(sources);
+      setWebResults(generateWebResults(q));
       setAnswer(generateCopilotAnswer(q));
       setThinking(false);
-    }, 1200 + Math.random() * 700);
+    }, 900 + Math.random() * 600);
   };
 
   return (
@@ -1377,27 +1407,31 @@ function PueiCopilotPage() {
           </div>
         </div>
       )}
-      {results && (
-        <div className="space-y-2">
-          <div className="text-[10px] opacity-50 font-semibold tracking-wider mb-2">SOURCES</div>
-          {results.map((r) => (
-            <div key={r.source} className="aero-glass-light rounded-lg p-3 flex items-start gap-3">
-              <div className="w-6 h-6 rounded flex items-center justify-center text-[10px] font-bold flex-shrink-0"
-                style={{ background: "var(--gradient-aero)", color: "white" }}>
-                {r.source[0]}
+      {webResults && (
+        <div className="space-y-1">
+          <div className="text-[10px] opacity-50 mb-3">About {totalResults.current.toLocaleString()} results</div>
+          {webResults.map((r, i) => (
+            <div key={i} className="rounded-lg p-3 hover:bg-white/5 cursor-pointer transition-colors"
+              onClick={() => { try { window.open(r.url, "_blank", "noopener"); } catch {} }}>
+              <div className="flex items-center gap-2 mb-0.5">
+                <div className="w-4 h-4 rounded-sm flex items-center justify-center text-[9px] font-bold flex-shrink-0"
+                  style={{ background: "var(--gradient-aero)", color: "white" }}>
+                  {r.site[0].toUpperCase()}
+                </div>
+                <div>
+                  <div className="text-[10px] opacity-60">{r.site}</div>
+                </div>
               </div>
-              <div className="flex-1 min-w-0">
-                <div className="text-xs font-semibold">{r.source} — {r.title}</div>
-                <div className="text-xs opacity-70 mt-0.5 leading-relaxed">{r.summary}</div>
-              </div>
+              <div className="text-sm font-medium leading-tight" style={{ color: "oklch(0.65 0.2 var(--accent-h))" }}>{r.title}</div>
+              <div className="text-xs opacity-70 mt-0.5 leading-relaxed">{r.snippet}</div>
             </div>
           ))}
           <div className="text-[10px] opacity-40 flex items-center gap-1 pt-2">
-            🛡️ Untrusted and blocked sources filtered automatically by Pueios2 security policies.
+            🛡️ Unsafe and blocked sources filtered automatically.
           </div>
         </div>
       )}
-      {!thinking && !results && !answer && (
+      {!thinking && !webResults && !answer && (
         <div className="space-y-3">
           <div className="text-[10px] opacity-50 font-semibold tracking-wider">SUGGESTIONS</div>
           <div className="grid grid-cols-2 gap-2">
@@ -1416,6 +1450,107 @@ function PueiCopilotPage() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function PueiMathPage() {
+  const [expr, setExpr] = useState("");
+  const [result, setResult] = useState<string | null>(null);
+  const [history, setHistory] = useState<{ expr: string; result: string }[]>([]);
+  const [topic, setTopic] = useState<string | null>(null);
+
+  const topics: { title: string; content: string }[] = [
+    { title: "Addition & Subtraction", content: "Addition combines numbers: 3 + 4 = 7. Subtraction finds the difference: 10 − 3 = 7. The commutative law means a + b = b + a." },
+    { title: "Multiplication & Division", content: "Multiplication is repeated addition: 4 × 3 = 12. Division splits into equal groups: 12 ÷ 4 = 3. Division by zero is undefined." },
+    { title: "Fractions & Decimals", content: "A fraction represents part of a whole: ¾ = 0.75. To add fractions, find a common denominator: ½ + ⅓ = 3/6 + 2/6 = 5/6." },
+    { title: "Powers & Roots", content: "2³ = 2 × 2 × 2 = 8. The square root √9 = 3. The nth root of x is x^(1/n). Any number to the power 0 = 1." },
+    { title: "Algebra Basics", content: "Variables represent unknown values. Solving 2x + 3 = 11: subtract 3 → 2x = 8 → x = 4. FOIL: (a+b)(c+d) = ac+ad+bc+bd." },
+    { title: "Geometry", content: "Area of rectangle = l × w. Area of circle = π r². Perimeter = sum of all sides. Pythagorean theorem: a² + b² = c²." },
+    { title: "Statistics", content: "Mean = sum ÷ count. Median = middle value when sorted. Mode = most frequent. Range = max − min." },
+    { title: "Probability", content: "P(event) = favourable outcomes ÷ total outcomes. P(A or B) = P(A) + P(B) − P(A and B). Independent events: P(A and B) = P(A) × P(B)." },
+  ];
+
+  const calculate = () => {
+    if (!expr.trim()) return;
+    try {
+      // safe eval: only allow math chars
+      if (!/^[\d\s+\-*/().^%,]+$/.test(expr.replace(/[a-z]/gi, "x"))) throw new Error("invalid");
+      const sanitized = expr.replace(/\^/g, "**");
+      // eslint-disable-next-line no-new-func
+      const val = Function(`"use strict"; return (${sanitized})`)();
+      const res = typeof val === "number" ? (Number.isFinite(val) ? String(+val.toFixed(10)).replace(/\.?0+$/, "") : "Error") : String(val);
+      setResult(res);
+      setHistory((h) => [{ expr, result: res }, ...h.slice(0, 19)]);
+    } catch {
+      setResult("Error — check your expression");
+    }
+  };
+
+  return (
+    <div className="p-4 h-full overflow-auto">
+      <h2 className="text-2xl font-bold mb-1">🧮 Puei Math</h2>
+      <p className="text-xs opacity-60 mb-4">Calculator · Learn maths topics · Formula reference</p>
+      <div className="grid gap-4" style={{ gridTemplateColumns: "1fr 1fr" }}>
+        {/* Calculator */}
+        <div className="aero-glass-light rounded-xl p-4">
+          <div className="text-sm font-semibold mb-2">Calculator</div>
+          <div className="flex gap-2 mb-2">
+            <input value={expr} onChange={(e) => setExpr(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && calculate()}
+              placeholder="e.g. 2 + 3 * 4 or 2^8"
+              className="flex-1 input-field rounded px-2 py-1 text-sm" />
+            <button className="aero-button rounded px-3 text-sm font-bold" onClick={calculate}>=</button>
+          </div>
+          {result !== null && (
+            <div className="text-lg font-bold text-center py-2 rounded" style={{ background: "var(--glass)" }}>
+              {result}
+            </div>
+          )}
+          {/* Keypad */}
+          <div className="grid grid-cols-4 gap-1 mt-3">
+            {["7","8","9","÷","4","5","6","×","1","2","3","−","0",".","^","+"].map((k) => (
+              <button key={k} onClick={() => setExpr((e) => e + (k === "÷" ? "/" : k === "×" ? "*" : k === "−" ? "-" : k))}
+                className="aero-button rounded py-1.5 text-sm font-medium">{k}</button>
+            ))}
+            <button onClick={() => setExpr("")} className="aero-button rounded py-1.5 text-xs col-span-2">Clear</button>
+            <button onClick={() => setExpr((e) => e.slice(0, -1))} className="aero-button rounded py-1.5 text-xs">⌫</button>
+            <button onClick={calculate} className="aero-button rounded py-1.5 text-sm font-bold">=</button>
+          </div>
+          {history.length > 0 && (
+            <div className="mt-3">
+              <div className="text-xs opacity-50 mb-1">History</div>
+              {history.map((h, i) => (
+                <div key={i} className="text-xs flex justify-between opacity-70 cursor-pointer hover:opacity-100"
+                  onClick={() => setExpr(h.expr)}>
+                  <span>{h.expr}</span><span className="font-semibold">= {h.result}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+        {/* Topics */}
+        <div>
+          <div className="text-sm font-semibold mb-2">Learn Maths</div>
+          <div className="space-y-2">
+            {topics.map((t) => (
+              <div key={t.title}>
+                <button onClick={() => setTopic(topic === t.title ? null : t.title)}
+                  className="w-full text-left aero-button rounded px-3 py-2 text-xs font-medium flex justify-between items-center">
+                  {t.title}
+                  <span className="opacity-50">{topic === t.title ? "▲" : "▼"}</span>
+                </button>
+                {topic === t.title && (
+                  <div className="text-xs opacity-80 leading-relaxed px-3 py-2 rounded-b"
+                    style={{ background: "var(--glass)", borderTop: "1px solid var(--border)" }}>
+                    {t.content}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -1708,7 +1843,7 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
   const pageTitles: Record<string, string> = {
     "puei://home": "Home", "puei://search": "Puei Copilot", "puei://about": "About",
     "puei://updates": "Updates", "puei://social": "PueiSocial", "puei://board": "PueiBoard",
-    "puei://wallpapers": "Wallpapers", "puei://chat": "Chat", "puei://os3": "PueiOS 3",
+    "puei://math": "Puei Math", "puei://chat": "Chat", "puei://os3": "PueiOS 3",
     "puei://films": "Puei Videos", "puei://mail": "PMail",
   };
   const navigate = (target: string) => {
@@ -1731,7 +1866,7 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
             ["puei://search", "✨ Puei Copilot"],
             ["puei://mail", "✉️ PMail"],
             ["puei://forum", "💼 PueiForum"],
-            ["puei://wallpapers", "🖼️ Puei Wallpapers"],
+            ["puei://math", "🧮 Puei Math"],
             ["puei://films", "🎬 Puei Videos"],
             ["puei://os3", "🚀 PueiOS 3"],
             ["puei://about", "ℹ️ About"],
@@ -1922,26 +2057,7 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
         ))}
       </div>
     ),
-    "puei://wallpapers": (
-      <div className="p-6">
-        <div className="mb-4">
-          <h2 className="text-2xl font-bold">🖼️ Puei Wallpapers</h2>
-          <p className="text-xs opacity-70 mt-1">Generated Aero-style wallpaper pack. Click Download to save into Pictures, Downloads, or Desktop.</p>
-        </div>
-        <div className="grid grid-cols-2 gap-4">
-          {wallpaperPack.map((w) => (
-            <div key={w.name} className="aero-glass-light rounded-xl p-3">
-              <img src={w.dataUrl} alt={w.name} className="w-full h-36 object-cover rounded-lg" />
-              <div className="mt-2 text-sm font-semibold">{w.name}</div>
-              <button className="aero-button rounded-md px-3 py-1 text-xs mt-2"
-                onClick={() => downloadWallpaper(w)}>
-                ⬇ Download
-              </button>
-            </div>
-          ))}
-        </div>
-      </div>
-    ),
+    "puei://math": <PueiMathPage />,
     "puei://mail": <PMailApp currentUser={currentUser} users={users} />,
     "puei://about": <div className="p-6"><h2 className="text-2xl font-bold">About PueiNet</h2><p className="text-sm opacity-70 mt-2">A browser for an alternate 2020. Only https://&lt;app&gt;.base44.app external URLs are trusted.</p></div>,
   };
