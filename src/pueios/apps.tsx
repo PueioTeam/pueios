@@ -1436,7 +1436,7 @@ function generateWebResults(q: string): { title: string; url: string; site: stri
   ];
 }
 
-function PueiSearchPage({ initialQuery = "" }: { initialQuery?: string }) {
+function PueiSearchPage({ initialQuery = "", navigate }: { initialQuery?: string; navigate?: (url: string) => void }) {
   const [query, setQuery] = useState(initialQuery);
   const [thinking, setThinking] = useState(false);
   const [webResults, setWebResults] = useState<{ title: string; url: string; site: string; snippet: string }[] | null>(null);
@@ -1489,7 +1489,7 @@ function PueiSearchPage({ initialQuery = "" }: { initialQuery?: string }) {
           <div className="text-[10px] opacity-50 mb-3">About {totalResults.current.toLocaleString()} results</div>
           {webResults.map((r, i) => (
             <div key={i} className="rounded-lg p-3 hover:bg-white/5 cursor-pointer transition-colors"
-              onClick={() => { try { window.open(r.url, "_blank", "noopener"); } catch {} }}>
+              onClick={() => { if (navigate) { navigate(r.url); } else { try { window.open(r.url, "_blank", "noopener"); } catch {} } }}>
               <div className="flex items-center gap-2 mb-0.5">
                 <div className="w-4 h-4 rounded-sm flex items-center justify-center text-[9px] font-bold flex-shrink-0"
                   style={{ background: "var(--gradient-aero)", color: "white" }}>
@@ -2210,7 +2210,7 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
   } else if (navUrl === "puei://search" || navUrl.startsWith("puei://search?")) {
     let initQ = "";
     try { initQ = decodeURIComponent(navUrl.split("?q=")[1] ?? ""); } catch {}
-    content = <PueiSearchPage initialQuery={initQ} />;
+    content = <PueiSearchPage initialQuery={initQ} navigate={navigate} />;
   } else if (navUrl === "puei://films") {
     content = <PueiFilmsPage currentUser={currentUser} />;
   } else if (navUrl.startsWith("puei://")) {
@@ -4911,10 +4911,11 @@ function PueiUpdaterApp({ currentUser, startUpgrade, systemVersion }: { currentU
         const isoFiles = loadFiles().filter((f) =>
           f.type === "text" && (!f.owner || f.owner === currentUser) &&
           f.folder === SYS_FOLDER_DOWNLOADS &&
-          ["pueios2-plus.iso", "pueios2plus.iso", "pueios3.iso"].includes(f.name.trim().toLowerCase())
+          ["pueios1.iso", "pueios2-plus.iso", "pueios2plus.iso", "pueios3.iso"].includes(f.name.trim().toLowerCase())
         );
         const iso = isoFiles.find((file) => file.id === mountedIsoId);
-        const targetVersion: SystemVersion = iso && iso.name.trim().toLowerCase() === "pueios3.iso" ? "PueiOS 3" : "PueiOS 2+";
+        const isoName = iso?.name.trim().toLowerCase() ?? "";
+        const targetVersion: SystemVersion = isoName === "pueios3.iso" ? "PueiOS 3" : isoName === "pueios1.iso" ? "PueiOS 1" : "PueiOS 2+";
         restartTimer.current = window.setTimeout(() => {
           blip("start");
           startUpgrade(targetVersion);
@@ -4928,16 +4929,21 @@ function PueiUpdaterApp({ currentUser, startUpgrade, systemVersion }: { currentU
     f.type === "text" &&
     (!f.owner || f.owner === currentUser) &&
     f.folder === SYS_FOLDER_DOWNLOADS &&
-    ["pueios2-plus.iso", "pueios2plus.iso", "pueios3.iso"].includes(f.name.trim().toLowerCase())
+    ["pueios1.iso", "pueios2-plus.iso", "pueios2plus.iso", "pueios3.iso"].includes(f.name.trim().toLowerCase())
   );
   const mountedIso = isoFiles.find((file) => file.id === mountedIsoId) || null;
-  const mountedVersion: SystemVersion = mountedIso && mountedIso.name.trim().toLowerCase() === "pueios3.iso" ? "PueiOS 3" : "PueiOS 2+";
+  const mountedVersion: SystemVersion = mountedIso
+    ? mountedIso.name.trim().toLowerCase() === "pueios3.iso" ? "PueiOS 3"
+      : mountedIso.name.trim().toLowerCase() === "pueios1.iso" ? "PueiOS 1"
+      : "PueiOS 2+"
+    : "PueiOS 2+";
 
   useEffect(() => {
-    if (mountedIsoId && !isoFiles.some((file) => file.id === mountedIsoId)) {
+    if (mountedIsoId && !isoFiles.some((f) => f.id === mountedIsoId)) {
       setMountedIsoId(null);
     }
-  }, [filesVersion, isoFiles, mountedIsoId]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filesVersion, mountedIsoId]);
 
   const beginInstallActual = () => {
     setInstallStopped(false);
@@ -4982,6 +4988,7 @@ function PueiUpdaterApp({ currentUser, startUpgrade, systemVersion }: { currentU
   };
 
   const versions: { v: SystemVersion; desc: string; eol?: boolean }[] = [
+    { v: "PueiOS 1",  desc: "The very first PueiOS release — classic minimalist shell.", eol: true },
     { v: "PueiOS 2",  desc: "The original PueiOS 2 release.", eol: true },
     { v: "PueiOS 2+", desc: "Advanced edition with stronger sync and AI systems.", eol: true },
     { v: "PueiOS 3",  desc: "Major release: redesigned shell, new AI assistant, PueiNet 3.0." },
@@ -5074,8 +5081,16 @@ function PueiUpdaterApp({ currentUser, startUpgrade, systemVersion }: { currentU
                   className="aero-button rounded-lg px-4 py-2 text-sm flex-shrink-0"
                   onClick={() => {
                     if (eol) {
+                      const isoName = mountedIso?.name.trim().toLowerCase() ?? "";
+                      if (v === "PueiOS 1") {
+                        if (isoName !== "pueios1.iso") {
+                          setEolMsg("Mount pueios1.iso in the installer area below first, then use Pueio Reverse.");
+                          return;
+                        }
+                        setReverseWarning({ version: v, fromIso: false });
+                        return;
+                      }
                       if (systemVersion === "PueiOS 3") {
-                        const isoName = mountedIso?.name.trim().toLowerCase() ?? "";
                         const hasPlus = ["pueios2-plus.iso", "pueios2plus.iso"].includes(isoName);
                         if (!hasPlus) {
                           setEolMsg("Mount pueios2-plus.iso in the installer area below first, then use Pueio Reverse.");
@@ -5087,7 +5102,6 @@ function PueiUpdaterApp({ currentUser, startUpgrade, systemVersion }: { currentU
                       }
                       return;
                     }
-                    // PueiOS 3 install from PueiOS 2+ requires pueios3.iso
                     const isoName3 = mountedIso?.name.trim().toLowerCase() ?? "";
                     if (v === "PueiOS 3" && isoName3 !== "pueios3.iso") {
                       setEolMsg("Mount pueios3.iso in the installer area below first to install PueiOS 3.");
@@ -5096,7 +5110,7 @@ function PueiUpdaterApp({ currentUser, startUpgrade, systemVersion }: { currentU
                     setEolMsg(null);
                     startUpgrade(v);
                   }}>
-                  {eol && systemVersion === "PueiOS 3" ? "🔄 Pueio Reverse" : eol ? "Info" : mountedIso?.name.trim().toLowerCase() === "pueios3.iso" ? "Install →" : "Requires ISO ↓"}
+                  {eol ? "🔄 Pueio Reverse" : mountedIso?.name.trim().toLowerCase() === "pueios3.iso" ? "Install →" : "Requires ISO ↓"}
                 </button>
               )}
             </div>
@@ -5184,9 +5198,11 @@ function PueiUpdaterApp({ currentUser, startUpgrade, systemVersion }: { currentU
                 borderColor: dropActive ? "rgba(125,211,252,0.9)" : mountedIso ? "rgba(80,200,120,0.7)" : "rgba(255,255,255,0.22)",
                 background: dropActive ? "rgba(14,165,233,0.14)" : mountedIso ? "rgba(80,200,120,0.1)" : "rgba(255,255,255,0.05)",
               }}>
-              <div className="text-sm font-semibold">{mountedIso ? `${mountedIso.name} mounted ✓` : "Drop or tap Mount to load ISO"}</div>
+              <div className="text-sm font-semibold">{mountedIso ? `${mountedIso.name} is on Puei Updater ✓` : "Drop or tap Mount to load ISO"}</div>
               <div className="text-xs opacity-65 mt-1">
-                {mountedIso ? `Ready to install ${mountedVersion}.` : "Drag an ISO here, or use the Mount button on touchscreen."}
+                {mountedIso
+                  ? `ISO loaded! Boot up the ${mountedVersion} ISO — click ${mountedVersion} above and use Pueio Reverse.`
+                  : "Drag an ISO here, or use the Mount button on touchscreen."}
               </div>
             </div>
 
