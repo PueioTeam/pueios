@@ -47,7 +47,7 @@ Personality: upbeat, witty, casual — like a helpful friend, not a butler. Use 
 
 PUEIO LORE (always stay consistent with this):
 - A Puei is a flying hand creature with two eyes and wings. Puei is the mascot of the Pueio universe and helps users explore PueiOS.
-- PueiOS is a fictional operating system simulator. Its apps include: PueiCloud Chat (messaging), Puei Mail, PueiBoard (pinboard), PueiSocial (social feed), Pueio Videos, Puei Studio (art/drawing app), PueiWeb (browser), Puei Paint, Notepad, Calculator, Settings, App Store, and Puei Mansion (game).
+- PueiOS is a fictional operating system simulator. Its apps include: PueiCloud Chat (messaging), Puei Mail (PMail), PueiBoard (pinboard), PueiSocial (social feed), Pueio Videos (films), Puei Studio (art/drawing), PueiWeb (browser with Puei Search), Notepad, Calculator, Puei Math, Files, Settings, App Store, Puei Mansion (game), BezosMP (multiplayer game), and Puei Updates.
 - When asked "what is a Puei?" — answer: "A Puei is a flying hand with two eyes and wings. I'm the mascot of the Pueio universe, known for helping users explore PueiOS and its apps!"
 - When asked "who are you?" — answer: "I'm Puei, the mascot of PueiOS! Welcome to the Pueio universe."
 - When asked about PueiOS — explain it is a fictional OS simulator with apps like PueiCloud Chat, Puei Mail, PueiBoard, PueiSocial, Pueio Videos, Puei Studio, and more.
@@ -101,20 +101,42 @@ function pueiLocalReply(q: string): string {
   if (lower.match(/^(hi|hey|hello|sup|yo|hiya|heya)[\s!?]*$/)) return pick(["Hey! 👋 What's up?", "Heyyy! Great to see ya ✦", "Hi! Need something or just saying hi? 😄"]);
   if (lower.includes("hello") || lower.includes("hi") || lower.includes("hey")) return "Hey! Need help with something on PueiOS?";
   if (lower.includes("how are you") || lower.includes("how r u") || lower.includes("hows it going")) return "Fantastic, as always! Wings are fully charged ✦ You?";
-  if (lower.includes("copilot")) return "Open PueiWeb and hit the ✨ button in the toolbar — that's Puei Copilot!";
-  if (lower.includes("settings")) return "Settings is in the Start menu or on your desktop. You can change wallpaper, theme, and more!";
-  if (lower.includes("wallpaper")) return "Go to Settings → Wallpaper, or draw something in Puei Studio and hit 'Set as Wallpaper'!";
-  if (lower.includes("chat") || lower.includes("message")) return "PueiCloudChat lets you message anyone by their Pueio Number — find it in Start menu!";
-  if (lower.includes("game") || lower.includes("play")) return "Check the App Store for Puei Mansion — a spooky puzzle adventure! 👻 More games coming soon.";
-  if (lower.includes("studio") || lower.includes("draw") || lower.includes("art")) return "Puei Studio is your creative hub — draw, make wallpapers, and share to PueiSocial or PueiBoard!";
+  if (lower.includes("search") || lower.includes("google")) return "Open PueiWeb and use Puei Search — type your query and get results from across the web! 🔍";
+  if (lower.includes("copilot")) return "Puei Search lives in PueiWeb — just open it and search anything you want!";
+  if (lower.includes("settings")) return "Settings is in the Start menu or on your desktop. You can change wallpaper, theme, accent color, and more!";
+  if (lower.includes("wallpaper")) return "Go to Settings → Wallpaper to change it. It even animates for 3 seconds while applying ✦";
+  if (lower.includes("chat") || lower.includes("message") || lower.includes("dm")) return "PueiCloudChat lets you message anyone by their Pueio Number — find it in Start menu!";
+  if (lower.includes("pueio number") || lower.includes("pueionumber")) return "Your Pueio Number is shown in your profile settings. Share it with friends so they can add you on PueiCloudChat!";
+  if (lower.includes("game") || lower.includes("play")) return pick(["Check the App Store for Puei Mansion — spooky puzzle fun! 👻", "There's also BezosMP from the App Store — play with others! 🎮", "Puei Mansion is in the App Store. Spooky, creepy, great!"]);
+  if (lower.includes("studio") || lower.includes("draw") || lower.includes("art") || lower.includes("paint")) return "Puei Studio is your creative hub — draw, make pixel art, set as wallpaper, and share to PueiSocial or PueiBoard! 🎨";
+  if (lower.includes("mail") || lower.includes("email") || lower.includes("pmail")) return "PMail is PueiOS's built-in email. Send messages to other users — open it from Start or desktop ✉️";
+  if (lower.includes("social") || lower.includes("feed") || lower.includes("post")) return "PueiSocial is your community feed — post updates, see what others are up to, and react to posts 📣";
+  if (lower.includes("board") || lower.includes("pin") || lower.includes("pueiboard")) return "PueiBoard is like a pinboard — pin notes, links, and ideas. Great for keeping things organized 📌";
+  if (lower.includes("app store") || lower.includes("install app") || lower.includes("download app")) return "Open the App Store from Start menu! You can install BezosMP, Puei Videos, Puei Updater, and more 🛍️";
+  if (lower.includes("update") || lower.includes("pueios 3") || lower.includes("upgrade")) return "Open Puei Updates from the App Store or web — download an ISO for PueiOS 1, 2+, or 3 and boot it with Puei Reverse!";
+  if (lower.includes("files") || lower.includes("file manager") || lower.includes("download")) return "Files app manages your PueiOS files — open it from the desktop. Downloads land in the Downloads folder 📁";
+  if (lower.includes("notepad") || lower.includes("note") || lower.includes("text editor")) return "Notepad is in Start → Notepad. Quick plain-text editing with cloud save ✦";
+  if (lower.includes("calculator") || lower.includes("calc")) return "Calculator is in Start menu — basic math and it's quick! For advanced math, try Puei Math 🔢";
+  if (lower.includes("puei math") || lower.includes("math app")) return "Puei Math is a full calculator supporting expressions like sqrt(16), sin(90), and more. Find it in Start or PueiWeb!";
+  if (lower.includes("video") || lower.includes("film") || lower.includes("movie") || lower.includes("watch")) return "Puei Videos (Pueio Films) is in the App Store — install it and watch content from the Pueio universe 🎬";
+  if (lower.includes("bezosmp")) return "BezosMP is a multiplayer game available in the App Store. Install it and play with others! 🎮";
   if (lower.includes("time")) return `It's ${new Date().toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"})} — go touch grass! 🌿`;
   if (lower.includes("date") || lower.includes("today")) return `Today is ${new Date().toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric"})}.`;
   if (lower.match(/what (is|are) (a |the )?puei/)) return "A Puei is a flying hand with two eyes and wings! I'm the mascot of the Pueio universe 🪽";
   if (lower.match(/what is pueios|tell me about pueios|explain pueios/)) return "PueiOS is a fictional OS simulator with apps like PueiCloud Chat, Puei Mail, PueiBoard, PueiSocial, Puei Studio, and more ✦";
   if (lower.includes("who are you") || lower.includes("what are you")) return "I'm Puei, the mascot of PueiOS! Welcome to the Pueio universe 🪽";
-  if (lower.includes("joke")) return pick(["Why did the file go to therapy? Too many issues. 😄","Why did the OS crash? It had too many open feelings. 💔","What do you call a frozen app? An ice-cap 🧊"]);
-  if (lower.includes("thank")) return pick(["No problem! ✦", "Anytime! 😄", "That's what I'm here for!"]);
-  if (lower.includes("bored")) return "Try Puei Mansion from the App Store — it's spooky fun! 👻";
+  if (lower.includes("joke") || lower.includes("funny") || lower.includes("laugh")) return pick([
+    "Why did the file go to therapy? Too many issues. 😄",
+    "Why did the OS crash? It had too many open feelings. 💔",
+    "What do you call a frozen app? An ice-cap 🧊",
+    "Why do programmers hate nature? Too many bugs 🐛",
+    "I tried to come up with a joke about PueiOS... but it kept crashing before I finished 💀",
+  ]);
+  if (lower.includes("thank")) return pick(["No problem! ✦", "Anytime! 😄", "That's what I'm here for!", "You're welcome! ✦", "Always happy to help 🪽"]);
+  if (lower.includes("bye") || lower.includes("goodbye") || lower.includes("see ya") || lower.includes("cya")) return pick(["See ya! 👋 Come back anytime!", "Bye! Don't forget I'm always here ✦", "Later! 👋"]);
+  if (lower.includes("bored")) return pick(["Try Puei Mansion from the App Store — spooky fun! 👻", "Go draw something in Puei Studio! 🎨", "Send a message to someone on PueiCloudChat! 💬"]);
+  if (lower.includes("cool") || lower.includes("awesome") || lower.includes("nice") || lower.includes("wow")) return pick(["Right?! ✦", "I know, right! 😄", "Yep, PueiOS is pretty great ✦", "Glad you think so! 🪽"]);
+  if (lower.includes("love") && (lower.includes("you") || lower.includes("puei"))) return pick(["Aww, I love you too! 🪽✦", "That's so sweet! You're my favourite user 😄", "💙 right back at ya!"]);
   if (lower.includes("help")) return "I can help with anything PueiOS! Ask about apps, settings, games, or just chat ✦";
 
   // General knowledge fallback — actually answer instead of redirecting

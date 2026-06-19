@@ -1066,9 +1066,9 @@ function PaintApp({ fileId, onCreateShortcut, currentUser }: { fileId?: string; 
   );
 }
 
-// ---------- Puei Copilot (integrated into PueiSearch) ----------
+// ---------- Puei Search ----------
 
-/** General knowledge base for Puei Copilot. Returns a real answer or null if unknown. */
+/** General knowledge base for Puei Search. Returns a real answer or null if unknown. */
 const KNOWLEDGE: Array<{ match: (q: string) => boolean; answer: (q: string) => string }> = [
   // ── Machines & vehicles ──
   {
@@ -1317,21 +1317,107 @@ const WELL_KNOWN_RESULTS: Record<string, { title: string; url: string; site: str
   "minecraft": [
     { title: "Minecraft Official Site", url: "https://www.minecraft.net", site: "minecraft.net", snippet: "Explore your own unique world, survive the night, and create anything you can imagine. Play Minecraft across platforms." },
     { title: "Minecraft – Wikipedia", url: "https://en.wikipedia.org/wiki/Minecraft", site: "en.wikipedia.org", snippet: "Minecraft is a sandbox video game developed by Mojang Studios. Players explore a 3D world made of blocks, gathering resources and building structures." },
-    { title: "Minecraft Wiki – Fandom", url: "https://minecraft.fandom.com/wiki/Minecraft_Wiki", site: "minecraft.fandom.com", snippet: "The Minecraft Wiki is the official wiki about Minecraft, covering everything from game mechanics, mobs, biomes and crafting recipes." },
+    { title: "Minecraft Wiki", url: "https://minecraft.wiki", site: "minecraft.wiki", snippet: "The official Minecraft Wiki — covers everything from game mechanics, mobs, biomes and crafting recipes to the latest snapshots." },
     { title: "Minecraft Marketplace – Skins, Worlds & More", url: "https://www.minecraft.net/en-us/marketplace", site: "minecraft.net › marketplace", snippet: "Browse the Minecraft Marketplace for community-created skins, maps, and texture packs. New content added weekly." },
     { title: "r/Minecraft – Reddit", url: "https://reddit.com/r/Minecraft", site: "reddit.com › r/Minecraft", snippet: "The largest Minecraft community on Reddit. Share builds, ask questions, and discuss updates with over 8 million members." },
+    { title: "Minecraft on YouTube", url: "https://www.youtube.com/results?search_query=minecraft", site: "youtube.com", snippet: "Tutorials, let's plays, seed showcases and more. Watch the biggest Minecraft creators on YouTube." },
   ],
   "python": [
     { title: "Welcome to Python.org", url: "https://www.python.org", site: "python.org", snippet: "The official home of the Python programming language. Downloads, documentation, tutorials and community resources." },
-    { title: "Python – Wikipedia", url: "https://en.wikipedia.org/wiki/Python_(programming_language)", site: "en.wikipedia.org", snippet: "Python is a high-level, general-purpose programming language. Its design philosophy emphasises code readability with the use of significant indentation." },
+    { title: "Python – Wikipedia", url: "https://en.wikipedia.org/wiki/Python_(programming_language)", site: "en.wikipedia.org", snippet: "Python is a high-level, general-purpose programming language. Its design philosophy emphasises code readability." },
     { title: "Python Tutorial – W3Schools", url: "https://www.w3schools.com/python/", site: "w3schools.com › python", snippet: "Well organised tutorials on Python syntax, data types, functions, modules, file handling, OOP, and more." },
-    { title: "Python Docs – docs.python.org", url: "https://docs.python.org/3/", site: "docs.python.org", snippet: "The official Python 3 documentation covering the standard library, language reference, and tutorial." },
+    { title: "Python Docs 3 – docs.python.org", url: "https://docs.python.org/3/", site: "docs.python.org", snippet: "The official Python 3 documentation covering the standard library, language reference, and tutorial." },
     { title: "r/learnpython – Reddit", url: "https://reddit.com/r/learnpython", site: "reddit.com › r/learnpython", snippet: "A subreddit for beginners and experienced programmers. Ask questions, share projects, and learn Python together." },
+    { title: "Python on YouTube", url: "https://www.youtube.com/results?search_query=python+tutorial", site: "youtube.com", snippet: "Free Python tutorials for all levels — from beginner syntax to advanced topics like machine learning and web dev." },
   ],
   "react": [
     { title: "React – A JavaScript library for building UIs", url: "https://react.dev", site: "react.dev", snippet: "React lets you build user interfaces out of individual pieces called components. React apps are built from components." },
     { title: "React – Wikipedia", url: "https://en.wikipedia.org/wiki/React_(JavaScript_library)", site: "en.wikipedia.org", snippet: "React is a free and open-source front-end JavaScript library for building UIs based on components." },
     { title: "React Tutorial – W3Schools", url: "https://www.w3schools.com/react/", site: "w3schools.com › react", snippet: "W3Schools offers free tutorials on React. Learn JSX, components, state, props, hooks and more." },
+    { title: "React on GitHub", url: "https://github.com/facebook/react", site: "github.com › facebook/react", snippet: "The React source code repository. Open issues, explore the codebase, and contribute to the project." },
+    { title: "r/reactjs – Reddit", url: "https://reddit.com/r/reactjs", site: "reddit.com › r/reactjs", snippet: "Community for React developers — tips, job posts, tutorials and library discussions." },
+  ],
+  "youtube": [
+    { title: "YouTube", url: "https://www.youtube.com", site: "youtube.com", snippet: "Enjoy the videos and music you love, upload original content, and share it all with friends, family, and the world on YouTube." },
+    { title: "YouTube – Wikipedia", url: "https://en.wikipedia.org/wiki/YouTube", site: "en.wikipedia.org", snippet: "YouTube is an American online video sharing and social media platform owned by Google. Launched in 2005, it became the second-most visited website worldwide." },
+    { title: "YouTube Studio", url: "https://studio.youtube.com", site: "studio.youtube.com", snippet: "Manage your YouTube channel, upload videos, check analytics, and respond to comments all in one place." },
+    { title: "YouTube Kids", url: "https://www.youtubekids.com", site: "youtubekids.com", snippet: "A safer online experience for kids. YouTube Kids offers family-friendly videos and parental controls." },
+  ],
+  "google": [
+    { title: "Google", url: "https://www.google.com", site: "google.com", snippet: "Google's mission is to organise the world's information and make it universally accessible and useful." },
+    { title: "Google – Wikipedia", url: "https://en.wikipedia.org/wiki/Google", site: "en.wikipedia.org", snippet: "Google LLC is an American multinational technology company, founded in 1998 by Larry Page and Sergey Brin." },
+    { title: "Google Maps", url: "https://maps.google.com", site: "maps.google.com", snippet: "Find local businesses, view maps and get driving directions in Google Maps." },
+    { title: "Google Drive", url: "https://drive.google.com", site: "drive.google.com", snippet: "Store, share, and collaborate on files and folders from your mobile device, tablet, or computer." },
+    { title: "Google Translate", url: "https://translate.google.com", site: "translate.google.com", snippet: "Free translation service supporting over 130 languages, available as a web app and mobile app." },
+  ],
+  "wikipedia": [
+    { title: "Wikipedia, the free encyclopedia", url: "https://www.wikipedia.org", site: "wikipedia.org", snippet: "Wikipedia is a free, multilingual online encyclopedia written and maintained by a community of volunteer contributors." },
+    { title: "Wikipedia – Wikipedia", url: "https://en.wikipedia.org/wiki/Wikipedia", site: "en.wikipedia.org", snippet: "Wikipedia was launched on January 15, 2001, by Jimmy Wales and Larry Sanger. It is one of the most visited websites in the world." },
+    { title: "Help: Getting started – Wikipedia", url: "https://en.wikipedia.org/wiki/Help:Getting_started", site: "en.wikipedia.org › Help", snippet: "How to read, edit, and contribute to Wikipedia articles. A beginner's guide to the free encyclopedia." },
+  ],
+  "roblox": [
+    { title: "Roblox – The Ultimate Virtual Universe", url: "https://www.roblox.com", site: "roblox.com", snippet: "Roblox is the ultimate virtual universe that lets you play, create, and be anything you can imagine." },
+    { title: "Roblox – Wikipedia", url: "https://en.wikipedia.org/wiki/Roblox", site: "en.wikipedia.org", snippet: "Roblox is an online game platform and game creation system developed by Roblox Corporation, launched in 2006." },
+    { title: "Roblox Developer Hub", url: "https://create.roblox.com", site: "create.roblox.com", snippet: "Build games on Roblox using Lua scripting and Studio. Documentation, tutorials, and community resources for developers." },
+    { title: "r/roblox – Reddit", url: "https://reddit.com/r/roblox", site: "reddit.com › r/roblox", snippet: "Community dedicated to Roblox — news, game recommendations, glitches, and more." },
+    { title: "Roblox on YouTube", url: "https://www.youtube.com/results?search_query=roblox", site: "youtube.com", snippet: "Watch Roblox gameplays, tutorials, and funny moments from top Roblox YouTubers." },
+  ],
+  "fortnite": [
+    { title: "Fortnite – Official Site", url: "https://www.fortnite.com", site: "fortnite.com", snippet: "Fortnite is a free-to-play Battle Royale game with numerous game modes for every type of player." },
+    { title: "Fortnite – Wikipedia", url: "https://en.wikipedia.org/wiki/Fortnite", site: "en.wikipedia.org", snippet: "Fortnite is an online video game developed by Epic Games. The Battle Royale mode gained worldwide popularity in 2017." },
+    { title: "Fortnite Wiki – Fandom", url: "https://fortnite.fandom.com", site: "fortnite.fandom.com", snippet: "The Fortnite Wiki — weapons, map locations, skins, chapter history, and current season info." },
+    { title: "r/FortNiteBR – Reddit", url: "https://reddit.com/r/FortNiteBR", site: "reddit.com › r/FortNiteBR", snippet: "The official subreddit for Fortnite Battle Royale. Clips, news, strategies, and season discussion." },
+  ],
+  "javascript": [
+    { title: "JavaScript – MDN Web Docs", url: "https://developer.mozilla.org/en-US/docs/Web/JavaScript", site: "developer.mozilla.org", snippet: "JavaScript (JS) is a lightweight interpreted programming language with first-class functions. Used on most websites." },
+    { title: "JavaScript – Wikipedia", url: "https://en.wikipedia.org/wiki/JavaScript", site: "en.wikipedia.org", snippet: "JavaScript, often abbreviated as JS, is a programming language that is one of the core technologies of the World Wide Web." },
+    { title: "JavaScript Tutorial – W3Schools", url: "https://www.w3schools.com/js/", site: "w3schools.com › js", snippet: "Learn JavaScript with W3Schools. Covers syntax, DOM, events, JSON, ES6 and much more — with live examples." },
+    { title: "The Modern JavaScript Tutorial", url: "https://javascript.info", site: "javascript.info", snippet: "From basics to advanced topics. A modern JavaScript course covering closures, promises, async/await, and the DOM." },
+    { title: "r/javascript – Reddit", url: "https://reddit.com/r/javascript", site: "reddit.com › r/javascript", snippet: "Discussion about all things JavaScript. Frameworks, libraries, job posts, and cool projects." },
+  ],
+  "nasa": [
+    { title: "NASA", url: "https://www.nasa.gov", site: "nasa.gov", snippet: "NASA explores the unknown in air and space, innovates for the benefit of humanity, and inspires the world through discovery." },
+    { title: "NASA – Wikipedia", url: "https://en.wikipedia.org/wiki/NASA", site: "en.wikipedia.org", snippet: "The National Aeronautics and Space Administration is an independent agency of the US federal government responsible for civilian space exploration." },
+    { title: "NASA Solar System Exploration", url: "https://solarsystem.nasa.gov", site: "solarsystem.nasa.gov", snippet: "Explore NASA's Solar System — detailed profiles of every planet, moon, asteroid, and comet." },
+    { title: "NASA Image and Video Library", url: "https://images.nasa.gov", site: "images.nasa.gov", snippet: "Search and download thousands of NASA's high-resolution images, videos, and audio files." },
+  ],
+  "twitter": [
+    { title: "Twitter / X", url: "https://twitter.com", site: "twitter.com", snippet: "From breaking news and entertainment to sports, politics, and everyday interests — see every side of the story." },
+    { title: "Twitter – Wikipedia", url: "https://en.wikipedia.org/wiki/Twitter", site: "en.wikipedia.org", snippet: "Twitter (now rebranded as X) is a social networking service. Users post short messages called tweets up to 280 characters." },
+  ],
+  "instagram": [
+    { title: "Instagram", url: "https://www.instagram.com", site: "instagram.com", snippet: "Create an account or log in to Instagram — share photos and videos with friends and discover others." },
+    { title: "Instagram – Wikipedia", url: "https://en.wikipedia.org/wiki/Instagram", site: "en.wikipedia.org", snippet: "Instagram is a photo and video sharing social networking service owned by Meta Platforms." },
+  ],
+  "github": [
+    { title: "GitHub · Build and ship software on the world's leading AI-powered developer platform", url: "https://github.com", site: "github.com", snippet: "GitHub is where over 100 million developers shape the future of software, together. Host and review code, manage projects, and build software." },
+    { title: "GitHub – Wikipedia", url: "https://en.wikipedia.org/wiki/GitHub", site: "en.wikipedia.org", snippet: "GitHub is a developer platform that allows developers to create, store, manage and share their code using Git." },
+    { title: "GitHub Docs", url: "https://docs.github.com", site: "docs.github.com", snippet: "Help documentation for GitHub. Covers repositories, pull requests, Actions, Pages, Packages and more." },
+  ],
+  "netflix": [
+    { title: "Netflix – Watch TV Shows Online, Watch Movies Online", url: "https://www.netflix.com", site: "netflix.com", snippet: "Watch Netflix movies and TV shows online or stream right to your smart TV, game console, PC, Mac, mobile, tablet and more." },
+    { title: "Netflix – Wikipedia", url: "https://en.wikipedia.org/wiki/Netflix", site: "en.wikipedia.org", snippet: "Netflix is a subscription video on-demand over-the-top streaming service and production company founded in 1997." },
+  ],
+  "spotify": [
+    { title: "Spotify – Web Player: Music for everyone", url: "https://open.spotify.com", site: "open.spotify.com", snippet: "Spotify is a digital music, podcast, and video service that gives you access to millions of songs and other content from creators all over the world." },
+    { title: "Spotify – Wikipedia", url: "https://en.wikipedia.org/wiki/Spotify", site: "en.wikipedia.org", snippet: "Spotify is a Swedish audio streaming and media services provider, launched in 2008." },
+    { title: "Spotify for Artists", url: "https://artists.spotify.com", site: "artists.spotify.com", snippet: "Manage your artist profile, pitch music to playlists, and get insights about your listeners on Spotify." },
+  ],
+  "amazon": [
+    { title: "Amazon.com – Shop online", url: "https://www.amazon.com", site: "amazon.com", snippet: "Free delivery on millions of items. Low prices across earth's biggest selection of books, music, DVDs, electronics, computers and more." },
+    { title: "Amazon – Wikipedia", url: "https://en.wikipedia.org/wiki/Amazon_(company)", site: "en.wikipedia.org", snippet: "Amazon.com, Inc. is an American multinational technology company focusing on e-commerce, cloud computing, and digital streaming." },
+    { title: "Amazon Prime Video", url: "https://www.amazon.com/primevideo", site: "amazon.com › primevideo", snippet: "Watch movies and TV shows with Prime Video. Thousands of titles included with Prime membership." },
+  ],
+  "discord": [
+    { title: "Discord – Group Chat That's All Fun & Games", url: "https://discord.com", site: "discord.com", snippet: "Discord is where people can hang out, talk about interests, and have fun. Find communities or create your own." },
+    { title: "Discord – Wikipedia", url: "https://en.wikipedia.org/wiki/Discord", site: "en.wikipedia.org", snippet: "Discord is a VoIP and instant messaging social platform founded in 2015. Users communicate via voice calls, video calls, text messaging, and files." },
+    { title: "Discord Developer Portal", url: "https://discord.com/developers", site: "discord.com › developers", snippet: "Build bots and integrations for Discord. API docs, OAuth2, webhooks and application management." },
+  ],
+  "typescript": [
+    { title: "TypeScript – JavaScript With Syntax For Types", url: "https://www.typescriptlang.org", site: "typescriptlang.org", snippet: "TypeScript is a strongly typed programming language that builds on JavaScript, giving you better tooling at any scale." },
+    { title: "TypeScript – Wikipedia", url: "https://en.wikipedia.org/wiki/TypeScript", site: "en.wikipedia.org", snippet: "TypeScript is a free and open-source high-level programming language developed by Microsoft. It adds static typing to JavaScript." },
+    { title: "TypeScript Handbook", url: "https://www.typescriptlang.org/docs/handbook/intro.html", site: "typescriptlang.org › docs", snippet: "The TypeScript Handbook is a comprehensive guide to the TypeScript language — from basics to advanced types." },
+    { title: "r/typescript – Reddit", url: "https://reddit.com/r/typescript", site: "reddit.com › r/typescript", snippet: "Community for TypeScript developers. Tips, questions, open source projects, and job posts." },
   ],
 };
 
@@ -1350,11 +1436,10 @@ function generateWebResults(q: string): { title: string; url: string; site: stri
   ];
 }
 
-function PueiCopilotPage({ initialQuery = "" }: { initialQuery?: string }) {
+function PueiSearchPage({ initialQuery = "" }: { initialQuery?: string }) {
   const [query, setQuery] = useState(initialQuery);
   const [thinking, setThinking] = useState(false);
   const [webResults, setWebResults] = useState<{ title: string; url: string; site: string; snippet: string }[] | null>(null);
-  const [answer, setAnswer] = useState("");
   const totalResults = useRef(0);
   const didInit = useRef(false);
 
@@ -1368,52 +1453,35 @@ function PueiCopilotPage({ initialQuery = "" }: { initialQuery?: string }) {
 
   const doSearch = (q: string) => {
     if (!q.trim()) return;
-    setThinking(true); setWebResults(null); setAnswer("");
+    setThinking(true); setWebResults(null);
     blip("click");
     totalResults.current = Math.floor(Math.random() * 900_000_000) + 1_000_000;
     setTimeout(() => {
       setWebResults(generateWebResults(q));
-      setAnswer(generateCopilotAnswer(q));
       setThinking(false);
-    }, 900 + Math.random() * 600);
+    }, 700 + Math.random() * 500);
   };
 
   return (
     <div className="p-6 max-w-3xl mx-auto h-full overflow-auto">
       <div className="flex items-center gap-3 mb-5">
-        <div className="text-3xl">✨</div>
+        <div className="text-3xl">🔍</div>
         <div>
-          <h1 className="text-2xl font-bold" style={{ color: "var(--accent)" }}>Puei Copilot</h1>
-          <p className="text-[11px] opacity-60">AI assistant · gathers from Google · Edge · Firefox · Opera · filters untrusted sources automatically</p>
+          <h1 className="text-2xl font-bold" style={{ color: "var(--accent)" }}>Puei Search</h1>
+          <p className="text-[11px] opacity-60">Search the web — results from top sites, filtered for safety</p>
         </div>
       </div>
       <div className="flex gap-2 mb-5">
         <input value={query} onChange={(e) => setQuery(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && doSearch(query)}
           className="flex-1 px-4 py-2.5 rounded-full text-sm outline-none input-field" style={{ border: "2px solid oklch(0.65 0.18 var(--accent-h))" }}
-          placeholder="Ask Puei Copilot or search anything…" />
+          placeholder="Search anything…" />
         <button className="aero-button rounded-full px-5 py-2 text-sm font-semibold" onClick={() => doSearch(query)}>Search</button>
       </div>
       {thinking && (
         <div className="aero-glass-light rounded-xl p-4 mb-4 text-sm flex items-center gap-3 animate-pulse">
           <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin opacity-60 flex-shrink-0" />
-          Puei Copilot is searching Google, Edge, Firefox, and Opera and generating your answer…
-        </div>
-      )}
-      {answer && (
-        <div className="aero-glass-light rounded-xl p-4 mb-4 border" style={{ borderColor: "oklch(0.65 0.18 var(--accent-h) / 0.3)" }}>
-          <div className="flex items-center gap-2 mb-3">
-            <div className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
-              style={{ background: "var(--gradient-aero)", color: "white" }}>✨</div>
-            <div className="font-semibold text-sm">Puei Copilot Summary</div>
-          </div>
-          <div className="text-sm whitespace-pre-wrap leading-relaxed opacity-90">
-            {answer.split(/(\*\*[^*]+\*\*)/).map((part, i) =>
-              part.startsWith("**") && part.endsWith("**")
-                ? <strong key={i}>{part.slice(2, -2)}</strong>
-                : part
-            )}
-          </div>
+          Searching…
         </div>
       )}
       {webResults && (
@@ -1427,9 +1495,7 @@ function PueiCopilotPage({ initialQuery = "" }: { initialQuery?: string }) {
                   style={{ background: "var(--gradient-aero)", color: "white" }}>
                   {r.site[0].toUpperCase()}
                 </div>
-                <div>
-                  <div className="text-[10px] opacity-60">{r.site}</div>
-                </div>
+                <div className="text-[10px] opacity-60">{r.site}</div>
               </div>
               <div className="text-sm font-medium leading-tight" style={{ color: "oklch(0.65 0.2 var(--accent-h))" }}>{r.title}</div>
               <div className="text-xs opacity-70 mt-0.5 leading-relaxed">{r.snippet}</div>
@@ -1440,22 +1506,19 @@ function PueiCopilotPage({ initialQuery = "" }: { initialQuery?: string }) {
           </div>
         </div>
       )}
-      {!thinking && !webResults && !answer && (
+      {!thinking && !webResults && (
         <div className="space-y-3">
-          <div className="text-[10px] opacity-50 font-semibold tracking-wider">SUGGESTIONS</div>
+          <div className="text-[10px] opacity-50 font-semibold tracking-wider">TRY SEARCHING FOR</div>
           <div className="grid grid-cols-2 gap-2">
             {[
-              "What is PueiOS 2?", "How do Pueio Numbers work?",
-              "Tell me about PueiCloudChat", "What apps are in the App Store?",
+              "YouTube", "Wikipedia",
+              "GitHub", "Roblox",
             ].map((q) => (
               <button key={q} className="aero-glass-light rounded-lg p-3 text-xs text-left hover:bg-white/30"
                 onClick={() => { setQuery(q); doSearch(q); }}>
-                <span className="opacity-50">💡</span> {q}
+                🔍 {q}
               </button>
             ))}
-          </div>
-          <div className="text-[10px] opacity-40 mt-4 flex items-center gap-1">
-            ✨ Puei Copilot supports: Google · Edge · Firefox · Opera
           </div>
         </div>
       )}
@@ -1625,7 +1688,7 @@ function PueiNetHomePage({ navigate }: { navigate: (url: string) => void }) {
         {[
           ["puei://board", "📌 PueiBoard"],
           ["puei://updates", "⬆️ Puei Updates"],
-          ["puei://search", "✨ Puei Copilot"],
+          ["puei://search", "🔍 Puei Search"],
           ["puei://mail", "✉️ PMail"],
           ["puei://forum", "💼 PueiForum"],
           ["puei://math", "🧮 Puei Math"],
@@ -1664,8 +1727,9 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
     f.type === "text" &&
     (!f.owner || f.owner === currentUser) &&
     f.folder === SYS_FOLDER_DOWNLOADS &&
-    ["pueios2-plus.iso", "pueios2plus.iso", "pueios3.iso"].includes(f.name.trim().toLowerCase())
+    ["pueios1.iso", "pueios2-plus.iso", "pueios2plus.iso", "pueios3.iso"].includes(f.name.trim().toLowerCase())
   );
+  const iso1File = allIsoFiles.find((f) => f.name.trim().toLowerCase() === "pueios1.iso");
   const isoFile = allIsoFiles.find((f) => ["pueios2-plus.iso", "pueios2plus.iso"].includes(f.name.trim().toLowerCase()));
   const iso3File = allIsoFiles.find((f) => f.name.trim().toLowerCase() === "pueios3.iso");
   const updaterInstalled = icons.some((i) => i.appId === "web-app" && i.webUrl === "puei://updates" && i.label.trim().toLowerCase() === "puei updater");
@@ -1686,6 +1750,19 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
         blip("notify");
       }
     }, 1000);
+  };
+
+  const downloadOs1Iso = () => {
+    if (iso1File) { blip("click"); webAlert("PueiOS 1 ISO is already downloaded in Files."); return; }
+    startDownload("pueios1.iso", () => {
+      upsertFile({
+        id: `iso1-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`,
+        name: "pueios1.iso", type: "text",
+        content: "PueiOS 1 installation ISO image. Classic minimalist shell. Legacy — use Pueio Reverse to boot.",
+        updatedAt: Date.now(), owner: currentUser, folder: SYS_FOLDER_DOWNLOADS,
+      });
+      setIsoRefresh((v) => v + 1);
+    });
   };
 
   const downloadPlusIso = () => {
@@ -1902,7 +1979,7 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
   };
 
   const pageTitles: Record<string, string> = {
-    "puei://home": "Home", "puei://search": "Puei Copilot", "puei://about": "About",
+    "puei://home": "Home", "puei://search": "Puei Search", "puei://about": "About",
     "puei://updates": "Updates", "puei://social": "PueiSocial", "puei://board": "PueiBoard",
     "puei://math": "Puei Math", "puei://chat": "Chat", "puei://os3": "PueiOS 3",
     "puei://films": "Puei Videos", "puei://mail": "PMail",
@@ -1989,9 +2066,24 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
           <div className="flex items-center gap-2">
             <span className="font-semibold">PueiOS 1</span>
             <span className="text-xs px-2 py-0.5 rounded" style={{ background: "rgba(220,50,50,0.18)", color: "#f87171" }}>End of Life</span>
+            {iso1File && <span className="text-xs px-2 py-0.5 rounded" style={{ background: "rgba(80,200,120,0.2)", color: "#4ade80" }}>Downloaded</span>}
           </div>
           <p className="text-xs opacity-60">The very first PueiOS release — classic minimalist shell.</p>
-          <p className="text-xs" style={{ color: "#f87171" }}>PueiOS 1 has reached end of life. Upgrade to PueiOS 2 or later. No download available.</p>
+          <p className="text-xs" style={{ color: "#f87171" }}>End of life. Use Pueio Reverse to boot.</p>
+          <div className="flex gap-2">
+            {downloading === "pueios1.iso" ? (
+              <div className="flex items-center gap-2 text-xs">
+                <div className="w-32 h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.15)" }}>
+                  <div className="h-full rounded-full transition-all" style={{ width: `${((5 - dlSecondsLeft) / 5) * 100}%`, background: "var(--accent)" }} />
+                </div>
+                <span className="opacity-70">Downloading… {dlSecondsLeft}s</span>
+              </div>
+            ) : (
+              <button className="aero-button rounded px-3 py-1.5 text-xs" onClick={downloadOs1Iso} style={{ opacity: 0.65 }}>
+                ⬇ {iso1File ? "Re-download pueios1.iso" : "Download pueios1.iso"}
+              </button>
+            )}
+          </div>
         </div>
 
         {/* PueiOS 2 */}
@@ -2118,7 +2210,7 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
   } else if (navUrl === "puei://search" || navUrl.startsWith("puei://search?")) {
     let initQ = "";
     try { initQ = decodeURIComponent(navUrl.split("?q=")[1] ?? ""); } catch {}
-    content = <PueiCopilotPage initialQuery={initQ} />;
+    content = <PueiSearchPage initialQuery={initQ} />;
   } else if (navUrl === "puei://films") {
     content = <PueiFilmsPage currentUser={currentUser} />;
   } else if (navUrl.startsWith("puei://")) {

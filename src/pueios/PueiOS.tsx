@@ -2014,7 +2014,7 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
               installWebApp={(label, url, iconUrl) => {
                 markInstalled(`web:${url}`);
                 const knownIcons: Record<string, string> = { "puei://films": "/puei-films-icon.svg", "puei://updates": "/puei-updater-icon.svg", "https://bezosmp.lovable.app": "/bezosmp-icon.svg" };
-                const pueiEmojis: Record<string, string> = { "puei://social": "📣", "puei://board": "📌", "puei://search": "✨", "puei://chat": "💬" };
+                const pueiEmojis: Record<string, string> = { "puei://social": "📣", "puei://board": "📌", "puei://search": "🔍", "puei://chat": "💬" };
                 const knownUrl = knownIcons[url];
                 const emoji = !knownUrl ? pueiEmojis[url] : undefined;
                 addIcon({ id: `web-${Date.now().toString(36)}`, label, appId: "web-app", webUrl: url, iconEmoji: emoji, iconUrl: knownUrl ?? (emoji ? undefined : (iconUrl || googleFaviconFor(url, 64))) });

@@ -401,7 +401,7 @@ export function appIcon(appId: AppId, size = 32, override?: string, iconUrl?: st
                 src={iconUrl}
                 alt=""
                 data-fallback={fallbackIconUrl}
-                style={{ width: "100%", height: "100%", objectFit: "contain", borderRadius: boxed ? radius : 0 }}
+                style={{ width: "100%", height: "100%", objectFit: "contain", borderRadius: boxed ? radius : (iconUrl?.endsWith(".svg") ? Math.round(s * 0.15) : 0) }}
                 onError={(e) => {
                   const img = e.currentTarget as HTMLImageElement;
                   const fallback = img.dataset.fallback || "";
