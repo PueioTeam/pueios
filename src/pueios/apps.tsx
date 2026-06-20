@@ -5124,10 +5124,7 @@ function PueiUpdaterApp({ currentUser, startUpgrade, systemVersion }: { currentU
           </div>
         )}
 
-        <div className="border-t pt-4" style={{ borderColor: "var(--border)" }}>
-          <h3 className="font-semibold mb-1 text-sm">Install from ISO</h3>
-          <p className="text-sm opacity-70 mt-1">Download the ISO in Files first, then drag it into the installer zone below.</p>
-        </div>
+        <div className="border-t pt-4" style={{ borderColor: "var(--border)" }} />
 
         <div className="grid grid-cols-[minmax(0,240px)_minmax(0,1fr)] gap-4">
           <div className="aero-glass-light rounded-xl p-4 space-y-3">
