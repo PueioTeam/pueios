@@ -1646,7 +1646,7 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
       };
 
       return (
-        <div className={`fixed inset-0 flex flex-col ${typeof theme.wallpaper === "string" && (theme.wallpaper.startsWith("data:") || theme.wallpaper.startsWith("custom:")) ? "" : `wallpaper-${theme.wallpaper}`}`} style={{ fontFamily: "'Segoe UI', system-ui, sans-serif", ...(typeof theme.wallpaper === "string" && theme.wallpaper.startsWith("data:") ? { backgroundImage: `url(${theme.wallpaper})`, backgroundSize: "cover", backgroundPosition: "center" } : {}), overflow: "hidden" }}>
+        <div className={`fixed inset-0 flex flex-col ${typeof theme.wallpaper === "string" && (theme.wallpaper.startsWith("data:") || theme.wallpaper.startsWith("custom:")) ? "" : `wallpaper-${theme.wallpaper}`}`} style={{ fontFamily: "'Segoe UI', system-ui, sans-serif", ...(typeof theme.wallpaper === "string" && theme.wallpaper.startsWith("data:") ? { backgroundImage: `url(${theme.wallpaper})`, backgroundSize: "cover", backgroundPosition: "center" } : typeof theme.wallpaper === "string" && theme.wallpaper.startsWith("custom:") ? (() => { try { const f = JSON.parse(localStorage.getItem("pueios2-files-v1") || "[]").find((x: any) => x.id === theme.wallpaper.slice(7)); return f?.content ? { backgroundImage: `url(${f.content})`, backgroundSize: "cover", backgroundPosition: "center" } : {}; } catch { return {}; } })() : {}), overflow: "hidden" }}>
           {/* Vista-style top accent stripe */}
           <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 4, background: "linear-gradient(90deg, rgba(20,80,180,0.6), rgba(80,160,255,0.9), rgba(20,80,180,0.6))", boxShadow: "0 0 16px rgba(80,160,255,0.6)" }} />
 
