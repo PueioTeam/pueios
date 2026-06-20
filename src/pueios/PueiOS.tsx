@@ -2211,21 +2211,21 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
         </div>
       )}
 
-      {/* PueiOS 3 launcher — Vista Aero glass panel */}
+      {/* PueiOS 3 launcher — Vista Aero glass panel, accent-aware */}
       {startOpen && systemVersion === "PueiOS 3" && (
         <div className="fixed bottom-14 left-2 z-[9000] flex flex-col rounded-xl overflow-hidden"
-          style={{ width: 400, maxHeight: "calc(100vh - 80px)", background: "linear-gradient(160deg, rgba(140,190,255,0.22) 0%, rgba(80,140,230,0.18) 40%, rgba(30,70,180,0.28) 100%)", backdropFilter: "blur(40px) saturate(220%)", border: "1px solid rgba(160,210,255,0.5)", animation: "fade-scale 0.15s ease-out", boxShadow: "0 -8px 50px rgba(20,60,200,0.45), 0 0 0 1px rgba(100,160,255,0.15), inset 0 1px 0 rgba(220,240,255,0.4)" }}
+          style={{ width: 400, maxHeight: "calc(100vh - 80px)", background: "var(--glass-strong)", backdropFilter: "blur(40px) saturate(220%)", border: "1px solid var(--border)", animation: "fade-scale 0.15s ease-out", boxShadow: "0 -8px 50px color-mix(in oklch, var(--accent) 30%, transparent), 0 0 0 1px color-mix(in oklch, var(--accent) 20%, transparent), inset 0 1px 0 rgba(255,255,255,0.35)" }}
           onMouseDown={(e) => e.stopPropagation()}>
           {/* Search bar */}
           <div className="px-4 pt-4 pb-3">
-            <div className="flex items-center gap-2 px-3 py-2 rounded-lg" style={{ background: "rgba(200,220,255,0.15)", border: "1px solid rgba(160,210,255,0.4)", boxShadow: "inset 0 1px 3px rgba(0,0,80,0.2), 0 1px 0 rgba(255,255,255,0.3)" }}>
-              <span style={{ color: "rgba(180,220,255,0.7)", fontSize: 13 }}>🔍</span>
-              <span style={{ color: "rgba(200,230,255,0.5)", fontSize: 13 }}>Search apps…</span>
+            <div className="flex items-center gap-2 px-3 py-2 rounded-lg" style={{ background: "var(--glass)", border: "1px solid var(--border)", boxShadow: "inset 0 1px 3px rgba(0,0,0,0.15), 0 1px 0 rgba(255,255,255,0.25)" }}>
+              <span style={{ color: "var(--muted-foreground)", fontSize: 13 }}>🔍</span>
+              <span style={{ color: "var(--muted-foreground)", fontSize: 13 }}>Search apps…</span>
             </div>
           </div>
           {/* App grid */}
           <div className="overflow-y-auto flex-1 px-3 pb-2">
-            <div style={{ color: "rgba(160,210,255,0.55)", fontSize: 9, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 8, paddingLeft: 4 }}>All Apps</div>
+            <div style={{ color: "var(--muted-foreground)", fontSize: 9, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 8, paddingLeft: 4 }}>All Apps</div>
             <div className="grid grid-cols-4 gap-2">
               {[...new Set([
                 ...icons.filter(i => !i.fileId && !i.webUrl && i.appId !== "recycle-bin").map(i => i.appId),
@@ -2233,17 +2233,17 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
               ])].filter(id => id in APP_TITLES).map((id) => (
                 <button key={id} onClick={() => { openApp(id); setStartOpen(false); }}
                   className="flex flex-col items-center gap-1.5 p-2.5 rounded-xl transition-all"
-                  style={{ background: "rgba(140,190,255,0.08)", border: "1px solid rgba(140,200,255,0.12)" }}
-                  onMouseEnter={e => { e.currentTarget.style.background = "rgba(80,140,255,0.25)"; e.currentTarget.style.border = "1px solid rgba(120,180,255,0.5)"; e.currentTarget.style.transform = "scale(1.06)"; e.currentTarget.style.boxShadow = "0 0 12px rgba(80,150,255,0.3), inset 0 1px 0 rgba(255,255,255,0.3)"; }}
-                  onMouseLeave={e => { e.currentTarget.style.background = "rgba(140,190,255,0.08)"; e.currentTarget.style.border = "1px solid rgba(140,200,255,0.12)"; e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = ""; }}>
+                  style={{ background: "var(--glass)", border: "1px solid var(--border)" }}
+                  onMouseEnter={e => { e.currentTarget.style.background = "color-mix(in oklch, var(--accent) 25%, transparent)"; e.currentTarget.style.border = "1px solid color-mix(in oklch, var(--accent) 60%, transparent)"; e.currentTarget.style.transform = "scale(1.06)"; e.currentTarget.style.boxShadow = "0 0 12px color-mix(in oklch, var(--accent) 30%, transparent), inset 0 1px 0 rgba(255,255,255,0.3)"; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = "var(--glass)"; e.currentTarget.style.border = "1px solid var(--border)"; e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = ""; }}>
                   {aicon(id, 32)}
-                  <span style={{ color: "rgba(200,230,255,0.8)", fontSize: 9, textAlign: "center", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", width: "100%", lineHeight: 1.3 }}>{APP_TITLES[id]}</span>
+                  <span style={{ color: "var(--foreground)", fontSize: 9, textAlign: "center", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", width: "100%", lineHeight: 1.3 }}>{APP_TITLES[id]}</span>
                 </button>
               ))}
             </div>
           </div>
           {/* Bottom bar */}
-          <div className="flex items-center justify-between px-4 py-3" style={{ borderTop: "1px solid rgba(140,200,255,0.25)", background: "rgba(60,100,200,0.15)", boxShadow: "inset 0 1px 0 rgba(200,230,255,0.2)" }}>
+          <div className="flex items-center justify-between px-4 py-3" style={{ borderTop: "1px solid var(--border)", background: "var(--glass)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.15)" }}>
             <div className="flex items-center gap-2.5">
               <div className="w-8 h-8 rounded-xl flex items-center justify-center text-lg overflow-hidden flex-shrink-0"
                 style={{ background: avatarBg }}>
@@ -2251,21 +2251,12 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
                   ? <img src={currentAvatar} alt="" className="w-full h-full object-cover" />
                   : (currentAvatar || "👤")}
               </div>
-              <span style={{ color: "rgba(200,230,255,0.85)", fontSize: 12, fontWeight: 600 }}>{currentUser}</span>
+              <span style={{ color: "var(--foreground)", fontSize: 12, fontWeight: 600 }}>{currentUser}</span>
             </div>
             <div className="flex gap-1">
-              <button style={{ padding: "5px 10px", borderRadius: 6, fontSize: 12, color: "rgba(180,220,255,0.7)", background: "rgba(120,180,255,0.12)", border: "1px solid rgba(120,180,255,0.25)", cursor: "pointer" }}
-                onMouseEnter={e => { e.currentTarget.style.background = "rgba(120,180,255,0.3)"; e.currentTarget.style.color = "#fff"; }}
-                onMouseLeave={e => { e.currentTarget.style.background = "rgba(120,180,255,0.12)"; e.currentTarget.style.color = "rgba(180,220,255,0.7)"; }}
-                onClick={() => { setLocked(true); setStartOpen(false); setPwInput(""); }}>🔒</button>
-              <button style={{ padding: "5px 10px", borderRadius: 6, fontSize: 12, color: "rgba(180,220,255,0.7)", background: "rgba(120,180,255,0.12)", border: "1px solid rgba(120,180,255,0.25)", cursor: "pointer" }}
-                onMouseEnter={e => { e.currentTarget.style.background = "rgba(120,180,255,0.3)"; e.currentTarget.style.color = "#fff"; }}
-                onMouseLeave={e => { e.currentTarget.style.background = "rgba(120,180,255,0.12)"; e.currentTarget.style.color = "rgba(180,220,255,0.7)"; }}
-                onClick={() => { setStartOpen(false); setPhase("login"); setPwInput(""); }}>🔄</button>
-              <button style={{ padding: "5px 10px", borderRadius: 6, fontSize: 12, color: "rgba(255,160,140,0.8)", background: "rgba(200,60,40,0.12)", border: "1px solid rgba(200,80,60,0.3)", cursor: "pointer" }}
-                onMouseEnter={e => { e.currentTarget.style.background = "rgba(200,60,40,0.3)"; e.currentTarget.style.color = "#ff9090"; }}
-                onMouseLeave={e => { e.currentTarget.style.background = "rgba(200,60,40,0.12)"; e.currentTarget.style.color = "rgba(255,160,140,0.8)"; }}
-                onClick={() => { blip("shutdown"); setStartOpen(false); setPhase("shutdown"); setWindows([]); }}>⏻</button>
+              <button className="aero-button rounded px-3 py-1 text-xs" onClick={() => { setLocked(true); setStartOpen(false); setPwInput(""); }}>🔒</button>
+              <button className="aero-button rounded px-3 py-1 text-xs" onClick={() => { setStartOpen(false); setPhase("login"); setPwInput(""); }}>🔄</button>
+              <button className="aero-button rounded px-3 py-1 text-xs" style={{ color: "#f87171" }} onClick={() => { blip("shutdown"); setStartOpen(false); setPhase("shutdown"); setWindows([]); }}>⏻</button>
             </div>
           </div>
         </div>
@@ -2339,7 +2330,7 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
       ) : systemVersion === "PueiOS 3" ? (
         /* PueiOS 3 — Vista Aero glass taskbar */
         <div className="fixed bottom-0 left-0 right-0 flex items-stretch z-[8000]"
-          style={{ height: 44, background: theme.taskbarColor ?? "linear-gradient(180deg, rgba(120,170,240,0.28) 0%, rgba(60,110,200,0.52) 40%, rgba(20,55,140,0.78) 100%)", backdropFilter: "blur(28px) saturate(210%)", borderTop: "1px solid rgba(160,210,255,0.55)", boxShadow: "0 -1px 0 rgba(255,255,255,0.45), 0 -2px 0 rgba(120,180,255,0.2), 0 -8px 24px rgba(30,80,200,0.35), inset 0 1px 0 rgba(200,230,255,0.25)" }}
+          style={{ height: 44, background: theme.taskbarColor ?? "var(--taskbar, linear-gradient(180deg, rgba(20,50,100,0.82) 0%, rgba(10,25,60,0.95) 100%))", backdropFilter: "blur(28px) saturate(210%)", borderTop: "1px solid color-mix(in oklch, var(--accent) 45%, transparent)", boxShadow: "0 -1px 0 rgba(255,255,255,0.35), 0 -8px 24px color-mix(in oklch, var(--accent) 25%, transparent), inset 0 1px 0 rgba(255,255,255,0.15)" }}
           onMouseDown={(e) => e.stopPropagation()}
           onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); setCtxMenu({ x: e.clientX, y: e.clientY, items: taskbarCtx() }); }}>
           {/* Win7-style Start orb */}
