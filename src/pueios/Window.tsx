@@ -406,12 +406,12 @@ export function appIcon(appId: AppId, size = 32, override?: string, iconUrl?: st
     if (!host) return "";
     return `https://www.google.com/s2/favicons?sz=${Math.max(32, Math.round(s))}&domain_url=${encodeURIComponent(`https://${host}`)}`;
   })();
-  // PueiOS 3: use flat modern icon (self-contained with background)
-  const p3Svg = boxed ? APP_ICON_SVGS_P3[appId]?.(s) : undefined;
   // PueiOS 1: flat minimal 2-color icon
-  const p1Svg = (!p3Svg && p1) ? APP_ICON_SVGS_P1[appId]?.(s) : undefined;
-  // PueiOS 2: XP-style transparent SVG
-  const customSvg = (p3Svg || p1Svg) ? null : APP_ICON_SVGS[appId]?.(s);
+  const p1Svg = p1 ? APP_ICON_SVGS_P1[appId]?.(s) : undefined;
+  // PueiOS 2/3: aero glass SVG (P3 gets it wrapped in a glass box below)
+  const customSvg = p1Svg ? null : APP_ICON_SVGS[appId]?.(s);
+  // p3Svg kept as null — P3 uses customSvg with box wrapper
+  const p3Svg: React.ReactNode = undefined;
 
   const emojiContent = isEmoji ? <span style={{ fontSize: Math.round(s * 0.62), lineHeight: 1 }}>{override}</span> : null;
 
@@ -446,11 +446,11 @@ export function appIcon(appId: AppId, size = 32, override?: string, iconUrl?: st
                 }}
               />
               <div style={{ display: "none", alignItems: "center", justifyContent: "center" }}>
-                {p3Svg ?? p1Svg ?? customSvg}
+                {p1Svg ?? customSvg}
               </div>
             </>
-          : p3Svg
-            ? <div style={{ borderRadius: radius, overflow: "hidden", boxShadow: `0 ${Math.round(s*0.06)}px ${Math.round(s*0.2)}px rgba(0,0,0,0.35)`, display: "flex" }}>{p3Svg}</div>
+          : boxed && customSvg
+            ? <div style={{ width: s, height: s, borderRadius: radius, overflow: "hidden", background: "linear-gradient(160deg, rgba(80,140,240,0.18) 0%, rgba(20,60,160,0.32) 100%)", border: "1px solid rgba(120,180,255,0.4)", boxShadow: `0 ${Math.round(s*0.06)}px ${Math.round(s*0.2)}px rgba(0,20,80,0.45), inset 0 1px 0 rgba(255,255,255,0.55)`, display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)" }}>{customSvg}</div>
             : (p1Svg ?? customSvg)
               ? <div style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>{p1Svg ?? customSvg}</div>
               : null

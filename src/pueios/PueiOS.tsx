@@ -1646,7 +1646,7 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
       };
 
       return (
-        <div className="fixed inset-0 flex flex-col wallpaper-p3" style={{ fontFamily: "'Segoe UI', system-ui, sans-serif", overflow: "hidden" }}>
+        <div className={`fixed inset-0 flex flex-col ${typeof theme.wallpaper === "string" && (theme.wallpaper.startsWith("data:") || theme.wallpaper.startsWith("custom:")) ? "" : `wallpaper-${theme.wallpaper}`}`} style={{ fontFamily: "'Segoe UI', system-ui, sans-serif", ...(typeof theme.wallpaper === "string" && theme.wallpaper.startsWith("data:") ? { backgroundImage: `url(${theme.wallpaper})`, backgroundSize: "cover", backgroundPosition: "center" } : {}), overflow: "hidden" }}>
           {/* Vista-style top accent stripe */}
           <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 4, background: "linear-gradient(90deg, rgba(20,80,180,0.6), rgba(80,160,255,0.9), rgba(20,80,180,0.6))", boxShadow: "0 0 16px rgba(80,160,255,0.6)" }} />
 
@@ -1896,8 +1896,8 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
 
   return (
     <div
-      className={`fixed inset-0 ${systemVersion === "PueiOS 1" ? "wallpaper-p1" : systemVersion === "PueiOS 3" ? "wallpaper-p3 win7-aero" : typeof theme.wallpaper === "string" && (theme.wallpaper.startsWith("custom:") || theme.wallpaper.startsWith("data:")) ? "" : `wallpaper-${theme.wallpaper}`}`}
-      style={{ overflow: "hidden", ...(systemVersion === "PueiOS 1" || systemVersion === "PueiOS 3" ? {} : wallpaperStyle) }}
+      className={`fixed inset-0 ${isP3 ? "win7-aero" : ""} ${systemVersion === "PueiOS 1" ? "wallpaper-p1" : typeof theme.wallpaper === "string" && (theme.wallpaper.startsWith("custom:") || theme.wallpaper.startsWith("data:")) ? "" : `wallpaper-${theme.wallpaper}`}`}
+      style={{ overflow: "hidden", ...(systemVersion === "PueiOS 1" ? {} : wallpaperStyle) }}
       onMouseDown={() => { setCtxMenu(null); setStartOpen(false); setShowCalendar(false); setSelectedIcon(null); setShowVolume(false); setShowNetwork(false); }}
       onContextMenu={(e) => { e.preventDefault(); setCtxMenu({ x: e.clientX, y: e.clientY, items: desktopCtx() }); }}
       onTouchStart={(e) => onTouchStart(e, desktopCtx())}
