@@ -1646,9 +1646,9 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
       };
 
       return (
-        <div className={`fixed inset-0 flex flex-col ${typeof theme.wallpaper === "string" && (theme.wallpaper.startsWith("data:") || theme.wallpaper.startsWith("custom:")) ? "" : `wallpaper-${theme.wallpaper}`}`} style={{ fontFamily: "'Segoe UI', system-ui, sans-serif", ...(typeof theme.wallpaper === "string" && theme.wallpaper.startsWith("data:") ? { backgroundImage: `url(${theme.wallpaper})`, backgroundSize: "cover", backgroundPosition: "center" } : {}), overflow: "hidden" }}>
-          {/* Win7-style top stripe */}
-          <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 3, background: "linear-gradient(90deg, #1a3f7a, #3074c2, #1a3f7a)" }} />
+        <div className="fixed inset-0 flex flex-col wallpaper-p3" style={{ fontFamily: "'Segoe UI', system-ui, sans-serif", overflow: "hidden" }}>
+          {/* Vista-style top accent stripe */}
+          <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 4, background: "linear-gradient(90deg, rgba(20,80,180,0.6), rgba(80,160,255,0.9), rgba(20,80,180,0.6))", boxShadow: "0 0 16px rgba(80,160,255,0.6)" }} />
 
           {/* Clock top-left */}
           <div style={{ position: "absolute", top: 20, left: 28, color: "rgba(190,215,255,0.55)", fontSize: 13, letterSpacing: 1, zIndex: 1, pointerEvents: "none" }}>
@@ -1658,10 +1658,14 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
           {/* Centered user card area */}
           <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", zIndex: 1 }}>
             <div style={{
-              width: 340, background: "rgba(255,255,255,0.055)", backdropFilter: "blur(18px)", WebkitBackdropFilter: "blur(18px)",
-              border: "1px solid rgba(255,255,255,0.13)", borderRadius: 3,
+              width: 340,
+              background: "linear-gradient(180deg, rgba(120,180,255,0.18) 0%, rgba(60,120,220,0.10) 50%, rgba(20,60,160,0.15) 100%)",
+              backdropFilter: "blur(32px) saturate(200%)",
+              WebkitBackdropFilter: "blur(32px) saturate(200%)",
+              border: "1px solid rgba(120,180,255,0.45)",
+              borderRadius: 4,
               padding: "44px 38px 36px",
-              boxShadow: "0 10px 50px rgba(0,0,0,0.65), inset 0 1px 0 rgba(255,255,255,0.18)",
+              boxShadow: "0 12px 60px rgba(0,20,80,0.7), inset 0 1px 0 rgba(200,230,255,0.55), inset 0 0 0 1px rgba(100,160,255,0.18), 0 0 40px rgba(60,140,255,0.2)",
             }}>
               {renderForm()}
             </div>
@@ -1892,8 +1896,8 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
 
   return (
     <div
-      className={`fixed inset-0 ${systemVersion === "PueiOS 1" ? "wallpaper-p1" : typeof theme.wallpaper === "string" && (theme.wallpaper.startsWith("custom:") || theme.wallpaper.startsWith("data:")) ? "" : `wallpaper-${theme.wallpaper}`}`}
-      style={{ overflow: "hidden", ...(systemVersion === "PueiOS 1" ? {} : wallpaperStyle) }}
+      className={`fixed inset-0 ${systemVersion === "PueiOS 1" ? "wallpaper-p1" : systemVersion === "PueiOS 3" ? "wallpaper-p3 win7-aero" : typeof theme.wallpaper === "string" && (theme.wallpaper.startsWith("custom:") || theme.wallpaper.startsWith("data:")) ? "" : `wallpaper-${theme.wallpaper}`}`}
+      style={{ overflow: "hidden", ...(systemVersion === "PueiOS 1" || systemVersion === "PueiOS 3" ? {} : wallpaperStyle) }}
       onMouseDown={() => { setCtxMenu(null); setStartOpen(false); setShowCalendar(false); setSelectedIcon(null); setShowVolume(false); setShowNetwork(false); }}
       onContextMenu={(e) => { e.preventDefault(); setCtxMenu({ x: e.clientX, y: e.clientY, items: desktopCtx() }); }}
       onTouchStart={(e) => onTouchStart(e, desktopCtx())}
@@ -2207,39 +2211,39 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
         </div>
       )}
 
-      {/* PueiOS 3 launcher — clean fullscreen-style panel */}
+      {/* PueiOS 3 launcher — Vista Aero glass panel */}
       {startOpen && systemVersion === "PueiOS 3" && (
-        <div className="fixed bottom-14 left-2 z-[9000] flex flex-col rounded-2xl overflow-hidden"
-          style={{ width: 400, maxHeight: "calc(100vh - 80px)", background: "rgba(8,8,20,0.95)", backdropFilter: "blur(48px) saturate(200%)", border: "1px solid rgba(255,255,255,0.10)", animation: "fade-scale 0.15s ease-out", boxShadow: "0 -8px 50px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.05)" }}
+        <div className="fixed bottom-14 left-2 z-[9000] flex flex-col rounded-xl overflow-hidden"
+          style={{ width: 400, maxHeight: "calc(100vh - 80px)", background: "linear-gradient(160deg, rgba(140,190,255,0.22) 0%, rgba(80,140,230,0.18) 40%, rgba(30,70,180,0.28) 100%)", backdropFilter: "blur(40px) saturate(220%)", border: "1px solid rgba(160,210,255,0.5)", animation: "fade-scale 0.15s ease-out", boxShadow: "0 -8px 50px rgba(20,60,200,0.45), 0 0 0 1px rgba(100,160,255,0.15), inset 0 1px 0 rgba(220,240,255,0.4)" }}
           onMouseDown={(e) => e.stopPropagation()}>
           {/* Search bar */}
           <div className="px-4 pt-4 pb-3">
-            <div className="flex items-center gap-2 px-3 py-2 rounded-xl" style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.1)" }}>
-              <span className="text-white/40 text-sm">🔍</span>
-              <span className="text-white/35 text-sm">Search apps…</span>
+            <div className="flex items-center gap-2 px-3 py-2 rounded-lg" style={{ background: "rgba(200,220,255,0.15)", border: "1px solid rgba(160,210,255,0.4)", boxShadow: "inset 0 1px 3px rgba(0,0,80,0.2), 0 1px 0 rgba(255,255,255,0.3)" }}>
+              <span style={{ color: "rgba(180,220,255,0.7)", fontSize: 13 }}>🔍</span>
+              <span style={{ color: "rgba(200,230,255,0.5)", fontSize: 13 }}>Search apps…</span>
             </div>
           </div>
           {/* App grid */}
           <div className="overflow-y-auto flex-1 px-3 pb-2">
-            <div className="text-white/30 text-[9px] uppercase tracking-widest mb-2 px-1">All Apps</div>
+            <div style={{ color: "rgba(160,210,255,0.55)", fontSize: 9, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 8, paddingLeft: 4 }}>All Apps</div>
             <div className="grid grid-cols-4 gap-2">
               {[...new Set([
                 ...icons.filter(i => !i.fileId && !i.webUrl && i.appId !== "recycle-bin").map(i => i.appId),
                 "settings" as const, "about" as const,
               ])].filter(id => id in APP_TITLES).map((id) => (
                 <button key={id} onClick={() => { openApp(id); setStartOpen(false); }}
-                  className="flex flex-col items-center gap-1.5 p-2.5 rounded-2xl transition-all group"
-                  style={{ background: "rgba(255,255,255,0.05)" }}
-                  onMouseEnter={e => { e.currentTarget.style.background = "rgba(99,102,241,0.22)"; e.currentTarget.style.transform = "scale(1.06)"; }}
-                  onMouseLeave={e => { e.currentTarget.style.background = "rgba(255,255,255,0.05)"; e.currentTarget.style.transform = ""; }}>
+                  className="flex flex-col items-center gap-1.5 p-2.5 rounded-xl transition-all"
+                  style={{ background: "rgba(140,190,255,0.08)", border: "1px solid rgba(140,200,255,0.12)" }}
+                  onMouseEnter={e => { e.currentTarget.style.background = "rgba(80,140,255,0.25)"; e.currentTarget.style.border = "1px solid rgba(120,180,255,0.5)"; e.currentTarget.style.transform = "scale(1.06)"; e.currentTarget.style.boxShadow = "0 0 12px rgba(80,150,255,0.3), inset 0 1px 0 rgba(255,255,255,0.3)"; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = "rgba(140,190,255,0.08)"; e.currentTarget.style.border = "1px solid rgba(140,200,255,0.12)"; e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = ""; }}>
                   {aicon(id, 32)}
-                  <span className="text-white/70 text-[9px] text-center truncate w-full leading-tight">{APP_TITLES[id]}</span>
+                  <span style={{ color: "rgba(200,230,255,0.8)", fontSize: 9, textAlign: "center", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", width: "100%", lineHeight: 1.3 }}>{APP_TITLES[id]}</span>
                 </button>
               ))}
             </div>
           </div>
           {/* Bottom bar */}
-          <div className="flex items-center justify-between px-4 py-3" style={{ borderTop: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.03)" }}>
+          <div className="flex items-center justify-between px-4 py-3" style={{ borderTop: "1px solid rgba(140,200,255,0.25)", background: "rgba(60,100,200,0.15)", boxShadow: "inset 0 1px 0 rgba(200,230,255,0.2)" }}>
             <div className="flex items-center gap-2.5">
               <div className="w-8 h-8 rounded-xl flex items-center justify-center text-lg overflow-hidden flex-shrink-0"
                 style={{ background: avatarBg }}>
@@ -2247,14 +2251,20 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
                   ? <img src={currentAvatar} alt="" className="w-full h-full object-cover" />
                   : (currentAvatar || "👤")}
               </div>
-              <span className="text-white/70 text-xs font-medium">{currentUser}</span>
+              <span style={{ color: "rgba(200,230,255,0.85)", fontSize: 12, fontWeight: 600 }}>{currentUser}</span>
             </div>
             <div className="flex gap-1">
-              <button className="px-3 py-1.5 rounded-xl text-xs text-white/50 hover:text-white hover:bg-white/10 transition-all"
+              <button style={{ padding: "5px 10px", borderRadius: 6, fontSize: 12, color: "rgba(180,220,255,0.7)", background: "rgba(120,180,255,0.12)", border: "1px solid rgba(120,180,255,0.25)", cursor: "pointer" }}
+                onMouseEnter={e => { e.currentTarget.style.background = "rgba(120,180,255,0.3)"; e.currentTarget.style.color = "#fff"; }}
+                onMouseLeave={e => { e.currentTarget.style.background = "rgba(120,180,255,0.12)"; e.currentTarget.style.color = "rgba(180,220,255,0.7)"; }}
                 onClick={() => { setLocked(true); setStartOpen(false); setPwInput(""); }}>🔒</button>
-              <button className="px-3 py-1.5 rounded-xl text-xs text-white/50 hover:text-white hover:bg-white/10 transition-all"
+              <button style={{ padding: "5px 10px", borderRadius: 6, fontSize: 12, color: "rgba(180,220,255,0.7)", background: "rgba(120,180,255,0.12)", border: "1px solid rgba(120,180,255,0.25)", cursor: "pointer" }}
+                onMouseEnter={e => { e.currentTarget.style.background = "rgba(120,180,255,0.3)"; e.currentTarget.style.color = "#fff"; }}
+                onMouseLeave={e => { e.currentTarget.style.background = "rgba(120,180,255,0.12)"; e.currentTarget.style.color = "rgba(180,220,255,0.7)"; }}
                 onClick={() => { setStartOpen(false); setPhase("login"); setPwInput(""); }}>🔄</button>
-              <button className="px-3 py-1.5 rounded-xl text-xs text-white/50 hover:text-white hover:bg-red-500/30 transition-all"
+              <button style={{ padding: "5px 10px", borderRadius: 6, fontSize: 12, color: "rgba(255,160,140,0.8)", background: "rgba(200,60,40,0.12)", border: "1px solid rgba(200,80,60,0.3)", cursor: "pointer" }}
+                onMouseEnter={e => { e.currentTarget.style.background = "rgba(200,60,40,0.3)"; e.currentTarget.style.color = "#ff9090"; }}
+                onMouseLeave={e => { e.currentTarget.style.background = "rgba(200,60,40,0.12)"; e.currentTarget.style.color = "rgba(255,160,140,0.8)"; }}
                 onClick={() => { blip("shutdown"); setStartOpen(false); setPhase("shutdown"); setWindows([]); }}>⏻</button>
             </div>
           </div>
@@ -2327,9 +2337,9 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
           </div>
         </div>
       ) : systemVersion === "PueiOS 3" ? (
-        /* PueiOS 3 — Win7 glass taskbar */
+        /* PueiOS 3 — Vista Aero glass taskbar */
         <div className="fixed bottom-0 left-0 right-0 flex items-stretch z-[8000]"
-          style={{ height: 44, background: theme.taskbarColor ?? "linear-gradient(180deg, rgba(20,50,100,0.82) 0%, rgba(10,25,60,0.95) 100%)", backdropFilter: "blur(20px) saturate(180%)", borderTop: "1px solid rgba(100,160,240,0.25)", boxShadow: "0 -1px 0 rgba(255,255,255,0.08), 0 -4px 20px rgba(0,0,20,0.6)" }}
+          style={{ height: 44, background: theme.taskbarColor ?? "linear-gradient(180deg, rgba(120,170,240,0.28) 0%, rgba(60,110,200,0.52) 40%, rgba(20,55,140,0.78) 100%)", backdropFilter: "blur(28px) saturate(210%)", borderTop: "1px solid rgba(160,210,255,0.55)", boxShadow: "0 -1px 0 rgba(255,255,255,0.45), 0 -2px 0 rgba(120,180,255,0.2), 0 -8px 24px rgba(30,80,200,0.35), inset 0 1px 0 rgba(200,230,255,0.25)" }}
           onMouseDown={(e) => e.stopPropagation()}
           onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); setCtxMenu({ x: e.clientX, y: e.clientY, items: taskbarCtx() }); }}>
           {/* Win7-style Start orb */}
