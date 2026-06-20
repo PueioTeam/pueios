@@ -1458,7 +1458,7 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
             <div className="flex flex-col items-center mb-6">
               <PueiLogoSvg size={52} />
               <div style={{ fontSize: 18, fontWeight: "bold", marginTop: 8, color: "#222" }}>PueiOS 1</div>
-              <div style={{ fontSize: 11, color: "#666", marginTop: 2 }}>Welcome. Please sign in.</div>
+              <div style={{ fontSize: 11, color: "#333", marginTop: 2 }}>Welcome. Please sign in.</div>
             </div>
             {!creating ? (
               <>
@@ -1480,9 +1480,9 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
                 </div>
                 <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
                   <button onClick={() => { setCreating(true); setPwError(""); }}
-                    style={{ padding: "4px 12px", fontSize: 12, border: "1px solid #999", background: "#ddd", cursor: "pointer" }}>New user</button>
+                    style={{ padding: "4px 12px", fontSize: 12, border: "1px solid #999", background: "#ddd", cursor: "pointer", color: "#000" }}>New user</button>
                   <button onClick={trySignIn}
-                    style={{ padding: "4px 14px", fontSize: 12, border: "1px solid #888", background: "#c8d8f0", cursor: "pointer", fontWeight: "bold" }}>Log On</button>
+                    style={{ padding: "4px 14px", fontSize: 12, border: "1px solid #888", background: "#c8d8f0", cursor: "pointer", fontWeight: "bold", color: "#000" }}>Log On</button>
                 </div>
               </>
             ) : (
@@ -1500,14 +1500,14 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
                 </div>
                 <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
                   <button onClick={() => { setCreating(false); setPwError(""); }}
-                    style={{ padding: "4px 12px", fontSize: 12, border: "1px solid #999", background: "#ddd", cursor: "pointer" }}>Cancel</button>
+                    style={{ padding: "4px 12px", fontSize: 12, border: "1px solid #999", background: "#ddd", cursor: "pointer", color: "#000" }}>Cancel</button>
                   <button onClick={async () => { await createAccount(); if (!pwError) setCreating(false); }}
-                    style={{ padding: "4px 14px", fontSize: 12, border: "1px solid #888", background: "#c8d8f0", cursor: "pointer", fontWeight: "bold" }}>Create</button>
+                    style={{ padding: "4px 14px", fontSize: 12, border: "1px solid #888", background: "#c8d8f0", cursor: "pointer", fontWeight: "bold", color: "#000" }}>Create</button>
                 </div>
               </>
             )}
           </div>
-          <div style={{ marginTop: 10, fontSize: 10, color: "#999" }}>PueiOS 1.0 · pueios-2020-puei</div>
+          <div style={{ marginTop: 10, fontSize: 10, color: "#444" }}>PueiOS 1.0 · pueios-2020-puei</div>
         </div>
       );
     }
