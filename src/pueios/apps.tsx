@@ -6664,17 +6664,18 @@ const PMAIL_FOLDERS_DEF = [
 ];
 type PMFolder = "inbox" | "important" | "sent" | "drafts" | "spam" | "trash";
 
-function resolveSenderInfo(name: string, users: { name: string; avatar?: string; color?: string }[], msgAvatar?: string, msgColor?: string): { av: string; col: string } {
+function resolveSenderInfo(name: string, users: { name: string; avatar?: string; color?: string; pueiNumber?: string }[], msgAvatar?: string, msgColor?: string): { av: string; col: string } {
   const lower = name.toLowerCase();
-  const local = users.find((u) => u.name.toLowerCase() === lower);
+  // Match by name OR pueiNumber (server may send pueiNumber as the from field)
+  const local = users.find((u) => u.name.toLowerCase() === lower || (u.pueiNumber && u.pueiNumber === name));
   if (local && (local.avatar ?? "").trim()) return { av: local.avatar!.trim(), col: local.color ?? "220" };
-  const dir = loadDirectory().find((e) => e.name.toLowerCase() === lower);
+  const dir = loadDirectory().find((e) => e.name.toLowerCase() === lower || e.pueiNumber === name);
   if (dir && (dir.avatar ?? "").trim()) return { av: dir.avatar.trim(), col: dir.color ?? "220" };
   if (msgAvatar && msgAvatar.trim()) return { av: msgAvatar.trim(), col: msgColor ?? "220" };
   return { av: "", col: local?.color ?? dir?.color ?? msgColor ?? "220" };
 }
 
-function SenderAvatar({ name, size = 32, users, msgAvatar, msgColor }: { name: string; size?: number; users: { name: string; avatar?: string; color?: string }[]; msgAvatar?: string; msgColor?: string }) {
+function SenderAvatar({ name, size = 32, users, msgAvatar, msgColor }: { name: string; size?: number; users: { name: string; avatar?: string; color?: string; pueiNumber?: string }[]; msgAvatar?: string; msgColor?: string }) {
   const { av, col } = resolveSenderInfo(name, users, msgAvatar, msgColor);
   const isImg = av.startsWith("data:") || av.startsWith("http");
   const isEmoji = av.length > 0 && !isImg;
