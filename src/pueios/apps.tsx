@@ -2379,7 +2379,7 @@ function PueiMailApp({ currentUser, users }: { currentUser: string; users: User[
       try {
         const res = await fetch(`/api/mail?owner=${encodeURIComponent(myMailKey)}`);
         if (!res.ok || cancelled) return;
-        const remote = (await res.json()) as Array<{ id: string; from: string; to: string; subject: string; body: string; at: number; attachments?: MailAttachment[] }>;
+        const remote = (await res.json()) as Array<{ id: string; from: string; to: string; subject: string; body: string; at: number; attachments?: MailAttachment[]; senderAvatar?: string; senderColor?: string }>;
         const fresh = remote.filter((m) => !seen.has(m.id));
         if (!fresh.length) return;
         fresh.forEach((m) => seen.add(m.id));
@@ -2387,7 +2387,7 @@ function PueiMailApp({ currentUser, users }: { currentUser: string; users: User[
         const newOnes: MailMessage[] = fresh.map((m) => ({
           id: m.id, from: m.from, to: m.to, subject: m.subject, body: m.body, at: m.at,
           read: false, folder: isLikelySpam(m) ? "spam" : "inbox", owner: currentUser,
-          attachments: m.attachments,
+          attachments: m.attachments, senderAvatar: m.senderAvatar ?? "", senderColor: m.senderColor ?? "220",
         }));
         replaceMailFor(currentUser, [...cur, ...newOnes]);
         reload();
@@ -2464,12 +2464,13 @@ function PueiMailApp({ currentUser, users }: { currentUser: string; users: User[
     // Determine server inbox key: prefer Puei Number of recipient
     const recipientUser = users.find((u) => u.name === resolved);
     const toKey = recipientUser?.pueiNumber || ((/^\d{3}-\d{3}-\d{3}$/.test(raw.replace(/-/g,"").replace(/(\d{3})(\d{3})(\d{3})/,"$1-$2-$3"))) ? raw.replace(/-/g,"").replace(/(\d{3})(\d{3})(\d{3})/,"$1-$2-$3") : resolved);
-    sendMail(currentUser, resolved, draft.subject.trim(), draft.body, users, pending);
+    const meUser = users.find((u) => u.name.toLowerCase() === currentUser.toLowerCase());
+    sendMail(currentUser, resolved, draft.subject.trim(), draft.body, users, pending, meUser?.avatar ?? "", meUser?.color ?? "220");
     // Deliver to server inbox using Puei Number key
     fetch("/api/mail", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ from: myMailKey || currentUser, to: toKey, subject: draft.subject.trim(), body: draft.body, attachments: pending }),
+      body: JSON.stringify({ from: myMailKey || currentUser, to: toKey, subject: draft.subject.trim(), body: draft.body, attachments: pending, senderAvatar: meUser?.avatar ?? "", senderColor: meUser?.color ?? "220" }),
     }).catch(() => {});
     // Drop draft if any
     if (draftId) {
@@ -2605,13 +2606,6 @@ function PueiMailApp({ currentUser, users }: { currentUser: string; users: User[
             <div className="p-4 text-xs opacity-50 text-center">No messages here.</div>
           ) : folderMsgs.map((msg) => {
             const displayName = folder === "sent" || msg.folder === "sent" ? msg.to : msg.from;
-            const senderUser = users.find((u: User) => u.name === displayName);
-            const avatarBg = `linear-gradient(135deg, oklch(0.7 0.18 ${senderUser?.color ?? "220"}), oklch(0.45 0.2 ${senderUser?.color ?? "220"}))`;
-            const avatarContent = senderUser?.avatar
-              ? (senderUser.avatar.startsWith("data:")
-                ? <img src={senderUser.avatar} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                : <span style={{ fontSize: 16, lineHeight: 1 }}>{senderUser.avatar}</span>)
-              : <span style={{ fontSize: 12, fontWeight: 700, color: "#fff" }}>{(displayName[0] ?? "?").toUpperCase()}</span>;
             const isUnread = !msg.read && msg.folder === "inbox";
             return (
             <div key={msg.id}
@@ -2625,10 +2619,7 @@ function PueiMailApp({ currentUser, users }: { currentUser: string; users: User[
               }}
               className="px-3 py-2 cursor-pointer border-b hover:bg-white/20 transition-colors"
               style={{ background: selected?.id === msg.id ? "rgba(255,255,255,0.25)" : undefined, display: "flex", alignItems: "flex-start", gap: 10 }}>
-              {/* Sender avatar */}
-              <div style={{ width: 36, height: 36, borderRadius: "50%", background: avatarBg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden", marginTop: 1, boxShadow: "0 2px 6px rgba(0,0,0,0.3)" }}>
-                {avatarContent}
-              </div>
+              <SenderAvatar name={displayName} size={36} users={users} msgAvatar={msg.senderAvatar} msgColor={msg.senderColor} />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div className="flex justify-between items-center">
                   <span className="text-xs truncate max-w-[120px]" style={{ fontWeight: isUnread ? 700 : 400 }}>
