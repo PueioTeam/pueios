@@ -93,6 +93,18 @@ function RemoveAccountButton({ name, onConfirm }: { name: string; onConfirm: () 
   );
 }
 
+// SVG arc path helper for busy cursor animation
+function arcPath(cx: number, cy: number, r: number, startDeg: number, endDeg: number): string {
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  const sx = cx + r * Math.cos(toRad(startDeg));
+  const sy = cy + r * Math.sin(toRad(startDeg));
+  const ex = cx + r * Math.cos(toRad(endDeg));
+  const ey = cy + r * Math.sin(toRad(endDeg));
+  const span = ((endDeg - startDeg) % 360 + 360) % 360;
+  const large = span > 180 ? 1 : 0;
+  return `M ${sx} ${sy} A ${r} ${r} 0 ${large} 1 ${ex} ${ey}`;
+}
+
 export function PueiOS() {
   const [phase, setPhase] = useState<Phase>("boot");
   const [bootProgress, setBootProgress] = useState(0);
@@ -706,6 +718,36 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
     setBusyCursor(true);
     window.setTimeout(() => setBusyCursor(false), 3000);
   };
+
+  // Animate "working in background" cursor by cycling SVG frames in a style element
+  useEffect(() => {
+    const el = document.getElementById("puei-busy-cursor") as HTMLStyleElement | null
+      ?? (() => { const s = document.createElement("style"); s.id = "puei-busy-cursor"; document.head.appendChild(s); return s; })();
+    if (!busyCursor) { el.textContent = ""; return; }
+    const c = theme.cursorColor ?? "#ffffff";
+    const enc = (svg: string) => `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
+    // Build one frame: arrow body + blue ring with arc at given rotation angle
+    const frame = (deg: number) => enc(
+      `<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'>` +
+      // Arrow
+      `<path d='M3 2 L3 20 L7 15 L11 22 L13.5 20.5 L9.5 13.5 L16 13.5 Z' fill='white' stroke='${c}' stroke-width='1.4' stroke-linejoin='round'/>` +
+      // Ring track
+      `<circle cx='23' cy='23' r='6' fill='none' stroke='rgba(120,180,255,0.18)' stroke-width='2.5'/>` +
+      // Spinning arc — draw two arcs so the bright one is the leading edge
+      `<path d='${arcPath(23, 23, 6, deg, deg + 240)}' fill='none' stroke='rgba(80,160,255,0.35)' stroke-width='2.5' stroke-linecap='round'/>` +
+      `<path d='${arcPath(23, 23, 6, deg + 180, deg + 260)}' fill='none' stroke='#7ec8ff' stroke-width='2.5' stroke-linecap='round'/>` +
+      `</svg>`
+    );
+    let angle = 0;
+    const tick = () => {
+      const cur = `${frame(angle)} 3 2, progress`;
+      el.textContent = `* { cursor: ${cur} !important; } button, a, [role="button"] { cursor: ${cur} !important; }`;
+      angle = (angle + 30) % 360;
+    };
+    tick();
+    const id = setInterval(tick, 60);
+    return () => { clearInterval(id); el.textContent = ""; };
+  }, [busyCursor, theme.cursorColor]);
 
   // In-app replacements for browser alert() / confirm() — avoids "site says:" browser chrome
   const pueiAlert = (msg: string, onOk?: () => void) =>
@@ -1923,15 +1965,6 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
     >
-      {/* Busy cursor — Win7 "working in background": small blue spinner beside arrow tip */}
-      {busyCursor && (
-        <div className="fixed z-[99998] pointer-events-none" style={{ left: mousePos.x + 12, top: mousePos.y + 12 }}>
-          <svg width="16" height="16" viewBox="0 0 16 16" style={{ animation: "puei-spin 0.75s linear infinite", display: "block", filter: "drop-shadow(0 0 3px rgba(80,160,255,0.7))" }}>
-            <circle cx="8" cy="8" r="6" fill="none" stroke="rgba(100,180,255,0.2)" strokeWidth="2.5"/>
-            <path d="M8 2 A6 6 0 0 1 14 8" fill="none" stroke="#60b8ff" strokeWidth="2.5" strokeLinecap="round"/>
-          </svg>
-        </div>
-      )}
       {/* Desktop icons */}
       <div className="absolute inset-0" style={{ pointerEvents: "none" }}>
         {desktopIcons.map((ic, idx) => {
