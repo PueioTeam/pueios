@@ -9,7 +9,7 @@ import { AppWindow, ContextMenu, appIcon } from "./Window";
 import { AppRenderer } from "./apps";
 import { PueiMascot, PueiLogoSvg } from "./Mascot";
 import { pullAndMergeFiles, pushFile as pushFileToServer, removeFileFromServer } from "./fileSync";
-import { loadFiles, saveFiles, upsertFile, deleteFile } from "./state";
+import { loadFiles, saveFiles, upsertFile, deleteFile, addShortcutToRecycle } from "./state";
 import { loginRemote, createRemote, applySnapshot, schedulePush, markUserDeleted, unmarkUserDeleted, type AccountSnapshot } from "./accountSync";
 
 
@@ -292,14 +292,22 @@ export function PueiOS() {
           setIcons((prev) => {
             const dragged = prev.find((i) => i.id === id);
             if (!dragged || (["file-explorer", "settings", "recycle-bin"] as string[]).includes(dragged.appId)) return prev;
-            if (dragged.fileId) deleteFile(dragged.fileId);
+            if (dragged.fileId) {
+              // File shortcut — deleteFile does soft-delete to recycle bin
+              deleteFile(dragged.fileId);
+              return prev.filter((i) => i.id !== id);
+            }
             if (dragged.appId === "folder") {
+              // Folder — unlink contained files and send shortcut to recycle
               const allFiles = loadFiles();
               saveFiles(allFiles.map((file) => file.folder === dragged.id ? { ...file, folder: undefined } : file));
+              addShortcutToRecycle(dragged);
               return prev
                 .map((i) => i.folderId === dragged.id ? { ...i, folderId: undefined } : i)
                 .filter((i) => i.id !== id);
             }
+            // App shortcut — send to recycle bin so it can be restored
+            addShortcutToRecycle(dragged);
             return prev.filter((i) => i.id !== id);
           });
           blip("notify");
@@ -685,6 +693,17 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
     }, 2600);
     return () => clearTimeout(done);
   }, [phase, upgradeProgress, upgradeTarget]);
+
+  // Restore shortcut from Recycle Bin back to desktop
+  useEffect(() => {
+    const h = (e: Event) => {
+      const icon = (e as CustomEvent).detail;
+      if (icon) addIcon(icon);
+    };
+    window.addEventListener("pueios-restore-shortcut", h);
+    return () => window.removeEventListener("pueios-restore-shortcut", h);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Cloud sync: pull all files for this user on sign-in (cross-device/browser)
   useEffect(() => {

@@ -410,6 +410,35 @@ export function emptyRecycle() {
   const ids = loadRecycle().map((x) => x.id);
   saveRecycle([]);
   ids.forEach((id) => markFileDeletedForever(id));
+  saveDeletedShortcuts([]);
+}
+
+// ---- Deleted shortcuts (app/folder shortcuts dragged to recycle bin)
+const DELETED_SHORTCUTS_KEY = "pueios2-deleted-shortcuts-v1";
+export type DeletedShortcut = DesktopIcon & { deletedAt: number };
+export function loadDeletedShortcuts(): DeletedShortcut[] {
+  if (typeof window === "undefined") return [];
+  try { return JSON.parse(localStorage.getItem(DELETED_SHORTCUTS_KEY) || "[]"); } catch { return []; }
+}
+export function saveDeletedShortcuts(items: DeletedShortcut[]) {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(DELETED_SHORTCUTS_KEY, JSON.stringify(items));
+    window.dispatchEvent(new CustomEvent("pueios-recycle-changed"));
+  } catch {}
+}
+export function addShortcutToRecycle(icon: DesktopIcon) {
+  const cur = loadDeletedShortcuts();
+  saveDeletedShortcuts([...cur.filter(s => s.id !== icon.id), { ...icon, deletedAt: Date.now() }]);
+}
+export function restoreShortcut(id: string): DeletedShortcut | undefined {
+  const cur = loadDeletedShortcuts();
+  const found = cur.find(s => s.id === id);
+  saveDeletedShortcuts(cur.filter(s => s.id !== id));
+  return found;
+}
+export function permanentDeleteShortcut(id: string) {
+  saveDeletedShortcuts(loadDeletedShortcuts().filter(s => s.id !== id));
 }
 
 // ---- Chat

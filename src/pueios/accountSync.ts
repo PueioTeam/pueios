@@ -57,7 +57,10 @@ function writeJSON(key: string, value: unknown) {
 
 /** Build a snapshot of everything tied to this account from local storage. */
 export function gatherSnapshot(user: User): AccountSnapshot {
-  const state = readJSON<{ theme?: Theme; icons?: DesktopIcon[] }>(LS.state, {});
+  const state = readJSON<{ theme?: Theme; icons?: DesktopIcon[]; users?: User[] }>(LS.state, {});
+  // Prefer avatar from saved state (most recent persisted value) over param if param is empty
+  const savedUser = state.users?.find((u: User) => u.name === user.name);
+  if (savedUser?.avatar?.trim() && !user.avatar?.trim()) user = { ...user, avatar: savedUser.avatar, color: savedUser.color ?? user.color };
   const allFiles = readJSON<Array<{ owner?: string }>>(LS.files, []);
   const allChat = readJSON<Array<{ from?: string; to?: string }>>(LS.chat, []);
   const allSocial = readJSON<Array<{ author?: string }>>(LS.social, []);
@@ -107,7 +110,14 @@ export function applySnapshot(snap: AccountSnapshot) {
     const cur = readJSON<{ users?: User[]; installed?: boolean; systemVersion?: string; theme?: Theme; icons?: DesktopIcon[] }>(LS.state, {});
     // Never restore users that were deleted on this device; also drop Guest (temp account)
     const users = Array.isArray(cur.users) ? cur.users.filter((u) => u.name !== name && u.name !== "Guest" && !isUserDeleted(u.name)) : [];
-    users.push(snap.user);
+    // Preserve local avatar/color if server snapshot has empty avatar (local is more recent)
+    const localEntry = Array.isArray(cur.users) ? cur.users.find((u: User) => u.name === name) : undefined;
+    const mergedUser: User = {
+      ...snap.user,
+      avatar: snap.user.avatar?.trim() ? snap.user.avatar : (localEntry?.avatar ?? snap.user.avatar),
+      color: snap.user.color?.trim() ? snap.user.color : (localEntry?.color ?? snap.user.color),
+    };
+    users.push(mergedUser);
     writeJSON(LS.state, {
       ...cur,
       installed: true,

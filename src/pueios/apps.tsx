@@ -1,10 +1,11 @@
 ﻿import { useEffect, useRef, useState } from "react";
-import type { AppId, Theme, User, WallpaperId, SavedFile, ChatMessage, DesktopIcon, SocialPost, SocialComment, SystemVersion, RecycleEntry, MailMessage, MailAttachment, MailFolderId, DownloadEntry } from "./state";
+import type { AppId, Theme, User, WallpaperId, SavedFile, ChatMessage, DesktopIcon, SocialPost, SocialComment, SystemVersion, RecycleEntry, MailMessage, MailAttachment, MailFolderId, DownloadEntry, DeletedShortcut } from "./state";
 import {
   blip, loadFiles, upsertFile, deleteFile, getFile, appendChat, loadChat, deleteChatBetween,
   loadSocial, saveSocial, pueiNumberFor, googleFaviconFor,
   classifyTrustedUrl, lookupPueiNumber, registerInDirectory, loadDirectory,
   loadRecycle, restoreFromRecycle, permanentDelete, emptyRecycle, moveFile,
+  loadDeletedShortcuts, restoreShortcut, permanentDeleteShortcut,
   SYSTEM_ORDER, compareVersion, loadMail, saveMail, sendMail, replaceMailFor,
   mailAddressFor, resolveMailRecipient, loadMailFolders, saveMailFolders,
   loadDownloads, recordDownload, isLikelySpam, aiMailSuggestions, loadState,
@@ -6344,31 +6345,49 @@ function IsoViewerApp({ fileId }: { fileId?: string }) {
 
 // ---------- Recycle Bin ----------
 function RecycleBinApp() {
-  const [items, setItems] = useState<RecycleEntry[]>(() => loadRecycle());
+  const [fileItems, setFileItems] = useState<RecycleEntry[]>(() => loadRecycle());
+  const [shortcutItems, setShortcutItems] = useState<DeletedShortcut[]>(() => loadDeletedShortcuts());
+  const refresh = () => { setFileItems(loadRecycle()); setShortcutItems(loadDeletedShortcuts()); };
   useEffect(() => {
-    const fn = () => setItems(loadRecycle());
-    window.addEventListener("pueios-recycle-changed", fn);
-    return () => window.removeEventListener("pueios-recycle-changed", fn);
+    window.addEventListener("pueios-recycle-changed", refresh);
+    return () => window.removeEventListener("pueios-recycle-changed", refresh);
   }, []);
+  const total = fileItems.length + shortcutItems.length;
   return (
     <div className="p-4 h-full flex flex-col">
       <div className="flex items-center justify-between mb-3">
-        <h2 className="text-lg font-semibold">🖦️ Recycle Bin</h2>
-        <button className="aero-button rounded px-3 py-1 text-xs" onClick={() => { emptyRecycle(); setItems([]); }}>Empty Recycle Bin</button>
+        <h2 className="text-lg font-semibold">🗑️ Recycle Bin</h2>
+        <button className="aero-button rounded px-3 py-1 text-xs" onClick={() => { emptyRecycle(); refresh(); }}>Empty Recycle Bin</button>
       </div>
-      {items.length === 0 ? (
+      {total === 0 ? (
         <div className="text-sm opacity-60 text-center p-8">Recycle Bin is empty.</div>
       ) : (
         <div className="grid grid-cols-5 gap-3 overflow-auto">
-          {items.map((f) => (
-            <div key={f.id} className="text-center p-2 rounded hover:bg-white/30">
+          {fileItems.map((f) => (
+            <div key={f.id} className="text-center p-2 rounded hover:bg-white/20 cursor-default">
               {f.type === "image"
                 ? <img src={f.content} alt="" className="w-12 h-12 mx-auto object-cover rounded shadow opacity-70" />
                 : <div className="text-4xl opacity-70">📄</div>}
-              <div className="text-xs mt-1 truncate">{f.name}</div>
-              <div className="flex gap-1 mt-1 justify-center">
-                <button className="aero-button rounded px-1 text-[10px]" onClick={() => { restoreFromRecycle(f.id); setItems(loadRecycle()); }}>Restore</button>
-                <button className="aero-button rounded px-1 text-[10px]" onClick={() => { permanentDelete(f.id); setItems(loadRecycle()); }}>Delete</button>
+              <div className="text-xs mt-1 truncate opacity-80">{f.name}</div>
+              <div className="text-[10px] opacity-40 mb-1">{new Date(f.deletedAt).toLocaleDateString()}</div>
+              <div className="flex gap-1 justify-center">
+                <button className="aero-button rounded px-1 text-[10px]" onClick={() => { restoreFromRecycle(f.id); refresh(); }}>Restore</button>
+                <button className="aero-button rounded px-1 text-[10px]" onClick={() => { permanentDelete(f.id); refresh(); }}>Delete</button>
+              </div>
+            </div>
+          ))}
+          {shortcutItems.map((s) => (
+            <div key={s.id} className="text-center p-2 rounded hover:bg-white/20 cursor-default">
+              <div className="text-4xl opacity-70">{s.iconEmoji ?? "🔗"}</div>
+              <div className="text-xs mt-1 truncate opacity-80">{s.label}</div>
+              <div className="text-[10px] opacity-40 mb-1">{new Date(s.deletedAt).toLocaleDateString()}</div>
+              <div className="flex gap-1 justify-center">
+                <button className="aero-button rounded px-1 text-[10px]" onClick={() => {
+                  const icon = restoreShortcut(s.id);
+                  if (icon) window.dispatchEvent(new CustomEvent("pueios-restore-shortcut", { detail: icon }));
+                  refresh();
+                }}>Restore</button>
+                <button className="aero-button rounded px-1 text-[10px]" onClick={() => { permanentDeleteShortcut(s.id); refresh(); }}>Delete</button>
               </div>
             </div>
           ))}
