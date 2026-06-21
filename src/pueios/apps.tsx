@@ -7,7 +7,7 @@ import {
   loadRecycle, restoreFromRecycle, permanentDelete, emptyRecycle, moveFile,
   SYSTEM_ORDER, compareVersion, loadMail, saveMail, sendMail, replaceMailFor,
   mailAddressFor, resolveMailRecipient, loadMailFolders, saveMailFolders,
-  loadDownloads, recordDownload, isLikelySpam, aiMailSuggestions,
+  loadDownloads, recordDownload, isLikelySpam, aiMailSuggestions, loadState,
 } from "./state";
 import { pullAndMergeFiles, pushFile as pushFileToServer, removeFileFromServer } from "./fileSync";
 import { changePasswordRemote, fetchPublicFilms } from "./accountSync";
@@ -197,6 +197,10 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, curren
       setUsers([...users, { ...me!, ...patch }]);
     } else {
       setUsers(users.map((u: User) => u.name === currentUser ? { ...u, ...patch } : u));
+    }
+    if (patch.avatar !== undefined) {
+      // Dispatch after saveState effect has had a chance to persist
+      setTimeout(() => window.dispatchEvent(new CustomEvent("pueios-avatar-changed")), 100);
     }
   };
   const onAvatarFile = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -6665,26 +6669,40 @@ const PMAIL_FOLDERS_DEF = [
 type PMFolder = "inbox" | "important" | "sent" | "drafts" | "spam" | "trash";
 
 function resolveSenderInfo(name: string, users: { name: string; avatar?: string; color?: string; pueiNumber?: string }[], msgAvatar?: string, msgColor?: string): { av: string; col: string } {
-  const lower = name.toLowerCase().trim();
-  // 1. Live users prop — match by name or pueiNumber
-  const local = users.find((u) => u.name.toLowerCase().trim() === lower || (u.pueiNumber && u.pueiNumber.trim() === name.trim()));
-  if (local && (local.avatar ?? "").trim()) return { av: local.avatar!.trim(), col: local.color ?? "220" };
-  // 2. Re-read localStorage directly in case prop is stale or user changed avatar after mount
-  try {
-    const stored: Array<{ name: string; avatar: string; color: string; pueiNumber?: string }> =
-      JSON.parse(localStorage.getItem("pueios2-state-v3") || "{}").users ?? [];
-    const fresh = stored.find((u) => u.name.toLowerCase().trim() === lower || (u.pueiNumber && u.pueiNumber.trim() === name.trim()));
-    if (fresh && (fresh.avatar ?? "").trim()) return { av: fresh.avatar.trim(), col: fresh.color ?? "220" };
-  } catch { /* ignore */ }
-  // 3. Directory (other users registered by pueiNumber)
-  const dir = loadDirectory().find((e) => e.name.toLowerCase().trim() === lower || e.pueiNumber.trim() === name.trim());
-  if (dir && (dir.avatar ?? "").trim()) return { av: dir.avatar.trim(), col: dir.color ?? "220" };
-  // 4. Avatar embedded in the message itself (set at send time)
-  if (msgAvatar && msgAvatar.trim()) return { av: msgAvatar.trim(), col: msgColor ?? "220" };
-  return { av: "", col: local?.color ?? dir?.color ?? msgColor ?? "220" };
+  const nm = name.trim();
+  const lower = nm.toLowerCase();
+  const match = (u: { name: string; pueiNumber?: string }) =>
+    u.name.toLowerCase().trim() === lower || (u.pueiNumber ?? "").trim() === nm;
+
+  // Always read latest from localStorage first — React prop can be stale
+  const freshUsers = loadState().users;
+  const fresh = freshUsers.find(match);
+  if (fresh?.avatar?.trim()) return { av: fresh.avatar.trim(), col: fresh.color ?? "220" };
+
+  // React state prop (may be up-to-date if state isn't persisted yet)
+  const local = users.find(match);
+  if (local?.avatar?.trim()) return { av: local.avatar.trim(), col: local.color ?? "220" };
+
+  // Directory (remote users registered via pueiNumber)
+  const dir = loadDirectory().find((e) => e.name.toLowerCase().trim() === lower || (e.pueiNumber ?? "").trim() === nm);
+  if (dir?.avatar?.trim()) return { av: dir.avatar.trim(), col: dir.color ?? "220" };
+
+  // Avatar embedded in the message at send time
+  if (msgAvatar?.trim()) return { av: msgAvatar.trim(), col: msgColor ?? "220" };
+
+  return { av: "", col: fresh?.color ?? local?.color ?? dir?.color ?? msgColor ?? "220" };
 }
 
 function SenderAvatar({ name, size = 32, users, msgAvatar, msgColor }: { name: string; size?: number; users: { name: string; avatar?: string; color?: string; pueiNumber?: string }[]; msgAvatar?: string; msgColor?: string }) {
+  // Force re-check on every render — avatar could update any time
+  const [tick, setTick] = useState(0);
+  useEffect(() => {
+    const h = () => setTick((t) => t + 1);
+    window.addEventListener("pueios-avatar-changed", h);
+    window.addEventListener("storage", h);
+    return () => { window.removeEventListener("pueios-avatar-changed", h); window.removeEventListener("storage", h); };
+  }, []);
+  void tick;
   const { av, col } = resolveSenderInfo(name, users, msgAvatar, msgColor);
   const isImg = av.startsWith("data:") || av.startsWith("http");
   const isEmoji = av.length > 0 && !isImg;

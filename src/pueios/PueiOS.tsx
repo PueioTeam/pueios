@@ -9,7 +9,7 @@ import { AppWindow, ContextMenu, appIcon } from "./Window";
 import { AppRenderer } from "./apps";
 import { PueiMascot, PueiLogoSvg } from "./Mascot";
 import { pullAndMergeFiles, pushFile as pushFileToServer, removeFileFromServer } from "./fileSync";
-import { loadFiles, saveFiles, upsertFile } from "./state";
+import { loadFiles, saveFiles, upsertFile, deleteFile } from "./state";
 import { loginRemote, createRemote, applySnapshot, schedulePush, markUserDeleted, unmarkUserDeleted, type AccountSnapshot } from "./accountSync";
 
 
@@ -208,6 +208,7 @@ export function PueiOS() {
 
   const dragRef = useRef<{ id: string; startX: number; startY: number; origLeft: number; origTop: number; el: HTMLElement } | null>(null);
   const wasDragged = useRef(false);
+  const [draggingOverRecycle, setDraggingOverRecycle] = useState(false);
   const DESKTOP_OX = 12;
   const DESKTOP_OY = 12;
   const getDesktopGridBounds = () => {
@@ -264,6 +265,8 @@ export function PueiOS() {
       const p = clampPixelPos(dragRef.current.origLeft + dx, dragRef.current.origTop + dy);
       dragRef.current.el.style.left = p.left + "px";
       dragRef.current.el.style.top = p.top + "px";
+      const hovered = document.elementFromPoint(ev.clientX, ev.clientY);
+      setDraggingOverRecycle(!!hovered?.closest("[data-icon-appid='recycle-bin']"));
     };
     const onUp = (ev: MouseEvent) => {
       window.removeEventListener("mousemove", onMove);
@@ -276,20 +279,46 @@ export function PueiOS() {
       de.style.transition = "";
       de.style.cursor = "";
       if (wasDragged.current) {
+        // Check if dropped onto the Recycle Bin icon
+        const dropEl = document.elementFromPoint(ev.clientX, ev.clientY);
+        const overRecycle = dropEl?.closest("[data-icon-appid='recycle-bin']");
+        setDraggingOverRecycle(false);
+        if (overRecycle) {
+          // Send dragged icon or file to recycle / delete
+          setIcons((prev) => {
+            const dragged = prev.find((i) => i.id === id);
+            if (!dragged || (["file-explorer", "settings", "recycle-bin"] as string[]).includes(dragged.appId)) return prev;
+            if (dragged.fileId) {
+              // File shortcut — delete the file itself
+              deleteFile(dragged.fileId);
+            }
+            if (dragged.appId === "folder") {
+              // Unlink files from this folder first
+              const allFiles = loadFiles();
+              saveFiles(allFiles.map((file) => file.folder === dragged.id ? { ...file, folder: undefined } : file));
+              return prev
+                .map((i) => i.folderId === dragged.id ? { ...i, folderId: undefined } : i)
+                .filter((i) => i.id !== id);
+            }
+            return prev.filter((i) => i.id !== id);
+          });
+          blip("notify");
+          dragRef.current = null;
+          return;
+        }
         const dx = ev.clientX - dragRef.current.startX;
         const dy = ev.clientY - dragRef.current.startY;
         const p = clampGridPos(
           Math.round((origLeft + dx - DESKTOP_OX) / GRID_W),
           Math.round((origTop + dy - DESKTOP_OY) / GRID_H),
         );
-        const col = p.col;
-        const row = p.row;
-        setIcons((prev) => prev.map((i) => i.id === id ? { ...i, col, row } : i));
+        setIcons((prev) => prev.map((i) => i.id === id ? { ...i, col: p.col, row: p.row } : i));
       } else {
         const p = clampPixelPos(origLeft, origTop);
         de.style.left = p.left + "px";
         de.style.top = p.top + "px";
       }
+      setDraggingOverRecycle(false);
       dragRef.current = null;
     };
     window.addEventListener("mousemove", onMove);
@@ -1972,6 +2001,7 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
           return (
             <div
               key={ic.id}
+              data-icon-appid={ic.appId}
               className={`desktop-icon ${selectedIcon === ic.id ? "selected" : ""}`}
               style={{
                 position: "absolute",
@@ -2005,7 +2035,7 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
               onTouchMove={onTouchMove}
               onTouchEnd={onTouchEnd}
             >
-              <div className="flex justify-center mb-1">{aicon(ic.appId, iconPx, ic.iconEmoji, ic.iconUrl)}</div>
+              <div className="flex justify-center mb-1" style={ic.appId === "recycle-bin" && draggingOverRecycle ? { filter: "drop-shadow(0 0 8px rgba(255,80,80,0.9)) brightness(1.3)", transform: "scale(1.15)", transition: "transform 0.1s" } : undefined}>{aicon(ic.appId, iconPx, ic.iconEmoji, ic.iconUrl)}</div>
               <div style={systemVersion === "PueiOS 1" ? { color: "#111", textShadow: "none" } : undefined}>{ic.label}</div>
             </div>
           );
