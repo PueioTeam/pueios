@@ -2626,7 +2626,7 @@ function PueiMailApp({ currentUser, users }: { currentUser: string; users: User[
               className="px-3 py-2 cursor-pointer border-b hover:bg-white/20 transition-colors"
               style={{ background: selected?.id === msg.id ? "rgba(255,255,255,0.25)" : undefined, display: "flex", alignItems: "flex-start", gap: 10 }}>
               {/* Sender avatar */}
-              <div style={{ width: 36, height: 36, borderRadius: "50%", background: avatarBg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden", marginTop: 2, boxShadow: "0 1px 4px rgba(0,0,0,0.25)" }}>
+              <div style={{ width: 36, height: 36, borderRadius: "50%", background: avatarBg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden", marginTop: 1, boxShadow: "0 2px 6px rgba(0,0,0,0.3)" }}>
                 {avatarContent}
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
@@ -6688,7 +6688,7 @@ function SenderAvatar({ name, size = 32, users, msgAvatar, msgColor }: { name: s
   const isImg = av.startsWith("data:") || av.startsWith("http");
   const isEmoji = av.length > 0 && !isImg;
   return (
-    <div style={{ width: size, height: size, borderRadius: size * 0.28, background: `linear-gradient(135deg, oklch(0.65 0.2 ${col}), oklch(0.4 0.22 ${col}))`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: size * 0.55, flexShrink: 0, overflow: "hidden", boxShadow: "0 2px 6px rgba(0,0,0,0.3)" }}>
+    <div style={{ width: size, height: size, borderRadius: "50%", background: `linear-gradient(135deg, oklch(0.65 0.2 ${col}), oklch(0.4 0.22 ${col}))`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: size * 0.55, flexShrink: 0, overflow: "hidden", boxShadow: "0 2px 6px rgba(0,0,0,0.3)" }}>
       {isImg ? <img src={av} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
         : isEmoji ? <span style={{ lineHeight: 1 }}>{av}</span>
         : <span style={{ color: "#fff", fontWeight: 700, fontSize: size * 0.42, lineHeight: 1 }}>{(name[0] ?? "?").toUpperCase()}</span>}

@@ -360,6 +360,11 @@ export function PueiOS() {
   const [switchErr, setSwitchErr] = useState("");
   const [newAcc, setNewAcc] = useState({ name: "", password: "", avatar: "🧑", color: "200" });
 
+  // Recovery / reinstall state (hoisted so useState isn't called inside a conditional render)
+  const [reinstallStep, setReinstallStep] = useState<"menu" | "confirm">("menu");
+  const [recoveryPw, setRecoveryPw] = useState("");
+  const [recoveryErr, setRecoveryErr] = useState("");
+
   // Install wizard state
   const [installStep, setInstallStep] = useState(0);
   const [installKey, setInstallKey] = useState("");
@@ -1326,56 +1331,48 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
   }
 
   if (phase === "recovery") {
-    const RecoveryScreen = () => {
-      const [reinstallStep, setReinstallStep] = useState<"menu" | "confirm">("menu");
-      const [recoveryPw, setRecoveryPw] = useState("");
-      const [recoveryErr, setRecoveryErr] = useState("");
-      const anyUser = users[0];
-      const tryReinstall = () => {
-        if (!anyUser) { localStorage.clear(); location.reload(); return; }
-        if (anyUser.password && recoveryPw !== anyUser.password) {
-          setRecoveryErr("Wrong password. Reinstall denied.");
-          return;
-        }
-        localStorage.clear(); location.reload();
-      };
-      return (
-        <div className="fixed inset-0 flex flex-col items-center justify-center text-white"
-          style={{ background: "linear-gradient(135deg, #2a0a0a, #4a1010)" }}>
-          <div className="text-4xl mb-3">⚠ Startup Repair</div>
-          <div className="opacity-70 mb-8 text-sm">PueiOS encountered an unexpected condition.</div>
-          {reinstallStep === "menu" ? (
-            <div className="space-y-2">
-              <button className="aero-button rounded px-6 py-2 block w-64" onClick={() => { setPhase("boot"); setBootProgress(0); }}>Attempt repair & restart</button>
-              <button className="aero-button rounded px-6 py-2 block w-64" onClick={() => setPhase("login")}>Continue to login</button>
-              <button className="aero-button rounded px-6 py-2 block w-64" style={{ color: "#fca5a5" }} onClick={() => setReinstallStep("confirm")}>Reinstall PueiOS…</button>
-            </div>
-          ) : (
-            <div className="w-72 space-y-3">
-              <div className="text-sm font-semibold text-red-300">⚠ This will wipe all accounts and files.</div>
-              {anyUser?.password && (
-                <>
-                  <div className="text-xs opacity-70">Enter the password for <b>{anyUser.name}</b> to confirm:</div>
-                  <input type="password" autoFocus value={recoveryPw} onChange={(e) => { setRecoveryPw(e.target.value); setRecoveryErr(""); }}
-                    onKeyDown={(e) => e.key === "Enter" && tryReinstall()}
-                    placeholder="Account password"
-                    style={{ width: "100%", background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,100,100,0.4)", borderRadius: 4, padding: "8px 12px", color: "#fff", outline: "none", boxSizing: "border-box" }} />
-                  {recoveryErr && <div style={{ color: "#f87171", fontSize: 12 }}>{recoveryErr}</div>}
-                </>
-              )}
-              {!anyUser?.password && (
-                <div className="text-xs opacity-70">No account password is set. Anyone can reinstall.</div>
-              )}
-              <div className="flex gap-2 pt-1">
-                <button className="aero-button rounded px-4 py-2 flex-1 text-sm" onClick={() => { setReinstallStep("menu"); setRecoveryPw(""); setRecoveryErr(""); }}>← Back</button>
-                <button className="aero-button rounded px-4 py-2 flex-1 text-sm" style={{ color: "#fca5a5" }} onClick={tryReinstall}>Wipe & Reinstall</button>
-              </div>
-            </div>
-          )}
-        </div>
-      );
+    const anyUser = users[0];
+    const tryReinstall = () => {
+      if (!anyUser) { localStorage.clear(); location.reload(); return; }
+      if (anyUser.password && recoveryPw !== anyUser.password) {
+        setRecoveryErr("Wrong password. Reinstall denied.");
+        return;
+      }
+      localStorage.clear(); location.reload();
     };
-    return <RecoveryScreen />;
+    return (
+      <div className="fixed inset-0 flex flex-col items-center justify-center text-white"
+        style={{ background: "linear-gradient(135deg, #2a0a0a, #4a1010)" }}>
+        <div className="text-4xl mb-3">⚠ Startup Repair</div>
+        <div className="opacity-70 mb-8 text-sm">PueiOS encountered an unexpected condition.</div>
+        {reinstallStep === "menu" ? (
+          <div className="space-y-2">
+            <button className="aero-button rounded px-6 py-2 block w-64" onClick={() => setPhase("login")}>Continue to login</button>
+            <button className="aero-button rounded px-6 py-2 block w-64" style={{ color: "#fca5a5" }} onClick={() => setReinstallStep("confirm")}>Reinstall PueiOS…</button>
+          </div>
+        ) : (
+          <div className="w-72 space-y-3">
+            <div className="text-sm font-semibold text-red-300">⚠ This will wipe all accounts and files.</div>
+            {anyUser?.password ? (
+              <>
+                <div className="text-xs opacity-70">Enter the password for <b>{anyUser.name}</b> to confirm:</div>
+                <input type="password" autoFocus value={recoveryPw} onChange={(e) => { setRecoveryPw(e.target.value); setRecoveryErr(""); }}
+                  onKeyDown={(e) => e.key === "Enter" && tryReinstall()}
+                  placeholder="Account password"
+                  style={{ width: "100%", background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,100,100,0.4)", borderRadius: 4, padding: "8px 12px", color: "#fff", outline: "none", boxSizing: "border-box" }} />
+                {recoveryErr && <div style={{ color: "#f87171", fontSize: 12 }}>{recoveryErr}</div>}
+              </>
+            ) : (
+              <div className="text-xs opacity-70">No account password is set. Anyone can reinstall.</div>
+            )}
+            <div className="flex gap-2 pt-1">
+              <button className="aero-button rounded px-4 py-2 flex-1 text-sm" onClick={() => { setReinstallStep("menu"); setRecoveryPw(""); setRecoveryErr(""); }}>← Back</button>
+              <button className="aero-button rounded px-4 py-2 flex-1 text-sm" style={{ color: "#fca5a5" }} onClick={tryReinstall}>Wipe & Reinstall</button>
+            </div>
+          </div>
+        )}
+      </div>
+    );
   }
 
   if (phase === "upgrade") {
@@ -1696,7 +1693,6 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
 
           {/* Win7-style bottom bar */}
           <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 52, background: "linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(5,15,40,0.9) 100%)", display: "flex", alignItems: "center", justifyContent: "flex-end", padding: "0 24px", gap: 12, zIndex: 1 }}>
-            <button onClick={() => setPhase("recovery")} style={{ background: "none", border: "none", color: "rgba(170,200,255,0.45)", cursor: "pointer", fontSize: 11, display: "flex", alignItems: "center", gap: 4 }}>⚙️ Ease of Access</button>
             <button style={{ background: "none", border: "none", color: "rgba(170,200,255,0.45)", cursor: "pointer", fontSize: 11, display: "flex", alignItems: "center", gap: 4 }} onClick={() => { blip("shutdown"); setPhase("shutdown"); }}>⏻ Shut down</button>
           </div>
 
