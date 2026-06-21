@@ -6665,12 +6665,21 @@ const PMAIL_FOLDERS_DEF = [
 type PMFolder = "inbox" | "important" | "sent" | "drafts" | "spam" | "trash";
 
 function resolveSenderInfo(name: string, users: { name: string; avatar?: string; color?: string; pueiNumber?: string }[], msgAvatar?: string, msgColor?: string): { av: string; col: string } {
-  const lower = name.toLowerCase();
-  // Match by name OR pueiNumber (server may send pueiNumber as the from field)
-  const local = users.find((u) => u.name.toLowerCase() === lower || (u.pueiNumber && u.pueiNumber === name));
+  const lower = name.toLowerCase().trim();
+  // 1. Live users prop — match by name or pueiNumber
+  const local = users.find((u) => u.name.toLowerCase().trim() === lower || (u.pueiNumber && u.pueiNumber.trim() === name.trim()));
   if (local && (local.avatar ?? "").trim()) return { av: local.avatar!.trim(), col: local.color ?? "220" };
-  const dir = loadDirectory().find((e) => e.name.toLowerCase() === lower || e.pueiNumber === name);
+  // 2. Re-read localStorage directly in case prop is stale or user changed avatar after mount
+  try {
+    const stored: Array<{ name: string; avatar: string; color: string; pueiNumber?: string }> =
+      JSON.parse(localStorage.getItem("pueios2-state-v3") || "{}").users ?? [];
+    const fresh = stored.find((u) => u.name.toLowerCase().trim() === lower || (u.pueiNumber && u.pueiNumber.trim() === name.trim()));
+    if (fresh && (fresh.avatar ?? "").trim()) return { av: fresh.avatar.trim(), col: fresh.color ?? "220" };
+  } catch { /* ignore */ }
+  // 3. Directory (other users registered by pueiNumber)
+  const dir = loadDirectory().find((e) => e.name.toLowerCase().trim() === lower || e.pueiNumber.trim() === name.trim());
   if (dir && (dir.avatar ?? "").trim()) return { av: dir.avatar.trim(), col: dir.color ?? "220" };
+  // 4. Avatar embedded in the message itself (set at send time)
   if (msgAvatar && msgAvatar.trim()) return { av: msgAvatar.trim(), col: msgColor ?? "220" };
   return { av: "", col: local?.color ?? dir?.color ?? msgColor ?? "220" };
 }

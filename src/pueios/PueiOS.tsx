@@ -2241,50 +2241,50 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
         </div>
       )}
 
-      {/* PueiOS 3 — Windows 8.1 Metro Start Screen */}
+      {/* PueiOS 3 launcher — Vista Aero glass panel, accent-aware */}
       {startOpen && systemVersion === "PueiOS 3" && (
-        <div className="fixed inset-0 z-[9000] flex flex-col"
-          style={{ background: "color-mix(in oklch, var(--accent) 85%, oklch(0.08 0.02 250))", animation: "p3-start-in 0.18s cubic-bezier(0.0,0.0,0.2,1)" }}
+        <div className="fixed bottom-10 left-2 z-[9000] flex flex-col rounded-xl overflow-hidden"
+          style={{ width: 400, maxHeight: "calc(100vh - 80px)", background: "var(--glass-strong)", backdropFilter: "blur(40px) saturate(220%)", border: "1px solid var(--border)", animation: "fade-scale 0.15s ease-out", boxShadow: "0 -8px 50px color-mix(in oklch, var(--accent) 30%, transparent), 0 0 0 1px color-mix(in oklch, var(--accent) 20%, transparent), inset 0 1px 0 rgba(255,255,255,0.35)" }}
           onMouseDown={(e) => e.stopPropagation()}>
-          {/* Top user bar */}
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", padding: "10px 20px 0", gap: 14, flexShrink: 0 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <div style={{ width: 28, height: 28, borderRadius: "50%", background: avatarBg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, overflow: "hidden", flexShrink: 0 }}>
-                {currentAvatar?.startsWith("data:") ? <img src={currentAvatar} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : (currentAvatar || "👤")}
-              </div>
-              <span style={{ color: "rgba(255,255,255,0.9)", fontSize: 12, fontWeight: 400, fontFamily: "'Segoe UI', system-ui, sans-serif" }}>{currentUser}</span>
+          {/* Search bar */}
+          <div className="px-4 pt-4 pb-3">
+            <div className="flex items-center gap-2 px-3 py-2 rounded-lg" style={{ background: "var(--glass)", border: "1px solid var(--border)", boxShadow: "inset 0 1px 3px rgba(0,0,0,0.15), 0 1px 0 rgba(255,255,255,0.25)" }}>
+              <span style={{ color: "var(--muted-foreground)", fontSize: 13 }}>🔍</span>
+              <span style={{ color: "var(--muted-foreground)", fontSize: 13 }}>Search apps…</span>
             </div>
-            <button style={{ background: "none", border: "none", color: "rgba(255,255,255,0.7)", cursor: "pointer", fontSize: 12, fontFamily: "'Segoe UI', system-ui, sans-serif" }} onClick={() => { setLocked(true); setStartOpen(false); setPwInput(""); }}>Lock</button>
-            <button style={{ background: "none", border: "none", color: "rgba(255,255,255,0.7)", cursor: "pointer", fontSize: 12, fontFamily: "'Segoe UI', system-ui, sans-serif" }} onClick={() => { setStartOpen(false); setPhase("login"); setPwInput(""); }}>Sign out</button>
-            <button style={{ background: "none", border: "none", color: "rgba(255,255,255,0.7)", cursor: "pointer", fontSize: 16 }} title="Shut down" onClick={() => { blip("shutdown"); setStartOpen(false); setPhase("shutdown"); setWindows([]); }}>⏻</button>
           </div>
-          {/* Metro tile grid */}
-          <div style={{ flex: 1, overflowY: "auto", padding: "24px 32px 80px" }}>
-            <div style={{ color: "rgba(255,255,255,0.9)", fontSize: 13, fontWeight: 300, letterSpacing: "0.05em", marginBottom: 18, fontFamily: "'Segoe UI', system-ui, sans-serif", textTransform: "uppercase" }}>Start</div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(96px, 1fr))", gap: 6 }}>
+          {/* App grid */}
+          <div className="overflow-y-auto flex-1 px-3 pb-2">
+            <div style={{ color: "var(--muted-foreground)", fontSize: 9, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 8, paddingLeft: 4 }}>All Apps</div>
+            <div className="grid grid-cols-4 gap-2">
               {[...new Set([
                 ...icons.filter(i => !i.fileId && !i.webUrl && i.appId !== "recycle-bin").map(i => i.appId),
                 "settings" as const, "about" as const,
-              ])].filter(id => id in APP_TITLES).map((id, idx) => {
-                // Give each tile a slightly different accent shade for Metro feel
-                const hueShift = (idx * 23) % 60 - 30;
-                return (
-                  <button key={id} onClick={() => { openApp(id); setStartOpen(false); }}
-                    style={{ aspectRatio: "1", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, background: `color-mix(in oklch, var(--accent) 70%, oklch(0.4 0.18 calc(var(--accent-h, 220) + ${hueShift})))`, border: "none", cursor: "pointer", padding: 8, transition: "filter 0.1s", fontFamily: "'Segoe UI', system-ui, sans-serif" }}
-                    onMouseEnter={e => { e.currentTarget.style.filter = "brightness(1.25)"; }}
-                    onMouseLeave={e => { e.currentTarget.style.filter = ""; }}>
-                    {aicon(id, 36)}
-                    <span style={{ color: "rgba(255,255,255,0.95)", fontSize: 9, textAlign: "center", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", width: "100%", lineHeight: 1.3, textTransform: "uppercase", letterSpacing: "0.04em" }}>{APP_TITLES[id]}</span>
-                  </button>
-                );
-              })}
+              ])].filter(id => id in APP_TITLES).map((id) => (
+                <button key={id} onClick={() => { openApp(id); setStartOpen(false); }}
+                  className="flex flex-col items-center gap-1.5 p-2.5 rounded-xl transition-all"
+                  style={{ background: "var(--glass)", border: "1px solid var(--border)" }}
+                  onMouseEnter={e => { e.currentTarget.style.background = "color-mix(in oklch, var(--accent) 25%, transparent)"; e.currentTarget.style.border = "1px solid color-mix(in oklch, var(--accent) 60%, transparent)"; e.currentTarget.style.transform = "scale(1.06)"; e.currentTarget.style.boxShadow = "0 0 12px color-mix(in oklch, var(--accent) 30%, transparent), inset 0 1px 0 rgba(255,255,255,0.3)"; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = "var(--glass)"; e.currentTarget.style.border = "1px solid var(--border)"; e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = ""; }}>
+                  {aicon(id, 32)}
+                  <span style={{ color: "var(--foreground)", fontSize: 9, textAlign: "center", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", width: "100%", lineHeight: 1.3 }}>{APP_TITLES[id]}</span>
+                </button>
+              ))}
             </div>
           </div>
-          {/* Bottom search bar — Win 8.1 charm style */}
-          <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 44, background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", padding: "0 32px", gap: 10 }}>
-            <span style={{ color: "rgba(255,255,255,0.5)", fontSize: 14 }}>🔍</span>
-            <span style={{ color: "rgba(255,255,255,0.4)", fontSize: 13, fontFamily: "'Segoe UI', system-ui, sans-serif" }}>Search</span>
-            <button style={{ marginLeft: "auto", background: "none", border: "none", color: "rgba(255,255,255,0.55)", cursor: "pointer", fontSize: 18 }} onClick={() => setStartOpen(false)}>✕</button>
+          {/* Bottom bar */}
+          <div className="flex items-center justify-between px-4 py-3" style={{ borderTop: "1px solid var(--border)", background: "var(--glass)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.15)" }}>
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-xl flex items-center justify-center text-lg overflow-hidden flex-shrink-0" style={{ background: avatarBg }}>
+                {currentAvatar?.startsWith("data:") ? <img src={currentAvatar} alt="" className="w-full h-full object-cover" /> : (currentAvatar || "👤")}
+              </div>
+              <span style={{ color: "var(--foreground)", fontSize: 12, fontWeight: 600 }}>{currentUser}</span>
+            </div>
+            <div className="flex gap-1">
+              <button className="aero-button rounded px-3 py-1 text-xs" onClick={() => { setLocked(true); setStartOpen(false); setPwInput(""); }}>🔒</button>
+              <button className="aero-button rounded px-3 py-1 text-xs" onClick={() => { setStartOpen(false); setPhase("login"); setPwInput(""); }}>🔄</button>
+              <button className="aero-button rounded px-3 py-1 text-xs" style={{ color: "#f87171" }} onClick={() => { blip("shutdown"); setStartOpen(false); setPhase("shutdown"); setWindows([]); }}>⏻</button>
+            </div>
           </div>
         </div>
       )}
@@ -2355,26 +2355,20 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
           </div>
         </div>
       ) : systemVersion === "PueiOS 3" ? (
-        /* PueiOS 3 — Windows 8.1 flat dark taskbar */
+        /* PueiOS 3 — Vista Aero glass taskbar */
         <div className="fixed bottom-0 left-0 right-0 flex items-stretch z-[8000]"
-          style={{ height: 40, background: theme.taskbarColor ?? "rgba(0,0,0,0.87)", backdropFilter: "blur(12px)", borderTop: "1px solid rgba(255,255,255,0.06)" }}
+          style={{ height: 44, background: theme.taskbarColor ?? "var(--taskbar, linear-gradient(180deg, rgba(20,50,100,0.82) 0%, rgba(10,25,60,0.95) 100%))", backdropFilter: "blur(28px) saturate(210%)", borderTop: "1px solid color-mix(in oklch, var(--accent) 45%, transparent)", boxShadow: "0 -1px 0 rgba(255,255,255,0.35), 0 -8px 24px color-mix(in oklch, var(--accent) 25%, transparent), inset 0 1px 0 rgba(255,255,255,0.15)" }}
           onMouseDown={(e) => e.stopPropagation()}
           onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); setCtxMenu({ x: e.clientX, y: e.clientY, items: taskbarCtx() }); }}>
-          {/* Win8 square start button */}
+          {/* Win7-style Start orb */}
           <button
             title="Start" onClick={(e) => { e.stopPropagation(); blip("click"); setStartOpen(!startOpen); setShowCalendar(false); }}
-            style={{ width: 44, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", background: startOpen ? "color-mix(in oklch, var(--accent) 90%, transparent)" : "transparent", border: "none", cursor: "pointer", transition: "background 0.1s" }}
-            onMouseEnter={e => { if (!startOpen) e.currentTarget.style.background = "rgba(255,255,255,0.1)"; }}
-            onMouseLeave={e => { if (!startOpen) e.currentTarget.style.background = "transparent"; }}>
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-              <rect x="0" y="0" width="7" height="7" fill="rgba(255,255,255,0.9)"/>
-              <rect x="9" y="0" width="7" height="7" fill="rgba(255,255,255,0.9)"/>
-              <rect x="0" y="9" width="7" height="7" fill="rgba(255,255,255,0.9)"/>
-              <rect x="9" y="9" width="7" height="7" fill="rgba(255,255,255,0.9)"/>
-            </svg>
+            style={{ width: 52, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", background: startOpen ? "linear-gradient(180deg,rgba(60,120,220,0.7) 0%,rgba(20,60,180,0.9) 100%)" : "linear-gradient(180deg,rgba(40,100,200,0.5) 0%,rgba(15,50,140,0.7) 100%)", borderRight: "1px solid rgba(100,160,240,0.2)", cursor: "pointer", position: "relative", border: "none" }}>
+            <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at 50% 30%, rgba(100,180,255,0.35) 0%, transparent 70%)", pointerEvents: "none" }} />
+            <PueiLogoSvg size={28} bigEyes />
           </button>
-          {/* Pinned + open apps */}
-          <div className="flex items-center flex-1 overflow-hidden" style={{ gap: 1, padding: "0 2px" }}>
+          {/* Pinned + open apps area */}
+          <div className="flex items-center flex-1 overflow-hidden" style={{ gap: 2, padding: "0 4px" }}>
             {pinnedApps.map((p) => {
               const pKey = p.webUrl ?? p.appId;
               const hasWin = windows.some((w) => p.appId === "web-app" ? w.appId === "web-app" && w.webUrl === p.webUrl : w.appId === p.appId);
@@ -2385,32 +2379,28 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
               return (
                 <div key={pKey} style={{ position: "relative", flexShrink: 0 }}>
                   <button onClick={(e) => { e.stopPropagation(); openPinned(p); }}
-                    onMouseEnter={e => { blip("hover"); e.currentTarget.style.background = "rgba(255,255,255,0.12)"; }}
-                    onMouseLeave={e => { e.currentTarget.style.background = isActive ? "rgba(255,255,255,0.18)" : hasWin ? "rgba(255,255,255,0.08)" : "transparent"; }}
-                    title={label}
+                    onMouseEnter={() => blip("hover")} title={label}
                     onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); setCtxMenu({ x: e.clientX, y: e.clientY, items: [
                       { label: "Open", action: () => openPinned(p) },
                       { sep: true },
                       { label: "🖇️ Unpin from taskbar", action: () => unpinFromTaskbar(pKey) },
                     ]}); }}
-                    style={{ width: 44, height: 40, display: "flex", alignItems: "center", justifyContent: "center", border: "none", background: isActive ? "rgba(255,255,255,0.18)" : hasWin ? "rgba(255,255,255,0.08)" : "transparent", cursor: "pointer" }}>
-                    {aicon(p.appId, 24, desktopIc?.iconEmoji, desktopIc?.iconUrl)}
+                    style={{ width: 44, height: 40, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 2, border: isActive ? "1px solid rgba(120,180,255,0.55)" : hasWin ? "1px solid rgba(255,255,255,0.12)" : "1px solid transparent", background: isActive ? "linear-gradient(180deg,rgba(60,140,255,0.35) 0%,rgba(20,80,200,0.4) 100%)" : hasWin ? "rgba(255,255,255,0.07)" : "transparent", cursor: "pointer", position: "relative", overflow: "hidden" }}>
+                    {isActive && <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "50%", background: "linear-gradient(180deg,rgba(255,255,255,0.2) 0%,rgba(255,255,255,0) 100%)", pointerEvents: "none" }} />}
+                    {aicon(p.appId, 26, desktopIc?.iconEmoji, desktopIc?.iconUrl)}
                   </button>
-                  {/* Win8 accent underline */}
-                  {hasWin && <div style={{ position: "absolute", bottom: 0, left: "50%", transform: "translateX(-50%)", width: isActive ? 30 : 14, height: 3, background: "color-mix(in oklch, var(--accent) 100%, white)", transition: "width 0.15s" }} />}
+                  {hasWin && <div style={{ position: "absolute", bottom: 1, left: "50%", transform: "translateX(-50%)", width: isActive ? 24 : 8, height: 2, borderRadius: 1, background: isActive ? "rgba(100,180,255,0.9)" : "rgba(150,200,255,0.5)", transition: "width 0.2s", boxShadow: isActive ? "0 0 6px rgba(80,160,255,0.7)" : "none" }} />}
                 </div>
               );
             })}
             {pinnedApps.length > 0 && windows.filter(w => !pinnedApps.some(p => p.appId === "web-app" ? w.appId === "web-app" && w.webUrl === p.webUrl : w.appId === p.appId)).length > 0 && (
-              <div style={{ width: 1, height: 22, background: "rgba(255,255,255,0.1)", margin: "0 2px", flexShrink: 0 }} />
+              <div style={{ width: 1, height: 28, background: "rgba(255,255,255,0.12)", margin: "0 3px", flexShrink: 0 }} />
             )}
             {windows.filter(w => !pinnedApps.some(p => p.appId === "web-app" ? w.appId === "web-app" && w.webUrl === p.webUrl : w.appId === p.appId)).map((w) => {
               const isActive2 = w.z === Math.max(...windows.map((x) => x.z)) && !w.minimized;
               return (
                 <button key={w.id}
-                  style={{ height: 40, padding: "0 10px", display: "flex", alignItems: "center", gap: 5, border: "none", background: isActive2 ? "rgba(255,255,255,0.18)" : "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.85)", fontSize: 11, maxWidth: 140, flexShrink: 0, cursor: "pointer", fontFamily: "'Segoe UI', system-ui, sans-serif" }}
-                  onMouseEnter={e => { e.currentTarget.style.background = "rgba(255,255,255,0.2)"; }}
-                  onMouseLeave={e => { e.currentTarget.style.background = isActive2 ? "rgba(255,255,255,0.18)" : "rgba(255,255,255,0.06)"; }}
+                  style={{ height: 40, padding: "0 10px", display: "flex", alignItems: "center", gap: 6, borderRadius: 2, border: isActive2 ? "1px solid rgba(120,180,255,0.55)" : "1px solid rgba(255,255,255,0.1)", background: isActive2 ? "linear-gradient(180deg,rgba(60,140,255,0.35) 0%,rgba(20,80,200,0.4) 100%)" : "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.9)", fontSize: 11, maxWidth: 140, flexShrink: 0, cursor: "pointer", position: "relative", overflow: "hidden" }}
                   onClick={(e) => { e.stopPropagation(); if (w.minimized) focusWin(w.id); else minWin(w.id); }}
                   onContextMenu={(e) => { e.preventDefault(); e.stopPropagation();
                     const wKey = w.appId === "web-app" ? (w.webUrl ?? w.appId) : w.appId;
@@ -2424,27 +2414,26 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
                       { sep: true },
                       { label: "Close", action: () => closeWin(w.id) },
                     ]});}}>
+                  {isActive2 && <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "50%", background: "linear-gradient(180deg,rgba(255,255,255,0.18) 0%,rgba(255,255,255,0) 100%)", pointerEvents: "none" }} />}
                   {aicon(w.appId, 18, undefined, w.appId === "web-app" ? icons.find(i => i.appId === "web-app" && i.webUrl === w.webUrl)?.iconUrl : undefined)}
                   <span className="truncate" style={{ maxWidth: 90 }}>{w.title}</span>
                 </button>
               );
             })}
           </div>
-          {/* Win8 tray */}
-          <div style={{ display: "flex", alignItems: "center", padding: "0 4px", gap: 2, flexShrink: 0 }}>
-            <span title="Network" style={{ cursor: "pointer", fontSize: 13, opacity: 0.6, padding: "0 4px" }}
+          {/* Win7 tray */}
+          <div style={{ display: "flex", alignItems: "center", borderLeft: "1px solid rgba(100,160,240,0.2)", padding: "0 8px", gap: 4, flexShrink: 0 }}>
+            <span title="Network" style={{ cursor: "pointer", fontSize: 14, opacity: 0.7, padding: "0 3px" }}
               onClick={(e) => { e.stopPropagation(); setShowNetwork(!showNetwork); setShowVolume(false); }}>📶</span>
-            <span title="Sound" style={{ cursor: "pointer", fontSize: 13, opacity: 0.6, padding: "0 4px" }}
+            <span title="Sound" style={{ cursor: "pointer", fontSize: 14, opacity: 0.7, padding: "0 3px" }}
               onClick={(e) => { e.stopPropagation(); setShowVolume(!showVolume); setShowNetwork(false); blip("notify"); }}>🔊</span>
             <button onClick={(e) => { e.stopPropagation(); setShowCalendar(!showCalendar); setStartOpen(false); }}
-              style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: "none", border: "none", color: "rgba(255,255,255,0.75)", fontSize: 10, lineHeight: 1.45, cursor: "pointer", padding: "0 8px", textAlign: "center", fontFamily: "'Segoe UI', system-ui, sans-serif" }}>
-              <span>{now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
-              <span style={{ opacity: 0.55 }}>{now.toLocaleDateString()}</span>
+              style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: "none", border: "none", color: "rgba(200,225,255,0.85)", fontSize: 10, lineHeight: 1.5, cursor: "pointer", padding: "0 6px", textAlign: "center" }}>
+              <span style={{ fontWeight: 500 }}>{now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
+              <span style={{ opacity: 0.7 }}>{now.toLocaleDateString()}</span>
             </button>
           </div>
-          <div title="Show Desktop" style={{ width: 5, flexShrink: 0, borderLeft: "1px solid rgba(255,255,255,0.07)", cursor: "pointer" }}
-            onMouseEnter={e => { e.currentTarget.style.background = "rgba(255,255,255,0.15)"; }}
-            onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}
+          <div title="Show Desktop" style={{ width: 8, flexShrink: 0, background: "rgba(255,255,255,0.06)", borderLeft: "1px solid rgba(100,160,240,0.2)", cursor: "pointer" }}
             onClick={(e) => { e.stopPropagation(); windows.forEach((w) => minWin(w.id)); }} />
         </div>
       ) : (
