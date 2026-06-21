@@ -2603,7 +2603,17 @@ function PueiMailApp({ currentUser, users }: { currentUser: string; users: User[
             ))
           ) : folderMsgs.length === 0 ? (
             <div className="p-4 text-xs opacity-50 text-center">No messages here.</div>
-          ) : folderMsgs.map((msg) => (
+          ) : folderMsgs.map((msg) => {
+            const displayName = folder === "sent" || msg.folder === "sent" ? msg.to : msg.from;
+            const senderUser = users.find((u: User) => u.name === displayName);
+            const avatarBg = `linear-gradient(135deg, oklch(0.7 0.18 ${senderUser?.color ?? "220"}), oklch(0.45 0.2 ${senderUser?.color ?? "220"}))`;
+            const avatarContent = senderUser?.avatar
+              ? (senderUser.avatar.startsWith("data:")
+                ? <img src={senderUser.avatar} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                : <span style={{ fontSize: 16, lineHeight: 1 }}>{senderUser.avatar}</span>)
+              : <span style={{ fontSize: 12, fontWeight: 700, color: "#fff" }}>{(displayName[0] ?? "?").toUpperCase()}</span>;
+            const isUnread = !msg.read && msg.folder === "inbox";
+            return (
             <div key={msg.id}
               onClick={() => {
                 if (msg.folder === "drafts") {
@@ -2614,21 +2624,28 @@ function PueiMailApp({ currentUser, users }: { currentUser: string; users: User[
                 }
               }}
               className="px-3 py-2 cursor-pointer border-b hover:bg-white/20 transition-colors"
-              style={{ background: selected?.id === msg.id ? "rgba(255,255,255,0.25)" : undefined }}>
-              <div className="flex justify-between items-center">
-                <span className="text-xs truncate max-w-[140px]" style={{ fontWeight: !msg.read && msg.folder === "inbox" ? 700 : 400 }}>
-                  {msg.important && "⭐ "}{folder === "sent" || msg.folder === "sent" ? `→ ${msg.to}` : msg.from}
-                </span>
-                <span className="text-[10px] opacity-50 flex-shrink-0">{formatDate(msg.at)}</span>
+              style={{ background: selected?.id === msg.id ? "rgba(255,255,255,0.25)" : undefined, display: "flex", alignItems: "flex-start", gap: 10 }}>
+              {/* Sender avatar */}
+              <div style={{ width: 36, height: 36, borderRadius: "50%", background: avatarBg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden", marginTop: 2, boxShadow: "0 1px 4px rgba(0,0,0,0.25)" }}>
+                {avatarContent}
               </div>
-              <div className="text-xs truncate opacity-80" style={{ fontWeight: !msg.read && msg.folder === "inbox" ? 600 : 400 }}>
-                {msg.subject || "(no subject)"}
-              </div>
-              <div className="text-[10px] truncate opacity-50">
-                {msg.attachments?.length ? `📎${msg.attachments.length} ` : ""}{msg.body.slice(0, 60)}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs truncate max-w-[120px]" style={{ fontWeight: isUnread ? 700 : 400 }}>
+                    {msg.important && "⭐ "}{folder === "sent" || msg.folder === "sent" ? `→ ${msg.to}` : msg.from}
+                  </span>
+                  <span className="text-[10px] opacity-50 flex-shrink-0">{formatDate(msg.at)}</span>
+                </div>
+                <div className="text-xs truncate opacity-80" style={{ fontWeight: isUnread ? 600 : 400 }}>
+                  {msg.subject || "(no subject)"}
+                </div>
+                <div className="text-[10px] truncate opacity-50">
+                  {msg.attachments?.length ? `📎${msg.attachments.length} ` : ""}{msg.body.slice(0, 60)}
+                </div>
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
