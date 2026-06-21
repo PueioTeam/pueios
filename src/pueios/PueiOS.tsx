@@ -682,20 +682,7 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
   const [wallpaperProgress, setWallpaperProgress] = useState(0);
   const setTheme = (t: Theme) => setThemeState(t);
   const setWallpaper = (w: WallpaperId) => {
-    setWallpaperTransitioning(true);
-    setWallpaperProgress(0);
-    const start = Date.now();
-    const duration = 3000;
-    const tick = () => {
-      const pct = Math.min(100, ((Date.now() - start) / duration) * 100);
-      setWallpaperProgress(pct);
-      if (pct < 100) { requestAnimationFrame(tick); }
-      else {
-        setThemeState({ ...theme, wallpaper: w });
-        setTimeout(() => { setWallpaperTransitioning(false); setWallpaperProgress(0); }, 200);
-      }
-    };
-    requestAnimationFrame(tick);
+    setThemeState({ ...theme, wallpaper: w });
   };
 
   const pushNotif = (title: string, body: string, kind: "default" | "update" = "default") => {
@@ -1339,20 +1326,56 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
   }
 
   if (phase === "recovery") {
-    return (
-      <div className="fixed inset-0 flex flex-col items-center justify-center text-white"
-        style={{ background: "linear-gradient(135deg, #2a0a0a, #4a1010)" }}>
-        <div className="text-4xl mb-3">⚠ Startup Repair</div>
-        <div className="opacity-70 mb-8 text-sm">PueiOS 2 encountered an unexpected condition.</div>
-        <div className="space-y-2">
-          <button className="aero-button rounded px-6 py-2 block w-64" onClick={() => { setPhase("boot"); setBootProgress(0); }}>Attempt repair & restart</button>
-          <button className="aero-button rounded px-6 py-2 block w-64" onClick={() => setPhase("login")}>Continue to login</button>
-          <button className="aero-button rounded px-6 py-2 block w-64" onClick={() => {
-            pueiConfirm("Reinstall PueiOS 2? All accounts and files will be wiped.", () => { localStorage.clear(); location.reload(); });
-          }}>Reinstall PueiOS 2</button>
+    const RecoveryScreen = () => {
+      const [reinstallStep, setReinstallStep] = useState<"menu" | "confirm">("menu");
+      const [recoveryPw, setRecoveryPw] = useState("");
+      const [recoveryErr, setRecoveryErr] = useState("");
+      const anyUser = users[0];
+      const tryReinstall = () => {
+        if (!anyUser) { localStorage.clear(); location.reload(); return; }
+        if (anyUser.password && recoveryPw !== anyUser.password) {
+          setRecoveryErr("Wrong password. Reinstall denied.");
+          return;
+        }
+        localStorage.clear(); location.reload();
+      };
+      return (
+        <div className="fixed inset-0 flex flex-col items-center justify-center text-white"
+          style={{ background: "linear-gradient(135deg, #2a0a0a, #4a1010)" }}>
+          <div className="text-4xl mb-3">⚠ Startup Repair</div>
+          <div className="opacity-70 mb-8 text-sm">PueiOS encountered an unexpected condition.</div>
+          {reinstallStep === "menu" ? (
+            <div className="space-y-2">
+              <button className="aero-button rounded px-6 py-2 block w-64" onClick={() => { setPhase("boot"); setBootProgress(0); }}>Attempt repair & restart</button>
+              <button className="aero-button rounded px-6 py-2 block w-64" onClick={() => setPhase("login")}>Continue to login</button>
+              <button className="aero-button rounded px-6 py-2 block w-64" style={{ color: "#fca5a5" }} onClick={() => setReinstallStep("confirm")}>Reinstall PueiOS…</button>
+            </div>
+          ) : (
+            <div className="w-72 space-y-3">
+              <div className="text-sm font-semibold text-red-300">⚠ This will wipe all accounts and files.</div>
+              {anyUser?.password && (
+                <>
+                  <div className="text-xs opacity-70">Enter the password for <b>{anyUser.name}</b> to confirm:</div>
+                  <input type="password" autoFocus value={recoveryPw} onChange={(e) => { setRecoveryPw(e.target.value); setRecoveryErr(""); }}
+                    onKeyDown={(e) => e.key === "Enter" && tryReinstall()}
+                    placeholder="Account password"
+                    style={{ width: "100%", background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,100,100,0.4)", borderRadius: 4, padding: "8px 12px", color: "#fff", outline: "none", boxSizing: "border-box" }} />
+                  {recoveryErr && <div style={{ color: "#f87171", fontSize: 12 }}>{recoveryErr}</div>}
+                </>
+              )}
+              {!anyUser?.password && (
+                <div className="text-xs opacity-70">No account password is set. Anyone can reinstall.</div>
+              )}
+              <div className="flex gap-2 pt-1">
+                <button className="aero-button rounded px-4 py-2 flex-1 text-sm" onClick={() => { setReinstallStep("menu"); setRecoveryPw(""); setRecoveryErr(""); }}>← Back</button>
+                <button className="aero-button rounded px-4 py-2 flex-1 text-sm" style={{ color: "#fca5a5" }} onClick={tryReinstall}>Wipe & Reinstall</button>
+              </div>
+            </div>
+          )}
         </div>
-      </div>
-    );
+      );
+    };
+    return <RecoveryScreen />;
   }
 
   if (phase === "upgrade") {
@@ -1674,7 +1697,7 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
           {/* Win7-style bottom bar */}
           <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 52, background: "linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(5,15,40,0.9) 100%)", display: "flex", alignItems: "center", justifyContent: "flex-end", padding: "0 24px", gap: 12, zIndex: 1 }}>
             <button onClick={() => setPhase("recovery")} style={{ background: "none", border: "none", color: "rgba(170,200,255,0.45)", cursor: "pointer", fontSize: 11, display: "flex", alignItems: "center", gap: 4 }}>⚙️ Ease of Access</button>
-            <button style={{ background: "none", border: "none", color: "rgba(170,200,255,0.45)", cursor: "pointer", fontSize: 11, display: "flex", alignItems: "center", gap: 4 }} onClick={() => setPhase("off")}>⏻ Shut down</button>
+            <button style={{ background: "none", border: "none", color: "rgba(170,200,255,0.45)", cursor: "pointer", fontSize: 11, display: "flex", alignItems: "center", gap: 4 }} onClick={() => { blip("shutdown"); setPhase("shutdown"); }}>⏻ Shut down</button>
           </div>
 
           <style>{`
@@ -1904,29 +1927,13 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
     >
-      {/* Wallpaper changing overlay */}
-      {wallpaperTransitioning && (
-        <div className="fixed inset-0 z-[99999] flex flex-col items-center justify-center pointer-events-none"
-          style={{ background: "rgba(0,0,0,0.55)", backdropFilter: "blur(8px)" }}>
-          <div style={{ color: "#fff", fontSize: 13, marginBottom: 12, fontWeight: 500, opacity: 0.9 }}>Applying wallpaper…</div>
-          <div style={{ width: 220, height: 6, background: "rgba(255,255,255,0.18)", borderRadius: 99, overflow: "hidden" }}>
-            <div style={{ width: `${wallpaperProgress}%`, height: "100%", background: "linear-gradient(90deg,#60a5fa,#818cf8)", borderRadius: 99, transition: "width 0.08s linear" }} />
-          </div>
-          <div style={{ color: "#fff", fontSize: 11, marginTop: 8, opacity: 0.55 }}>{Math.round(wallpaperProgress)}%</div>
-        </div>
-      )}
-
-      {/* Busy cursor spinner — follows mouse like Windows */}
+      {/* Busy cursor — Win7 "working in background": small blue spinner beside arrow tip */}
       {busyCursor && (
-        <div className="fixed z-[99998] pointer-events-none"
-          style={{ left: mousePos.x + 14, top: mousePos.y + 4, animation: "puei-spin 0.7s linear infinite", transformOrigin: "center" }}>
-          <div style={{
-            width: 20, height: 20, borderRadius: "50%",
-            border: "2.5px solid rgba(255,255,255,0.15)",
-            borderTopColor: "rgba(255,255,255,0.95)",
-            borderRightColor: "rgba(150,180,255,0.7)",
-            boxShadow: "0 0 6px rgba(100,140,255,0.6)"
-          }} />
+        <div className="fixed z-[99998] pointer-events-none" style={{ left: mousePos.x + 12, top: mousePos.y + 12 }}>
+          <svg width="16" height="16" viewBox="0 0 16 16" style={{ animation: "puei-spin 0.75s linear infinite", display: "block", filter: "drop-shadow(0 0 3px rgba(80,160,255,0.7))" }}>
+            <circle cx="8" cy="8" r="6" fill="none" stroke="rgba(100,180,255,0.2)" strokeWidth="2.5"/>
+            <path d="M8 2 A6 6 0 0 1 14 8" fill="none" stroke="#60b8ff" strokeWidth="2.5" strokeLinecap="round"/>
+          </svg>
         </div>
       )}
       {/* Desktop icons */}
