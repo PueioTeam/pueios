@@ -265,7 +265,9 @@ export function PueiOS() {
       const p = clampPixelPos(dragRef.current.origLeft + dx, dragRef.current.origTop + dy);
       dragRef.current.el.style.left = p.left + "px";
       dragRef.current.el.style.top = p.top + "px";
+      dragRef.current.el.style.display = "none";
       const hovered = document.elementFromPoint(ev.clientX, ev.clientY);
+      dragRef.current.el.style.display = "";
       setDraggingOverRecycle(!!hovered?.closest("[data-icon-appid='recycle-bin']"));
     };
     const onUp = (ev: MouseEvent) => {
@@ -279,21 +281,19 @@ export function PueiOS() {
       de.style.transition = "";
       de.style.cursor = "";
       if (wasDragged.current) {
-        // Check if dropped onto the Recycle Bin icon
+        // To detect drop on recycle bin, temporarily hide dragged element so elementFromPoint
+        // hits whatever is underneath (the recycle bin icon), not the dragged element itself.
+        de.style.display = "none";
         const dropEl = document.elementFromPoint(ev.clientX, ev.clientY);
+        de.style.display = "";
         const overRecycle = dropEl?.closest("[data-icon-appid='recycle-bin']");
         setDraggingOverRecycle(false);
         if (overRecycle) {
-          // Send dragged icon or file to recycle / delete
           setIcons((prev) => {
             const dragged = prev.find((i) => i.id === id);
             if (!dragged || (["file-explorer", "settings", "recycle-bin"] as string[]).includes(dragged.appId)) return prev;
-            if (dragged.fileId) {
-              // File shortcut — delete the file itself
-              deleteFile(dragged.fileId);
-            }
+            if (dragged.fileId) deleteFile(dragged.fileId);
             if (dragged.appId === "folder") {
-              // Unlink files from this folder first
               const allFiles = loadFiles();
               saveFiles(allFiles.map((file) => file.folder === dragged.id ? { ...file, folder: undefined } : file));
               return prev

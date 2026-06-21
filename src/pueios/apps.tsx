@@ -6669,28 +6669,28 @@ const PMAIL_FOLDERS_DEF = [
 type PMFolder = "inbox" | "important" | "sent" | "drafts" | "spam" | "trash";
 
 function resolveSenderInfo(name: string, users: { name: string; avatar?: string; color?: string; pueiNumber?: string }[], msgAvatar?: string, msgColor?: string): { av: string; col: string } {
-  const nm = name.trim();
+  const nm = (name ?? "").trim();
   const lower = nm.toLowerCase();
   const match = (u: { name: string; pueiNumber?: string }) =>
     u.name.toLowerCase().trim() === lower || (u.pueiNumber ?? "").trim() === nm;
 
-  // Always read latest from localStorage first — React prop can be stale
+  // 1. Prop (React state — most live)
+  const local = users.find(match);
+  if (local?.avatar?.trim()) return { av: local.avatar.trim(), col: local.color ?? "220" };
+
+  // 2. Fresh from localStorage
   const freshUsers = loadState().users;
   const fresh = freshUsers.find(match);
   if (fresh?.avatar?.trim()) return { av: fresh.avatar.trim(), col: fresh.color ?? "220" };
 
-  // React state prop (may be up-to-date if state isn't persisted yet)
-  const local = users.find(match);
-  if (local?.avatar?.trim()) return { av: local.avatar.trim(), col: local.color ?? "220" };
-
-  // Directory (remote users registered via pueiNumber)
+  // 3. Directory
   const dir = loadDirectory().find((e) => e.name.toLowerCase().trim() === lower || (e.pueiNumber ?? "").trim() === nm);
   if (dir?.avatar?.trim()) return { av: dir.avatar.trim(), col: dir.color ?? "220" };
 
-  // Avatar embedded in the message at send time
+  // 4. Embedded at send time
   if (msgAvatar?.trim()) return { av: msgAvatar.trim(), col: msgColor ?? "220" };
 
-  return { av: "", col: fresh?.color ?? local?.color ?? dir?.color ?? msgColor ?? "220" };
+  return { av: "", col: local?.color ?? fresh?.color ?? dir?.color ?? msgColor ?? "220" };
 }
 
 function SenderAvatar({ name, size = 32, users, msgAvatar, msgColor }: { name: string; size?: number; users: { name: string; avatar?: string; color?: string; pueiNumber?: string }[]; msgAvatar?: string; msgColor?: string }) {
@@ -6716,6 +6716,48 @@ function SenderAvatar({ name, size = 32, users, msgAvatar, msgColor }: { name: s
 }
 
 function PMailApp({ currentUser, users }: { currentUser: string; users: { name: string; pueiNumber?: string; avatar?: string; color?: string }[] }) {
+  // Keep a live merged users list: prop + freshest localStorage copy
+  // so avatars always resolve even if the prop is momentarily stale
+  const [liveUsers, setLiveUsers] = useState(() => {
+    const fresh = loadState().users;
+    const merged = [...users];
+    for (const fu of fresh) {
+      const idx = merged.findIndex(u => u.name.toLowerCase() === fu.name.toLowerCase());
+      if (idx >= 0) { if (fu.avatar?.trim()) merged[idx] = { ...merged[idx], avatar: fu.avatar, color: fu.color }; }
+      else if (fu.avatar?.trim()) merged.push(fu);
+    }
+    return merged;
+  });
+  useEffect(() => {
+    const refresh = () => {
+      const fresh = loadState().users;
+      setLiveUsers((prev) => {
+        const merged = [...prev];
+        for (const fu of fresh) {
+          const idx = merged.findIndex(u => u.name.toLowerCase() === fu.name.toLowerCase());
+          if (idx >= 0) { if (fu.avatar?.trim()) merged[idx] = { ...merged[idx], avatar: fu.avatar, color: fu.color }; }
+          else if (fu.avatar?.trim()) merged.push(fu);
+        }
+        return merged;
+      });
+    };
+    window.addEventListener("pueios-avatar-changed", refresh);
+    window.addEventListener("storage", refresh);
+    return () => { window.removeEventListener("pueios-avatar-changed", refresh); window.removeEventListener("storage", refresh); };
+  }, []);
+  // Also sync when prop changes
+  useEffect(() => {
+    setLiveUsers((prev) => {
+      const merged = [...prev];
+      for (const pu of users) {
+        const idx = merged.findIndex(u => u.name.toLowerCase() === pu.name.toLowerCase());
+        if (idx >= 0) { if (pu.avatar?.trim()) merged[idx] = { ...merged[idx], avatar: pu.avatar, color: pu.color }; }
+        else merged.push(pu);
+      }
+      return merged;
+    });
+  }, [users]);
+
   const [folder, setFolder] = useState<PMFolder>("inbox");
   const [msgs, setMsgs] = useState<MailMessage[]>(() => loadMail(currentUser));
   const [selected, setSelected] = useState<MailMessage | null>(null);
@@ -6893,7 +6935,7 @@ function PMailApp({ currentUser, users }: { currentUser: string; users: { name: 
               <div key={m.id} onClick={() => openMsg(m)}
                 className="flex items-start gap-2 px-3 py-2.5 border-b cursor-pointer transition-colors"
                 style={{ borderColor: "var(--border)", background: selected?.id === m.id ? "var(--accent)" : "transparent" }}>
-                <SenderAvatar name={displayName} size={34} users={users} msgAvatar={m.senderAvatar} msgColor={m.senderColor} />
+                <SenderAvatar name={displayName} size={34} users={liveUsers} msgAvatar={m.senderAvatar} msgColor={m.senderColor} />
                 <div className="flex flex-col gap-0.5 min-w-0 flex-1">
                   <div className="flex justify-between items-center gap-1">
                     <span className="text-xs font-semibold truncate" style={{ color: selected?.id === m.id ? "#fff" : "var(--foreground)", opacity: m.read ? 0.7 : 1, maxWidth: 120 }}>
@@ -6951,7 +6993,7 @@ function PMailApp({ currentUser, users }: { currentUser: string; users: { name: 
         ) : selected ? (
           <div className="flex flex-col h-full">
             <div className="flex items-start gap-3 p-4 border-b" style={{ borderColor: "var(--border)", background: "var(--glass)" }}>
-              <SenderAvatar name={selected.from ?? "?"} size={44} users={users} msgAvatar={selected.senderAvatar} msgColor={selected.senderColor} />
+              <SenderAvatar name={selected.from ?? "?"} size={44} users={liveUsers} msgAvatar={selected.senderAvatar} msgColor={selected.senderColor} />
               <div className="flex-1 min-w-0">
                 <div className="font-semibold text-sm">{selected.subject || "(no subject)"}</div>
                 <div className="text-xs opacity-60">From: {selected.from} → {selected.to}</div>
