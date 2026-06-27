@@ -2085,7 +2085,7 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
         return (
           <AppWindow key={w.id} win={w} focused={focused}
             peek={aeroPeek}
-            fullWindowTransparency={!!theme.transparency && !!theme.fullWindowTransparency}
+            fullWindowTransparency={!!theme.transparency && !!theme.fullWindowTransparency && systemVersion !== "PueiOS 1"}
             systemVersion={systemVersion}
             onFocus={() => focusWin(w.id)}
             onClose={() => closeWin(w.id)}
@@ -2183,8 +2183,8 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
         <div className="fixed bottom-9 left-0 z-[9000]"
           style={{ width: 200, maxHeight: "calc(100vh - 48px)", display: "flex", flexDirection: "column", background: "#d4d0c8", border: "2px outset #fff", boxShadow: "3px 3px 8px rgba(0,0,0,0.4)", fontFamily: "Arial, sans-serif", animation: "fade-scale 0.1s ease-out" }}
           onMouseDown={(e) => e.stopPropagation()}>
-          {/* Header strip */}
-          <div style={{ background: "linear-gradient(180deg,#000080,#0000c8)", padding: "8px 10px", color: "#fff", fontWeight: "bold", fontSize: 14, display: "flex", alignItems: "center", gap: 8 }}>
+          {/* Header strip — uses user accent color */}
+          <div style={{ background: `linear-gradient(180deg, oklch(0.32 0.22 ${theme.accentH}), oklch(0.48 0.28 ${theme.accentH}))`, padding: "8px 10px", color: "#fff", fontWeight: "bold", fontSize: 14, display: "flex", alignItems: "center", gap: 8 }}>
             <PueiLogoSvg size={28} />
             <div>
               <div style={{ fontSize: 14, fontWeight: "bold" }}>PueiOS 1</div>
@@ -2197,7 +2197,7 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
             <button key={ic.id}
               onClick={(e) => { e.stopPropagation(); openApp(ic.appId, ic.fileId); setStartOpen(false); }}
               style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, padding: "5px 10px", background: "none", border: "none", cursor: "pointer", fontSize: 12, textAlign: "left", color: "#000" }}
-              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "#000080"; (e.currentTarget as HTMLElement).style.color = "#fff"; }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = `oklch(0.38 0.22 ${theme.accentH})`; (e.currentTarget as HTMLElement).style.color = "#fff"; }}
               onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "none"; (e.currentTarget as HTMLElement).style.color = "#000"; }}>
               {aicon(ic.appId, 20, ic.iconEmoji, ic.iconUrl)}
               <span>{ic.label}</span>
@@ -2207,13 +2207,13 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
           <div style={{ borderTop: "1px solid #888", margin: "4px 0" }} />
           <button onClick={(e) => { e.stopPropagation(); setStartOpen(false); setPhase("login"); }}
             style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, padding: "5px 10px", background: "none", border: "none", cursor: "pointer", fontSize: 12 }}
-            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "#000080"; (e.currentTarget as HTMLElement).style.color = "#fff"; }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = `oklch(0.38 0.22 ${theme.accentH})`; (e.currentTarget as HTMLElement).style.color = "#fff"; }}
             onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "none"; (e.currentTarget as HTMLElement).style.color = "#000"; }}>
             🔒 Log Off
           </button>
           <button onClick={(e) => { e.stopPropagation(); setPhase("shutdown"); }}
             style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, padding: "5px 10px", background: "none", border: "none", cursor: "pointer", fontSize: 12 }}
-            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "#000080"; (e.currentTarget as HTMLElement).style.color = "#fff"; }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = `oklch(0.38 0.22 ${theme.accentH})`; (e.currentTarget as HTMLElement).style.color = "#fff"; }}
             onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "none"; (e.currentTarget as HTMLElement).style.color = "#000"; }}>
             ⏻ Shut Down
           </button>
@@ -2375,7 +2375,7 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
           {/* Start button */}
           <button onClick={(e) => { e.stopPropagation(); blip("click"); setStartOpen(!startOpen); setShowCalendar(false); }}
             title="Start"
-            style={{ height: "100%", padding: "0 14px", background: startOpen ? "#a0a0a0" : "linear-gradient(180deg,#e0e0e0,#b0b0b0)", border: "none", borderRight: "1px solid #888", cursor: "pointer", fontWeight: "bold", fontSize: 13, color: "#000", display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+            style={{ height: "100%", padding: "0 14px", background: startOpen ? `oklch(0.32 0.22 ${theme.accentH})` : `linear-gradient(180deg, oklch(0.55 0.2 ${theme.accentH}), oklch(0.38 0.24 ${theme.accentH}))`, border: "none", borderRight: `1px solid oklch(0.28 0.18 ${theme.accentH})`, cursor: "pointer", fontWeight: "bold", fontSize: 13, color: "#fff", display: "flex", alignItems: "center", gap: 6, flexShrink: 0, textShadow: "0 1px 2px rgba(0,0,0,0.5)" }}>
             <PueiLogoSvg size={18} />
             Start
           </button>

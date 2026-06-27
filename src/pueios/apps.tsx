@@ -4339,6 +4339,7 @@ function AppStoreApp({ installWebApp, openApp, openWebApp, systemVersion, addNat
   const official: StoreApp[] = [
     { name: "Puei Videos",     icon: "/puei-films-icon.svg",   desc: "Watch official videos posted by pueioficial.",          webUrl: "puei://films",   desktopLabel: "Puei Videos",   preInstalled: false },
     { name: "Puei Updater",   icon: "/puei-updater-icon.svg", desc: "Required for installing ISO system updates.",            webUrl: "puei://updates", desktopLabel: "Puei Updater", preInstalled: false },
+    { name: "Microsoft Edge", icon: "/edge-icon.svg", desc: "Microsoft Edge — fast, secure browser by Microsoft.", webUrl: "https://www.microsoft.com/en-us/edge", desktopLabel: "Microsoft Edge", preInstalled: false },
     { name: "PueiSocial",     icon: "📢", desc: "The official PueiOS social network.",          appId: "puei-social",    preInstalled: true },
     { name: "PueiCloudChat",  icon: "💬", desc: "Chat by PueiNumber — cross-device, real-time.", appId: "puei-cloud-chat", preInstalled: true },
     { name: "Puei Studio",    icon: "🪽", desc: "Create wallpapers, icons, themes and share to PueiSocial.", appId: "puei-studio", preInstalled: true },
@@ -5258,16 +5259,18 @@ function PueiUpdaterApp({ currentUser, startUpgrade, systemVersion }: { currentU
     : "PueiOS 2+";
 
   useEffect(() => {
-    if (mountedIsoId && !isoFiles.some((f) => f.id === mountedIsoId)) {
+    if (!isInstalling && mountedIsoId && !isoFiles.some((f) => f.id === mountedIsoId)) {
       setMountedIsoId(null);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filesVersion, mountedIsoId]);
+  }, [filesVersion, mountedIsoId, isInstalling]);
 
   const beginInstallActual = () => {
     setInstallStopped(false);
     setRestartQueued(false);
     setInstallProgress(0);
+    // Snapshot mountedIsoId at the moment install begins so the timer always has it
+    mountedIsoIdRef.current = mountedIsoId;
     setIsInstalling(true);
     blip("start");
   };

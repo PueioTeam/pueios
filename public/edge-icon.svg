@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <radialGradient id="edge-bg" cx="40%" cy="35%" r="80%">
+      <stop offset="0%" stop-color="#4fc3f7"/>
+      <stop offset="50%" stop-color="#0288d1"/>
+      <stop offset="100%" stop-color="#01579b"/>
+    </radialGradient>
+    <linearGradient id="edge-wave" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#26c6da"/>
+      <stop offset="100%" stop-color="#0097a7"/>
+    </linearGradient>
+    <linearGradient id="edge-shine" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="rgba(255,255,255,0.55)"/>
+      <stop offset="100%" stop-color="rgba(255,255,255,0)"/>
+    </linearGradient>
+  </defs>
+  <rect width="100" height="100" rx="22" fill="url(#edge-bg)"/>
+  <rect width="100" height="50" rx="22" fill="url(#edge-shine)"/>
+  <!-- Edge wave/globe shape -->
+  <path d="M72 38 C72 22 60 14 48 14 C33 14 20 26 20 42 C20 56 30 66 44 68 C38 68 28 64 24 56 C28 70 40 80 54 80 C68 80 80 68 80 54 C80 46 76 40 72 38 Z" fill="white" opacity="0.92"/>
+  <!-- Inner cutout to make the E shape -->
+  <path d="M44 40 L68 40 C66 32 58 26 48 26 C38 26 30 33 28 42 L44 42 Z" fill="url(#edge-bg)"/>
+  <!-- Bottom wave tip -->
+  <path d="M24 56 C28 66 38 74 50 74 C60 74 68 68 72 60 C64 66 54 68 44 68 C36 68 28 64 24 56 Z" fill="url(#edge-wave)" opacity="0.85"/>
+</svg>
