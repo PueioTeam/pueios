@@ -516,17 +516,15 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, curren
         {tab === "wallpaper" && (
           <div>
             <h2 className="text-xl font-semibold mb-4">Wallpaper</h2>
-            <div className="text-xs opacity-70 mb-2">Built-in</div>
             <div className="grid grid-cols-2 gap-3">
-              {([
-                ["default", "Default"], ["pueisky", "PueiSKY"],
-                ["aero-blue", "Meadow"], ["aero-pink", "Sunset"],
-                ["aero-neon", "Morning"], ["aero-dusk", "Lake"],
-                ["aero-forest", "Autumn"], ["aero-ember", "Snow"],
-                ["aero-arctic", "Night"], ["aero-galaxy", "Space"],
-                ["puei-bubbles", "Bubbles"], ["puei-garden", "Garden"],
-                ["puei-ocean", "Ocean"],
-              ] as [WallpaperId, string][]).map(([w, label]) => (
+              {(systemVersion === "PueiOS 3"
+                ? [["milkyway", "Milky Way"]] as [WallpaperId, string][]
+                : systemVersion === "PueiOS 2+"
+                ? [["greekcoast", "Greek Coast"]] as [WallpaperId, string][]
+                : systemVersion === "PueiOS 1"
+                ? [["dutchvillage", "Dutch Village"]] as [WallpaperId, string][]
+                : [["default", "Default"]] as [WallpaperId, string][]
+              ).map(([w, label]) => (
                 <button key={w} onClick={() => setWallpaper(w)}
                   className={`wallpaper-${w} h-28 rounded-lg border-2 text-white font-semibold text-sm`}
                   style={{ borderColor: wallpaper === w ? "white" : "transparent", boxShadow: wallpaper === w ? "0 0 0 3px var(--accent)" : undefined, textShadow: "0 1px 3px rgba(0,0,0,0.8)" }}>
@@ -2324,16 +2322,6 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
               </button>
             )}
           </div>
-        </div>
-
-        {/* PueiOS 2 */}
-        <div className="aero-glass-light rounded-xl p-4 space-y-2">
-          <div className="flex items-center gap-2">
-            <span className="font-semibold">PueiOS 2</span>
-            <span className="text-xs px-2 py-0.5 rounded" style={{ background: "rgba(220,50,50,0.18)", color: "#f87171" }}>End of Life</span>
-          </div>
-          <p className="text-xs opacity-60">The original PueiOS 2 release.</p>
-          <p className="text-xs" style={{ color: "#f87171" }}>As of June 6th, 2026, PueiOS 2 is no longer supported. No download available.</p>
         </div>
 
         {/* PueiOS 2+ */}
@@ -5310,7 +5298,6 @@ function PueiUpdaterApp({ currentUser, startUpgrade, systemVersion }: { currentU
 
   const versions: { v: SystemVersion; desc: string; eol?: boolean }[] = [
     { v: "PueiOS 1",  desc: "The very first PueiOS release — classic minimalist shell.", eol: true },
-    { v: "PueiOS 2",  desc: "The original PueiOS 2 release.", eol: true },
     { v: "PueiOS 2+", desc: "Advanced edition with stronger sync and AI systems.", eol: true },
     { v: "PueiOS 3",  desc: "Major release: redesigned shell, new AI assistant, PueiNet 3.0." },
   ];
@@ -5372,7 +5359,7 @@ function PueiUpdaterApp({ currentUser, startUpgrade, systemVersion }: { currentU
       <div className="flex-1 overflow-auto p-5 space-y-4">
         <div>
           <h2 className="text-2xl font-bold">Puei Updater</h2>
-          <p className="text-sm opacity-70 mt-1">Select a version to install. PueiOS 2 and 2+ are no longer supported as of June 6th, 2026.</p>
+          <p className="text-sm opacity-70 mt-1">Select a version to install. PueiOS 2+ is no longer supported as of June 6th, 2026.</p>
         </div>
 
         {/* Version list */}
