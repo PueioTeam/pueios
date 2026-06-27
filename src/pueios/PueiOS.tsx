@@ -2179,25 +2179,27 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
 
       {/* Start menu */}
       {/* PueiOS 1 Start Menu — simple flat list */}
-      {startOpen && systemVersion === "PueiOS 1" && (
+      {startOpen && systemVersion === "PueiOS 1" && (() => {
+        const aC = theme.accentC ?? 0.22;
+        const aH = theme.accentH;
+        const accent = (l: number, c?: number) => `oklch(${l} ${c ?? aC} ${aH})`;
+        return (
         <div className="fixed bottom-9 left-0 z-[9000]"
           style={{ width: 200, maxHeight: "calc(100vh - 48px)", display: "flex", flexDirection: "column", background: "#d4d0c8", border: "2px outset #fff", boxShadow: "3px 3px 8px rgba(0,0,0,0.4)", fontFamily: "Arial, sans-serif", animation: "fade-scale 0.1s ease-out" }}
           onMouseDown={(e) => e.stopPropagation()}>
-          {/* Header strip — uses user accent color */}
-          <div style={{ background: `linear-gradient(180deg, oklch(0.32 0.22 ${theme.accentH}), oklch(0.48 0.28 ${theme.accentH}))`, padding: "8px 10px", color: "#fff", fontWeight: "bold", fontSize: 14, display: "flex", alignItems: "center", gap: 8 }}>
+          <div style={{ background: `linear-gradient(180deg, ${accent(0.30)}, ${accent(0.46)})`, padding: "8px 10px", color: "#fff", fontWeight: "bold", fontSize: 14, display: "flex", alignItems: "center", gap: 8 }}>
             <PueiLogoSvg size={28} />
             <div>
               <div style={{ fontSize: 14, fontWeight: "bold" }}>PueiOS 1</div>
               <div style={{ fontSize: 10, opacity: 0.7 }}>{currentUser}</div>
             </div>
           </div>
-          {/* App list — scrollable */}
           <div style={{ overflowY: "auto", flex: 1 }}>
           {icons.map((ic) => (
             <button key={ic.id}
               onClick={(e) => { e.stopPropagation(); openApp(ic.appId, ic.fileId); setStartOpen(false); }}
               style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, padding: "5px 10px", background: "none", border: "none", cursor: "pointer", fontSize: 12, textAlign: "left", color: "#000" }}
-              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = `oklch(0.38 0.22 ${theme.accentH})`; (e.currentTarget as HTMLElement).style.color = "#fff"; }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = accent(0.36); (e.currentTarget as HTMLElement).style.color = aC < 0.05 && theme.accentL && theme.accentL > 0.5 ? "#000" : "#fff"; }}
               onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "none"; (e.currentTarget as HTMLElement).style.color = "#000"; }}>
               {aicon(ic.appId, 20, ic.iconEmoji, ic.iconUrl)}
               <span>{ic.label}</span>
@@ -2207,18 +2209,19 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
           <div style={{ borderTop: "1px solid #888", margin: "4px 0" }} />
           <button onClick={(e) => { e.stopPropagation(); setStartOpen(false); setPhase("login"); }}
             style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, padding: "5px 10px", background: "none", border: "none", cursor: "pointer", fontSize: 12 }}
-            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = `oklch(0.38 0.22 ${theme.accentH})`; (e.currentTarget as HTMLElement).style.color = "#fff"; }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = accent(0.36); (e.currentTarget as HTMLElement).style.color = "#fff"; }}
             onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "none"; (e.currentTarget as HTMLElement).style.color = "#000"; }}>
             🔒 Log Off
           </button>
           <button onClick={(e) => { e.stopPropagation(); setPhase("shutdown"); }}
             style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, padding: "5px 10px", background: "none", border: "none", cursor: "pointer", fontSize: 12 }}
-            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = `oklch(0.38 0.22 ${theme.accentH})`; (e.currentTarget as HTMLElement).style.color = "#fff"; }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = accent(0.36); (e.currentTarget as HTMLElement).style.color = "#fff"; }}
             onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "none"; (e.currentTarget as HTMLElement).style.color = "#000"; }}>
             ⏻ Shut Down
           </button>
         </div>
-      )}
+        );
+      })()}
       {/* PueiOS 2/2+ Start Menu — Windows 7 Aero style */}
       {startOpen && (systemVersion === "PueiOS 2" || systemVersion === "PueiOS 2+") && (
         <div className="fixed bottom-12 left-2 z-[9000] flex overflow-hidden rounded-xl shadow-2xl"
@@ -2373,12 +2376,18 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
           onMouseDown={(e) => e.stopPropagation()}
           onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); setCtxMenu({ x: e.clientX, y: e.clientY, items: taskbarCtx() }); }}>
           {/* Start button */}
-          <button onClick={(e) => { e.stopPropagation(); blip("click"); setStartOpen(!startOpen); setShowCalendar(false); }}
-            title="Start"
-            style={{ height: "100%", padding: "0 14px", background: startOpen ? `oklch(0.32 0.22 ${theme.accentH})` : `linear-gradient(180deg, oklch(0.55 0.2 ${theme.accentH}), oklch(0.38 0.24 ${theme.accentH}))`, border: "none", borderRight: `1px solid oklch(0.28 0.18 ${theme.accentH})`, cursor: "pointer", fontWeight: "bold", fontSize: 13, color: "#fff", display: "flex", alignItems: "center", gap: 6, flexShrink: 0, textShadow: "0 1px 2px rgba(0,0,0,0.5)" }}>
-            <PueiLogoSvg size={18} />
-            Start
-          </button>
+          {(() => {
+            const aC1 = theme.accentC ?? 0.22;
+            const aH1 = theme.accentH;
+            return (
+            <button onClick={(e) => { e.stopPropagation(); blip("click"); setStartOpen(!startOpen); setShowCalendar(false); }}
+              title="Start"
+              style={{ height: "100%", padding: "0 14px", background: startOpen ? `oklch(0.30 ${aC1} ${aH1})` : `linear-gradient(180deg, oklch(0.52 ${Math.min(aC1, 0.22)} ${aH1}), oklch(0.36 ${aC1} ${aH1}))`, border: "none", borderRight: `1px solid oklch(0.26 ${aC1} ${aH1})`, cursor: "pointer", fontWeight: "bold", fontSize: 13, color: "#fff", display: "flex", alignItems: "center", gap: 6, flexShrink: 0, textShadow: "0 1px 2px rgba(0,0,0,0.6)" }}>
+              <PueiLogoSvg size={18} />
+              Start
+            </button>
+            );
+          })()}
           {/* Open windows */}
           <div style={{ display: "flex", alignItems: "center", flex: 1, overflow: "hidden", gap: 2, padding: "0 4px" }}>
             {windows.map((w) => {
