@@ -27,8 +27,8 @@ function LocalDialogModal({ dialog }: { dialog: DialogState }) {
   if (!dialog) return null;
   return (
     <div className="absolute inset-0 z-[60] flex items-center justify-center" style={{ background: "rgba(0,0,0,0.55)" }}>
-      <div className="aero-glass rounded-xl p-5 w-72 shadow-2xl" style={{ animation: "fade-scale 0.15s ease-out" }}>
-        <div className="text-sm leading-relaxed mb-5 whitespace-pre-wrap">{dialog.msg}</div>
+      <div className="rounded-xl p-5 w-72 shadow-2xl" style={{ animation: "fade-scale 0.15s ease-out", background: "rgba(30,34,44,0.98)", border: "1px solid rgba(255,255,255,0.12)", backdropFilter: "none" }}>
+        <div className="text-sm leading-relaxed mb-5 whitespace-pre-wrap text-white">{dialog.msg}</div>
         <div className="flex justify-end gap-2">
           {dialog.onCancel && (
             <button className="aero-button rounded px-4 py-1.5 text-sm" onClick={dialog.onCancel}>Cancel</button>
@@ -6227,6 +6227,7 @@ function PueiSocialApp({ user, users }: { user: string; users: User[] }) {
   const [socialTab, setSocialTab] = useState<"feed" | "history">("feed");
   const [editingPostId, setEditingPostId] = useState<string | null>(null);
   const [editText, setEditText] = useState("");
+  const [socialDialog, , socialConfirm] = useLocalDialog();
   useEffect(() => {
     const fn = () => setPosts(loadSocial());
     window.addEventListener("pueios-social", fn);
@@ -6281,8 +6282,12 @@ function PueiSocialApp({ user, users }: { user: string; users: User[] }) {
     setPosts(next); saveSocial(next);
   };
   const deletePost = (postId: string) => {
-    const next = posts.filter((p) => p.id !== postId);
-    setPosts(next); saveSocial(next);
+    const post = posts.find((p) => p.id === postId);
+    const preview = post ? `"${post.text.slice(0, 60)}${post.text.length > 60 ? "…" : ""}"` : "this post";
+    socialConfirm(`Delete ${preview}?`, () => {
+      const next = posts.filter((p) => p.id !== postId);
+      setPosts(next); saveSocial(next);
+    });
   };
   const startEdit = (p: SocialPost) => { setEditingPostId(p.id); setEditText(p.text); };
   const saveEdit = (postId: string) => {
@@ -6297,7 +6302,8 @@ function PueiSocialApp({ user, users }: { user: string; users: User[] }) {
     r.readAsDataURL(f);
   };
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full relative">
+      <LocalDialogModal dialog={socialDialog} />
       <div className="aero-titlebar px-4 py-2 flex items-center justify-between">
         <div className="font-bold text-lg flex items-center gap-2">📢 PueiSocial</div>
         <div className="flex items-center gap-2">
