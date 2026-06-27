@@ -193,6 +193,23 @@
 
 
 
+/* Puei Texty — text color, font, size overrides */
+body { color: var(--text-override, var(--color-foreground)); }
+body * { font-family: var(--font-override, inherit); }
+html { font-size: var(--font-size-base, 14px); }
+
+/* Accessibility classes */
+.reduce-motion *, .reduce-motion *::before, .reduce-motion *::after {
+  animation: none !important;
+  transition: none !important;
+}
+.large-text { font-size: calc(var(--font-size-base, 14px) * 1.25) !important; }
+.large-text * { font-size: inherit !important; }
+.focus-highlight *:focus-visible {
+  outline: 3px solid var(--accent, #0080ff) !important;
+  outline-offset: 2px !important;
+}
+
 @layer base {
   * { border-color: var(--color-border); }
   html, body, #root { height: 100%; margin: 0; padding: 0; overflow: hidden; }

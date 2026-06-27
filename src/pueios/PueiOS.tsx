@@ -1,6 +1,6 @@
 ﻿import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  blip, compareVersion, defaultIcons, defaultTheme, iconGridPos, googleFaviconFor, pueiNumberFor,
+  blip, setBlipVersion, compareVersion, defaultIcons, defaultTheme, iconGridPos, googleFaviconFor, pueiNumberFor,
   loadState, saveState, registerInDirectory, SYSTEM_ORDER,
   type AppId, type DesktopIcon, type User, type SystemVersion,
   type Theme, type WallpaperId, type WindowState,
@@ -37,9 +37,11 @@ const APP_TITLES: Record<AppId, string> = {
   "pueyracing": "Puei Space",
   "iso-viewer": "ISO Viewer",
   "zip-viewer": "ZIP Viewer",
+  "task-manager": "Task Manager",
 };
 const APP_SIZES: Partial<Record<AppId, { w: number; h: number }>> = {
   "calculator": { w: 280, h: 380 },
+  "task-manager": { w: 540, h: 440 },
   "notepad": { w: 520, h: 420 },
   "about": { w: 480, h: 440 },
   "settings": { w: 820, h: 560 },
@@ -482,6 +484,9 @@ export function PueiOS() {
     return () => clearInterval(t);
   }, [phase, users.length]);
 
+  // Sync sound style with system version
+  useEffect(() => { setBlipVersion(systemVersion); }, [systemVersion]);
+
   // Apply theme + persist
   useEffect(() => {
     const root = document.documentElement;
@@ -543,6 +548,16 @@ export function PueiOS() {
       root.style.removeProperty("--accent-2");
       root.style.removeProperty("--gradient-aero");
     }
+    // Puei Texty — text color, font, size
+    if (theme.textColor) root.style.setProperty("--text-override", theme.textColor);
+    else root.style.removeProperty("--text-override");
+    if (theme.fontFamily) root.style.setProperty("--font-override", theme.fontFamily);
+    else root.style.removeProperty("--font-override");
+    root.style.setProperty("--font-size-base", `${theme.fontSize ?? 14}px`);
+    // Accessibility
+    root.classList.toggle("reduce-motion", !!theme.reducedMotion);
+    root.classList.toggle("large-text", !!theme.largeText);
+    root.classList.toggle("focus-highlight", !!theme.focusHighlight);
     saveState({ installed, systemVersion, theme, icons, users, lastUser: loginUser, remember });
     users.forEach((u) => { if (u.pueiNumber) registerInDirectory(u); });
   }, [installed, systemVersion, theme, icons, users, loginUser, remember]);
@@ -1019,7 +1034,7 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
   };
 
   const taskbarCtx = (): any[] => [
-    { label: "Task Manager", action: () => pushNotif("Task Manager", `${windows.length} window(s) open`) },
+    { label: "Task Manager", action: () => openApp("task-manager") },
     { label: "Show Desktop", action: () => setWindows(windows.map((w) => ({ ...w, minimized: true }))) },
     { sep: true },
     { label: "Properties", action: () => openApp("settings") },
@@ -1358,15 +1373,6 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
                 }}>
                 <span>Upgrade to {systemVersion === "PueiOS 1" ? "PueiOS 2" : "PueiOS 3"}</span>
                 <span style={{ fontSize: 18, opacity: 0.8 }}>›</span>
-              </button>
-              <button
-                onClick={() => { pueiConfirm("Wipe all accounts and files and reinstall?", () => { localStorage.clear(); location.reload(); }); }}
-                style={{
-                  background: "transparent", border: "1px solid rgba(255,255,255,0.2)",
-                  borderRadius: 4, padding: "8px 24px", cursor: "pointer",
-                  color: "rgba(180,200,255,0.7)", fontSize: 13, textAlign: "left",
-                }}>
-                Wipe device and reinstall
               </button>
               <button
                 onClick={() => { sessionStorage.setItem("pueios-eol-dismissed", "1"); setEolDismissed(true); setPhase("boot"); }}
@@ -1999,8 +2005,8 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
 
   return (
     <div
-      className={`fixed inset-0 ${isP3 ? "win7-aero" : ""} ${systemVersion === "PueiOS 1" ? "wallpaper-p1" : typeof theme.wallpaper === "string" && (theme.wallpaper.startsWith("custom:") || theme.wallpaper.startsWith("data:")) ? "" : `wallpaper-${theme.wallpaper}`}`}
-      style={{ overflow: "hidden", ...(systemVersion === "PueiOS 1" ? {} : wallpaperStyle) }}
+      className={`fixed inset-0 ${isP3 ? "win7-aero" : ""} ${typeof theme.wallpaper === "string" && (theme.wallpaper.startsWith("custom:") || theme.wallpaper.startsWith("data:")) ? "" : `wallpaper-${theme.wallpaper}`}`}
+      style={{ overflow: "hidden", ...wallpaperStyle }}
       onMouseDown={() => { setCtxMenu(null); setStartOpen(false); setShowCalendar(false); setSelectedIcon(null); setShowVolume(false); setShowNetwork(false); }}
       onContextMenu={(e) => { e.preventDefault(); setCtxMenu({ x: e.clientX, y: e.clientY, items: desktopCtx() }); }}
       onTouchStart={(e) => onTouchStart(e, desktopCtx())}
@@ -2168,14 +2174,14 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
 
       {/* Mascot */}
       {showMascot && (
-        <PueiMascot cursorPos={cursorPos} speak={mascotSpeak} onClick={() => setMascotSpeak(null)} />
+        <PueiMascot cursorPos={cursorPos} speak={mascotSpeak} onClick={() => setMascotSpeak(null)} openApps={windows.filter(w => !w.minimized).map(w => w.title)} />
       )}
 
       {/* Start menu */}
       {/* PueiOS 1 Start Menu — simple flat list */}
       {startOpen && systemVersion === "PueiOS 1" && (
         <div className="fixed bottom-9 left-0 z-[9000]"
-          style={{ width: 200, background: "#d4d0c8", border: "2px outset #fff", boxShadow: "3px 3px 8px rgba(0,0,0,0.4)", fontFamily: "Arial, sans-serif", animation: "fade-scale 0.1s ease-out" }}
+          style={{ width: 200, maxHeight: "calc(100vh - 48px)", display: "flex", flexDirection: "column", background: "#d4d0c8", border: "2px outset #fff", boxShadow: "3px 3px 8px rgba(0,0,0,0.4)", fontFamily: "Arial, sans-serif", animation: "fade-scale 0.1s ease-out" }}
           onMouseDown={(e) => e.stopPropagation()}>
           {/* Header strip */}
           <div style={{ background: "linear-gradient(180deg,#000080,#0000c8)", padding: "8px 10px", color: "#fff", fontWeight: "bold", fontSize: 14, display: "flex", alignItems: "center", gap: 8 }}>
@@ -2185,7 +2191,8 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
               <div style={{ fontSize: 10, opacity: 0.7 }}>{currentUser}</div>
             </div>
           </div>
-          {/* App list */}
+          {/* App list — scrollable */}
+          <div style={{ overflowY: "auto", flex: 1 }}>
           {icons.map((ic) => (
             <button key={ic.id}
               onClick={(e) => { e.stopPropagation(); openApp(ic.appId, ic.fileId); setStartOpen(false); }}
@@ -2196,6 +2203,7 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
               <span>{ic.label}</span>
             </button>
           ))}
+          </div>
           <div style={{ borderTop: "1px solid #888", margin: "4px 0" }} />
           <button onClick={(e) => { e.stopPropagation(); setStartOpen(false); setPhase("login"); }}
             style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, padding: "5px 10px", background: "none", border: "none", cursor: "pointer", fontSize: 12 }}
@@ -2619,7 +2627,7 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
             ["notepad","Notepad","📝"], ["calculator","Calculator","🧮"],
             ["app-store","App Store","🛍️"], ["puei-social","PueiSocial","📣"],
             ["recycle-bin","Recycle Bin","🗑️"], ["chess","Chess","♟️"],
-            ["puei-mansion","Puei Mansion","👻"],
+            ["puei-mansion","Puei Mansion","👻"], ["task-manager","Task Manager","📊"],
           ] as [AppId, string, string][]).map(([appId, label, icon]) => ({ id: `native-${appId}`, label, icon, kind: "native" as const, appId }))),
           ...(([
             ["puei://films","Puei Videos","/puei-films-icon.svg"],

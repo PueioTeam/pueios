@@ -57,10 +57,11 @@ For greetings like "hi", "hey", "hello" — respond warmly and naturally, NOT wi
 
 For questions about games, apps, features — give a quick useful answer. For anything else — be fun, creative, stay in character as Puei.`;
 
-async function askPuei(history: ChatMsg[], userMsg: string): Promise<string> {
+async function askPuei(history: ChatMsg[], userMsg: string, context?: string): Promise<string> {
   try {
+    const systemPrompt = context ? `${PUEI_SYSTEM}\n\nCURRENT CONTEXT: ${context}` : PUEI_SYSTEM;
     const messages = [
-      { role: "system", content: PUEI_SYSTEM },
+      { role: "system", content: systemPrompt },
       ...history.map(m => ({ role: m.role === "puei" ? "assistant" : "user", content: m.text })),
       { role: "user", content: userMsg },
     ];
@@ -190,11 +191,12 @@ function pueiLocalReply(q: string): string {
 }
 
 export function PueiMascot({
-  onClick, cursorPos, speak,
+  onClick, cursorPos, speak, openApps,
 }: {
   onClick?: () => void;
   cursorPos: { x: number; y: number };
   speak?: string | null;
+  openApps?: string[];
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -240,7 +242,10 @@ export function PueiMascot({
     const next: ChatMsg[] = [...history, { role: "user", text: msg }];
     setHistory(next);
     setThinking(true);
-    const reply = await askPuei(history, msg);
+    const context = openApps?.length
+      ? `The user currently has these apps open: ${openApps.join(", ")}. Reference them naturally if relevant.`
+      : undefined;
+    const reply = await askPuei(history, msg, context);
     setHistory([...next, { role: "puei", text: reply }]);
     setThinking(false);
   };

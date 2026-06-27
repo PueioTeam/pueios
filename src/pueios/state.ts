@@ -25,6 +25,13 @@ export type Theme = {
   aeroGlow: number;
   cursorColor: string; // hex, e.g. "#ffffff"
   touchCursor?: boolean; // show custom cursor on touch screens
+  textColor?: string; // hex override for body text
+  fontFamily?: string; // system font override
+  fontSize?: number; // base font size in px (default 14)
+  reducedMotion?: boolean; // disable all animations
+  largeText?: boolean; // bump all text up 125%
+  highContrastCursor?: boolean; // large black cursor
+  focusHighlight?: boolean; // thick focus ring on all interactive elements
 };
 
 // Trusted domains for the Installer (closed-ecosystem rule)
@@ -141,7 +148,8 @@ export type AppId =
   | "iso-viewer"
   | "zip-viewer"
   | "pmail"
-  | "pueyracing";
+  | "pueyracing"
+  | "task-manager";
 
 export type WindowState = {
   id: string;
@@ -310,6 +318,7 @@ export const defaultIcons: DesktopIcon[] = [
   { id: "i-note", label: "Notepad", appId: "notepad" },
   { id: "i-calc", label: "Calculator", appId: "calculator" },
   { id: "i-about", label: "About PueiOS 2", appId: "about" },
+  { id: "i-taskman", label: "Task Manager", appId: "task-manager" },
 ];
 
 export function iconGridPos(index: number) {
@@ -644,30 +653,69 @@ export function saveSocial(posts: SocialPost[]) {
 
 // ---- Audio
 let audioCtx: AudioContext | null = null;
-export function blip(kind: "start" | "click" | "hover" | "notify" | "error" | "shutdown") {
+let _blipVersion: SystemVersion = "PueiOS 2";
+export function setBlipVersion(v: SystemVersion) { _blipVersion = v; }
+
+type BlipKind = "start" | "click" | "hover" | "notify" | "error" | "shutdown";
+
+interface BlipDef { freqs: number[]; type?: OscillatorType; spacing?: number; dur?: number; vol?: number; }
+
+const BLIP_SOUNDS: Record<SystemVersion, Record<BlipKind, BlipDef>> = {
+  "PueiOS 1": {
+    // Retro 8-bit style — square waves, simple beeps
+    start:    { freqs: [440, 554, 659], type: "square", spacing: 0.1, dur: 0.12, vol: 0.08 },
+    click:    { freqs: [660], type: "square", spacing: 0, dur: 0.07, vol: 0.06 },
+    hover:    { freqs: [880], type: "square", spacing: 0, dur: 0.04, vol: 0.03 },
+    notify:   { freqs: [660, 880], type: "square", spacing: 0.1, dur: 0.12, vol: 0.07 },
+    error:    { freqs: [220, 196], type: "sawtooth", spacing: 0.08, dur: 0.2, vol: 0.08 },
+    shutdown: { freqs: [659, 523, 392], type: "square", spacing: 0.12, dur: 0.15, vol: 0.07 },
+  },
+  "PueiOS 2": {
+    // Aero glass — smooth sine chimes, warm and bright
+    start:    { freqs: [523, 659, 784, 1046], type: "sine", spacing: 0.12, dur: 0.22, vol: 0.12 },
+    click:    { freqs: [880], type: "sine", spacing: 0, dur: 0.18, vol: 0.1 },
+    hover:    { freqs: [1200], type: "sine", spacing: 0, dur: 0.04, vol: 0.04 },
+    notify:   { freqs: [880, 1175], type: "sine", spacing: 0.08, dur: 0.18, vol: 0.12 },
+    error:    { freqs: [220, 196], type: "sawtooth", spacing: 0.08, dur: 0.2, vol: 0.1 },
+    shutdown: { freqs: [784, 523, 392], type: "sine", spacing: 0.1, dur: 0.22, vol: 0.1 },
+  },
+  "PueiOS 2+": {
+    // Aero+ — richer chimes with triangle wave, deeper and warmer
+    start:    { freqs: [392, 523, 659, 784, 1046], type: "triangle", spacing: 0.1, dur: 0.25, vol: 0.13 },
+    click:    { freqs: [1046], type: "triangle", spacing: 0, dur: 0.15, vol: 0.09 },
+    hover:    { freqs: [1320], type: "triangle", spacing: 0, dur: 0.04, vol: 0.04 },
+    notify:   { freqs: [784, 1046, 1318], type: "triangle", spacing: 0.09, dur: 0.2, vol: 0.12 },
+    error:    { freqs: [196, 165, 147], type: "sawtooth", spacing: 0.09, dur: 0.22, vol: 0.1 },
+    shutdown: { freqs: [1046, 784, 523, 392], type: "triangle", spacing: 0.12, dur: 0.25, vol: 0.11 },
+  },
+  "PueiOS 3": {
+    // Modern minimal — clean sine pulses, subtle and elegant
+    start:    { freqs: [659, 880, 1109], type: "sine", spacing: 0.15, dur: 0.3, vol: 0.1 },
+    click:    { freqs: [1046], type: "sine", spacing: 0, dur: 0.1, vol: 0.07 },
+    hover:    { freqs: [1568], type: "sine", spacing: 0, dur: 0.03, vol: 0.03 },
+    notify:   { freqs: [1046, 1318], type: "sine", spacing: 0.12, dur: 0.2, vol: 0.09 },
+    error:    { freqs: [311, 277], type: "sine", spacing: 0.1, dur: 0.25, vol: 0.09 },
+    shutdown: { freqs: [880, 659, 523], type: "sine", spacing: 0.18, dur: 0.28, vol: 0.08 },
+  },
+};
+
+export function blip(kind: BlipKind) {
   if (typeof window === "undefined") return;
   try {
     if (!audioCtx) audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
     const ctx = audioCtx;
     if (ctx.state === "suspended") ctx.resume();
     const now = ctx.currentTime;
-    const notes: Record<string, number[]> = {
-      start: [523, 659, 784, 1046],
-      click: [880],
-      hover: [1200],
-      notify: [880, 1175],
-      error: [220, 196],
-      shutdown: [784, 523, 392],
-    };
-    notes[kind].forEach((freq, i) => {
+    const def = BLIP_SOUNDS[_blipVersion]?.[kind] ?? BLIP_SOUNDS["PueiOS 2"][kind];
+    const { freqs, type = "sine", spacing = 0.08, dur = 0.18, vol = 0.12 } = def;
+    freqs.forEach((freq, i) => {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
-      osc.type = kind === "error" ? "sawtooth" : "sine";
+      osc.type = type;
       osc.frequency.value = freq;
-      const t = now + i * (kind === "start" ? 0.12 : 0.08);
-      const dur = kind === "hover" ? 0.04 : 0.18;
+      const t = now + i * spacing;
       gain.gain.setValueAtTime(0, t);
-      gain.gain.linearRampToValueAtTime(kind === "hover" ? 0.04 : 0.12, t + 0.01);
+      gain.gain.linearRampToValueAtTime(vol, t + 0.01);
       gain.gain.exponentialRampToValueAtTime(0.0001, t + dur);
       osc.connect(gain).connect(ctx.destination);
       osc.start(t);

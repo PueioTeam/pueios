@@ -1,4 +1,4 @@
-﻿import { useEffect, useRef, useState } from "react";
+﻿import { useEffect, useMemo, useRef, useState } from "react";
 import type { AppId, Theme, User, WallpaperId, SavedFile, ChatMessage, DesktopIcon, SocialPost, SocialComment, SystemVersion, RecycleEntry, MailMessage, MailAttachment, MailFolderId, DownloadEntry, DeletedShortcut } from "./state";
 import {
   blip, loadFiles, upsertFile, deleteFile, getFile, appendChat, loadChat, deleteChatBetween,
@@ -92,7 +92,121 @@ export function AppRenderer(p: AppRendererProps) {
     case "zip-viewer": return <ZipViewerApp fileId={p.fileId} />;
     case "pmail": return <PMailApp currentUser={p.currentUser} users={p.users} />;
     case "pueyracing": return <PueiRacingApp currentUser={p.currentUser} />;
+    case "task-manager": return <TaskManagerApp />;
   }
+}
+
+function TaskManagerApp() {
+  const [tab, setTab] = useState<"processes" | "performance" | "users">("processes");
+  const [tick, setTick] = useState(0);
+  useEffect(() => { const id = setInterval(() => setTick(t => t + 1), 2000); return () => clearInterval(id); }, []);
+
+  const cpuUsage = useMemo(() => Math.floor(15 + Math.random() * 30), [tick]);
+  const memUsage = useMemo(() => Math.floor(30 + Math.random() * 20), [tick]);
+  const memMB = useMemo(() => 300 + Math.floor(Math.random() * 150), [tick]);
+
+  const processes = useMemo(() => [
+    { name: "PueiOS Shell", pid: 1, cpu: Math.floor(Math.random()*5), mem: 42 + Math.floor(Math.random()*10) },
+    { name: "PueiCloud Chat", pid: 12, cpu: Math.floor(Math.random()*3), mem: 28 + Math.floor(Math.random()*8) },
+    { name: "PueiWeb", pid: 34, cpu: Math.floor(Math.random()*8), mem: 64 + Math.floor(Math.random()*20) },
+    { name: "PMail", pid: 56, cpu: Math.floor(Math.random()*2), mem: 18 + Math.floor(Math.random()*5) },
+    { name: "PueiSocial", pid: 78, cpu: Math.floor(Math.random()*2), mem: 22 + Math.floor(Math.random()*5) },
+    { name: "Puei Mascot", pid: 99, cpu: Math.floor(Math.random()*1), mem: 8 + Math.floor(Math.random()*3) },
+    { name: "App Store", pid: 102, cpu: 0, mem: 14 },
+    { name: "Settings", pid: 115, cpu: 0, mem: 12 },
+    { name: "Puei Audio", pid: 200, cpu: Math.floor(Math.random()*2), mem: 6 },
+    { name: "System Idle", pid: 0, cpu: Math.max(0, 100 - cpuUsage), mem: 0 },
+  ], [tick, cpuUsage]);
+
+  return (
+    <div className="flex flex-col h-full text-xs" style={{ fontFamily: "Segoe UI, system-ui, sans-serif" }}>
+      {/* Menu bar */}
+      <div className="flex gap-4 px-3 py-1 text-xs opacity-60" style={{ borderBottom: "1px solid var(--border)" }}>
+        <span>File</span><span>Options</span><span>View</span>
+      </div>
+      {/* Tabs */}
+      <div className="flex" style={{ borderBottom: "1px solid var(--border)" }}>
+        {(["processes","performance","users"] as const).map(t => (
+          <button key={t} onClick={() => setTab(t)}
+            className="px-4 py-1.5 capitalize text-xs"
+            style={{ borderBottom: tab === t ? "2px solid var(--accent)" : "2px solid transparent", opacity: tab === t ? 1 : 0.6 }}>
+            {t === "processes" ? "Processes" : t === "performance" ? "Performance" : "Users"}
+          </button>
+        ))}
+      </div>
+
+      {tab === "processes" && (
+        <div className="flex-1 overflow-auto">
+          <table className="w-full text-xs">
+            <thead style={{ position: "sticky", top: 0, background: "var(--glass-strong)", zIndex: 1 }}>
+              <tr>
+                {["Name","PID","CPU %","Memory (MB)"].map(h => (
+                  <th key={h} className="text-left px-3 py-1.5 font-semibold opacity-70">{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {processes.map((p, i) => (
+                <tr key={p.pid} style={{ background: i % 2 === 0 ? "transparent" : "rgba(255,255,255,0.03)" }}>
+                  <td className="px-3 py-1">{p.name}</td>
+                  <td className="px-3 py-1 opacity-50">{p.pid}</td>
+                  <td className="px-3 py-1" style={{ color: p.cpu > 10 ? "#f87171" : p.cpu > 5 ? "#fbbf24" : undefined }}>
+                    {p.cpu}%
+                  </td>
+                  <td className="px-3 py-1">{p.mem > 0 ? `${p.mem} MB` : "—"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {tab === "performance" && (
+        <div className="flex-1 p-4 space-y-4">
+          <div>
+            <div className="font-semibold mb-1">CPU Usage — {cpuUsage}%</div>
+            <div className="w-full h-4 rounded" style={{ background: "rgba(255,255,255,0.1)" }}>
+              <div className="h-full rounded transition-all" style={{ width: `${cpuUsage}%`, background: "var(--accent)" }} />
+            </div>
+            <div className="opacity-50 mt-1">4 logical processors · PueiOS Kernel</div>
+          </div>
+          <div>
+            <div className="font-semibold mb-1">Memory — {memMB} MB / 1024 MB ({memUsage}%)</div>
+            <div className="w-full h-4 rounded" style={{ background: "rgba(255,255,255,0.1)" }}>
+              <div className="h-full rounded transition-all" style={{ width: `${memUsage}%`, background: "#60a5fa" }} />
+            </div>
+            <div className="opacity-50 mt-1">Available: {1024 - memMB} MB</div>
+          </div>
+          <div className="aero-glass-light rounded p-3 grid grid-cols-2 gap-2 text-xs">
+            <div><span className="opacity-50">Up time</span><div className="font-mono font-semibold">0:42:17</div></div>
+            <div><span className="opacity-50">Processes</span><div className="font-mono font-semibold">{processes.length}</div></div>
+            <div><span className="opacity-50">System</span><div className="font-semibold">PueiOS 2+</div></div>
+            <div><span className="opacity-50">Version</span><div className="font-mono font-semibold">2.1.0</div></div>
+          </div>
+        </div>
+      )}
+
+      {tab === "users" && (
+        <div className="flex-1 p-4">
+          <div className="aero-glass-light rounded-xl p-3 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg" style={{ background: "var(--accent)" }}>P</div>
+            <div>
+              <div className="font-semibold">Current User</div>
+              <div className="opacity-50">Active · CPU {cpuUsage}% · {memMB} MB</div>
+            </div>
+            <div className="ml-auto opacity-50">Connected</div>
+          </div>
+        </div>
+      )}
+
+      {/* Status bar */}
+      <div className="flex gap-6 px-3 py-1 text-xs opacity-50" style={{ borderTop: "1px solid var(--border)" }}>
+        <span>Processes: {processes.length}</span>
+        <span>CPU Usage: {cpuUsage}%</span>
+        <span>Physical Memory: {memUsage}%</span>
+      </div>
+    </div>
+  );
 }
 
 const SYS_FOLDER_PICTURES = "__pictures__";
@@ -225,6 +339,7 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, curren
     ["account", "👤 Account"],
     ["pueio-control", "🔑 Pueio Control"],
     ["sound", "🔊 Sound"],
+    ["puei-texty", "✍️ Puei Texty"],
     ["accessibility", "♿ Accessibility"],
     ["highcontrast", "⚡ High Contrast"],
     ["about", "ℹ️ About"],
@@ -579,9 +694,115 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, curren
             </div>
           </div>
         )}
+        {tab === "puei-texty" && (
+          <div className="max-w-lg space-y-4">
+            <h2 className="text-xl font-semibold mb-1">✍️ Puei Texty</h2>
+            <p className="text-xs opacity-60 mb-4">Customize text color, font, and size across all PueiOS interfaces.</p>
+            {/* Text Color */}
+            <div className="aero-glass-light rounded-xl p-4 space-y-3">
+              <div className="font-semibold text-sm">Text Color</div>
+              <div className="flex items-center gap-3">
+                <input type="color" value={theme.textColor || "#ffffff"} onChange={e => setTheme({ ...theme, textColor: e.target.value })}
+                  className="w-10 h-10 rounded cursor-pointer border-0" />
+                <div>
+                  <div className="text-sm font-mono">{theme.textColor || "Default"}</div>
+                  <div className="text-xs opacity-60">Applied to all text in PueiOS</div>
+                </div>
+                <button className="aero-button rounded px-2 py-1 text-xs ml-auto" onClick={() => setTheme({ ...theme, textColor: undefined })}>Reset</button>
+              </div>
+              <div className="flex flex-wrap gap-1 mt-1">
+                {["#ffffff","#e0e0e0","#b0c8ff","#ffd700","#80ffcc","#ff8080","#000000","#1a1a2e"].map(c => (
+                  <button key={c} onClick={() => setTheme({ ...theme, textColor: c })}
+                    className="w-7 h-7 rounded border-2 hover:scale-110 transition-transform"
+                    style={{ background: c, borderColor: theme.textColor === c ? "var(--accent)" : "rgba(255,255,255,0.2)" }} />
+                ))}
+              </div>
+            </div>
+            {/* Font Family */}
+            <div className="aero-glass-light rounded-xl p-4 space-y-2">
+              <div className="font-semibold text-sm">Font</div>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  ["Default (Segoe UI)", ""],
+                  ["Arial", "Arial, sans-serif"],
+                  ["Georgia", "Georgia, serif"],
+                  ["Courier New", "\"Courier New\", monospace"],
+                  ["Trebuchet MS", "\"Trebuchet MS\", sans-serif"],
+                  ["Comic Sans MS", "\"Comic Sans MS\", cursive"],
+                  ["Impact", "Impact, sans-serif"],
+                  ["Times New Roman", "\"Times New Roman\", serif"],
+                ].map(([label, val]) => (
+                  <button key={label} onClick={() => setTheme({ ...theme, fontFamily: val || undefined })}
+                    className="aero-button rounded px-3 py-2 text-xs text-left"
+                    style={{ fontFamily: val || undefined, borderColor: (theme.fontFamily ?? "") === val ? "var(--accent)" : undefined }}>
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {/* Font Size */}
+            <div className="aero-glass-light rounded-xl p-4 space-y-2">
+              <div className="font-semibold text-sm">Font Size — {theme.fontSize ?? 14}px</div>
+              <input type="range" min={10} max={22} value={theme.fontSize ?? 14}
+                onChange={e => setTheme({ ...theme, fontSize: Number(e.target.value) })}
+                className="w-full" />
+              <div className="flex justify-between text-xs opacity-50"><span>Small (10px)</span><span>Normal (14px)</span><span>Large (22px)</span></div>
+              <div className="text-sm mt-1" style={{ fontSize: `${theme.fontSize ?? 14}px` }}>
+                Preview: The quick brown fox jumps over the lazy dog.
+              </div>
+            </div>
+          </div>
+        )}
         {tab === "accessibility" && (
-          <div><h2 className="text-xl font-semibold mb-4">Accessibility</h2>
-            <p className="text-sm opacity-80">Reduce motion via the Animations toggle on Personalize. For maximum readability, enable <b>High Contrast Mode</b> in the next tab.</p></div>
+          <div className="max-w-lg space-y-3">
+            <h2 className="text-xl font-semibold mb-1">♿ Accessibility</h2>
+            <p className="text-xs opacity-60 mb-4">Adjust PueiOS for better readability, vision, and motor accessibility.</p>
+            <label className="flex items-center gap-3 aero-glass-light rounded-xl p-3 cursor-pointer">
+              <input type="checkbox" checked={!!theme.reducedMotion}
+                onChange={e => setTheme({ ...theme, reducedMotion: e.target.checked, animations: e.target.checked ? false : theme.animations })} />
+              <div>
+                <div className="font-semibold text-sm">Reduce Motion</div>
+                <div className="text-xs opacity-60">Disable all animations and transitions system-wide</div>
+              </div>
+            </label>
+            <label className="flex items-center gap-3 aero-glass-light rounded-xl p-3 cursor-pointer">
+              <input type="checkbox" checked={!!theme.largeText}
+                onChange={e => setTheme({ ...theme, largeText: e.target.checked })} />
+              <div>
+                <div className="font-semibold text-sm">Large Text (125%)</div>
+                <div className="text-xs opacity-60">Increases all text size by 25% for easier reading</div>
+              </div>
+            </label>
+            <label className="flex items-center gap-3 aero-glass-light rounded-xl p-3 cursor-pointer">
+              <input type="checkbox" checked={!!theme.focusHighlight}
+                onChange={e => setTheme({ ...theme, focusHighlight: e.target.checked })} />
+              <div>
+                <div className="font-semibold text-sm">Focus Highlight</div>
+                <div className="text-xs opacity-60">Shows a thick colored outline on focused elements for keyboard navigation</div>
+              </div>
+            </label>
+            <label className="flex items-center gap-3 aero-glass-light rounded-xl p-3 cursor-pointer">
+              <input type="checkbox" checked={!!theme.highContrast}
+                onChange={e => setTheme({ ...theme, highContrast: e.target.checked, transparency: e.target.checked ? false : theme.transparency, animations: e.target.checked ? false : theme.animations })} />
+              <div>
+                <div className="font-semibold text-sm">High Contrast Mode</div>
+                <div className="text-xs opacity-60">Maximum contrast for visibility — customize colors in the High Contrast tab</div>
+              </div>
+            </label>
+            <div className="aero-glass-light rounded-xl p-3">
+              <div className="font-semibold text-sm mb-1">Color Blind Assist</div>
+              <div className="text-xs opacity-60 mb-2">Apply a color filter to help with color vision deficiencies</div>
+              <div className="flex flex-wrap gap-2">
+                {[["None","none"],["Deuteranopia","grayscale(0.4) sepia(0.2)"],["Protanopia","hue-rotate(30deg) saturate(0.7)"],["Tritanopia","hue-rotate(-30deg)"]].map(([label, filter]) => (
+                  <button key={label} className="aero-button rounded px-3 py-1 text-xs"
+                    onClick={() => {
+                      document.documentElement.style.filter = filter === "none" ? "" : filter;
+                    }}>{label}</button>
+                ))}
+              </div>
+            </div>
+            <div className="text-xs opacity-50 mt-2">Tip: For text color and font customization, visit ✍️ Puei Texty tab.</div>
+          </div>
         )}
         {tab === "highcontrast" && (
           <div>
@@ -1537,15 +1758,15 @@ function PueiMathPage() {
   const [history, setHistory] = useState<{ expr: string; result: string }[]>([]);
   const [topic, setTopic] = useState<string | null>(null);
 
-  const topics: { title: string; content: string }[] = [
-    { title: "Addition & Subtraction", content: "Addition combines numbers: 3 + 4 = 7. Subtraction finds the difference: 10 − 3 = 7. The commutative law means a + b = b + a." },
-    { title: "Multiplication & Division", content: "Multiplication is repeated addition: 4 × 3 = 12. Division splits into equal groups: 12 ÷ 4 = 3. Division by zero is undefined." },
-    { title: "Fractions & Decimals", content: "A fraction represents part of a whole: ¾ = 0.75. To add fractions, find a common denominator: ½ + ⅓ = 3/6 + 2/6 = 5/6." },
-    { title: "Powers & Roots", content: "2³ = 2 × 2 × 2 = 8. The square root √9 = 3. The nth root of x is x^(1/n). Any number to the power 0 = 1." },
-    { title: "Algebra Basics", content: "Variables represent unknown values. Solving 2x + 3 = 11: subtract 3 → 2x = 8 → x = 4. FOIL: (a+b)(c+d) = ac+ad+bc+bd." },
-    { title: "Geometry", content: "Area of rectangle = l × w. Area of circle = π r². Perimeter = sum of all sides. Pythagorean theorem: a² + b² = c²." },
-    { title: "Statistics", content: "Mean = sum ÷ count. Median = middle value when sorted. Mode = most frequent. Range = max − min." },
-    { title: "Probability", content: "P(event) = favourable outcomes ÷ total outcomes. P(A or B) = P(A) + P(B) − P(A and B). Independent events: P(A and B) = P(A) × P(B)." },
+  const topics: { title: string; content: string; examples?: string[] }[] = [
+    { title: "Addition & Subtraction", content: "Addition combines numbers: 3 + 4 = 7. Subtraction finds the difference: 10 − 3 = 7. The commutative law means a + b = b + a.", examples: ["3 + 4", "100 - 37", "1000 + 2000 - 500"] },
+    { title: "Multiplication & Division", content: "Multiplication is repeated addition: 4 × 3 = 12. Division splits into equal groups: 12 ÷ 4 = 3. Division by zero is undefined.", examples: ["4*3", "100/4", "7*8"] },
+    { title: "Fractions & Decimals", content: "A fraction represents part of a whole: ¾ = 0.75. To add fractions, find a common denominator: ½ + ⅓ = 3/6 + 2/6 = 5/6.", examples: ["3/4", "1/2 + 1/3", "0.75 * 4"] },
+    { title: "Powers & Roots", content: "2³ = 2 × 2 × 2 = 8. The square root √9 = 3. The nth root of x is x^(1/n). Any number to the power 0 = 1.", examples: ["2^8", "2^10", "sqrt(144)", "sqrt(2)", "4^0.5", "3^3"] },
+    { title: "Algebra Basics", content: "Variables represent unknown values. Solving 2x + 3 = 11: subtract 3 → 2x = 8 → x = 4. FOIL: (a+b)(c+d) = ac+ad+bc+bd.", examples: ["(2+3)*(4-1)", "(10-3)^2", "2*(3+4)"] },
+    { title: "Geometry", content: "Area of rectangle = l × w. Area of circle = π r². Perimeter = sum of all sides. Pythagorean theorem: a² + b² = c².", examples: ["pi*5^2", "sqrt(3^2 + 4^2)", "6*8"] },
+    { title: "Statistics", content: "Mean = sum ÷ count. Median = middle value when sorted. Mode = most frequent. Range = max − min.", examples: ["(4+8+6+10)/4", "(100-40)/3", "abs(-5)"] },
+    { title: "Probability", content: "P(event) = favourable outcomes ÷ total outcomes. P(A or B) = P(A) + P(B) − P(A and B). Independent events: P(A and B) = P(A) × P(B).", examples: ["1/6", "1/52", "3/6 + 2/6 - 1/6"] },
   ];
 
   const calculate = () => {
@@ -1631,9 +1852,22 @@ function PueiMathPage() {
                   <span className="opacity-50">{topic === t.title ? "▲" : "▼"}</span>
                 </button>
                 {topic === t.title && (
-                  <div className="text-xs opacity-80 leading-relaxed px-3 py-2 rounded-b"
+                  <div className="text-xs opacity-90 leading-relaxed px-3 py-2 rounded-b"
                     style={{ background: "var(--glass)", borderTop: "1px solid var(--border)" }}>
-                    {t.content}
+                    <p className="mb-2">{t.content}</p>
+                    {t.examples && (
+                      <div>
+                        <div className="opacity-50 mb-1">Try it:</div>
+                        <div className="flex flex-wrap gap-1">
+                          {t.examples.map(ex => (
+                            <button key={ex} onClick={() => setExpr(ex)}
+                              className="aero-button rounded px-2 py-0.5 text-xs font-mono">
+                              {ex}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -1717,6 +1951,12 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
   const [isoRefresh, setIsoRefresh] = useState(0);
   const [downloading, setDownloading] = useState<string | null>(null);
   const [dlSecondsLeft, setDlSecondsLeft] = useState(0);
+  const [copilotOpen, setCopilotOpen] = useState(false);
+  const [copilotInput, setCopilotInput] = useState("");
+  const [copilotHistory, setCopilotHistory] = useState<{ role: "user" | "ai"; text: string }[]>([]);
+  const [copilotThinking, setCopilotThinking] = useState(false);
+  const copilotBottomRef = useRef<HTMLDivElement>(null);
+  useEffect(() => { copilotBottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [copilotHistory, copilotThinking]);
 
   useEffect(() => {
     const fn = () => setIsoRefresh((v) => v + 1);
@@ -2077,12 +2317,7 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
           <p className="text-xs" style={{ color: "#f87171" }}>As of May 20, 2026, PueiOS 1 is no longer supported. Use Pueio Reverse to boot.</p>
           <div className="flex gap-2">
             {downloading === "pueios1.iso" ? (
-              <div className="flex items-center gap-2 text-xs">
-                <div className="w-32 h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.15)" }}>
-                  <div className="h-full rounded-full transition-all" style={{ width: `${((5 - dlSecondsLeft) / 5) * 100}%`, background: "var(--accent)" }} />
-                </div>
-                <span className="opacity-70">Downloading… {dlSecondsLeft}s</span>
-              </div>
+              <span className="text-xs opacity-70">Downloading… {dlSecondsLeft}s</span>
             ) : (
               <button className="aero-button rounded px-3 py-1.5 text-xs" onClick={downloadOs1Iso} style={{ opacity: 0.65 }}>
                 ⬇ {iso1File ? "Re-download pueios1.iso" : "Download pueios1.iso"}
@@ -2112,12 +2347,7 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
           <p className="text-xs" style={{ color: "#f87171" }}>As of June 6th, PueiOS 2+ is no longer supported. We recommend upgrading to PueiOS 3.</p>
           <div className="flex gap-2">
             {downloading === "pueios2-plus.iso" ? (
-              <div className="flex items-center gap-2 text-xs">
-                <div className="w-32 h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.15)" }}>
-                  <div className="h-full rounded-full transition-all" style={{ width: `${((5 - dlSecondsLeft) / 5) * 100}%`, background: "var(--accent)" }} />
-                </div>
-                <span className="opacity-70">Downloading… {dlSecondsLeft}s</span>
-              </div>
+              <span className="text-xs opacity-70">Downloading… {dlSecondsLeft}s</span>
             ) : (
               <button className="aero-button rounded px-3 py-1.5 text-xs" onClick={downloadPlusIso} style={{ opacity: 0.65 }}>
                 ⬇ {isoFile ? "Re-download pueios2-plus.iso" : "Download pueios2-plus.iso"}
@@ -2136,12 +2366,7 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
           <p className="text-xs opacity-60">Major release: redesigned shell, new AI assistant, PueiNet 3.0.</p>
           <div className="flex gap-2">
             {downloading === "pueios3.iso" ? (
-              <div className="flex items-center gap-2 text-xs">
-                <div className="w-32 h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.15)" }}>
-                  <div className="h-full rounded-full transition-all" style={{ width: `${((5 - dlSecondsLeft) / 5) * 100}%`, background: "var(--accent)" }} />
-                </div>
-                <span className="opacity-70">Downloading… {dlSecondsLeft}s</span>
-              </div>
+              <span className="text-xs opacity-70">Downloading… {dlSecondsLeft}s</span>
             ) : (
               <button className="aero-button rounded px-3 py-1.5 text-xs" onClick={downloadOs3Iso}>
                 ⬇ {iso3File ? "Re-download pueios3.iso" : "Download pueios3.iso"}
@@ -2228,6 +2453,20 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
     content = <PueiNetIframe key={loadUrl} url={loadUrl} hostname={hostname} />;
   }
 
+  const sendCopilot = async () => {
+    const q = copilotInput.trim();
+    if (!q || copilotThinking) return;
+    setCopilotInput("");
+    const next = [...copilotHistory, { role: "user" as const, text: q }];
+    setCopilotHistory(next);
+    setCopilotThinking(true);
+    const ans = generateCopilotAnswer(q);
+    setTimeout(() => {
+      setCopilotHistory([...next, { role: "ai" as const, text: ans }]);
+      setCopilotThinking(false);
+    }, 600 + Math.random() * 800);
+  };
+
   return (
     <div className="flex flex-col h-full relative">
       <LocalDialogModal dialog={webDialog} />
@@ -2252,10 +2491,57 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
           onKeyDown={(e) => { if (e.key === "Enter") navigate(urlBar); }}
           className="flex-1 rounded-full px-3 py-1 text-xs outline-none"
           style={{ background: "white", border: "1px solid var(--accent)", boxShadow: "0 0 6px oklch(var(--accent) / 0.5)" }} />
-
+        <button className="aero-button rounded px-2 py-0.5 text-xs font-semibold"
+          onClick={() => setCopilotOpen(o => !o)}
+          style={{ background: copilotOpen ? "var(--accent)" : undefined, color: copilotOpen ? "white" : undefined }}>
+          ✦ Copilot
+        </button>
       </div>
-      <div className="flex-1 overflow-auto">
+      <div className="flex-1 overflow-auto relative">
         {content}
+        {/* Puei Copilot panel — bottom-right corner */}
+        {copilotOpen && (
+          <div className="absolute bottom-3 right-3 flex flex-col aero-glass rounded-xl overflow-hidden z-50"
+            style={{ width: 280, height: 340, boxShadow: "0 8px 32px rgba(0,0,0,0.35)", border: "1px solid var(--border)" }}>
+            <div className="aero-titlebar flex items-center justify-between px-3 py-2 flex-shrink-0">
+              <div className="flex items-center gap-2 text-xs font-semibold">✦ Puei Copilot</div>
+              <button onClick={() => setCopilotOpen(false)} className="opacity-60 hover:opacity-100 text-xs">✕</button>
+            </div>
+            <div className="flex-1 overflow-auto p-3 space-y-2" style={{ fontSize: 12 }}>
+              {copilotHistory.length === 0 && (
+                <div className="opacity-50 text-xs">Ask me anything — I search across Puei Search, Google, Edge, Firefox, and Opera!</div>
+              )}
+              {copilotHistory.map((m, i) => (
+                <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
+                  <div className="max-w-[85%] px-3 py-1.5 rounded-xl text-xs"
+                    style={{
+                      background: m.role === "user" ? "var(--accent)" : "var(--glass-strong)",
+                      color: m.role === "user" ? "#fff" : "var(--foreground)",
+                      borderRadius: m.role === "user" ? "12px 12px 2px 12px" : "12px 12px 12px 2px",
+                      whiteSpace: "pre-wrap",
+                    }}>
+                    {m.text}
+                  </div>
+                </div>
+              ))}
+              {copilotThinking && (
+                <div className="flex justify-start">
+                  <div className="px-3 py-1.5 rounded-xl text-xs opacity-60" style={{ background: "var(--glass-strong)" }}>Searching…</div>
+                </div>
+              )}
+              <div ref={copilotBottomRef} />
+            </div>
+            <div className="flex gap-1 p-2 flex-shrink-0" style={{ borderTop: "1px solid var(--border)" }}>
+              <input value={copilotInput} onChange={e => setCopilotInput(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && sendCopilot()}
+                placeholder="Ask Puei Copilot…"
+                className="flex-1 rounded-full px-3 py-1 text-xs outline-none input-field" />
+              <button onClick={sendCopilot} disabled={copilotThinking || !copilotInput.trim()}
+                className="aero-button rounded-full px-3 py-1 text-xs"
+                style={{ opacity: (!copilotInput.trim() || copilotThinking) ? 0.5 : 1 }}>›</button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -4047,7 +4333,7 @@ function AppStoreApp({ installWebApp, openApp, openWebApp, systemVersion, addNat
     { name: "Puei Space", icon: "🚀", desc: "3D space shooter — fly your ship, blast asteroids and enemies, survive as long as you can.", appId: "pueyracing", preInstalled: false },
   ];
   const community: StoreApp[] = [
-    { name: "bezosmp", icon: "/bezosmp-icon.svg", desc: "By bazicioschi and catotherat.", webUrl: "https://bezosmp.lovable.app", desktopLabel: "BezosMP", preInstalled: false },
+    { name: "bezoSMP", icon: "/bezosmp-icon.svg", desc: "By bazicioschi and catotherat.", webUrl: "https://bezosmp.lovable.app", desktopLabel: "bezoSMP", preInstalled: false },
   ];
   const isInstalled = (a: StoreApp) => {
     const key = a.webUrl ? `web:${a.webUrl}` : `app:${a.appId || a.name}`;
@@ -4137,7 +4423,7 @@ function AppStoreApp({ installWebApp, openApp, openWebApp, systemVersion, addNat
                           {!onDesktop && (
                             <button className="aero-button rounded px-2 py-1 text-xs w-full"
                               onClick={() => { if (a.webUrl) installWebApp(a.desktopLabel || a.name, a.webUrl, a.icon.startsWith("/") || a.icon.startsWith("http") ? a.icon : undefined); blip("notify"); }}>
-                              + Add to desktop
+                              📌 Pin to desktop
                             </button>
                           )}
                           <button className="aero-button rounded px-2 py-1 text-xs w-full opacity-50" disabled>✔ Installed</button>
@@ -4204,7 +4490,7 @@ function AppStoreApp({ installWebApp, openApp, openWebApp, systemVersion, addNat
                                   if (a.webUrl) installWebApp(a.desktopLabel || a.name, a.webUrl, a.webUrl.startsWith("puei://") ? undefined : googleFaviconFor(a.webUrl, 64));
                                   else if (a.appId) addNativeIcon(a.appId, a.name, a.icon);
                                   blip("notify");
-                                }}>+ Add to desktop</button>
+                                }}>📌 Pin to desktop</button>
                             )}
                             <button className="aero-button rounded px-2 py-1 text-xs w-full opacity-50" disabled>✔ Installed</button>
                             <button className="aero-button rounded px-2 py-1 text-xs w-full" style={{ color: "#fca5a5" }}
@@ -4228,7 +4514,7 @@ function AppStoreApp({ installWebApp, openApp, openWebApp, systemVersion, addNat
                               blip("notify");
                             });
                           }}>
-                          {isInstalling ? `Installing ${Math.floor(installPct)}%` : onDesktop ? "✔ On desktop" : "+ Add to desktop"}
+                          {isInstalling ? `Installing ${Math.floor(installPct)}%` : onDesktop ? "✔ Installed" : "⬇ Install"}
                         </button>
                       )}
                     </div>
