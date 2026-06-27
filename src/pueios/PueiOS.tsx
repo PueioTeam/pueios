@@ -2232,14 +2232,22 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
         );
       })()}
       {/* PueiOS 2/2+ Start Menu — Windows 7 Aero style */}
-      {startOpen && (systemVersion === "PueiOS 2" || systemVersion === "PueiOS 2+") && (
+      {startOpen && (systemVersion === "PueiOS 2" || systemVersion === "PueiOS 2+") && (() => {
+        const aC2 = theme.accentC ?? 0.18;
+        const aH2 = theme.accentH ?? 220;
+        const accentBg = `oklch(0.22 ${aC2} ${aH2})`;
+        const accentStrip = `linear-gradient(135deg, oklch(0.30 ${aC2} ${aH2}), oklch(0.20 ${aC2} ${aH2}))`;
+        const accentHover = `oklch(0.32 ${aC2} ${aH2} / 0.45)`;
+        const accentRight = `oklch(0.16 ${aC2} ${aH2} / 0.85)`;
+        const accentBorder = `oklch(0.50 ${aC2} ${aH2} / 0.30)`;
+        return (
         <div className="fixed bottom-12 left-2 z-[9000] flex overflow-hidden rounded-xl shadow-2xl"
-          style={{ width: 480, maxHeight: "calc(100vh - 60px)", animation: "fade-scale 0.15s ease-out", background: "rgba(20,30,60,0.97)", backdropFilter: "blur(30px)", border: "1px solid rgba(100,140,255,0.25)", boxShadow: "0 -4px 40px rgba(0,0,80,0.7)" }}
+          style={{ width: 480, maxHeight: "calc(100vh - 60px)", animation: "fade-scale 0.15s ease-out", background: accentBg, backdropFilter: "blur(30px)", border: `1px solid ${accentBorder}`, boxShadow: `0 -4px 40px oklch(0.10 ${aC2} ${aH2} / 0.7)` }}
           onMouseDown={(e) => e.stopPropagation()}>
-          {/* Left panel — pinned/recent apps */}
+          {/* Left panel */}
           <div className="flex flex-col flex-1 overflow-hidden" style={{ borderRight: "1px solid rgba(255,255,255,0.08)" }}>
             {/* User strip */}
-            <div className="flex items-center gap-3 px-4 py-3" style={{ background: "linear-gradient(135deg,rgba(40,60,120,0.8),rgba(20,35,90,0.8))", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+            <div className="flex items-center gap-3 px-4 py-3" style={{ background: accentStrip, borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
               <div className="w-12 h-12 rounded-lg flex items-center justify-center text-2xl overflow-hidden flex-shrink-0 border-2 border-white/30"
                 style={{ background: avatarBg }}>
                 {currentAvatar?.startsWith("data:")
@@ -2260,7 +2268,7 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
                 <button key={id} onClick={() => { openApp(id); setStartOpen(false); }}
                   className="flex items-center gap-3 px-4 py-2 w-full text-sm text-left transition-colors"
                   style={{ color: "rgba(255,255,255,0.85)" }}
-                  onMouseEnter={e => (e.currentTarget.style.background = "rgba(80,120,255,0.25)")}
+                  onMouseEnter={e => (e.currentTarget.style.background = accentHover)}
                   onMouseLeave={e => (e.currentTarget.style.background = "")}>
                   <span className="flex-shrink-0">{aicon(id, 24)}</span>
                   <span className="font-medium">{APP_TITLES[id]}</span>
@@ -2268,8 +2276,8 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
               ))}
             </div>
           </div>
-          {/* Right panel — quick links + power */}
-          <div className="flex flex-col w-44" style={{ background: "rgba(10,18,50,0.7)" }}>
+          {/* Right panel */}
+          <div className="flex flex-col w-44" style={{ background: accentRight }}>
             <div className="flex-1 py-2">
               {([
                 ["file-explorer", "Documents"],
@@ -2280,24 +2288,22 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
                 <button key={id} onClick={() => { openApp(id); setStartOpen(false); }}
                   className="flex items-center gap-2 px-4 py-2 w-full text-xs text-left transition-colors"
                   style={{ color: "rgba(255,255,255,0.7)" }}
-                  onMouseEnter={e => (e.currentTarget.style.background = "rgba(80,120,255,0.2)")}
+                  onMouseEnter={e => (e.currentTarget.style.background = accentHover)}
                   onMouseLeave={e => (e.currentTarget.style.background = "")}>
                   <span>{aicon(id, 18)}</span><span>{label}</span>
                 </button>
               ))}
             </div>
-            {/* Divider */}
             <div style={{ height: 1, background: "rgba(255,255,255,0.1)", margin: "0 12px" }} />
-            {/* Power buttons */}
             <div className="flex flex-col gap-0.5 py-2">
               <button className="flex items-center gap-2 px-4 py-2 text-xs text-left transition-colors"
                 style={{ color: "rgba(255,255,255,0.6)" }}
-                onMouseEnter={e => (e.currentTarget.style.background = "rgba(80,120,255,0.2)")}
+                onMouseEnter={e => (e.currentTarget.style.background = accentHover)}
                 onMouseLeave={e => (e.currentTarget.style.background = "")}
                 onClick={() => { setLocked(true); setStartOpen(false); setPwInput(""); }}>🔒 Lock</button>
               <button className="flex items-center gap-2 px-4 py-2 text-xs text-left transition-colors"
                 style={{ color: "rgba(255,255,255,0.6)" }}
-                onMouseEnter={e => (e.currentTarget.style.background = "rgba(80,120,255,0.2)")}
+                onMouseEnter={e => (e.currentTarget.style.background = accentHover)}
                 onMouseLeave={e => (e.currentTarget.style.background = "")}
                 onClick={() => { setStartOpen(false); setPhase("login"); setPwInput(""); }}>🔄 Switch User</button>
               <button className="flex items-center gap-2 px-4 py-2 text-xs text-left transition-colors"
@@ -2308,7 +2314,8 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
             </div>
           </div>
         </div>
-      )}
+        );
+      })()}
 
       {/* PueiOS 3 launcher — Vista Aero glass panel, accent-aware */}
       {startOpen && systemVersion === "PueiOS 3" && (
