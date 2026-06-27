@@ -1,29 +1,32 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-  <defs>
-    <radialGradient id="bg" cx="35%" cy="30%" r="75%">
-      <stop offset="0%" stop-color="#c084fc"/>
-      <stop offset="50%" stop-color="#9333ea"/>
-      <stop offset="100%" stop-color="#4a1e8c"/>
-    </radialGradient>
-    <linearGradient id="shine" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="rgba(255,255,255,0.5)"/>
-      <stop offset="100%" stop-color="rgba(255,255,255,0)"/>
-    </linearGradient>
-  </defs>
-  <rect width="100" height="100" rx="22" fill="url(#bg)"/>
-  <rect width="100" height="50" rx="22" fill="url(#shine)"/>
-  <!-- Film strip -->
-  <rect x="14" y="28" width="72" height="44" rx="4" fill="rgba(0,0,0,0.45)"/>
-  <!-- Sprocket holes left -->
-  <rect x="16" y="32" width="10" height="8" rx="2" fill="rgba(255,255,255,0.6)"/>
-  <rect x="16" y="46" width="10" height="8" rx="2" fill="rgba(255,255,255,0.6)"/>
-  <rect x="16" y="60" width="10" height="8" rx="2" fill="rgba(255,255,255,0.6)"/>
-  <!-- Sprocket holes right -->
-  <rect x="74" y="32" width="10" height="8" rx="2" fill="rgba(255,255,255,0.6)"/>
-  <rect x="74" y="46" width="10" height="8" rx="2" fill="rgba(255,255,255,0.6)"/>
-  <rect x="74" y="60" width="10" height="8" rx="2" fill="rgba(255,255,255,0.6)"/>
-  <!-- Screen area -->
-  <rect x="28" y="31" width="44" height="38" rx="2" fill="rgba(255,255,255,0.15)"/>
-  <!-- Play button -->
-  <polygon points="40,41 40,59 62,50" fill="white"/>
+  <!-- Puei Videos — clapperboard style, black & white with red stripe -->
+  <!-- Board base -->
+  <rect x="8" y="30" width="84" height="62" rx="6" fill="#1a1a1a"/>
+  <!-- Clapperboard white stripes on top bar -->
+  <rect x="8" y="18" width="84" height="18" rx="6" fill="white"/>
+  <!-- Diagonal stripes on top bar (clapperboard) -->
+  <clipPath id="barclip"><rect x="8" y="18" width="84" height="18" rx="6"/></clipPath>
+  <g clip-path="url(#barclip)">
+    <rect x="8" y="18" width="14" height="18" fill="#e01010"/>
+    <rect x="36" y="18" width="14" height="18" fill="#e01010"/>
+    <rect x="64" y="18" width="14" height="18" fill="#e01010"/>
+  </g>
+  <!-- Board inner screen -->
+  <rect x="16" y="38" width="68" height="46" rx="3" fill="#111"/>
+  <!-- Red recording light -->
+  <circle cx="24" cy="34" r="4" fill="#ff2020"/>
+  <!-- Play triangle -->
+  <polygon points="36,52 36,72 64,62" fill="white"/>
+  <!-- Film holes left -->
+  <rect x="9" y="40" width="5" height="8" rx="2" fill="#333"/>
+  <rect x="9" y="54" width="5" height="8" rx="2" fill="#333"/>
+  <rect x="9" y="68" width="5" height="8" rx="2" fill="#333"/>
+  <!-- Film holes right -->
+  <rect x="86" y="40" width="5" height="8" rx="2" fill="#333"/>
+  <rect x="86" y="54" width="5" height="8" rx="2" fill="#333"/>
+  <rect x="86" y="68" width="5" height="8" rx="2" fill="#333"/>
+  <!-- Hinge pin -->
+  <circle cx="16" cy="18" r="3" fill="#555"/>
+  <!-- Top shine -->
+  <ellipse cx="50" cy="20" rx="28" ry="5" fill="rgba(255,255,255,0.4)"/>
 </svg>

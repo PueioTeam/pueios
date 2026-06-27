@@ -1,23 +1,16 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-  <defs>
-    <radialGradient id="bg" cx="35%" cy="30%" r="75%">
-      <stop offset="0%" stop-color="#38bdf8"/>
-      <stop offset="50%" stop-color="#0284c7"/>
-      <stop offset="100%" stop-color="#0c4a6e"/>
-    </radialGradient>
-    <linearGradient id="shine" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="rgba(255,255,255,0.55)"/>
-      <stop offset="100%" stop-color="rgba(255,255,255,0)"/>
-    </linearGradient>
-  </defs>
-  <rect width="100" height="100" rx="22" fill="url(#bg)"/>
-  <rect width="100" height="50" rx="22" fill="url(#shine)"/>
-  <!-- Arrow pointing up (update) -->
-  <rect x="44" y="22" width="12" height="30" rx="5" fill="white"/>
-  <polygon points="24,44 50,16 76,44" fill="white"/>
-  <!-- Download bar at bottom -->
-  <rect x="18" y="64" width="64" height="10" rx="5" fill="rgba(255,255,255,0.25)"/>
-  <rect x="18" y="64" width="46" height="10" rx="5" fill="rgba(255,255,255,0.85)"/>
-  <rect x="18" y="78" width="64" height="6" rx="3" fill="rgba(255,255,255,0.15)"/>
-  <rect x="18" y="78" width="28" height="6" rx="3" fill="rgba(255,255,255,0.5)"/>
+  <!-- Puei Updater — circular refresh arrow with version badge -->
+  <!-- Outer circle ring -->
+  <circle cx="50" cy="50" r="42" fill="none" stroke="#0066cc" stroke-width="10"/>
+  <!-- Inner fill -->
+  <circle cx="50" cy="50" r="36" fill="#e8f4ff"/>
+  <!-- Circular arrow — only 3/4 of circle, with arrowhead -->
+  <path d="M50 14 A36 36 0 1 1 18 68" fill="none" stroke="#0055bb" stroke-width="11" stroke-linecap="round"/>
+  <!-- Arrowhead at end of arc -->
+  <polygon points="6,58 22,78 30,60" fill="#0055bb"/>
+  <!-- Down arrow in center -->
+  <rect x="44" y="34" width="12" height="22" rx="4" fill="#0066cc"/>
+  <polygon points="34,54 50,72 66,54" fill="#0066cc"/>
+  <!-- Top shine on ring -->
+  <ellipse cx="50" cy="16" rx="20" ry="6" fill="rgba(255,255,255,0.55)"/>
 </svg>

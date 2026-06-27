@@ -549,6 +549,13 @@ canvas[style*="crosshair"] { cursor: url("data:image/svg+xml,%3Csvg xmlns='http:
 
 /* === User wallpapers === */
 
+/* All versions — Fence sunset at Grand Teton */
+.wallpaper-fencesunset {
+  background-image: url("/fencewallpaper.jpg");
+  background-size: cover;
+  background-position: center;
+}
+
 /* PueiOS 3 exclusive — Milky Way starry night with glowing tent */
 .wallpaper-milkyway {
   background:

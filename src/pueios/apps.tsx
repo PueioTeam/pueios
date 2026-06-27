@@ -519,14 +519,16 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, curren
           <div>
             <h2 className="text-xl font-semibold mb-4">Wallpaper</h2>
             <div className="grid grid-cols-2 gap-3">
-              {(systemVersion === "PueiOS 3"
-                ? [["milkyway", "Milky Way"]] as [WallpaperId, string][]
-                : systemVersion === "PueiOS 2+"
-                ? [["greekcoast", "Greek Coast"]] as [WallpaperId, string][]
-                : systemVersion === "PueiOS 1"
-                ? [["dutchvillage", "Dutch Village"]] as [WallpaperId, string][]
-                : [["default", "Default"]] as [WallpaperId, string][]
-              ).map(([w, label]) => (
+              {([
+                ["fencesunset", "Grand Teton"],
+                ...(systemVersion === "PueiOS 3"
+                  ? [["milkyway", "Milky Way"]] as [WallpaperId, string][]
+                  : systemVersion === "PueiOS 2+"
+                  ? [["greekcoast", "Greek Coast"]] as [WallpaperId, string][]
+                  : systemVersion === "PueiOS 1"
+                  ? [["dutchvillage", "Dutch Village"]] as [WallpaperId, string][]
+                  : []),
+              ] as [WallpaperId, string][]).map(([w, label]) => (
                 <button key={w} onClick={() => setWallpaper(w)}
                   className={`wallpaper-${w} h-28 rounded-lg border-2 text-white font-semibold text-sm`}
                   style={{ borderColor: wallpaper === w ? "white" : "transparent", boxShadow: wallpaper === w ? "0 0 0 3px var(--accent)" : undefined, textShadow: "0 1px 3px rgba(0,0,0,0.8)" }}>
@@ -4349,7 +4351,7 @@ function AppStoreApp({ installWebApp, openApp, openWebApp, systemVersion, addNat
     { name: "Puei Space", icon: "🚀", desc: "3D space shooter — fly your ship, blast asteroids and enemies, survive as long as you can.", appId: "pueyracing", preInstalled: false },
   ];
   const community: StoreApp[] = [
-    { name: "bezoSMP", icon: "/bezosmp-icon.svg", desc: "By bazicioschi and catotherat.", webUrl: "https://bezosmp.lovable.app", desktopLabel: "bezoSMP", preInstalled: false },
+    { name: "bezoSMP", icon: "/bezosmp-icon.png", desc: "By bazicioschi and catotherat.", webUrl: "https://bezosmp.lovable.app", desktopLabel: "bezoSMP", preInstalled: false },
   ];
   const isInstalled = (a: StoreApp) => {
     const key = a.webUrl ? `web:${a.webUrl}` : `app:${a.appId || a.name}`;

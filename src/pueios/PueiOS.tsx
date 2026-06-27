@@ -2068,12 +2068,12 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
       </div>
 
       {/* Widgets */}
-      <div className="absolute top-4 right-4 aero-glass rounded-xl p-3 w-56 text-sm" style={{ color: "var(--foreground)" }}>
+      <div className={`absolute top-4 right-4 rounded-xl p-3 w-56 text-sm ${isP1 ? "" : "aero-glass"}`} style={{ color: "var(--foreground)", ...(isP1 ? { background: "rgba(210,208,200,0.95)", border: "1px solid #999", boxShadow: "2px 2px 6px rgba(0,0,0,0.3)", fontFamily: "Arial, sans-serif" } : {}) }}>
         <div className="font-semibold mb-1">📅 {now.toLocaleDateString(undefined, { weekday: "long" })}</div>
         <div className="text-3xl font-light">{now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</div>
         <div className="text-xs opacity-70">{now.toLocaleDateString()}</div>
       </div>
-      <div className="absolute top-44 right-4 aero-glass rounded-xl p-3 w-56 text-sm">
+      <div className={`absolute top-44 right-4 rounded-xl p-3 w-56 text-sm ${isP1 ? "" : "aero-glass"}`} style={isP1 ? { background: "rgba(210,208,200,0.95)", border: "1px solid #999", boxShadow: "2px 2px 6px rgba(0,0,0,0.3)", fontFamily: "Arial, sans-serif" } : {}}>
         <div className="font-semibold mb-1">🌤️ Pueiville</div>
         <div className="text-2xl font-light">21°C</div>
         <div className="text-xs opacity-70">Glassy with light bloom</div>
@@ -2135,7 +2135,7 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
       {/* Notifications */}
       <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[9500] space-y-2">
         {notifs.map((n) => (
-          <div key={n.id} className="aero-glass rounded-lg px-4 py-2 min-w-[260px] text-sm" style={{ animation: "fade-scale 0.2s ease-out" }}>
+          <div key={n.id} className={`rounded-lg px-4 py-2 min-w-[260px] text-sm ${isP1 ? "" : "aero-glass"}`} style={{ animation: "fade-scale 0.2s ease-out", ...(isP1 ? { background: "rgba(210,208,200,0.97)", border: "1px solid #999", boxShadow: "2px 2px 8px rgba(0,0,0,0.35)", fontFamily: "Arial, sans-serif" } : {}) }}>
             <div className="flex items-start gap-3">
               {n.kind === "update" ? (
                 <svg width="30" height="30" viewBox="0 0 64 64" aria-hidden="true" className="shrink-0 mt-0.5">
