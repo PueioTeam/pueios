@@ -1,10 +1,79 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-  <!-- Background rounded square -->
-  <rect width="100" height="100" rx="22" fill="#0078d4"/>
-  <!-- Outer ring (globe shape) -->
-  <path d="M50 10 C28 10 10 28 10 50 C10 72 28 90 50 90 C60 90 69 86 76 80 C68 83 59 84 51 82 C35 78 24 65 24 50 C24 37 31 26 42 21 C46 19 50 18 54 18 C66 18 76 25 81 36 L54 36 C48 36 44 40 44 46 L44 56 L82 56 C83 54 84 52 84 50 C84 28 69 10 50 10 Z" fill="white"/>
-  <!-- Bottom green wave accent -->
-  <path d="M44 56 C44 63 49 69 56 71 C63 73 70 70 74 64 C70 72 62 78 53 78 C40 78 30 68 30 55 C30 46 35 38 44 35 L44 56 Z" fill="#34d399"/>
-  <!-- Subtle highlight -->
-  <ellipse cx="42" cy="22" rx="18" ry="6" fill="rgba(255,255,255,0.3)" transform="rotate(-20 42 22)"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300">
+  <defs>
+    <radialGradient id="eg1" cx="60%" cy="35%" r="70%">
+      <stop offset="0%" stop-color="#4de8b0"/>
+      <stop offset="40%" stop-color="#2dcc7a"/>
+      <stop offset="100%" stop-color="#0ea860"/>
+    </radialGradient>
+    <radialGradient id="eg2" cx="30%" cy="60%" r="75%">
+      <stop offset="0%" stop-color="#38b8f5"/>
+      <stop offset="45%" stop-color="#1488d8"/>
+      <stop offset="100%" stop-color="#0560b8"/>
+    </radialGradient>
+    <radialGradient id="eg3" cx="50%" cy="50%" r="60%">
+      <stop offset="0%" stop-color="#1a9de8"/>
+      <stop offset="100%" stop-color="#0460b0"/>
+    </radialGradient>
+    <linearGradient id="eg4" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#35c8f0"/>
+      <stop offset="50%" stop-color="#1490e0"/>
+      <stop offset="100%" stop-color="#0558a8"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Outer blue wave body -->
+  <path d="
+    M150 18
+    C90 18 42 58 28 114
+    C18 150 24 188 44 218
+    C62 245 90 262 122 268
+    C108 256 98 238 98 218
+    C98 180 126 150 162 148
+    C180 147 196 152 208 162
+    C216 142 218 118 210 96
+    C196 54 176 18 150 18 Z
+  " fill="url(#eg4)"/>
+
+  <!-- Green upper-right wave -->
+  <path d="
+    M210 96
+    C230 120 238 152 228 182
+    C218 210 198 230 172 240
+    C158 246 142 248 128 244
+    C148 262 172 272 198 268
+    C248 258 282 214 282 162
+    C282 120 252 82 210 66
+    C210 76 210 86 210 96 Z
+  " fill="url(#eg1)"/>
+
+  <!-- Inner dark blue spiral/body shadow -->
+  <path d="
+    M98 218
+    C98 180 126 150 162 148
+    C144 142 124 138 106 142
+    C78 150 58 176 58 208
+    C58 238 74 262 98 274
+    C112 280 128 282 144 280
+    C118 270 98 246 98 218 Z
+  " fill="url(#eg3)" opacity="0.85"/>
+
+  <!-- White inner curl highlight -->
+  <path d="
+    M162 148
+    C180 147 196 152 208 162
+    C204 148 194 136 180 130
+    C166 124 150 126 138 134
+    C128 140 122 150 120 162
+    C132 152 146 148 162 148 Z
+  " fill="white" opacity="0.9"/>
+
+  <!-- Bottom blue shadow curl -->
+  <path d="
+    M98 218
+    C98 246 118 270 144 280
+    C160 284 178 282 194 276
+    C172 272 152 260 140 242
+    C126 222 122 198 130 178
+    C118 190 108 204 98 218 Z
+  " fill="#0448a0" opacity="0.6"/>
 </svg>
