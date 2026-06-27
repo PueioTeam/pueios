@@ -547,116 +547,41 @@ canvas[style*="crosshair"] { cursor: url("data:image/svg+xml,%3Csvg xmlns='http:
     linear-gradient(135deg, oklch(0.25 0.1 240), oklch(0.45 0.15 var(--accent-h)));
 }
 
-/* === User wallpapers === */
+/* === Photo wallpapers — all are real images dropped into public/ === */
 
-/* All versions — Fence sunset at Grand Teton */
+/* All versions — Grand Teton fence sunset */
 .wallpaper-fencesunset {
   background-image: url("/fencewallpaper.jpg");
   background-size: cover;
   background-position: center;
 }
 
-/* PueiOS 3 exclusive — Milky Way starry night with glowing tent */
-.wallpaper-milkyway {
-  background:
-    /* milky way band */
-    radial-gradient(ellipse 18% 90% at 52% 35%, rgba(180,170,220,0.55), transparent 70%),
-    radial-gradient(ellipse 12% 80% at 50% 40%, rgba(200,195,235,0.35), transparent 65%),
-    /* subtle nebula glow */
-    radial-gradient(ellipse 40% 50% at 48% 20%, rgba(120,100,180,0.25), transparent 70%),
-    /* green tent glow bottom-right */
-    radial-gradient(ellipse 14% 8% at 72% 91%, rgba(80,255,60,0.55), transparent 70%),
-    radial-gradient(ellipse 8% 5% at 72% 93%, rgba(120,255,80,0.4), transparent 65%),
-    /* orange horizon glow from city lights */
-    radial-gradient(ellipse 30% 12% at 48% 76%, rgba(200,100,20,0.45), transparent 70%),
-    radial-gradient(ellipse 20% 8% at 50% 80%, rgba(220,120,10,0.35), transparent 65%),
-    /* stars — many tiny points */
-    radial-gradient(circle 1px at 5% 5%, rgba(255,255,255,0.95), transparent 80%),
-    radial-gradient(circle 1.5px at 12% 12%, rgba(255,255,255,0.85), transparent 80%),
-    radial-gradient(circle 1px at 20% 3%, rgba(255,255,255,0.9), transparent 80%),
-    radial-gradient(circle 1px at 30% 8%, rgba(255,255,255,0.7), transparent 80%),
-    radial-gradient(circle 2px at 40% 4%, rgba(255,255,255,0.8), transparent 80%),
-    radial-gradient(circle 1px at 55% 7%, rgba(255,255,255,0.9), transparent 80%),
-    radial-gradient(circle 1.5px at 65% 3%, rgba(255,255,255,0.75), transparent 80%),
-    radial-gradient(circle 1px at 78% 9%, rgba(255,255,255,0.85), transparent 80%),
-    radial-gradient(circle 1px at 88% 5%, rgba(255,255,255,0.7), transparent 80%),
-    radial-gradient(circle 1px at 95% 12%, rgba(255,255,255,0.8), transparent 80%),
-    radial-gradient(circle 1px at 8% 22%, rgba(255,255,255,0.6), transparent 80%),
-    radial-gradient(circle 1.5px at 18% 30%, rgba(255,255,255,0.7), transparent 80%),
-    radial-gradient(circle 1px at 28% 18%, rgba(255,255,255,0.65), transparent 80%),
-    radial-gradient(circle 1px at 38% 25%, rgba(255,255,255,0.55), transparent 80%),
-    radial-gradient(circle 2px at 62% 18%, rgba(255,255,255,0.6), transparent 80%),
-    radial-gradient(circle 1px at 75% 22%, rgba(255,255,255,0.7), transparent 80%),
-    radial-gradient(circle 1px at 85% 28%, rgba(255,255,255,0.5), transparent 80%),
-    radial-gradient(circle 1px at 92% 35%, rgba(255,255,255,0.6), transparent 80%),
-    radial-gradient(circle 1px at 3% 45%, rgba(255,255,255,0.5), transparent 80%),
-    radial-gradient(circle 1px at 15% 50%, rgba(255,255,255,0.4), transparent 80%),
-    radial-gradient(circle 1.5px at 25% 42%, rgba(255,255,255,0.55), transparent 80%),
-    /* mountain silhouette */
-    radial-gradient(ellipse 200% 18% at 30% 100%, #0a0a0a 0%, #0f0f0f 40%, transparent 70%),
-    radial-gradient(ellipse 160% 14% at 70% 100%, #080808 0%, #0c0c0c 35%, transparent 65%),
-    /* dark sky base — near-black with deep blue tint */
-    linear-gradient(to bottom, #01010a 0%, #02020f 15%, #03031a 30%, #050518 45%, #080612 58%, #0d0a10 68%, #120d0e 76%, #0a0808 85%, #060505 100%);
-  background-size: 100% 100%;
+/* All versions — Pirate ship stormy night */
+.wallpaper-piratesship {
+  background-image: url("/piratesship.jpg");
+  background-size: cover;
+  background-position: center;
 }
 
-/* PueiOS 2+ exclusive — Greek coastal village with blue sea and mountains */
+/* PueiOS 2+ — Greek island bay */
 .wallpaper-greekcoast {
-  background:
-    /* bright sky with clouds */
-    radial-gradient(ellipse 200px 70px at 25% 15%, rgba(255,255,255,0.92), transparent 70%),
-    radial-gradient(ellipse 160px 55px at 60% 10%, rgba(255,255,255,0.85), transparent 65%),
-    radial-gradient(ellipse 100px 40px at 80% 20%, rgba(255,255,255,0.75), transparent 60%),
-    /* deep green mountains */
-    radial-gradient(ellipse 60% 35% at 70% 50%, rgba(30,80,40,0.85), transparent 70%),
-    radial-gradient(ellipse 50% 30% at 55% 48%, rgba(20,70,35,0.8), transparent 65%),
-    /* blue sea / bay */
-    radial-gradient(ellipse 80% 30% at 40% 65%, rgba(0,140,180,0.7), transparent 75%),
-    radial-gradient(ellipse 60% 20% at 30% 60%, rgba(20,160,200,0.6), transparent 70%),
-    /* small island hill center */
-    radial-gradient(ellipse 25% 15% at 45% 58%, rgba(40,100,40,0.7), transparent 70%),
-    /* terracotta rooftops warmth */
-    radial-gradient(ellipse 30% 10% at 60% 75%, rgba(180,80,30,0.45), transparent 70%),
-    radial-gradient(ellipse 20% 8% at 70% 78%, rgba(190,90,40,0.4), transparent 65%),
-    /* lush green foreground trees */
-    radial-gradient(ellipse 40% 20% at 15% 90%, rgba(50,120,30,0.85), transparent 70%),
-    radial-gradient(ellipse 30% 15% at 5% 85%, rgba(40,100,25,0.9), transparent 65%),
-    /* sky gradient — vivid Mediterranean blue */
-    linear-gradient(to bottom, #1a8ad4 0%, #2ea0e8 18%, #55b8f5 32%, #80ccf8 45%, #a8e0ff 54%, #c8eeff 60%),
-    /* water reflection bottom */
-    linear-gradient(to top, #0a6090 0%, #1080b8 12%, #1a9ad0 22%, transparent 45%),
-    /* ground/olive grove */
-    radial-gradient(ellipse 140% 30% at 50% 115%, #2a6018 0%, #3a7822 20%, transparent 55%);
-  background-size: 100% 100%;
+  background-image: url("/greekcoast.jpg");
+  background-size: cover;
+  background-position: center;
 }
 
-/* PueiOS 1 exclusive — Dutch village at sunset with dramatic sky */
+/* PueiOS 3 — Milky Way tent */
+.wallpaper-milkyway {
+  background-image: url("/milkyway.jpg");
+  background-size: cover;
+  background-position: center;
+}
+
+/* PueiOS 1 — Dutch village sunset photo */
 .wallpaper-dutchvillage {
-  background:
-    /* sun disc near horizon */
-    radial-gradient(circle 55px at 82% 62%, rgba(255,220,60,0.98), transparent 45%),
-    /* golden horizon glow */
-    radial-gradient(ellipse 60% 20% at 75% 65%, rgba(255,180,30,0.7), transparent 65%),
-    /* orange-warm mid sky */
-    radial-gradient(ellipse 80% 35% at 60% 55%, rgba(255,130,20,0.4), transparent 70%),
-    /* dramatic contrail / cloud streaks */
-    radial-gradient(ellipse 80% 4% at 30% 28%, rgba(255,255,255,0.45), transparent 70%),
-    radial-gradient(ellipse 60% 3% at 55% 35%, rgba(255,255,255,0.35), transparent 65%),
-    radial-gradient(ellipse 40% 2.5% at 40% 42%, rgba(255,255,255,0.3), transparent 60%),
-    radial-gradient(ellipse 50% 3% at 70% 22%, rgba(255,255,255,0.4), transparent 65%),
-    /* sky — deep blue top to golden horizon */
-    linear-gradient(to bottom,
-      #1a4a88 0%, #2a60a8 12%, #4080c8 24%, #60a0dc 36%,
-      #88b8e8 46%, #b0ccf0 54%, #d8e8f8 60%,
-      #f0d890 64%, #f5c050 68%, #f8a830 72%),
-    /* green house / hedge silhouette */
-    radial-gradient(ellipse 25% 15% at 12% 78%, rgba(30,80,20,0.9), transparent 70%),
-    radial-gradient(ellipse 18% 12% at 25% 80%, rgba(20,70,15,0.85), transparent 65%),
-    /* cobblestone road warmth */
-    radial-gradient(ellipse 30% 10% at 80% 88%, rgba(120,100,70,0.5), transparent 70%),
-    /* lush bright green foreground lawn */
-    radial-gradient(ellipse 140% 35% at 50% 115%, #3a9428 0%, #4aac32 20%, #5abe3a 40%, transparent 70%);
-  background-size: 100% 100%;
+  background-image: url("/dutchvillage.jpg");
+  background-size: cover;
+  background-position: center;
 }
 /* PueiSKY — bright blue sky with fluffy clouds and vivid green meadow */
 .wallpaper-bliss, .wallpaper-pueisky {
