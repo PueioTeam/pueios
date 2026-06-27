@@ -1,26 +1,37 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
   <defs>
     <radialGradient id="bg" cx="35%" cy="30%" r="75%">
-      <stop offset="0%" stop-color="#fbbf24"/>
-      <stop offset="55%" stop-color="#d97706"/>
-      <stop offset="100%" stop-color="#78350f"/>
+      <stop offset="0%" stop-color="#ef4444"/>
+      <stop offset="55%" stop-color="#b91c1c"/>
+      <stop offset="100%" stop-color="#7f1d1d"/>
     </radialGradient>
     <linearGradient id="shine" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0%" stop-color="rgba(255,255,255,0.5)"/>
       <stop offset="100%" stop-color="rgba(255,255,255,0)"/>
     </linearGradient>
   </defs>
+  <!-- Rounded square background -->
   <rect width="100" height="100" rx="22" fill="url(#bg)"/>
   <rect width="100" height="50" rx="22" fill="url(#shine)"/>
-  <!-- Letter B for bezoSMP -->
-  <rect x="30" y="20" width="11" height="60" rx="4" fill="white"/>
-  <rect x="30" y="20" width="30" height="11" rx="5" fill="white"/>
-  <rect x="30" y="45" width="28" height="10" rx="5" fill="white"/>
-  <rect x="30" y="69" width="32" height="11" rx="5" fill="white"/>
-  <path d="M41 20 Q70 20 70 35 Q70 50 41 50" fill="none" stroke="white" stroke-width="11"/>
-  <path d="M41 50 Q74 50 74 67 Q74 80 41 80" fill="none" stroke="white" stroke-width="11"/>
-  <!-- Multiplayer dots -->
-  <circle cx="72" cy="78" r="7" fill="white" opacity="0.9"/>
-  <circle cx="82" cy="68" r="5" fill="white" opacity="0.7"/>
-  <circle cx="85" cy="55" r="4" fill="white" opacity="0.5"/>
+  <!-- Ladybug body (ellipse) -->
+  <ellipse cx="50" cy="56" rx="30" ry="26" fill="#dc2626"/>
+  <!-- Head -->
+  <circle cx="50" cy="28" r="13" fill="#1a1a1a"/>
+  <!-- Wing split line -->
+  <line x1="50" y1="30" x2="50" y2="82" stroke="#1a1a1a" stroke-width="3"/>
+  <!-- Dots on wings -->
+  <circle cx="36" cy="48" r="6" fill="#1a1a1a"/>
+  <circle cx="64" cy="48" r="6" fill="#1a1a1a"/>
+  <circle cx="34" cy="65" r="5" fill="#1a1a1a"/>
+  <circle cx="66" cy="65" r="5" fill="#1a1a1a"/>
+  <!-- Antennae -->
+  <line x1="44" y1="17" x2="34" y2="5" stroke="#1a1a1a" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="56" y1="17" x2="66" y2="5" stroke="#1a1a1a" stroke-width="2.5" stroke-linecap="round"/>
+  <circle cx="34" cy="5" r="3" fill="#1a1a1a"/>
+  <circle cx="66" cy="5" r="3" fill="#1a1a1a"/>
+  <!-- Eyes on head -->
+  <circle cx="44" cy="28" r="3.5" fill="white"/>
+  <circle cx="56" cy="28" r="3.5" fill="white"/>
+  <circle cx="45" cy="29" r="1.5" fill="#1a1a1a"/>
+  <circle cx="57" cy="29" r="1.5" fill="#1a1a1a"/>
 </svg>

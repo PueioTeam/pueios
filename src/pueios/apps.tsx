@@ -2333,7 +2333,7 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
             <span className="text-xs px-2 py-0.5 rounded" style={{ background: "rgba(220,50,50,0.18)", color: "#f87171" }}>End of Life</span>
           </div>
           <p className="text-xs opacity-60">The original PueiOS 2 release.</p>
-          <p className="text-xs" style={{ color: "#f87171" }}>As of June 6th, PueiOS 2 is no longer supported. No download available.</p>
+          <p className="text-xs" style={{ color: "#f87171" }}>As of May 20th, 2026, PueiOS 2 is no longer supported. No download available.</p>
         </div>
 
         {/* PueiOS 2+ */}
@@ -2344,7 +2344,7 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
             {isoFile && <span className="text-xs px-2 py-0.5 rounded" style={{ background: "rgba(80,200,120,0.2)", color: "#4ade80" }}>Downloaded</span>}
           </div>
           <p className="text-xs opacity-60">Advanced edition with stronger sync and AI systems.</p>
-          <p className="text-xs" style={{ color: "#f87171" }}>As of June 6th, PueiOS 2+ is no longer supported. We recommend upgrading to PueiOS 3.</p>
+          <p className="text-xs" style={{ color: "#f87171" }}>As of May 20th, 2026, PueiOS 2+ is no longer supported. We recommend upgrading to PueiOS 3.</p>
           <div className="flex gap-2">
             {downloading === "pueios2-plus.iso" ? (
               <span className="text-xs opacity-70">Downloading… {dlSecondsLeft}s</span>
@@ -2499,45 +2499,72 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
       </div>
       <div className="flex-1 overflow-auto relative">
         {content}
-        {/* Puei Copilot panel — bottom-right corner */}
+        {/* Puei Copilot panel — bottom-right corner, mascot style */}
         {copilotOpen && (
-          <div className="absolute bottom-3 right-3 flex flex-col aero-glass rounded-xl overflow-hidden z-50"
-            style={{ width: 280, height: 340, boxShadow: "0 8px 32px rgba(0,0,0,0.35)", border: "1px solid var(--border)" }}>
-            <div className="aero-titlebar flex items-center justify-between px-3 py-2 flex-shrink-0">
-              <div className="flex items-center gap-2 text-xs font-semibold">✦ Puei Copilot</div>
-              <button onClick={() => setCopilotOpen(false)} className="opacity-60 hover:opacity-100 text-xs">✕</button>
+          <div className="absolute bottom-3 right-3 flex flex-col aero-glass rounded-2xl overflow-hidden z-50"
+            style={{ width: 300, height: 380, boxShadow: "0 12px 40px rgba(0,0,0,0.45)", border: "1px solid var(--border)" }}>
+            {/* Header with Puei avatar */}
+            <div className="flex items-center gap-2 px-3 py-2 flex-shrink-0"
+              style={{ background: "linear-gradient(135deg, var(--glass-strong), var(--glass))", borderBottom: "1px solid var(--border)" }}>
+              <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"
+                style={{ background: "var(--accent)", fontSize: 16 }}>✦</div>
+              <div className="flex-1 min-w-0">
+                <div className="text-xs font-bold truncate">Puei Copilot</div>
+                <div className="text-[10px] opacity-50 truncate">{copilotThinking ? "thinking…" : "ready"}</div>
+              </div>
+              <button onClick={() => setCopilotOpen(false)}
+                className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] flex-shrink-0"
+                style={{ background: "rgba(255,80,80,0.25)" }}>✕</button>
             </div>
+            {/* Messages */}
             <div className="flex-1 overflow-auto p-3 space-y-2" style={{ fontSize: 12 }}>
               {copilotHistory.length === 0 && (
-                <div className="opacity-50 text-xs">Ask me anything — I search across Puei Search, Google, Edge, Firefox, and Opera!</div>
+                <div className="flex justify-start">
+                  <div className="flex items-end gap-1.5 max-w-[90%]">
+                    <div className="w-6 h-6 rounded-full flex-shrink-0 flex items-center justify-center text-sm"
+                      style={{ background: "var(--accent)", marginBottom: 2 }}>✦</div>
+                    <div className="px-3 py-2 rounded-2xl text-xs" style={{ background: "var(--glass-strong)", borderBottomLeftRadius: 4, whiteSpace: "pre-wrap" }}>
+                      Hey! I'm Puei Copilot ✦ Ask me anything about PueiOS or the web!
+                    </div>
+                  </div>
+                </div>
               )}
               {copilotHistory.map((m, i) => (
                 <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
-                  <div className="max-w-[85%] px-3 py-1.5 rounded-xl text-xs"
-                    style={{
-                      background: m.role === "user" ? "var(--accent)" : "var(--glass-strong)",
-                      color: m.role === "user" ? "#fff" : "var(--foreground)",
-                      borderRadius: m.role === "user" ? "12px 12px 2px 12px" : "12px 12px 12px 2px",
-                      whiteSpace: "pre-wrap",
-                    }}>
-                    {m.text}
-                  </div>
+                  {m.role !== "user" && (
+                    <div className="flex items-end gap-1.5 max-w-[90%]">
+                      <div className="w-6 h-6 rounded-full flex-shrink-0 flex items-center justify-center text-sm"
+                        style={{ background: "var(--accent)", marginBottom: 2 }}>✦</div>
+                      <div className="px-3 py-2 rounded-2xl text-xs" style={{ background: "var(--glass-strong)", borderBottomLeftRadius: 4, whiteSpace: "pre-wrap" }}>{m.text}</div>
+                    </div>
+                  )}
+                  {m.role === "user" && (
+                    <div className="max-w-[85%] px-3 py-2 rounded-2xl text-xs"
+                      style={{ background: "var(--accent)", color: "#fff", borderBottomRightRadius: 4, whiteSpace: "pre-wrap" }}>{m.text}</div>
+                  )}
                 </div>
               ))}
               {copilotThinking && (
                 <div className="flex justify-start">
-                  <div className="px-3 py-1.5 rounded-xl text-xs opacity-60" style={{ background: "var(--glass-strong)" }}>Searching…</div>
+                  <div className="flex items-end gap-1.5">
+                    <div className="w-6 h-6 rounded-full flex-shrink-0 flex items-center justify-center text-sm"
+                      style={{ background: "var(--accent)", marginBottom: 2 }}>✦</div>
+                    <div className="px-3 py-2 rounded-2xl text-xs opacity-70" style={{ background: "var(--glass-strong)", borderBottomLeftRadius: 4 }}>
+                      Puei is thinking…
+                    </div>
+                  </div>
                 </div>
               )}
               <div ref={copilotBottomRef} />
             </div>
-            <div className="flex gap-1 p-2 flex-shrink-0" style={{ borderTop: "1px solid var(--border)" }}>
+            {/* Input */}
+            <div className="flex gap-1.5 p-2 flex-shrink-0" style={{ borderTop: "1px solid var(--border)" }}>
               <input value={copilotInput} onChange={e => setCopilotInput(e.target.value)}
                 onKeyDown={e => e.key === "Enter" && sendCopilot()}
-                placeholder="Ask Puei Copilot…"
-                className="flex-1 rounded-full px-3 py-1 text-xs outline-none input-field" />
+                placeholder="Ask Puei…"
+                className="flex-1 rounded-full px-3 py-1.5 text-xs outline-none input-field" />
               <button onClick={sendCopilot} disabled={copilotThinking || !copilotInput.trim()}
-                className="aero-button rounded-full px-3 py-1 text-xs"
+                className="aero-button rounded-full w-8 h-8 flex items-center justify-center text-sm flex-shrink-0"
                 style={{ opacity: (!copilotInput.trim() || copilotThinking) ? 0.5 : 1 }}>›</button>
             </div>
           </div>
@@ -4608,11 +4635,6 @@ function InstallerPane({ installWebApp }: { installWebApp: (label: string, url: 
   const [installing, setInstalling] = useState(false);
   const [installProgress, setInstallProgress] = useState(0);
   const installTimer = useRef<number | null>(null);
-  useEffect(() => {
-    return () => {
-      if (installTimer.current) window.clearInterval(installTimer.current);
-    };
-  }, []);
 
   const startInstallerInstall = (onDone: () => void) => {
     if (installTimer.current) return;
@@ -4634,22 +4656,19 @@ function InstallerPane({ installWebApp }: { installWebApp: (label: string, url: 
 
   const install = () => {
     if (installing) return;
-    const res = classifyTrustedUrl(url);
-    if (!res.ok || !res.url || !res.kind) {
-      blip("error");
-      setMsg({ kind: "err", text: res.reason || "Untrusted URL. Only *.lovable.app and *.base44.app are allowed." });
-      return;
-    }
+    let installUrl = url.trim();
+    if (!installUrl) { setMsg({ kind: "err", text: "Enter a URL first." }); return; }
+    if (!/^https?:\/\//i.test(installUrl)) installUrl = "https://" + installUrl;
+    try { new URL(installUrl); } catch { setMsg({ kind: "err", text: "Invalid URL." }); return; }
     let label = name.trim();
     if (!label) {
-      try { label = new URL(res.url).hostname.split(".")[0]; } catch { label = "Web App"; }
+      try { label = new URL(installUrl).hostname.replace(/^www\./, "").split(".")[0]; } catch { label = "Web App"; }
     }
-    const icon = googleFaviconFor(res.url, 64);
+    const icon = googleFaviconFor(installUrl, 64);
     setMsg({ kind: "ok", text: `Installing "${label}"... please wait (10-15 seconds).` });
     startInstallerInstall(() => {
-      installWebApp(label, res.url!, icon);
-      const kindLabel = res.kind === "lovable" ? "Lovable" : res.kind === "base44" ? "Base44" : res.kind === "pages" ? "Cloudflare Pages" : "GitHub Pages";
-      setMsg({ kind: "ok", text: `Installed "${label}" (${kindLabel} app) on your desktop ✔` });
+      installWebApp(label, installUrl, icon);
+      setMsg({ kind: "ok", text: `Installed "${label}" on your desktop ✔` });
       blip("notify");
       setUrl(""); setName("");
     });
@@ -4657,18 +4676,12 @@ function InstallerPane({ installWebApp }: { installWebApp: (label: string, url: 
   return (
     <div>
       <h2 className="text-2xl font-bold mb-1">📑 Installer</h2>
-      <p className="text-sm opacity-70 mb-4">Install trusted web apps as desktop shortcuts. Only verified domains are accepted.</p>
+      <p className="text-sm opacity-70 mb-4">Install any website as a desktop shortcut. Frame restrictions are ignored on launch.</p>
       <div className="aero-glass-light rounded-lg p-4 max-w-lg space-y-3">
-        <div className="text-xs opacity-80">
-          <div className="font-semibold mb-1">Trusted domains</div>
-          {["https://<app>.lovable.app", "https://<app>.base44.app", "https://<app>.pages.dev", "https://<app>.github.io"].map(d => (
-            <code key={d} className="block px-2 py-1 rounded mt-1" style={{ background: "rgba(0,0,0,0.08)" }}>{d}</code>
-          ))}
-        </div>
         <div>
           <label className="text-xs opacity-70">Website URL</label>
           <input value={url} onChange={(e) => setUrl(e.target.value)}
-            placeholder="https://yourapp.lovable.app"
+            placeholder="https://any-website.com"
             className="w-full px-3 py-2 rounded text-sm input-field" />
         </div>
         <div>
@@ -5261,11 +5274,7 @@ function PueiUpdaterApp({ currentUser, startUpgrade, systemVersion }: { currentU
     }
     if (mountedVersion !== "PueiOS 3") {
       blip("error");
-      if (systemVersion === "PueiOS 3") {
-        setReverseWarning({ version: mountedVersion, fromIso: true });
-      } else {
-        localAlert(`As of June 6th, ${mountedVersion} is no longer supported and cannot be installed. Please download pueios3.iso from puei://updates instead.`);
-      }
+      setReverseWarning({ version: mountedVersion, fromIso: true });
       return;
     }
     localConfirm(`Install ${mountedVersion} from ${mountedIso.name}? Your device will restart when installation finishes.`, () => beginInstallActual());
@@ -5318,7 +5327,7 @@ function PueiUpdaterApp({ currentUser, startUpgrade, systemVersion }: { currentU
                 <div>
                   <div className="font-bold text-sm mb-1">This version of Windows is no longer supported</div>
                   <div className="text-[11px] leading-relaxed" style={{ color: "#444" }}>
-                    <b>As of June 6th, {reverseWarning.version} is no longer supported</b> and cannot be installed normally.<br /><br />
+                    <b>As of May 20th, 2026, {reverseWarning.version} is no longer supported</b> and cannot be installed normally.<br /><br />
                     <b>by PueiOS</b><br /><br />
                     You are using <b>Pueio Reverse</b>, which allows booting legacy ISOs whose support has ended. The system will show an end-of-support warning before booting.<br /><br />
                     To continue installing {reverseWarning.version} with Pueio Reverse, click <b>Ignore and install anyway</b>. To cancel, click <b>Don't install</b>.
@@ -5350,7 +5359,7 @@ function PueiUpdaterApp({ currentUser, startUpgrade, systemVersion }: { currentU
       <div className="flex-1 overflow-auto p-5 space-y-4">
         <div>
           <h2 className="text-2xl font-bold">Puei Updater</h2>
-          <p className="text-sm opacity-70 mt-1">Select a version to install. PueiOS 2 and 2+ are no longer supported as of June 6th.</p>
+          <p className="text-sm opacity-70 mt-1">Select a version to install. PueiOS 2 and 2+ are no longer supported as of May 20th, 2026.</p>
         </div>
 
         {/* Version list */}
@@ -5389,16 +5398,12 @@ function PueiUpdaterApp({ currentUser, startUpgrade, systemVersion }: { currentU
                         setReverseWarning({ version: v, fromIso: false });
                         return;
                       }
-                      if (systemVersion === "PueiOS 3") {
-                        const hasPlus = ["pueios2-plus.iso", "pueios2plus.iso"].includes(isoName);
-                        if (!hasPlus) {
-                          setEolMsg("Mount pueios2-plus.iso in the installer area below first, then use Pueio Reverse.");
-                          return;
-                        }
-                        setReverseWarning({ version: v, fromIso: false });
-                      } else {
-                        setEolMsg(`As of June 6th, ${v} is no longer supported. Please install PueiOS 3 instead.`);
+                      const hasPlus = ["pueios2-plus.iso", "pueios2plus.iso"].includes(isoName);
+                      if (!hasPlus) {
+                        setEolMsg("Mount pueios2-plus.iso in the installer area below first, then use Pueio Reverse.");
+                        return;
                       }
+                      setReverseWarning({ version: v, fromIso: false });
                       return;
                     }
                     const isoName3 = mountedIso?.name.trim().toLowerCase() ?? "";
@@ -5503,16 +5508,16 @@ function PueiUpdaterApp({ currentUser, startUpgrade, systemVersion }: { currentU
             </div>
 
             <div className="flex gap-2 flex-wrap">
-              <button className="aero-button rounded px-3 py-1.5 text-xs" disabled={!mountedIso || isInstalling || restartQueued}
-                style={{ opacity: (!mountedIso || isInstalling || restartQueued) ? 0.5 : 1 }}
-                onClick={beginInstall}>
-                Install {mountedIso ? mountedVersion : "…"}
-              </button>
-              <button className="aero-button rounded px-3 py-1.5 text-xs" disabled={!isInstalling}
-                style={{ opacity: isInstalling ? 1 : 0.5, color: "#fca5a5" }}
-                onClick={stopInstall}>
-                Stop installation
-              </button>
+              {mountedIso && !isInstalling && !restartQueued && (
+                <button className="aero-button rounded px-3 py-1.5 text-xs" onClick={beginInstall}>
+                  Install {mountedVersion} →
+                </button>
+              )}
+              {isInstalling && (
+                <button className="aero-button rounded px-3 py-1.5 text-xs" style={{ color: "#fca5a5" }} onClick={stopInstall}>
+                  Stop installation
+                </button>
+              )}
             </div>
 
             {isInstalling && (

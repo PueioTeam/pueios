@@ -1350,7 +1350,7 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
             </h1>
             <div className="w-16 h-0.5 mb-6" style={{ background: "#1e90ff" }} />
             <p className="text-base mb-4 leading-relaxed" style={{ color: "rgba(200,220,255,0.9)" }}>
-              As of <strong>{systemVersion === "PueiOS 1" ? "May 20, 2026" : "June 6th, 2026"}</strong>, {systemVersion} has reached its End of Life. PueiTeam no longer provides security updates, bug fixes, or technical support for this version.
+              As of <strong>May 20th, 2026</strong>, {systemVersion} has reached its End of Life. PueiTeam no longer provides security updates, bug fixes, or technical support for this version.
             </p>
             <p className="text-sm mb-10" style={{ color: "rgba(160,190,255,0.7)" }}>
               Your device will not receive further updates. To continue using PueiOS safely, upgrade to <strong style={{ color: "#ffffff" }}>{systemVersion === "PueiOS 1" ? "PueiOS 2" : "PueiOS 3"}</strong>.
@@ -1390,7 +1390,7 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
 
         {/* Bottom bar */}
         <div className="px-10 py-3 text-xs flex items-center justify-between" style={{ background: "rgba(0,0,0,0.3)", borderTop: "1px solid rgba(255,255,255,0.08)", color: "rgba(160,190,255,0.5)" }}>
-          <span>© PueiTeam. {systemVersion} · End of Life June 6, 2026</span>
+          <span>© PueiTeam. {systemVersion} · End of Life May 20th, 2026</span>
           <span>puei.system/eol</span>
         </div>
       </div>
@@ -2369,7 +2369,7 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
       {systemVersion === "PueiOS 1" ? (
         /* PueiOS 1 — flat minimalistic taskbar */
         <div className="fixed bottom-0 left-0 right-0 flex items-center z-[8000]"
-          style={{ height: 36, background: "#c0c0c0", borderTop: "2px solid #fff", borderBottom: "1px solid #888", fontFamily: "Arial, sans-serif" }}
+          style={{ height: 36, background: theme.taskbarColor ?? "#c0c0c0", borderTop: "2px solid #fff", borderBottom: "1px solid #888", fontFamily: "Arial, sans-serif" }}
           onMouseDown={(e) => e.stopPropagation()}
           onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); setCtxMenu({ x: e.clientX, y: e.clientY, items: taskbarCtx() }); }}>
           {/* Start button */}
