@@ -4335,11 +4335,11 @@ function AppStoreApp({ installWebApp, openApp, openWebApp, systemVersion, addNat
   const [tab, setTab] = useState<"official" | "community" | "installer">("official");
   const [installing, setInstalling] = useState<Record<string, number>>({});
   const installTimers = useRef<Record<string, number>>({});
-  type StoreApp = { name: string; icon: string; desc: string; appId?: AppId; preInstalled?: boolean; webUrl?: string; desktopLabel?: string };
+  type StoreApp = { name: string; icon: string; desc: string; appId?: AppId; preInstalled?: boolean; webUrl?: string; desktopLabel?: string; developer?: string };
   const official: StoreApp[] = [
     { name: "Puei Videos",     icon: "/puei-films-icon.svg",   desc: "Watch official videos posted by pueioficial.",          webUrl: "puei://films",   desktopLabel: "Puei Videos",   preInstalled: false },
     { name: "Puei Updater",   icon: "/puei-updater-icon.svg", desc: "Required for installing ISO system updates.",            webUrl: "puei://updates", desktopLabel: "Puei Updater", preInstalled: false },
-    { name: "Microsoft Edge", icon: "/edge-icon.svg", desc: "Microsoft Edge browser by Microsoft. Opens in your system browser.", webUrl: "https://www.bing.com", desktopLabel: "Microsoft Edge", preInstalled: false },
+    { name: "Microsoft Edge", icon: "/edge-icon.svg", desc: "Fast, secure web browser by Microsoft. Powered by Bing.", webUrl: "https://www.bing.com", desktopLabel: "Microsoft Edge", preInstalled: false, developer: "Microsoft" },
     { name: "PueiSocial",     icon: "📢", desc: "The official PueiOS social network.",          appId: "puei-social",    preInstalled: true },
     { name: "PueiCloudChat",  icon: "💬", desc: "Chat by PueiNumber — cross-device, real-time.", appId: "puei-cloud-chat", preInstalled: true },
     { name: "Puei Studio",    icon: "🪽", desc: "Create wallpapers, icons, themes and share to PueiSocial.", appId: "puei-studio", preInstalled: true },
@@ -4484,7 +4484,7 @@ function AppStoreApp({ installWebApp, openApp, openWebApp, systemVersion, addNat
                         : <div className="text-3xl flex-shrink-0">{a.icon}</div>}
                       <div>
                         <div className="font-semibold">{a.name}</div>
-                        <div className="text-[10px] opacity-60">{a.preInstalled ? "✔ Pre-installed" : "⬇ Installable"} · Puei Team</div>
+                        <div className="text-[10px] opacity-60">{a.preInstalled ? "✔ Pre-installed" : "⬇ Installable"} · {a.developer ?? "Puei Team"}</div>
                       </div>
                     </div>
                     <div className="text-xs opacity-70 mt-1 flex-1">{a.desc}</div>
@@ -4499,7 +4499,8 @@ function AppStoreApp({ installWebApp, openApp, openWebApp, systemVersion, addNat
                               if (isInstalling) return;
                               beginInstall(installKey, () => {
                                 if (a.webUrl) {
-                                  installWebApp(a.desktopLabel || a.name, a.webUrl, a.webUrl.startsWith("puei://") ? undefined : googleFaviconFor(a.webUrl, 64));
+                                  const iconUrl = a.icon.startsWith("/") || a.icon.startsWith("http") ? a.icon : (a.webUrl.startsWith("puei://") ? undefined : googleFaviconFor(a.webUrl, 64));
+                                  installWebApp(a.desktopLabel || a.name, a.webUrl, iconUrl);
                                 } else if (a.appId) {
                                   addNativeIcon(a.appId, a.name, a.icon);
                                 }
@@ -4513,10 +4514,12 @@ function AppStoreApp({ installWebApp, openApp, openWebApp, systemVersion, addNat
                             {!onDesktop && (
                               <button className="aero-button rounded px-2 py-1 text-xs w-full"
                                 onClick={() => {
-                                  if (a.webUrl) installWebApp(a.desktopLabel || a.name, a.webUrl, a.webUrl.startsWith("puei://") ? undefined : googleFaviconFor(a.webUrl, 64));
-                                  else if (a.appId) addNativeIcon(a.appId, a.name, a.icon);
+                                  if (a.webUrl) {
+                                    const iconUrl = a.icon.startsWith("/") || a.icon.startsWith("http") ? a.icon : (a.webUrl.startsWith("puei://") ? undefined : googleFaviconFor(a.webUrl, 64));
+                                    installWebApp(a.desktopLabel || a.name, a.webUrl, iconUrl);
+                                  } else if (a.appId) addNativeIcon(a.appId, a.name, a.icon);
                                   blip("notify");
-                                }}>📌 Pin to desktop</button>
+                                }}>📌 Add to desktop</button>
                             )}
                             <button className="aero-button rounded px-2 py-1 text-xs w-full opacity-50" disabled>✔ Installed</button>
                             <button className="aero-button rounded px-2 py-1 text-xs w-full" style={{ color: "#fca5a5" }}
