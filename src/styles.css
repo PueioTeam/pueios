@@ -577,12 +577,6 @@ canvas[style*="crosshair"] { cursor: url("data:image/svg+xml,%3Csvg xmlns='http:
   background-position: center;
 }
 
-/* PueiOS 1 — Dutch village sunset photo */
-.wallpaper-dutchvillage {
-  background-image: url("/dutchvillage.jpg");
-  background-size: cover;
-  background-position: center;
-}
 /* PueiSKY — bright blue sky with fluffy clouds and vivid green meadow */
 .wallpaper-bliss, .wallpaper-pueisky {
   background:

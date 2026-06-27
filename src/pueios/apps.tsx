@@ -526,8 +526,6 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, curren
                   ? [["milkyway", "Milky Way"]] as [WallpaperId, string][]
                   : systemVersion === "PueiOS 2+"
                   ? [["greekcoast", "Greek Coast"]] as [WallpaperId, string][]
-                  : systemVersion === "PueiOS 1"
-                  ? [["dutchvillage", "Dutch Village"]] as [WallpaperId, string][]
                   : []),
               ] as [WallpaperId, string][]).map(([w, label]) => (
                 <button key={w} onClick={() => setWallpaper(w)}
