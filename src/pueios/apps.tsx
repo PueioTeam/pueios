@@ -5121,6 +5121,7 @@ function isIframeBlocked(url: string): boolean {
 }
 
 function WebAppFrame({ url, currentUser, startUpgrade, systemVersion }: { url: string; currentUser: string; startUpgrade: (target: SystemVersion) => void; systemVersion?: SystemVersion }) {
+  const [loadError, setLoadError] = useState(false);
   if (url === "puei://updates") {
     return <PueiUpdaterApp currentUser={currentUser} startUpgrade={startUpgrade} systemVersion={systemVersion} />;
   }
@@ -5142,9 +5143,26 @@ function WebAppFrame({ url, currentUser, startUpgrade, systemVersion }: { url: s
       <div className="aero-titlebar text-xs px-3 py-1 flex items-center gap-2">
         <span className="opacity-60">🔗</span>
         <span className="truncate flex-1">{url}</span>
+        <button className="aero-button rounded px-2 py-0.5 text-xs" onClick={() => window.open(url, "_blank")}>Open in browser ↗</button>
       </div>
       <div className="flex-1 relative panel-light">
-        <iframe src={url} title={url} className="w-full h-full border-0" allow="fullscreen" />
+        {loadError ? (
+          <div className="w-full h-full flex flex-col items-center justify-center gap-4" style={{ background: "var(--background)" }}>
+            <div className="text-4xl">🔒</div>
+            <div className="text-sm font-semibold">This site can't be shown inside PueiOS</div>
+            <div className="text-xs opacity-60 text-center max-w-xs">The website blocks embedding (X-Frame-Options or Content Security Policy). This is a restriction set by the website, not PueiOS.</div>
+            <button className="aero-button rounded px-4 py-2 text-sm" onClick={() => window.open(url, "_blank")}>Open in your browser ↗</button>
+          </div>
+        ) : (
+          <iframe
+            key={url}
+            src={url}
+            title={url}
+            className="w-full h-full border-0"
+            allow="fullscreen *; clipboard-read; clipboard-write; camera; microphone"
+            onError={() => setLoadError(true)}
+          />
+        )}
       </div>
     </div>
   );
@@ -5181,34 +5199,50 @@ function PueiUpdaterApp({ currentUser, startUpgrade, systemVersion }: { currentU
     };
   }, []);
 
+  const installTimerRef = useRef<number | null>(null);
+  const installStartedRef = useRef<number>(0);
+  const installDurationRef = useRef<number>(12000);
+  const startUpgradeRef = useRef(startUpgrade);
+  const mountedIsoIdRef = useRef(mountedIsoId);
+  const currentUserRef = useRef(currentUser);
+  useEffect(() => { startUpgradeRef.current = startUpgrade; }, [startUpgrade]);
+  useEffect(() => { mountedIsoIdRef.current = mountedIsoId; }, [mountedIsoId]);
+  useEffect(() => { currentUserRef.current = currentUser; }, [currentUser]);
+
   useEffect(() => {
-    if (!isInstalling) return;
-    const started = Date.now();
-    const duration = 10000 + Math.floor(Math.random() * 5000);
-    const timer = window.setInterval(() => {
-      const pct = Math.min(100, ((Date.now() - started) / duration) * 100);
+    if (!isInstalling) {
+      if (installTimerRef.current) { window.clearInterval(installTimerRef.current); installTimerRef.current = null; }
+      return;
+    }
+    installStartedRef.current = Date.now();
+    installDurationRef.current = 10000 + Math.floor(Math.random() * 5000);
+    if (installTimerRef.current) window.clearInterval(installTimerRef.current);
+    installTimerRef.current = window.setInterval(() => {
+      const pct = Math.min(100, ((Date.now() - installStartedRef.current) / installDurationRef.current) * 100);
       setInstallProgress(pct);
       if (pct >= 100) {
-        window.clearInterval(timer);
+        if (installTimerRef.current) { window.clearInterval(installTimerRef.current); installTimerRef.current = null; }
         setIsInstalling(false);
         setRestartQueued(true);
         blip("notify");
-        const isoFiles = loadFiles().filter((f) =>
-          f.type === "text" && (!f.owner || f.owner === currentUser) &&
+        const allIso = loadFiles().filter((f) =>
+          f.type === "text" && (!f.owner || f.owner === currentUserRef.current) &&
           f.folder === SYS_FOLDER_DOWNLOADS &&
           ["pueios1.iso", "pueios2-plus.iso", "pueios2plus.iso", "pueios3.iso"].includes(f.name.trim().toLowerCase())
         );
-        const iso = isoFiles.find((file) => file.id === mountedIsoId);
+        const iso = allIso.find((file) => file.id === mountedIsoIdRef.current);
         const isoName = iso?.name.trim().toLowerCase() ?? "";
         const targetVersion: SystemVersion = isoName === "pueios3.iso" ? "PueiOS 3" : isoName === "pueios1.iso" ? "PueiOS 1" : "PueiOS 2+";
         restartTimer.current = window.setTimeout(() => {
           blip("start");
-          startUpgrade(targetVersion);
+          startUpgradeRef.current(targetVersion);
         }, 900);
       }
     }, 250);
-    return () => window.clearInterval(timer);
-  }, [isInstalling, startUpgrade, mountedIsoId, currentUser]);
+    return () => {
+      if (installTimerRef.current) { window.clearInterval(installTimerRef.current); installTimerRef.current = null; }
+    };
+  }, [isInstalling]);
 
   const isoFiles = loadFiles().filter((f) =>
     f.type === "text" &&
@@ -5487,7 +5521,8 @@ function PueiUpdaterApp({ currentUser, startUpgrade, systemVersion }: { currentU
                 </button>
               )}
               {isInstalling && (
-                <button className="aero-button rounded px-3 py-1.5 text-xs" style={{ color: "#fca5a5" }} onClick={stopInstall}>
+                <button onClick={stopInstall}
+                  style={{ background: "rgba(200,40,40,0.85)", color: "white", border: "1px solid rgba(255,80,80,0.6)", borderRadius: 4, padding: "4px 12px", fontSize: 12, cursor: "pointer", backdropFilter: "blur(4px)" }}>
                   Stop installation
                 </button>
               )}

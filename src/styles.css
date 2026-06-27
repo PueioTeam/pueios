@@ -198,6 +198,10 @@ body { color: var(--text-override, var(--color-foreground)); }
 body * { font-family: var(--font-override, inherit); }
 html { font-size: var(--font-size-base, 14px); }
 
+/* Suppress default browser focus rings globally — only show with .focus-highlight */
+*:focus { outline: none; }
+*:focus-visible { outline: none; }
+
 /* Accessibility classes */
 .reduce-motion *, .reduce-motion *::before, .reduce-motion *::after {
   animation: none !important;
