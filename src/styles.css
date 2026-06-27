@@ -556,9 +556,9 @@ canvas[style*="crosshair"] { cursor: url("data:image/svg+xml,%3Csvg xmlns='http:
   background-position: center;
 }
 
-/* All versions — Pirate ship stormy night */
-.wallpaper-piratesship {
-  background-image: url("/piratesship.jpg");
+/* PueiOS 1 — Dutch village sunset */
+.wallpaper-dutchvillage {
+  background-image: url("/dutchvillage.jpg");
   background-size: cover;
   background-position: center;
 }
