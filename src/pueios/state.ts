@@ -662,49 +662,41 @@ interface BlipDef { freqs: number[]; type?: OscillatorType; spacing?: number; du
 
 const BLIP_SOUNDS: Record<SystemVersion, Record<BlipKind, BlipDef>> = {
   "PueiOS 1": {
-    start:    { freqs: [440, 554, 659], type: "square", spacing: 0.1, dur: 0.14, vol: 0.22 },
-    click:    { freqs: [660], type: "square", spacing: 0, dur: 0.08, vol: 0.18 },
-    hover:    { freqs: [880], type: "square", spacing: 0, dur: 0.05, vol: 0.10 },
-    notify:   { freqs: [660, 880], type: "square", spacing: 0.1, dur: 0.14, vol: 0.20 },
-    error:    { freqs: [220, 196], type: "sawtooth", spacing: 0.08, dur: 0.2, vol: 0.22 },
-    shutdown: { freqs: [659, 523, 392], type: "square", spacing: 0.12, dur: 0.15, vol: 0.20 },
+    start:    { freqs: [440, 554, 659], type: "square", spacing: 0.1, dur: 0.12, vol: 0.08 },
+    click:    { freqs: [660], type: "square", spacing: 0, dur: 0.07, vol: 0.06 },
+    hover:    { freqs: [880], type: "square", spacing: 0, dur: 0.04, vol: 0.03 },
+    notify:   { freqs: [660, 880], type: "square", spacing: 0.1, dur: 0.12, vol: 0.07 },
+    error:    { freqs: [220, 196], type: "sawtooth", spacing: 0.08, dur: 0.2, vol: 0.08 },
+    shutdown: { freqs: [659, 523, 392], type: "square", spacing: 0.12, dur: 0.15, vol: 0.07 },
   },
   "PueiOS 2": {
-    start:    { freqs: [523, 659, 784, 1046], type: "sine", spacing: 0.12, dur: 0.24, vol: 0.28 },
-    click:    { freqs: [880], type: "sine", spacing: 0, dur: 0.18, vol: 0.22 },
-    hover:    { freqs: [1200], type: "sine", spacing: 0, dur: 0.05, vol: 0.10 },
-    notify:   { freqs: [880, 1175], type: "sine", spacing: 0.08, dur: 0.22, vol: 0.26 },
-    error:    { freqs: [220, 196], type: "sawtooth", spacing: 0.08, dur: 0.2, vol: 0.24 },
-    shutdown: { freqs: [784, 523, 392], type: "sine", spacing: 0.1, dur: 0.24, vol: 0.24 },
+    start:    { freqs: [523, 659, 784, 1046], type: "sine", spacing: 0.12, dur: 0.22, vol: 0.12 },
+    click:    { freqs: [880], type: "sine", spacing: 0, dur: 0.18, vol: 0.1 },
+    hover:    { freqs: [1200], type: "sine", spacing: 0, dur: 0.04, vol: 0.04 },
+    notify:   { freqs: [880, 1175], type: "sine", spacing: 0.08, dur: 0.18, vol: 0.12 },
+    error:    { freqs: [220, 196], type: "sawtooth", spacing: 0.08, dur: 0.2, vol: 0.1 },
+    shutdown: { freqs: [784, 523, 392], type: "sine", spacing: 0.1, dur: 0.22, vol: 0.1 },
   },
   "PueiOS 2+": {
-    start:    { freqs: [392, 523, 659, 784, 1046], type: "triangle", spacing: 0.1, dur: 0.28, vol: 0.30 },
-    click:    { freqs: [1046], type: "triangle", spacing: 0, dur: 0.16, vol: 0.22 },
-    hover:    { freqs: [1320], type: "triangle", spacing: 0, dur: 0.05, vol: 0.10 },
-    notify:   { freqs: [784, 1046, 1318], type: "triangle", spacing: 0.09, dur: 0.22, vol: 0.28 },
-    error:    { freqs: [196, 165, 147], type: "sawtooth", spacing: 0.09, dur: 0.22, vol: 0.24 },
-    shutdown: { freqs: [1046, 784, 523, 392], type: "triangle", spacing: 0.12, dur: 0.28, vol: 0.26 },
+    start:    { freqs: [392, 523, 659, 784, 1046], type: "triangle", spacing: 0.1, dur: 0.25, vol: 0.13 },
+    click:    { freqs: [1046], type: "triangle", spacing: 0, dur: 0.15, vol: 0.09 },
+    hover:    { freqs: [1320], type: "triangle", spacing: 0, dur: 0.04, vol: 0.04 },
+    notify:   { freqs: [784, 1046, 1318], type: "triangle", spacing: 0.09, dur: 0.2, vol: 0.12 },
+    error:    { freqs: [196, 165, 147], type: "sawtooth", spacing: 0.09, dur: 0.22, vol: 0.1 },
+    shutdown: { freqs: [1046, 784, 523, 392], type: "triangle", spacing: 0.12, dur: 0.25, vol: 0.11 },
   },
   "PueiOS 3": {
-    start:    { freqs: [659, 880, 1109], type: "sine", spacing: 0.15, dur: 0.32, vol: 0.26 },
-    click:    { freqs: [1046], type: "sine", spacing: 0, dur: 0.12, vol: 0.20 },
-    hover:    { freqs: [1568], type: "sine", spacing: 0, dur: 0.04, vol: 0.08 },
-    notify:   { freqs: [1046, 1318], type: "sine", spacing: 0.12, dur: 0.22, vol: 0.24 },
-    error:    { freqs: [311, 277], type: "sine", spacing: 0.1, dur: 0.25, vol: 0.22 },
-    shutdown: { freqs: [880, 659, 523], type: "sine", spacing: 0.18, dur: 0.30, vol: 0.22 },
+    start:    { freqs: [659, 880, 1109], type: "sine", spacing: 0.15, dur: 0.3, vol: 0.1 },
+    click:    { freqs: [1046], type: "sine", spacing: 0, dur: 0.1, vol: 0.07 },
+    hover:    { freqs: [1568], type: "sine", spacing: 0, dur: 0.03, vol: 0.03 },
+    notify:   { freqs: [1046, 1318], type: "sine", spacing: 0.12, dur: 0.2, vol: 0.09 },
+    error:    { freqs: [311, 277], type: "sine", spacing: 0.1, dur: 0.25, vol: 0.09 },
+    shutdown: { freqs: [880, 659, 523], type: "sine", spacing: 0.18, dur: 0.28, vol: 0.08 },
   },
 };
 
-// Prevent hover sound from firing more than once per 300ms to stop looping
-let _lastHover = 0;
-
 export function blip(kind: BlipKind) {
   if (typeof window === "undefined") return;
-  if (kind === "hover") {
-    const now2 = Date.now();
-    if (now2 - _lastHover < 300) return;
-    _lastHover = now2;
-  }
   try {
     if (!audioCtx) audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
     const ctx = audioCtx;

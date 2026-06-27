@@ -2333,7 +2333,7 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
             <span className="text-xs px-2 py-0.5 rounded" style={{ background: "rgba(220,50,50,0.18)", color: "#f87171" }}>End of Life</span>
           </div>
           <p className="text-xs opacity-60">The original PueiOS 2 release.</p>
-          <p className="text-xs" style={{ color: "#f87171" }}>As of May 20th, 2026, PueiOS 2 is no longer supported. No download available.</p>
+          <p className="text-xs" style={{ color: "#f87171" }}>As of June 6th, 2026, PueiOS 2 is no longer supported. No download available.</p>
         </div>
 
         {/* PueiOS 2+ */}
@@ -2344,7 +2344,7 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
             {isoFile && <span className="text-xs px-2 py-0.5 rounded" style={{ background: "rgba(80,200,120,0.2)", color: "#4ade80" }}>Downloaded</span>}
           </div>
           <p className="text-xs opacity-60">Advanced edition with stronger sync and AI systems.</p>
-          <p className="text-xs" style={{ color: "#f87171" }}>As of May 20th, 2026, PueiOS 2+ is no longer supported. We recommend upgrading to PueiOS 3.</p>
+          <p className="text-xs" style={{ color: "#f87171" }}>As of June 6th, 2026, PueiOS 2+ is no longer supported. We recommend upgrading to PueiOS 3.</p>
           <div className="flex gap-2">
             {downloading === "pueios2-plus.iso" ? (
               <span className="text-xs opacity-70">Downloading… {dlSecondsLeft}s</span>
@@ -2498,58 +2498,54 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
         </button>
       </div>
       <div className="flex-1 overflow-auto relative">
-        {content}
-        {/* Puei Copilot panel — bottom-right corner, mascot style */}
-        {copilotOpen && (
-          <div className="absolute bottom-3 right-3 flex flex-col aero-glass rounded-2xl overflow-hidden z-50"
-            style={{ width: 300, height: 380, boxShadow: "0 12px 40px rgba(0,0,0,0.45)", border: "1px solid var(--border)" }}>
-            {/* Header with Puei avatar */}
-            <div className="flex items-center gap-2 px-3 py-2 flex-shrink-0"
+        {copilotOpen ? (
+          /* Full-screen Copilot chat */
+          <div className="flex flex-col h-full" style={{ background: "var(--background)" }}>
+            {/* Copilot header */}
+            <div className="flex items-center gap-3 px-4 py-3 flex-shrink-0"
               style={{ background: "linear-gradient(135deg, var(--glass-strong), var(--glass))", borderBottom: "1px solid var(--border)" }}>
-              <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"
-                style={{ background: "var(--accent)", fontSize: 16 }}>✦</div>
+              <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 text-xl"
+                style={{ background: "var(--accent)" }}>✦</div>
               <div className="flex-1 min-w-0">
-                <div className="text-xs font-bold truncate">Puei Copilot</div>
-                <div className="text-[10px] opacity-50 truncate">{copilotThinking ? "thinking…" : "ready"}</div>
+                <div className="font-bold text-sm">Puei Copilot</div>
+                <div className="text-xs opacity-50">{copilotThinking ? "Puei is thinking…" : "Ask me anything"}</div>
               </div>
-              <button onClick={() => setCopilotOpen(false)}
-                className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] flex-shrink-0"
-                style={{ background: "rgba(255,80,80,0.25)" }}>✕</button>
+              <button onClick={() => { setCopilotHistory([]); }}
+                className="aero-button rounded px-2 py-1 text-xs opacity-60">Clear</button>
             </div>
             {/* Messages */}
-            <div className="flex-1 overflow-auto p-3 space-y-2" style={{ fontSize: 12 }}>
+            <div className="flex-1 overflow-auto px-4 py-4 space-y-3">
               {copilotHistory.length === 0 && (
                 <div className="flex justify-start">
-                  <div className="flex items-end gap-1.5 max-w-[90%]">
-                    <div className="w-6 h-6 rounded-full flex-shrink-0 flex items-center justify-center text-sm"
+                  <div className="flex items-end gap-2 max-w-[75%]">
+                    <div className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-base"
                       style={{ background: "var(--accent)", marginBottom: 2 }}>✦</div>
-                    <div className="px-3 py-2 rounded-2xl text-xs" style={{ background: "var(--glass-strong)", borderBottomLeftRadius: 4, whiteSpace: "pre-wrap" }}>
-                      Hey! I'm Puei Copilot ✦ Ask me anything about PueiOS or the web!
+                    <div className="px-4 py-3 rounded-2xl text-sm" style={{ background: "var(--glass-strong)", borderBottomLeftRadius: 6, whiteSpace: "pre-wrap" }}>
+                      Hey! I'm Puei Copilot ✦{"\n"}Ask me anything — about PueiOS, the web, or anything else!
                     </div>
                   </div>
                 </div>
               )}
               {copilotHistory.map((m, i) => (
                 <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
-                  {m.role !== "user" && (
-                    <div className="flex items-end gap-1.5 max-w-[90%]">
-                      <div className="w-6 h-6 rounded-full flex-shrink-0 flex items-center justify-center text-sm"
+                  {m.role !== "user" ? (
+                    <div className="flex items-end gap-2 max-w-[75%]">
+                      <div className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-base"
                         style={{ background: "var(--accent)", marginBottom: 2 }}>✦</div>
-                      <div className="px-3 py-2 rounded-2xl text-xs" style={{ background: "var(--glass-strong)", borderBottomLeftRadius: 4, whiteSpace: "pre-wrap" }}>{m.text}</div>
+                      <div className="px-4 py-3 rounded-2xl text-sm" style={{ background: "var(--glass-strong)", borderBottomLeftRadius: 6, whiteSpace: "pre-wrap" }}>{m.text}</div>
                     </div>
-                  )}
-                  {m.role === "user" && (
-                    <div className="max-w-[85%] px-3 py-2 rounded-2xl text-xs"
-                      style={{ background: "var(--accent)", color: "#fff", borderBottomRightRadius: 4, whiteSpace: "pre-wrap" }}>{m.text}</div>
+                  ) : (
+                    <div className="max-w-[75%] px-4 py-3 rounded-2xl text-sm"
+                      style={{ background: "var(--accent)", color: "#fff", borderBottomRightRadius: 6, whiteSpace: "pre-wrap" }}>{m.text}</div>
                   )}
                 </div>
               ))}
               {copilotThinking && (
                 <div className="flex justify-start">
-                  <div className="flex items-end gap-1.5">
-                    <div className="w-6 h-6 rounded-full flex-shrink-0 flex items-center justify-center text-sm"
+                  <div className="flex items-end gap-2">
+                    <div className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-base"
                       style={{ background: "var(--accent)", marginBottom: 2 }}>✦</div>
-                    <div className="px-3 py-2 rounded-2xl text-xs opacity-70" style={{ background: "var(--glass-strong)", borderBottomLeftRadius: 4 }}>
+                    <div className="px-4 py-3 rounded-2xl text-sm opacity-60" style={{ background: "var(--glass-strong)", borderBottomLeftRadius: 6 }}>
                       Puei is thinking…
                     </div>
                   </div>
@@ -2557,17 +2553,19 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
               )}
               <div ref={copilotBottomRef} />
             </div>
-            {/* Input */}
-            <div className="flex gap-1.5 p-2 flex-shrink-0" style={{ borderTop: "1px solid var(--border)" }}>
+            {/* Input bar */}
+            <div className="flex gap-2 p-3 flex-shrink-0" style={{ borderTop: "1px solid var(--border)" }}>
               <input value={copilotInput} onChange={e => setCopilotInput(e.target.value)}
                 onKeyDown={e => e.key === "Enter" && sendCopilot()}
-                placeholder="Ask Puei…"
-                className="flex-1 rounded-full px-3 py-1.5 text-xs outline-none input-field" />
+                placeholder="Ask Puei anything…"
+                className="flex-1 rounded-full px-4 py-2 text-sm outline-none input-field" />
               <button onClick={sendCopilot} disabled={copilotThinking || !copilotInput.trim()}
-                className="aero-button rounded-full w-8 h-8 flex items-center justify-center text-sm flex-shrink-0"
-                style={{ opacity: (!copilotInput.trim() || copilotThinking) ? 0.5 : 1 }}>›</button>
+                className="aero-button rounded-full px-4 py-2 text-sm font-semibold flex-shrink-0"
+                style={{ opacity: (!copilotInput.trim() || copilotThinking) ? 0.5 : 1 }}>Send ›</button>
             </div>
           </div>
+        ) : (
+          content
         )}
       </div>
     </div>
@@ -5139,31 +5137,6 @@ function WebAppFrame({ url, currentUser, startUpgrade, systemVersion }: { url: s
       </div>
     );
   }
-  // Sites that block iframe embedding — open externally
-  if (url.startsWith("http") && isIframeBlocked(url)) {
-    return (
-      <div className="flex flex-col h-full">
-        <div className="aero-titlebar text-xs px-3 py-1 flex items-center gap-2">
-          <span className="opacity-60">🔗</span>
-          <span className="truncate flex-1">{url}</span>
-        </div>
-        <div className="flex-1 flex flex-col items-center justify-center gap-4 p-6" style={{ background: "var(--background)" }}>
-          <div style={{ fontSize: 48 }}>🌐</div>
-          <div className="text-center">
-            <div className="font-semibold mb-1" style={{ color: "var(--foreground)" }}>This site can't be opened inside PueiOS</div>
-            <div className="text-sm opacity-60 mb-4" style={{ color: "var(--foreground)" }}>
-              {(() => { try { return new URL(url).hostname; } catch { return url; } })()} blocks embedded browsing.
-            </div>
-            <a href={url} target="_blank" rel="noreferrer"
-              className="aero-button rounded-xl px-5 py-2.5 text-sm font-semibold inline-block"
-              style={{ textDecoration: "none", color: "var(--foreground)" }}>
-              🚀 Open in real browser
-            </a>
-          </div>
-        </div>
-      </div>
-    );
-  }
   return (
     <div className="flex flex-col h-full">
       <div className="aero-titlebar text-xs px-3 py-1 flex items-center gap-2">
@@ -5327,7 +5300,7 @@ function PueiUpdaterApp({ currentUser, startUpgrade, systemVersion }: { currentU
                 <div>
                   <div className="font-bold text-sm mb-1">This version of Windows is no longer supported</div>
                   <div className="text-[11px] leading-relaxed" style={{ color: "#444" }}>
-                    <b>As of May 20th, 2026, {reverseWarning.version} is no longer supported</b> and cannot be installed normally.<br /><br />
+                    <b>As of {reverseWarning.version === "PueiOS 1" ? "May 20th, 2026" : "June 6th, 2026"}, {reverseWarning.version} is no longer supported</b> and cannot be installed normally.<br /><br />
                     <b>by PueiOS</b><br /><br />
                     You are using <b>Pueio Reverse</b>, which allows booting legacy ISOs whose support has ended. The system will show an end-of-support warning before booting.<br /><br />
                     To continue installing {reverseWarning.version} with Pueio Reverse, click <b>Ignore and install anyway</b>. To cancel, click <b>Don't install</b>.
@@ -5359,7 +5332,7 @@ function PueiUpdaterApp({ currentUser, startUpgrade, systemVersion }: { currentU
       <div className="flex-1 overflow-auto p-5 space-y-4">
         <div>
           <h2 className="text-2xl font-bold">Puei Updater</h2>
-          <p className="text-sm opacity-70 mt-1">Select a version to install. PueiOS 2 and 2+ are no longer supported as of May 20th, 2026.</p>
+          <p className="text-sm opacity-70 mt-1">Select a version to install. PueiOS 2 and 2+ are no longer supported as of June 6th, 2026.</p>
         </div>
 
         {/* Version list */}
