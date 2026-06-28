@@ -38,6 +38,7 @@ const APP_TITLES: Record<AppId, string> = {
   "iso-viewer": "ISO Viewer",
   "zip-viewer": "ZIP Viewer",
   "task-manager": "Task Manager",
+  "puei-game": "PueiGAME",
 };
 const APP_SIZES: Partial<Record<AppId, { w: number; h: number }>> = {
   "calculator": { w: 280, h: 380 },
@@ -60,6 +61,7 @@ const APP_SIZES: Partial<Record<AppId, { w: number; h: number }>> = {
   "puei-mansion": { w: 720, h: 540 },
   "pmail": { w: 860, h: 580 },
   "pueyracing": { w: 900, h: 620 },
+  "puei-game": { w: 940, h: 640 },
 };
 
 const GRID_W = 96;
@@ -441,7 +443,7 @@ export function PueiOS() {
       loadedIcons = [...loadedIcons, { id: "i-studio", label: "Puei Studio", appId: "puei-studio" as const }];
     }
     // Strip any icons with unknown appIds (stale from old versions)
-    const VALID_APP_IDS = new Set(["puei-paint","puei-board","pueinet","puei-cloud-chat","puei-studio","file-explorer","settings","about","notepad","calculator","app-store","puei-social","folder","web-app","recycle-bin","chess","puei-mansion","zip-viewer","iso-viewer"]);
+    const VALID_APP_IDS = new Set(["puei-paint","puei-board","pueinet","puei-cloud-chat","puei-studio","file-explorer","settings","about","notepad","calculator","app-store","puei-social","folder","web-app","recycle-bin","chess","puei-mansion","zip-viewer","iso-viewer","puei-game","pueyracing","pmail","task-manager"]);
     loadedIcons = loadedIcons.filter((i: any) => i.webUrl || VALID_APP_IDS.has(i.appId));
     // Always enforce correct iconUrl for known shortcuts (overwrite any stale emoji or wrong url)
     const knownIconUrls: Record<string, string> = {
@@ -2475,8 +2477,8 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
           {/* Win7-style Start orb */}
           <button
             title="Start" onClick={(e) => { e.stopPropagation(); blip("click"); setStartOpen(!startOpen); setShowCalendar(false); }}
-            style={{ width: 52, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", background: startOpen ? "linear-gradient(180deg,rgba(60,120,220,0.7) 0%,rgba(20,60,180,0.9) 100%)" : "linear-gradient(180deg,rgba(40,100,200,0.5) 0%,rgba(15,50,140,0.7) 100%)", borderRight: "1px solid rgba(100,160,240,0.2)", cursor: "pointer", position: "relative", border: "none" }}>
-            <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at 50% 30%, rgba(100,180,255,0.35) 0%, transparent 70%)", pointerEvents: "none" }} />
+            style={{ width: 52, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", background: startOpen ? "color-mix(in oklch, var(--accent) 70%, transparent)" : "color-mix(in oklch, var(--accent) 40%, transparent)", borderRight: "1px solid color-mix(in oklch, var(--accent) 30%, transparent)", cursor: "pointer", position: "relative", border: "none" }}>
+            <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at 50% 30%, rgba(255,255,255,0.25) 0%, transparent 70%)", pointerEvents: "none" }} />
             <PueiLogoSvg size={28} bigEyes />
           </button>
           {/* Pinned + open apps area */}
@@ -2687,6 +2689,7 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
             ["app-store","App Store","🛍️"], ["puei-social","PueiSocial","📣"],
             ["recycle-bin","Recycle Bin","🗑️"], ["chess","Chess","♟️"],
             ["puei-mansion","Puei Mansion","👻"], ["task-manager","Task Manager","📊"],
+            ["puei-game","PueiGAME","🎮"],
           ] as [AppId, string, string][]).map(([appId, label, icon]) => ({ id: `native-${appId}`, label, icon, kind: "native" as const, appId }))),
           ...(([
             ["puei://films","Puei Videos","/puei-films-icon.svg"],

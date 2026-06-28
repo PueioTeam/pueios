@@ -88,6 +88,7 @@ export function AppRenderer(p: AppRendererProps) {
     case "recycle-bin": return <RecycleBinApp />;
     case "chess": return <ChessApp />;
     case "puei-mansion": return <PueiMansionApp />;
+    case "puei-game": return <PueiGameApp openApp={p.openApp} addNativeIcon={p.addNativeIcon} icons={p.icons} installedKeys={p.installedKeys} />;
     case "iso-viewer": return <IsoViewerApp fileId={p.fileId} />;
     case "zip-viewer": return <ZipViewerApp fileId={p.fileId} />;
     case "pmail": return <PMailApp currentUser={p.currentUser} users={p.users} />;
@@ -4294,6 +4295,98 @@ function PueiDrivePane({ files, icons, currentUser, users, openApp, onDelete }: 
   );
 }
 
+// ---------- PueiGAME Launcher ----------
+function PueiGameApp({ openApp, addNativeIcon, icons, installedKeys }: { openApp: (id: AppId) => void; addNativeIcon: (appId: AppId, label: string, icon: string) => void; icons: DesktopIcon[]; installedKeys: Set<string> }) {
+  const games = [
+    { appId: "puei-mansion" as AppId, name: "Puei Mansion", icon: "👻", genre: "Adventure", desc: "Funny spooky adventure. Solve puzzles, find hidden secrets, and meet weird Puei creatures." },
+    { appId: "pueyracing" as AppId, name: "Puei Space", icon: "🚀", genre: "Shooter", desc: "3D space shooter — fly your ship, blast asteroids and enemies, survive as long as you can." },
+  ];
+  const isInstalled = (appId: AppId) => icons.some(i => i.appId === appId && !i.fileId && !i.webUrl) || installedKeys.has(`app:${appId}`);
+  const [installing, setInstalling] = useState<Record<string, number>>({});
+  const timers = useRef<Record<string, ReturnType<typeof setInterval>>>({});
+  useEffect(() => () => { Object.values(timers.current).forEach(clearInterval); }, []);
+
+  const install = (appId: AppId, name: string, icon: string) => {
+    const key = appId;
+    if (timers.current[key] || isInstalled(appId)) return;
+    const started = Date.now();
+    const dur = 8000 + Math.random() * 4000;
+    setInstalling(p => ({ ...p, [key]: 0 }));
+    timers.current[key] = setInterval(() => {
+      const pct = Math.min(100, ((Date.now() - started) / dur) * 100);
+      setInstalling(p => p[key] === undefined ? p : { ...p, [key]: pct });
+      if (pct >= 100) {
+        clearInterval(timers.current[key]);
+        delete timers.current[key];
+        setInstalling(p => { const { [key]: _, ...rest } = p; return rest; });
+        addNativeIcon(appId, name, icon);
+        openApp(appId);
+      }
+    }, 200);
+  };
+
+  return (
+    <div className="flex flex-col h-full" style={{ background: "linear-gradient(160deg,#0a1a0a 0%,#0d2010 50%,#0a1a0a 100%)", color: "white", fontFamily: "'Segoe UI', sans-serif" }}>
+      {/* Header */}
+      <div style={{ background: "linear-gradient(90deg,#1a4d1a,#0d3010)", padding: "18px 24px 14px", borderBottom: "1px solid rgba(80,200,80,0.2)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <span style={{ fontSize: 32 }}>🎮</span>
+          <div>
+            <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: 1, color: "#5dfc5d" }}>PueiGAME</div>
+            <div style={{ fontSize: 11, opacity: 0.65, marginTop: 1 }}>Your gaming hub — exclusive titles for PueiOS</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Install notice */}
+      <div style={{ background: "rgba(80,200,80,0.08)", border: "1px solid rgba(80,200,80,0.18)", borderRadius: 8, margin: "14px 18px 0", padding: "10px 14px", fontSize: 12, display: "flex", alignItems: "center", gap: 8 }}>
+        <span style={{ fontSize: 16 }}>ℹ️</span>
+        <span style={{ opacity: 0.85 }}>PueiGAME was installed via the <b>PueiGAME.exe</b> installer downloaded from <b style={{ color: "#5dfc5d" }}>pueigame.puei</b>. Games below are exclusive to PueiGAME and cannot be found in the App Store.</span>
+      </div>
+
+      {/* Game list */}
+      <div style={{ flex: 1, overflowY: "auto", padding: "14px 18px", display: "flex", flexDirection: "column", gap: 10 }}>
+        {games.map(g => {
+          const inst = isInstalled(g.appId);
+          const prog = installing[g.appId];
+          const isInstalling = prog !== undefined;
+          return (
+            <div key={g.appId} style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(80,200,80,0.14)", borderRadius: 10, padding: "14px 16px", display: "flex", alignItems: "center", gap: 14 }}>
+              <span style={{ fontSize: 38, flexShrink: 0 }}>{g.icon}</span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2 }}>
+                  <span style={{ fontWeight: 700, fontSize: 15 }}>{g.name}</span>
+                  <span style={{ fontSize: 10, background: "rgba(80,200,80,0.18)", border: "1px solid rgba(80,200,80,0.3)", borderRadius: 4, padding: "1px 6px", color: "#5dfc5d" }}>{g.genre}</span>
+                  {inst && <span style={{ fontSize: 10, background: "rgba(80,200,80,0.25)", borderRadius: 4, padding: "1px 6px", color: "#7fff7f" }}>✓ Installed</span>}
+                </div>
+                <div style={{ fontSize: 12, opacity: 0.65, marginBottom: isInstalling ? 8 : 0 }}>{g.desc}</div>
+                {isInstalling && (
+                  <div style={{ height: 4, borderRadius: 2, background: "rgba(80,200,80,0.15)", overflow: "hidden" }}>
+                    <div style={{ height: "100%", width: `${prog}%`, background: "linear-gradient(90deg,#2da02d,#5dfc5d)", borderRadius: 2, transition: "width 0.2s" }} />
+                  </div>
+                )}
+              </div>
+              <button
+                onClick={() => inst ? openApp(g.appId) : install(g.appId, g.name, g.icon)}
+                disabled={isInstalling}
+                style={{ flexShrink: 0, padding: "7px 18px", borderRadius: 7, border: "none", cursor: isInstalling ? "default" : "pointer", fontWeight: 600, fontSize: 13,
+                  background: isInstalling ? "rgba(80,200,80,0.12)" : inst ? "rgba(80,200,80,0.22)" : "linear-gradient(135deg,#2a8a2a,#1d6b1d)",
+                  color: inst ? "#7fff7f" : "white", boxShadow: inst || isInstalling ? "none" : "0 2px 8px rgba(0,80,0,0.4)" }}>
+                {isInstalling ? `${Math.round(prog!)}%` : inst ? "▶ Play" : "Install"}
+              </button>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Footer */}
+      <div style={{ padding: "10px 18px", borderTop: "1px solid rgba(80,200,80,0.1)", fontSize: 11, opacity: 0.45, textAlign: "center" }}>
+        PueiGAME · All games are property of PueiTeam
+      </div>
+    </div>
+  );
+}
+
 // ---------- App Store ----------
 function AppStoreApp({ installWebApp, openApp, openWebApp, systemVersion, addNativeIcon, uninstallApp, uninstallWebApp, icons, installedKeys }: { installWebApp: (label: string, url: string, iconUrl?: string) => void; openApp: (id: AppId) => void; openWebApp: (url: string, title: string) => void; systemVersion: SystemVersion; addNativeIcon: (appId: AppId, label: string, icon: string) => void; uninstallApp: (appId: AppId) => void; uninstallWebApp: (url: string) => void; icons: DesktopIcon[]; installedKeys: Set<string> }) {
   const [tab, setTab] = useState<"official" | "community" | "installer">("official");
@@ -4319,8 +4412,7 @@ function AppStoreApp({ installWebApp, openApp, openWebApp, systemVersion, addNat
     { name: "Installer",      icon: "📑", desc: "Install trusted web apps as desktop shortcuts.",appId: "app-store",      preInstalled: true },
   ];
   const games: StoreApp[] = [
-    { name: "Puei Mansion",  icon: "👻", desc: "Funny spooky adventure. Solve puzzles, find hidden secrets, and meet weird Puei creatures.", appId: "puei-mansion", preInstalled: false },
-    { name: "Puei Space", icon: "🚀", desc: "3D space shooter — fly your ship, blast asteroids and enemies, survive as long as you can.", appId: "pueyracing", preInstalled: false },
+    { name: "PueiGAME", icon: "🎮", desc: "Download the PueiGAME launcher to play exclusive Puei titles. Install via PueiGAME.exe from pueigame.puei — not available here.", appId: "puei-game", preInstalled: false },
   ];
   const community: StoreApp[] = [
     { name: "bezoSMP", icon: "/bezosmp-icon.png", desc: "By bazicioschi and catotherat.", webUrl: "https://bezosmp.lovable.app", desktopLabel: "bezoSMP", preInstalled: false },
@@ -4527,37 +4619,26 @@ function AppStoreApp({ installWebApp, openApp, openWebApp, systemVersion, addNat
             {/* Games */}
             <div className="mt-6">
               <h3 className="font-bold text-base mb-1">🎮 Puei Games</h3>
-              <p className="text-sm opacity-70 mb-4">Games by the Puei Team — install and play right in PueiOS.</p>
+              <p className="text-sm opacity-70 mb-4">Puei games are exclusive to the PueiGAME launcher.</p>
               <div className="grid grid-cols-3 gap-3">
                 {games.map((a) => {
                   const gameInstalled = isInstalled(a);
                   const onDesktop = isOnDesktop(a);
-                  const installKey = appInstallKey(a);
-                  const installPct = installing[installKey];
-                  const isInstalling = installPct !== undefined;
                   return (
                     <div key={a.name} className="aero-glass-light rounded-lg p-3 flex flex-col">
                       <div className="flex items-center gap-2">
                         <div className="text-3xl">{a.icon}</div>
                         <div>
                           <div className="font-semibold">{a.name}</div>
-                          <div className="text-[10px] opacity-60">⬇ Installable · Puei Team</div>
+                          <div className="text-[10px] opacity-60">🎮 Launcher required · Puei Team</div>
                         </div>
                       </div>
                       <div className="text-xs opacity-70 mt-1 flex-1">{a.desc}</div>
                       <div className="flex flex-col gap-1 mt-2">
                         {!gameInstalled ? (
-                          <button
-                            className="aero-button rounded px-2 py-1 text-xs w-full"
-                            disabled={isInstalling}
-                            onClick={() => {
-                              if (isInstalling) return;
-                              beginInstall(installKey, () => {
-                                addNativeIcon(a.appId!, a.name, a.icon);
-                                blip("notify");
-                              });
-                            }}>
-                            {isInstalling ? `Installing ${Math.floor(installPct)}%` : "⬇ Install"}
+                          <button className="aero-button rounded px-2 py-1 text-xs w-full"
+                            onClick={() => { addNativeIcon(a.appId!, a.name, a.icon); blip("notify"); }}>
+                            ⬇ Get PueiGAME.exe
                           </button>
                         ) : (
                           <>
@@ -4573,14 +4654,6 @@ function AppStoreApp({ installWebApp, openApp, openWebApp, systemVersion, addNat
                           </>
                         )}
                       </div>
-                      {isInstalling && (
-                        <div className="mt-2">
-                          <div className="w-full h-1.5 rounded-full bg-cyan-900/35 overflow-hidden">
-                            <div className="loading-bar-inner h-full" style={{ width: `${installPct}%`, transition: "width 0.25s linear" }} />
-                          </div>
-                          <div className="text-[10px] opacity-60 mt-1">Estimated 10–15 seconds</div>
-                        </div>
-                      )}
                     </div>
                   );
                 })}

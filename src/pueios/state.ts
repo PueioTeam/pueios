@@ -149,7 +149,8 @@ export type AppId =
   | "zip-viewer"
   | "pmail"
   | "pueyracing"
-  | "task-manager";
+  | "task-manager"
+  | "puei-game";
 
 export type WindowState = {
   id: string;
