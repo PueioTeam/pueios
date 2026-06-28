@@ -456,9 +456,10 @@ export function PueiOS() {
         const { iconEmoji: _e, ...rest } = i;
         return { ...rest, iconUrl: knownIconUrls[i.webUrl] };
       }
-      // Enforce pueiweb.jpg for the PueiWeb native icon
-      if (i.appId === "pueinet" && !i.webUrl && i.iconUrl !== "/pueiweb.jpg") {
-        return { ...i, iconUrl: "/pueiweb.jpg", iconEmoji: undefined };
+      // Strip any stale iconUrl/iconEmoji from the PueiWeb icon so the SVG always renders
+      if (i.appId === "pueinet" && !i.webUrl) {
+        const { iconUrl: _u, iconEmoji: _e, ...rest } = i;
+        return rest;
       }
       return i;
     });
