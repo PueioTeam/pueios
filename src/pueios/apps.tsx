@@ -3718,7 +3718,7 @@ function FileExplorerApp({ openApp, icons, openFolder, currentUser, users, setWa
     { name: "Notepad", appId: "notepad", icon: "📝" },
     { name: "Calculator", appId: "calculator", icon: "🧮" },
     { name: "Settings", appId: "settings", icon: "⚙️" },
-    { name: "PueiNet", appId: "pueinet", icon: "🌍" },
+    { name: "PueiNet", appId: "pueinet", icon: "/pueiweb.jpg" },
     { name: "PueiCloudChat", appId: "puei-cloud-chat", icon: "💼" },
     { name: "App Store", appId: "app-store", icon: "🛍️" },
     { name: "PueiSocial", appId: "puei-social", icon: "📢" },
@@ -4400,7 +4400,7 @@ function AppStoreApp({ installWebApp, openApp, openWebApp, systemVersion, addNat
     { name: "PueiCloudChat",  icon: "💬", desc: "Chat by PueiNumber — cross-device, real-time.", appId: "puei-cloud-chat", preInstalled: true },
     { name: "Puei Studio",    icon: "🪽", desc: "Create wallpapers, icons, themes and share to PueiSocial.", appId: "puei-studio", preInstalled: true },
     { name: "PueiBoard",      icon: "📌", desc: "Pinterest-style boards where Pueis post Gallery images.", appId: "puei-board", preInstalled: true },
-    { name: "PueiWeb",        icon: "🌍", desc: "System browser + AI search engine.",           appId: "pueinet",        preInstalled: true },
+    { name: "PueiWeb",        icon: "/pueiweb.jpg", desc: "System browser + AI search engine.",           appId: "pueinet",        preInstalled: true },
     { name: "Puei Paint 2",   icon: "🎨", desc: "Paint and save images as wallpapers.",         appId: "puei-paint",     preInstalled: true },
     { name: "Settings",       icon: "⚙️", desc: "Personalize, dark mode, accessibility.",       appId: "settings",       preInstalled: true },
     { name: "Computer",       icon: "🖥️", desc: "File system explorer.",                        appId: "file-explorer",  preInstalled: true },
@@ -4586,20 +4586,28 @@ function AppStoreApp({ installWebApp, openApp, openWebApp, systemVersion, addNat
                           </>
                         )
                       ) : (
-                        <button
-                          className="aero-button rounded px-2 py-1 text-xs w-full"
-                          style={{ background: onDesktop ? "rgba(80,200,120,0.25)" : undefined, color: onDesktop ? "#4ade80" : undefined }}
-                          disabled={isInstalling || onDesktop}
-                          title={isInstalling ? "Installation in progress" : undefined}
-                          onClick={() => {
-                            if (isInstalling || onDesktop || !a.appId) return;
-                            beginInstall(installKey, () => {
-                              addNativeIcon(a.appId!, a.name, a.icon);
-                              blip("notify");
-                            });
-                          }}>
-                          {isInstalling ? `Installing ${Math.floor(installPct)}%` : onDesktop ? "✔ Installed" : "⬇ Install"}
-                        </button>
+                        <>
+                          <button
+                            className="aero-button rounded px-2 py-1 text-xs w-full"
+                            style={{ background: onDesktop ? "rgba(80,200,120,0.25)" : undefined, color: onDesktop ? "#4ade80" : undefined }}
+                            disabled={isInstalling || onDesktop}
+                            title={isInstalling ? "Installation in progress" : undefined}
+                            onClick={() => {
+                              if (isInstalling || onDesktop || !a.appId) return;
+                              beginInstall(installKey, () => {
+                                addNativeIcon(a.appId!, a.name, a.icon);
+                                blip("notify");
+                              });
+                            }}>
+                            {isInstalling ? `Installing ${Math.floor(installPct)}%` : onDesktop ? "✔ Installed" : "⬇ Install"}
+                          </button>
+                          {onDesktop && !(["file-explorer","settings","recycle-bin"] as string[]).includes(a.appId ?? "") && (
+                            <button className="aero-button rounded px-2 py-1 text-xs w-full" style={{ color: "#fca5a5" }}
+                              onClick={() => { if (a.appId) { uninstallApp(a.appId); blip("notify"); } }}>
+                              Uninstall
+                            </button>
+                          )}
+                        </>
                       )}
                     </div>
                     {isInstalling && (
