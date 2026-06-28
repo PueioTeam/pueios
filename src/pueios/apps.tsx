@@ -2304,6 +2304,17 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
           )}
         </div>
 
+        {/* PueiOS 4 — Coming Soon */}
+        <div className="aero-glass-light rounded-xl p-4 space-y-2" style={{ border: "1px solid rgba(168,85,247,0.35)", background: "rgba(88,28,135,0.12)" }}>
+          <div className="flex items-center gap-2">
+            <span className="font-semibold">PueiOS 4</span>
+            <span className="text-xs px-2 py-0.5 rounded" style={{ background: "rgba(168,85,247,0.25)", color: "#c084fc" }}>Coming Soon</span>
+            <span className="text-xs px-2 py-0.5 rounded" style={{ background: "rgba(250,204,21,0.15)", color: "#fbbf24" }}>August 2026</span>
+          </div>
+          <p className="text-xs opacity-70">The next major release of PueiOS. More details coming soon.</p>
+          <p className="text-[10px] opacity-40">Stay tuned on PueiSocial for announcements.</p>
+        </div>
+
         {/* Pueio Reverse */}
         <div className="aero-glass-light rounded-xl p-4 space-y-2">
           <div className="flex items-center gap-2">
