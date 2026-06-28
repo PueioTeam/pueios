@@ -2481,6 +2481,16 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
             <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at 50% 30%, rgba(255,255,255,0.25) 0%, transparent 70%)", pointerEvents: "none" }} />
             <PueiLogoSvg size={28} bigEyes />
           </button>
+          {/* Win10-style search bar */}
+          <button
+            onClick={(e) => { e.stopPropagation(); blip("click"); setStartOpen(true); setShowCalendar(false); }}
+            style={{ display: "flex", alignItems: "center", gap: 7, height: 30, width: 220, flexShrink: 0, margin: "0 4px", padding: "0 10px", borderRadius: 4, border: "1px solid rgba(255,255,255,0.18)", background: "rgba(255,255,255,0.10)", cursor: "text", color: "rgba(255,255,255,0.55)", fontSize: 12, backdropFilter: "blur(4px)" }}>
+            <svg width="13" height="13" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0, opacity: 0.7 }}>
+              <circle cx="6.5" cy="6.5" r="5" stroke="rgba(255,255,255,0.9)" strokeWidth="1.8"/>
+              <line x1="10.5" y1="10.5" x2="14.5" y2="14.5" stroke="rgba(255,255,255,0.9)" strokeWidth="1.8" strokeLinecap="round"/>
+            </svg>
+            <span>Type here to search</span>
+          </button>
           {/* Pinned + open apps area */}
           <div className="flex items-center flex-1 overflow-hidden" style={{ gap: 2, padding: "0 4px" }}>
             {pinnedApps.map((p) => {
