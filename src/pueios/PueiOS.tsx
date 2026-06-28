@@ -1427,7 +1427,7 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
 
   // ============ BOOT
   if (phase === "boot") {
-    if (isP3) return (
+    if (systemVersion === "PueiOS 3") return (
       <div className="fixed inset-0 flex flex-col items-center justify-center" style={{ background: "#000" }}>
         <div style={{ marginBottom: 64 }}><PueiLogoSvg size={80} glow /></div>
         {/* Win11-style spinning dots */}
