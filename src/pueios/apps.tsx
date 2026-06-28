@@ -1867,7 +1867,7 @@ function PueiNetHomePage({ navigate }: { navigate: (url: string) => void }) {
           ["puei://math", "🧮 Puei Math"],
           ["puei://films", "🎬 Puei Videos"],
           ["puei://os3", "🚀 PueiOS 3"],
-          ["puei://about", "ℹ️ About"],
+          ["puei://games", "🎮 PueiGAME"],
         ].map(([u, l]) => (
           <button key={u} onClick={() => navigate(u)} className="aero-button rounded-lg p-4">{l}</button>
         ))}
@@ -2158,7 +2158,7 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
   };
 
   const pageTitles: Record<string, string> = {
-    "puei://home": "Home", "puei://search": "Puei Search", "puei://about": "About",
+    "puei://home": "Home", "puei://search": "Puei Search", "puei://about": "About", "puei://games": "PueiGAME",
     "puei://updates": "Updates", "puei://social": "PueiSocial", "puei://board": "PueiBoard",
     "puei://math": "Puei Math", "puei://chat": "Chat", "puei://os3": "PueiOS 3",
     "puei://films": "Puei Videos", "puei://mail": "PMail",
@@ -2355,6 +2355,35 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
     "puei://math": <PueiMathPage />,
     "puei://mail": <PMailApp currentUser={currentUser} users={users} />,
     "puei://about": <div className="p-6"><h2 className="text-2xl font-bold">About PueiNet</h2><p className="text-sm opacity-70 mt-2">A browser for an alternate 2020. Only https://&lt;app&gt;.base44.app external URLs are trusted.</p></div>,
+    "puei://games": (
+      <div className="p-6 space-y-5 max-w-xl">
+        <div className="flex items-center gap-3">
+          <span className="text-5xl">🎮</span>
+          <div>
+            <h2 className="text-2xl font-bold">PueiGAME</h2>
+            <p className="text-xs opacity-50 mt-0.5">Official gaming portal by the Puei Team</p>
+          </div>
+        </div>
+        <p className="text-sm opacity-70">PueiGAME is the exclusive home for Puei titles. Install the launcher to play all games — not available through the App Store.</p>
+        <div className="aero-glass-light rounded-xl p-4 space-y-2">
+          <div className="font-semibold text-sm">🎯 How to get PueiGAME</div>
+          <ol className="text-xs opacity-70 space-y-1 list-decimal list-inside">
+            <li>Download <strong>PueiGAME.exe</strong> from the official site</li>
+            <li>Run the installer — it will appear on your desktop</li>
+            <li>Open PueiGAME and browse all available titles</li>
+          </ol>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          {[["👻 Puei Mansion","Adventure · Horror"],["🚀 Puei Space","Shooter · Arcade"]].map(([name, genre]) => (
+            <div key={name} className="aero-glass-light rounded-xl p-4 space-y-1">
+              <div className="font-semibold text-sm">{name}</div>
+              <div className="text-[10px] opacity-50">{genre}</div>
+              <div className="text-[10px] opacity-40 mt-1">Available on PueiGAME launcher</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    ),
   };
 
   let content: React.ReactNode;
