@@ -2412,6 +2412,27 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
             </button>
             );
           })()}
+          {/* Pinned apps */}
+          {pinnedApps.length > 0 && <>
+            <div style={{ width: 1, background: "#888", height: 24, margin: "0 4px", flexShrink: 0 }} />
+            {pinnedApps.map((p) => {
+              const pKey1 = p.webUrl ?? p.appId;
+              const p1ic = icons.find(i => (i.webUrl ?? i.appId) === pKey1);
+              return (
+                <button key={pKey1} title={p.label ?? APP_TITLES[p.appId] ?? p.appId}
+                  onClick={(e) => { e.stopPropagation(); openPinned(p); }}
+                  onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); setCtxMenu({ x: e.clientX, y: e.clientY, items: [
+                    { label: "Open", action: () => openPinned(p) },
+                    { sep: true },
+                    { label: "Unpin from taskbar", action: () => unpinFromTaskbar(pKey1) },
+                  ]}); }}
+                  style={{ height: 28, width: 28, display: "flex", alignItems: "center", justifyContent: "center", border: "1px outset #ccc", background: "#d4d0c8", cursor: "pointer", flexShrink: 0 }}>
+                  {aicon(p.appId, 18, p1ic?.iconEmoji, p1ic?.iconUrl)}
+                </button>
+              );
+            })}
+            <div style={{ width: 1, background: "#888", height: 24, margin: "0 4px", flexShrink: 0 }} />
+          </>}
           {/* Open windows */}
           <div style={{ display: "flex", alignItems: "center", flex: 1, overflow: "hidden", gap: 2, padding: "0 4px" }}>
             {windows.map((w) => {
