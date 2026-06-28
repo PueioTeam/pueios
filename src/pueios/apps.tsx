@@ -481,21 +481,6 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, curren
               <label className="flex items-center gap-2 text-sm">
                 <input type="checkbox" checked={theme.dark} onChange={(e) => setTheme({ ...theme, dark: e.target.checked })} /> Dark mode <span className="text-xs opacity-60">(global — applies to every system surface)</span>
               </label>
-              {systemVersion !== "PueiOS 1" && (<>
-              <label className="flex items-center gap-2 text-sm">
-                <input type="checkbox" checked={theme.transparency} onChange={(e) => setTheme({ ...theme, transparency: e.target.checked })} /> Aero transparency
-              </label>
-              <label className="flex items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  checked={!!theme.fullWindowTransparency}
-                  disabled={!theme.transparency}
-                  onChange={(e) => setTheme({ ...theme, fullWindowTransparency: e.target.checked })}
-                />
-                Full window transparency
-                <span className="text-xs opacity-60">(default is title bar only)</span>
-              </label>
-              </>)}
               <label className="flex items-center gap-2 text-sm">
                 <input type="checkbox" checked={theme.animations} onChange={(e) => setTheme({ ...theme, animations: e.target.checked })} /> Animations & motion
               </label>
