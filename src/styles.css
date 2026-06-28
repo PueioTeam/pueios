@@ -574,7 +574,7 @@ canvas[style*="crosshair"] { cursor: url("data:image/svg+xml,%3Csvg xmlns='http:
 .wallpaper-milkyway {
   background-image: url("/milkyway.jpg");
   background-size: cover;
-  background-position: center;
+  background-position: center bottom;
 }
 
 /* PueiSKY — bright blue sky with fluffy clouds and vivid green meadow */
