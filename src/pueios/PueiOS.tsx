@@ -154,6 +154,8 @@ export function PueiOS() {
   const [zCounter, setZCounter] = useState(1);
   const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number; items: any[] } | null>(null);
   const [startOpen, setStartOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const [showAddShortcut, setShowAddShortcut] = useState(false);
   const [touchDot, setTouchDot] = useState<{ x: number; y: number; visible: boolean }>({ x: 0, y: 0, visible: false });
   const [selectedIcon, setSelectedIcon] = useState<string | null>(null);
@@ -2060,7 +2062,7 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
     <div
       className={`fixed inset-0 ${isP3 ? "win7-aero" : ""} ${typeof theme.wallpaper === "string" && (theme.wallpaper.startsWith("custom:") || theme.wallpaper.startsWith("data:")) ? "" : `wallpaper-${theme.wallpaper}`}`}
       style={{ overflow: "hidden", ...wallpaperStyle }}
-      onMouseDown={() => { setCtxMenu(null); setStartOpen(false); setShowCalendar(false); setSelectedIcon(null); setShowVolume(false); setShowNetwork(false); }}
+      onMouseDown={() => { setCtxMenu(null); setStartOpen(false); setShowCalendar(false); setSelectedIcon(null); setShowVolume(false); setShowNetwork(false); setSearchOpen(false); setSearchQuery(""); }}
       onContextMenu={(e) => { e.preventDefault(); setCtxMenu({ x: e.clientX, y: e.clientY, items: desktopCtx() }); }}
       onTouchStart={(e) => onTouchStart(e, desktopCtx())}
       onTouchMove={onTouchMove}
@@ -2526,15 +2528,52 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
             <PueiLogoSvg size={28} bigEyes />
           </button>
           {/* Win10-style search bar */}
-          <button
-            onClick={(e) => { e.stopPropagation(); blip("click"); setStartOpen(true); setShowCalendar(false); }}
-            style={{ display: "flex", alignItems: "center", gap: 7, height: 30, width: 220, flexShrink: 0, margin: "0 4px", padding: "0 10px", borderRadius: 4, border: "1px solid rgba(255,255,255,0.18)", background: "rgba(255,255,255,0.10)", cursor: "text", color: "rgba(255,255,255,0.55)", fontSize: 12, backdropFilter: "blur(4px)" }}>
-            <svg width="13" height="13" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0, opacity: 0.7 }}>
-              <circle cx="6.5" cy="6.5" r="5" stroke="rgba(255,255,255,0.9)" strokeWidth="1.8"/>
-              <line x1="10.5" y1="10.5" x2="14.5" y2="14.5" stroke="rgba(255,255,255,0.9)" strokeWidth="1.8" strokeLinecap="round"/>
-            </svg>
-            <span>Type here to search</span>
-          </button>
+          <div style={{ position: "relative", flexShrink: 0, margin: "0 4px" }} onMouseDown={(e) => e.stopPropagation()}>
+            <div style={{ display: "flex", alignItems: "center", gap: 7, height: 30, width: 220, padding: "0 10px", borderRadius: 4, border: `1px solid ${searchOpen ? "rgba(255,255,255,0.4)" : "rgba(255,255,255,0.18)"}`, background: searchOpen ? "rgba(255,255,255,0.18)" : "rgba(255,255,255,0.10)", backdropFilter: "blur(4px)" }}>
+              <svg width="13" height="13" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0, opacity: 0.7 }}>
+                <circle cx="6.5" cy="6.5" r="5" stroke="rgba(255,255,255,0.9)" strokeWidth="1.8"/>
+                <line x1="10.5" y1="10.5" x2="14.5" y2="14.5" stroke="rgba(255,255,255,0.9)" strokeWidth="1.8" strokeLinecap="round"/>
+              </svg>
+              <input
+                value={searchQuery}
+                onChange={(e) => { setSearchQuery(e.target.value); setSearchOpen(true); }}
+                onFocus={() => setSearchOpen(true)}
+                onKeyDown={(e) => {
+                  if (e.key === "Escape") { setSearchOpen(false); setSearchQuery(""); }
+                  if (e.key === "Enter") {
+                    const q = searchQuery.trim().toLowerCase();
+                    const match = desktopIcons.find(i => (APP_TITLES[i.appId] ?? i.label).toLowerCase().startsWith(q));
+                    if (match) { openApp(match.appId, { fileId: match.fileId }); setSearchOpen(false); setSearchQuery(""); }
+                  }
+                }}
+                placeholder="Type here to search"
+                style={{ background: "none", border: "none", outline: "none", color: "rgba(255,255,255,0.85)", fontSize: 12, width: "100%", caretColor: "white" }}
+              />
+            </div>
+            {/* Search results overlay */}
+            {searchOpen && (
+              <div style={{ position: "absolute", bottom: 38, left: 0, width: 280, background: "rgba(15,25,50,0.96)", backdropFilter: "blur(24px)", borderRadius: 8, border: "1px solid rgba(255,255,255,0.15)", boxShadow: "0 -8px 32px rgba(0,0,0,0.6)", overflow: "hidden", animation: "fade-scale 0.12s ease-out" }}>
+                {searchQuery.trim() === "" ? (
+                  <div style={{ padding: "12px 16px", fontSize: 11, color: "rgba(255,255,255,0.4)" }}>Start typing to search apps…</div>
+                ) : (() => {
+                  const q = searchQuery.trim().toLowerCase();
+                  const results = [...desktopIcons, ...icons.filter(i => i.folderId)].filter(i => (APP_TITLES[i.appId] ?? i.label).toLowerCase().includes(q)).slice(0, 6);
+                  return results.length === 0
+                    ? <div style={{ padding: "12px 16px", fontSize: 11, color: "rgba(255,255,255,0.4)" }}>No apps found for "{searchQuery}"</div>
+                    : results.map((i) => (
+                      <button key={i.id}
+                        onClick={() => { openApp(i.appId, { fileId: i.fileId, webUrl: i.webUrl }); setSearchOpen(false); setSearchQuery(""); blip("click"); }}
+                        style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "8px 14px", background: "none", border: "none", color: "white", cursor: "pointer", fontSize: 13, textAlign: "left" }}
+                        onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.1)")}
+                        onMouseLeave={e => (e.currentTarget.style.background = "none")}>
+                        {aicon(i.appId, 22, i.iconEmoji, i.iconUrl)}
+                        <span>{APP_TITLES[i.appId] ?? i.label}</span>
+                      </button>
+                    ));
+                })()}
+              </div>
+            )}
+          </div>
           {/* Pinned + open apps area */}
           <div className="flex items-center flex-1 overflow-hidden" style={{ gap: 2, padding: "0 4px" }}>
             {pinnedApps.map((p) => {
