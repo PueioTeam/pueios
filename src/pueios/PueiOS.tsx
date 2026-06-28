@@ -117,7 +117,17 @@ export function PueiOS() {
   const [icons, setIcons] = useState<DesktopIcon[]>(defaultIcons);
   const [users, setUsers] = useState<User[]>([]);
   const [installed, setInstalled] = useState(false);
-  const [systemVersion, setSystemVersion] = useState<SystemVersion>("PueiOS 1");
+  const [systemVersion, setSystemVersion] = useState<SystemVersion>(() => {
+    try {
+      const raw = localStorage.getItem("pueios2-state-v3");
+      if (raw) {
+        const p = JSON.parse(raw);
+        if (p.systemVersion && (["PueiOS 1","PueiOS 2","PueiOS 2+","PueiOS 3"] as string[]).includes(p.systemVersion))
+          return p.systemVersion as SystemVersion;
+      }
+    } catch {}
+    return "PueiOS 1";
+  });
   const [installMode, setInstallMode] = useState<"new" | "existing" | null>(null);
   const [pwOption, setPwOption] = useState<"have" | "none" | "create-now">("have");
   const [upgradeTarget, setUpgradeTarget] = useState<SystemVersion>("PueiOS 2");
