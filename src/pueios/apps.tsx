@@ -1952,7 +1952,7 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
       upsertFile({
         id: `iso1-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`,
         name: "pueios1.iso", type: "text",
-        content: "PueiOS 1 installation ISO image. Classic minimalist shell. Legacy — use Pueio Reverse to boot.",
+        content: "PueiOS 1 installation ISO image. Classic minimalist shell. End of Life.",
         updatedAt: Date.now(), owner: currentUser, folder: SYS_FOLDER_DOWNLOADS,
       });
       setIsoRefresh((v) => v + 1);
@@ -2263,7 +2263,7 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
             {iso1File && <span className="text-xs px-2 py-0.5 rounded" style={{ background: "rgba(80,200,120,0.2)", color: "#4ade80" }}>Downloaded</span>}
           </div>
           <p className="text-xs opacity-60">The very first PueiOS release — classic minimalist shell.</p>
-          <p className="text-xs" style={{ color: "#f87171" }}>As of May 20, 2026, PueiOS 1 is no longer supported. Use Pueio Reverse to boot.</p>
+          <p className="text-xs" style={{ color: "#f87171" }}>As of May 20, 2026, PueiOS 1 has reached end of life and is no longer supported.</p>
           <div className="flex gap-2">
             {downloading === "pueios1.iso" ? (
               <span className="text-xs opacity-70">Downloading… {dlSecondsLeft}s</span>
@@ -2319,15 +2319,6 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
           )}
         </div>
 
-        {/* Pueio Reverse */}
-        <div className="aero-glass-light rounded-xl p-4 space-y-2">
-          <div className="flex items-center gap-2">
-            <span className="font-semibold">🔄 Pueio Reverse</span>
-            <span className="text-xs px-2 py-0.5 rounded" style={{ background: "rgba(120,40,200,0.25)", color: "#c084fc" }}>Legacy</span>
-          </div>
-          <p className="text-xs opacity-70">Pueio Reverse lets you load ISOs whose support has ended. The system will show an end-of-support warning before booting.</p>
-          <p className="text-xs opacity-50">To use: download any ISO, open it from Files, and click "Boot with Pueio Reverse".</p>
-        </div>
       </div>
     ),
     "puei://mail": null,
@@ -5219,8 +5210,6 @@ function PueiUpdaterApp({ currentUser, startUpgrade, systemVersion }: { currentU
   const [isInstalling, setIsInstalling] = useState(false);
   const [installStopped, setInstallStopped] = useState(false);
   const [localDialog, localAlert, localConfirm] = useLocalDialog();
-  // Pueio Reverse — XP-style EOL warning before installing legacy ISO or downgrading
-  const [reverseWarning, setReverseWarning] = useState<{ version: SystemVersion; fromIso?: boolean } | null>(null);
   const [restartQueued, setRestartQueued] = useState(false);
   const restartTimer = useRef<number | null>(null);
 
@@ -5355,51 +5344,6 @@ function PueiUpdaterApp({ currentUser, startUpgrade, systemVersion }: { currentU
     <div className="flex flex-col h-full relative">
       {/* Local in-app dialog */}
       <LocalDialogModal dialog={localDialog} />
-      {/* Pueio Reverse — XP-style EOL warning modal (PueiOS 3 only) */}
-      {reverseWarning && (
-        <div className="absolute inset-0 z-50 flex items-center justify-center" style={{ background: "rgba(0,0,0,0.55)" }}>
-          <div className="w-[420px] rounded shadow-2xl overflow-hidden" style={{ border: "2px solid #0a246a", fontFamily: "Tahoma, sans-serif" }}>
-            {/* XP-style titlebar */}
-            <div className="flex items-center justify-between px-2 py-1 select-none"
-              style={{ background: "linear-gradient(to bottom, #0a5db5 0%, #0a246a 100%)", color: "white" }}>
-              <div className="flex items-center gap-1.5 text-[11px] font-bold">
-                <span>⚠️</span> Pueio Reverse — Compatibility Warning
-              </div>
-              <button className="w-5 h-5 rounded flex items-center justify-center text-[10px] hover:bg-red-500"
-                style={{ background: "rgba(255,255,255,0.2)" }}
-                onClick={() => setReverseWarning(null)}>✕</button>
-            </div>
-            {/* XP-style content */}
-            <div style={{ background: "#ece9d8", color: "#000" }}>
-              <div className="flex gap-3 p-4">
-                <div className="text-4xl flex-shrink-0">🛡️</div>
-                <div>
-                  <div className="font-bold text-sm mb-1">This version of Windows is no longer supported</div>
-                  <div className="text-[11px] leading-relaxed" style={{ color: "#444" }}>
-                    <b>As of {reverseWarning.version === "PueiOS 1" ? "May 20th, 2026" : "June 6th, 2026"}, {reverseWarning.version} is no longer supported</b> and cannot be installed normally.<br /><br />
-                    <b>by PueiOS</b><br /><br />
-                    You are using <b>Pueio Reverse</b>, which allows booting legacy ISOs whose support has ended. The system will show an end-of-support warning before booting.<br /><br />
-                    To continue installing {reverseWarning.version} with Pueio Reverse, click <b>Ignore and install anyway</b>. To cancel, click <b>Don't install</b>.
-                  </div>
-                </div>
-              </div>
-              <div className="flex justify-end gap-2 px-4 pb-3">
-                <button className="px-4 py-1 text-[11px] rounded border"
-                  style={{ background: "#ece9d8", borderColor: "#888", cursor: "pointer" }}
-                  onClick={() => setReverseWarning(null)}>Don't install</button>
-                <button className="px-4 py-1 text-[11px] rounded border font-bold"
-                  style={{ background: "#ece9d8", borderColor: "#0a246a", cursor: "pointer" }}
-                  onClick={() => {
-                  const w = reverseWarning;
-                  setReverseWarning(null);
-                  if (w?.fromIso) { beginInstallActual(); }
-                  else if (w?.version) { startUpgrade(w.version); }
-                }}>Ignore and install anyway</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       <div className="aero-titlebar text-xs px-3 py-1 flex items-center gap-2">
         <span className="opacity-60">Update</span>
@@ -5433,28 +5377,15 @@ function PueiUpdaterApp({ currentUser, startUpgrade, systemVersion }: { currentU
                   style={{ background: "rgba(100,50,50,0.3)", color: "#f87171" }}>
                   Lost in time
                 </span>
+              ) : eol ? (
+                <span className="text-xs flex-shrink-0 px-3 py-1.5 rounded-lg"
+                  style={{ background: "rgba(100,50,50,0.3)", color: "#f87171" }}>
+                  Not supported
+                </span>
               ) : (
                 <button
                   className="aero-button rounded-lg px-4 py-2 text-sm flex-shrink-0"
                   onClick={() => {
-                    if (eol) {
-                      const isoName = mountedIso?.name.trim().toLowerCase() ?? "";
-                      if (v === "PueiOS 1") {
-                        if (isoName !== "pueios1.iso") {
-                          setEolMsg("Mount pueios1.iso in the installer area below first, then use Pueio Reverse.");
-                          return;
-                        }
-                        setReverseWarning({ version: v, fromIso: false });
-                        return;
-                      }
-                      const hasPlus = ["pueios2-plus.iso", "pueios2plus.iso"].includes(isoName);
-                      if (!hasPlus) {
-                        setEolMsg("Mount pueios2-plus.iso in the installer area below first, then use Pueio Reverse.");
-                        return;
-                      }
-                      setReverseWarning({ version: v, fromIso: false });
-                      return;
-                    }
                     const isoName3 = mountedIso?.name.trim().toLowerCase() ?? "";
                     if (v === "PueiOS 3" && isoName3 !== "pueios3.iso") {
                       setEolMsg("Mount pueios3.iso in the installer area below first to install PueiOS 3.");
@@ -5463,7 +5394,7 @@ function PueiUpdaterApp({ currentUser, startUpgrade, systemVersion }: { currentU
                     setEolMsg(null);
                     startUpgrade(v);
                   }}>
-                  {eol ? "🔄 Pueio Reverse" : mountedIso?.name.trim().toLowerCase() === "pueios3.iso" ? "Install →" : "Requires ISO ↓"}
+                  {mountedIso?.name.trim().toLowerCase() === "pueios3.iso" ? "Install →" : "Requires ISO ↓"}
                 </button>
               )}
             </div>
@@ -5551,7 +5482,7 @@ function PueiUpdaterApp({ currentUser, startUpgrade, systemVersion }: { currentU
               <div className="text-sm font-semibold">{mountedIso ? `${mountedIso.name} is on Puei Updater ✓` : "Drop or tap Mount to load ISO"}</div>
               <div className="text-xs opacity-65 mt-1">
                 {mountedIso
-                  ? `ISO loaded! Boot up the ${mountedVersion} ISO — click ${mountedVersion} above and use Pueio Reverse.`
+                  ? `ISO loaded! Click Install → above to upgrade to ${mountedVersion}.`
                   : "Drag an ISO here, or use the Mount button on touchscreen."}
               </div>
             </div>
@@ -5594,15 +5525,6 @@ function PueiUpdaterApp({ currentUser, startUpgrade, systemVersion }: { currentU
           </div>
         </div>
 
-        {/* Pueio Reverse */}
-        <div className="aero-glass-light rounded-xl p-4 space-y-2">
-          <div className="flex items-center gap-2">
-            <span className="font-semibold">🔄 Pueio Reverse</span>
-            <span className="text-xs px-2 py-0.5 rounded" style={{ background: "rgba(120,40,200,0.25)", color: "#c084fc" }}>Legacy</span>
-          </div>
-          <p className="text-xs opacity-70">Pueio Reverse lets you load ISOs whose support has ended. The system shows an end-of-support warning before booting.</p>
-          <p className="text-xs opacity-50">To use: open any ISO file from Files and click "Boot with Pueio Reverse".</p>
-        </div>
       </div>
     </div>
   );
@@ -6677,56 +6599,6 @@ function IsoViewerApp({ fileId }: { fileId?: string }) {
   const name = file?.name?.trim().toLowerCase() ?? "";
   const isLegacy = name === "pueios2-plus.iso" || name === "pueios2plus.iso";
   const isPueiOS3 = name === "pueios3.iso";
-  const [reverseBooting, setReverseBooting] = useState(false);
-  const [reverseStage, setReverseStage] = useState(0);
-
-  const startReverse = () => {
-    setReverseBooting(true);
-    setReverseStage(1);
-    setTimeout(() => setReverseStage(2), 2000);
-    setTimeout(() => setReverseStage(3), 4000);
-  };
-
-  if (reverseBooting) {
-    return (
-      <div className="flex flex-col items-center justify-center h-full gap-5 text-center px-8"
-        style={{ background: reverseStage >= 2 ? "#000" : undefined, color: reverseStage >= 2 ? "#ff4444" : undefined }}>
-        {reverseStage === 1 && <>
-          <div className="text-4xl animate-spin">⚙️</div>
-          <div className="font-semibold">Pueio Reverse — Loading legacy ISO…</div>
-          <div className="text-xs opacity-60">Bypassing end-of-support restrictions</div>
-        </>}
-        {reverseStage === 2 && <>
-          <div className="text-5xl">⛔</div>
-          <div className="font-bold text-2xl" style={{ color: "#ff4444" }}>END OF SUPPORT</div>
-          <div className="text-sm max-w-sm" style={{ color: "#ffaaaa" }}>
-            This version of PueiOS is no longer supported by Pueian Lemne or any Pueio team member.
-            Security updates have ended. Proceed only if you understand the risks.
-          </div>
-          <div className="text-xs opacity-50 mt-2">Pueio Reverse override active</div>
-        </>}
-        {reverseStage === 3 && <>
-          <div className="text-5xl">💿</div>
-          <div className="font-bold text-lg">{file?.name}</div>
-          <div className="aero-glass-light rounded-xl p-5 max-w-sm space-y-3" style={{ color: "initial" }}>
-            <div className="font-semibold text-base">Pueio Reverse — Mounted</div>
-            <div className="text-sm opacity-70">
-              Legacy ISO loaded via Pueio Reverse. This version has reached end of support — no security patches or updates are available.
-            </div>
-            <div className="grid grid-cols-2 gap-2 text-xs font-mono opacity-60 text-left">
-              <div>Version:</div><div>{file?.name?.replace(".iso","")}</div>
-              <div>Status:</div><div style={{ color: "#f87171" }}>End of Life</div>
-              <div>Override:</div><div style={{ color: "#4ade80" }}>Pueio Reverse ✔</div>
-            </div>
-          </div>
-          <button className="aero-button rounded px-4 py-2 text-sm" onClick={() => { setReverseBooting(false); setReverseStage(0); }}>
-            Eject ISO
-          </button>
-        </>}
-      </div>
-    );
-  }
-
   return (
     <div className="flex flex-col items-center justify-center h-full p-8 text-center gap-4">
       <div className="text-5xl">💿</div>
@@ -6739,12 +6611,6 @@ function IsoViewerApp({ fileId }: { fileId?: string }) {
             This version of PueiOS has reached end of support and can no longer be installed.
             Please download <strong>pueios3.iso</strong> from the Puei Updater app to upgrade.
           </div>
-          <button className="aero-button rounded-lg px-4 py-2 text-xs font-semibold w-full mt-1"
-            style={{ background: "rgba(120,40,200,0.25)", color: "#c084fc", border: "1px solid rgba(192,132,252,0.3)" }}
-            onClick={startReverse}>
-            🔄 Boot with Pueio Reverse
-          </button>
-          <div className="text-[10px] opacity-40">Pueio Reverse bypasses end-of-support restrictions. Use at your own risk.</div>
         </div>
       )}
       {isPueiOS3 && (
