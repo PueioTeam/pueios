@@ -452,9 +452,15 @@ export function PueiOS() {
       "puei://updates": "/puei-updater-icon.svg",
     };
     loadedIcons = loadedIcons.map((i: any) => {
-      if (!i.webUrl || !knownIconUrls[i.webUrl]) return i;
-      const { iconEmoji: _e, ...rest } = i;
-      return { ...rest, iconUrl: knownIconUrls[i.webUrl] };
+      if (i.webUrl && knownIconUrls[i.webUrl]) {
+        const { iconEmoji: _e, ...rest } = i;
+        return { ...rest, iconUrl: knownIconUrls[i.webUrl] };
+      }
+      // Enforce pueiweb.jpg for the PueiWeb native icon
+      if (i.appId === "pueinet" && !i.webUrl && i.iconUrl !== "/pueiweb.jpg") {
+        return { ...i, iconUrl: "/pueiweb.jpg", iconEmoji: undefined };
+      }
+      return i;
     });
     setIcons(loadedIcons);
     // Seed installedKeys from existing desktop icons so delete-shortcut ≠ uninstall works for all apps
@@ -920,6 +926,15 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
     return [...cur, freeSlot ? { ...ic, col: freeSlot.col, row: freeSlot.row } : ic];
   });
   const removeIcon = (id: string) => setIcons((cur) => cur.filter((i) => i.id !== id));
+
+  const installWebAppFn = (label: string, url: string, iconUrl?: string) => {
+    markInstalled(`web:${url}`);
+    const knownIcons: Record<string, string> = { "puei://films": "/puei-films-icon.svg", "puei://updates": "/puei-updater-icon.svg", "https://bezosmp.lovable.app": "/bezosmp-icon.svg" };
+    const pueiEmojis: Record<string, string> = { "puei://social": "📣", "puei://board": "📌", "puei://search": "🔍", "puei://chat": "💬" };
+    const knownUrl = knownIcons[url];
+    const emoji = !knownUrl ? pueiEmojis[url] : undefined;
+    addIcon({ id: `web-${Date.now().toString(36)}`, label, appId: "web-app", webUrl: url, iconEmoji: emoji, iconUrl: knownUrl ?? (emoji ? undefined : (iconUrl || googleFaviconFor(url, 64))) });
+  };
 
   const createFolder = (folderIdMaybeNull?: string | null) => {
     const name = prompt("Folder name:", "New Folder");
@@ -2104,14 +2119,7 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
               uninstallApp={(appId) => { markUninstalled(`app:${appId}`); setIcons((cur) => cur.filter((i) => !(i.appId === appId && !i.fileId && !i.webUrl))); }}
               uninstallWebApp={(url) => { markUninstalled(`web:${url}`); setIcons((cur) => cur.filter((i) => !(i.appId === "web-app" && i.webUrl === url))); }}
               addNativeIcon={(appId, label, icon) => { markInstalled(`app:${appId}`); setIcons((cur) => cur.some((i) => i.appId === appId && !i.fileId && !i.webUrl) ? cur : [...cur, { id: `native-${appId}`, label, appId, iconEmoji: icon }]); }}
-              installWebApp={(label, url, iconUrl) => {
-                markInstalled(`web:${url}`);
-                const knownIcons: Record<string, string> = { "puei://films": "/puei-films-icon.svg", "puei://updates": "/puei-updater-icon.svg", "https://bezosmp.lovable.app": "/bezosmp-icon.svg" };
-                const pueiEmojis: Record<string, string> = { "puei://social": "📣", "puei://board": "📌", "puei://search": "🔍", "puei://chat": "💬" };
-                const knownUrl = knownIcons[url];
-                const emoji = !knownUrl ? pueiEmojis[url] : undefined;
-                addIcon({ id: `web-${Date.now().toString(36)}`, label, appId: "web-app", webUrl: url, iconEmoji: emoji, iconUrl: knownUrl ?? (emoji ? undefined : (iconUrl || googleFaviconFor(url, 64))) });
-              }}
+              installWebApp={installWebAppFn}
               installedKeys={installedKeys}
               openWebApp={(url, title) => openApp("web-app", { webUrl: url, title })}
               openFolder={(folderIconId, title) => openApp("folder", { folderIconId, title })}
@@ -2504,11 +2512,14 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
                 <div key={pKey} style={{ position: "relative", flexShrink: 0 }}>
                   <button onClick={(e) => { e.stopPropagation(); openPinned(p); }}
                     onMouseEnter={() => blip("hover")} title={label}
-                    onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); setCtxMenu({ x: e.clientX, y: e.clientY, items: [
-                      { label: "Open", action: () => openPinned(p) },
-                      { sep: true },
-                      { label: "🖇️ Unpin from taskbar", action: () => unpinFromTaskbar(pKey) },
-                    ]}); }}
+                    onContextMenu={(e) => { e.preventDefault(); e.stopPropagation();
+                      const alreadyOnDesktopP = p.appId === "web-app" && p.webUrl ? icons.some((i) => i.appId === "web-app" && i.webUrl === p.webUrl) : icons.some((i) => i.appId === p.appId && !i.fileId && !i.webUrl);
+                      setCtxMenu({ x: e.clientX, y: e.clientY, items: [
+                        { label: "Open", action: () => openPinned(p) },
+                        { sep: true },
+                        { label: "🖇️ Unpin from taskbar", action: () => unpinFromTaskbar(pKey) },
+                        ...(!alreadyOnDesktopP && p.appId === "web-app" && p.webUrl ? [{ label: "🖥️ Add to Desktop", action: () => installWebAppFn(p.label ?? p.appId, p.webUrl!, googleFaviconFor(p.webUrl!, 64)) }] : []),
+                      ]}); }}
                     style={{ width: 44, height: 40, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 2, border: isActive ? "1px solid rgba(120,180,255,0.55)" : hasWin ? "1px solid rgba(255,255,255,0.12)" : "1px solid transparent", background: isActive ? "linear-gradient(180deg,rgba(60,140,255,0.35) 0%,rgba(20,80,200,0.4) 100%)" : hasWin ? "rgba(255,255,255,0.07)" : "transparent", cursor: "pointer", position: "relative", overflow: "hidden" }}>
                     {isActive && <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "50%", background: "linear-gradient(180deg,rgba(255,255,255,0.2) 0%,rgba(255,255,255,0) 100%)", pointerEvents: "none" }} />}
                     {aicon(p.appId, 26, desktopIc?.iconEmoji, desktopIc?.iconUrl)}
@@ -2529,12 +2540,14 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
                   onContextMenu={(e) => { e.preventDefault(); e.stopPropagation();
                     const wKey = w.appId === "web-app" ? (w.webUrl ?? w.appId) : w.appId;
                     const isWinPinned = pinnedApps.some((p) => (p.webUrl ?? p.appId) === wKey);
+                    const alreadyOnDesktop = w.appId === "web-app" && w.webUrl ? icons.some((i) => i.appId === "web-app" && i.webUrl === w.webUrl) : icons.some((i) => i.appId === w.appId && !i.fileId && !i.webUrl);
                     setCtxMenu({ x: e.clientX, y: e.clientY, items: [
                       { label: "Restore", action: () => focusWin(w.id) },
                       { label: "Minimize", action: () => minWin(w.id) },
                       { label: "Maximize", action: () => maxWin(w.id) },
                       { sep: true },
                       isWinPinned ? { label: "🖇️ Unpin from taskbar", action: () => unpinFromTaskbar(wKey) } : { label: "🖇️ Pin to taskbar", action: () => pinToTaskbar({ appId: w.appId, webUrl: w.webUrl, label: w.title }) },
+                      ...(!alreadyOnDesktop && w.appId === "web-app" && w.webUrl ? [{ label: "🖥️ Add to Desktop", action: () => installWebAppFn(w.title, w.webUrl!, googleFaviconFor(w.webUrl!, 64)) }] : []),
                       { sep: true },
                       { label: "Close", action: () => closeWin(w.id) },
                     ]});}}>

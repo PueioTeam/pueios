@@ -311,7 +311,7 @@ export const defaultIcons: DesktopIcon[] = [
   { id: "i-social", label: "PueiSocial", appId: "puei-social" },
   { id: "i-board", label: "PueiBoard", appId: "puei-board" },
   { id: "i-paint", label: "Puei Paint 2", appId: "puei-paint" },
-  { id: "i-net", label: "PueiWeb", appId: "pueinet" },
+  { id: "i-net", label: "PueiWeb", appId: "pueinet", iconUrl: "/pueiweb.jpg" },
   { id: "i-msg", label: "PueiCloudChat", appId: "puei-cloud-chat" },
   { id: "i-studio", label: "Puei Studio", appId: "puei-studio" },
   { id: "i-set", label: "Settings", appId: "settings" },
