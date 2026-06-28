@@ -1417,6 +1417,30 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
 
   // ============ BOOT
   if (phase === "boot") {
+    if (isP3) return (
+      <div className="fixed inset-0 flex flex-col items-center justify-center" style={{ background: "#000" }}>
+        <div style={{ marginBottom: 64 }}><PueiLogoSvg size={80} glow /></div>
+        {/* Win11-style spinning dots */}
+        <div style={{ display: "flex", gap: 10 }}>
+          {[0,1,2,3,4].map((i) => (
+            <div key={i} style={{
+              width: 10, height: 10, borderRadius: "50%",
+              background: "white",
+              animation: `p3-dot-spin 1.2s ease-in-out infinite`,
+              animationDelay: `${i * 0.15}s`,
+              opacity: 0.85,
+            }} />
+          ))}
+        </div>
+        <style>{`
+          @keyframes p3-dot-spin {
+            0%, 80%, 100% { transform: scale(0.55); opacity: 0.3; }
+            40% { transform: scale(1); opacity: 1; }
+          }
+        `}</style>
+        <div className="fixed bottom-8 left-0 right-0 text-center text-[11px]" style={{ color: "rgba(255,255,255,0.35)" }}>PueiOS 3</div>
+      </div>
+    );
     return (
       <div className="fixed inset-0 flex flex-col items-center justify-center"
         style={{ background: "radial-gradient(circle at 50% 40%, #0a1a2a, #000)" }}>
