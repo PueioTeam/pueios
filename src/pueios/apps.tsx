@@ -340,7 +340,6 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, curren
     ["pueio-control", "🔑 Pueio Control"],
     ["sound", "🔊 Sound"],
     ["puei-texty", "✍️ Puei Texty"],
-    ["accessibility", "♿ Accessibility"],
     ["highcontrast", "⚡ High Contrast"],
     ["about", "ℹ️ About"],
   ];
@@ -528,12 +527,10 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, curren
                   : systemVersion === "PueiOS 1"
                   ? [["dutchvillage", "Dutch Village"]] as [WallpaperId, string][]
                   : []),
-              ] as [WallpaperId, string][]).map(([w, label]) => (
+              ] as [WallpaperId, string][]).map(([w]) => (
                 <button key={w} onClick={() => setWallpaper(w)}
-                  className={`wallpaper-${w} h-28 rounded-lg border-2 text-white font-semibold text-sm`}
-                  style={{ borderColor: wallpaper === w ? "white" : "transparent", boxShadow: wallpaper === w ? "0 0 0 3px var(--accent)" : undefined, textShadow: "0 1px 3px rgba(0,0,0,0.8)" }}>
-                  {label}
-                </button>
+                  className={`wallpaper-${w} h-28 rounded-lg border-2`}
+                  style={{ borderColor: wallpaper === w ? "white" : "transparent", boxShadow: wallpaper === w ? "0 0 0 3px var(--accent)" : undefined, backgroundSize: "cover", backgroundPosition: "center" }} />
               ))}
             </div>
             <div className="text-xs opacity-70 mt-5 mb-2">From Pictures</div>
@@ -753,57 +750,6 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, curren
                 Preview: The quick brown fox jumps over the lazy dog.
               </div>
             </div>
-          </div>
-        )}
-        {tab === "accessibility" && (
-          <div className="max-w-lg space-y-3">
-            <h2 className="text-xl font-semibold mb-1">♿ Accessibility</h2>
-            <p className="text-xs opacity-60 mb-4">Adjust PueiOS for better readability, vision, and motor accessibility.</p>
-            <label className="flex items-center gap-3 aero-glass-light rounded-xl p-3 cursor-pointer">
-              <input type="checkbox" checked={!!theme.reducedMotion}
-                onChange={e => setTheme({ ...theme, reducedMotion: e.target.checked, animations: e.target.checked ? false : theme.animations })} />
-              <div>
-                <div className="font-semibold text-sm">Reduce Motion</div>
-                <div className="text-xs opacity-60">Disable all animations and transitions system-wide</div>
-              </div>
-            </label>
-            <label className="flex items-center gap-3 aero-glass-light rounded-xl p-3 cursor-pointer">
-              <input type="checkbox" checked={!!theme.largeText}
-                onChange={e => setTheme({ ...theme, largeText: e.target.checked })} />
-              <div>
-                <div className="font-semibold text-sm">Large Text (125%)</div>
-                <div className="text-xs opacity-60">Increases all text size by 25% for easier reading</div>
-              </div>
-            </label>
-            <label className="flex items-center gap-3 aero-glass-light rounded-xl p-3 cursor-pointer">
-              <input type="checkbox" checked={!!theme.focusHighlight}
-                onChange={e => setTheme({ ...theme, focusHighlight: e.target.checked })} />
-              <div>
-                <div className="font-semibold text-sm">Focus Highlight</div>
-                <div className="text-xs opacity-60">Shows a thick colored outline on focused elements for keyboard navigation</div>
-              </div>
-            </label>
-            <label className="flex items-center gap-3 aero-glass-light rounded-xl p-3 cursor-pointer">
-              <input type="checkbox" checked={!!theme.highContrast}
-                onChange={e => setTheme({ ...theme, highContrast: e.target.checked, transparency: e.target.checked ? false : theme.transparency, animations: e.target.checked ? false : theme.animations })} />
-              <div>
-                <div className="font-semibold text-sm">High Contrast Mode</div>
-                <div className="text-xs opacity-60">Maximum contrast for visibility — customize colors in the High Contrast tab</div>
-              </div>
-            </label>
-            <div className="aero-glass-light rounded-xl p-3">
-              <div className="font-semibold text-sm mb-1">Color Blind Assist</div>
-              <div className="text-xs opacity-60 mb-2">Apply a color filter to help with color vision deficiencies</div>
-              <div className="flex flex-wrap gap-2">
-                {[["None","none"],["Deuteranopia","grayscale(0.4) sepia(0.2)"],["Protanopia","hue-rotate(30deg) saturate(0.7)"],["Tritanopia","hue-rotate(-30deg)"]].map(([label, filter]) => (
-                  <button key={label} className="aero-button rounded px-3 py-1 text-xs"
-                    onClick={() => {
-                      document.documentElement.style.filter = filter === "none" ? "" : filter;
-                    }}>{label}</button>
-                ))}
-              </div>
-            </div>
-            <div className="text-xs opacity-50 mt-2">Tip: For text color and font customization, visit ✍️ Puei Texty tab.</div>
           </div>
         )}
         {tab === "highcontrast" && (
@@ -3736,6 +3682,18 @@ function FileExplorerApp({ openApp, icons, openFolder, currentUser, users, setWa
   const [openFolderId, setOpenFolderId] = useState<string | null>(null);
   const [dragFileId, setDragFileId] = useState<string | null>(null);
   const [dropTarget, setDropTarget] = useState<string | null>(null);
+  const [clipboard, setClipboard] = useState<SavedFile | null>(null);
+
+  const copyFile = (f: SavedFile) => setClipboard(f);
+  const pasteFile = (targetFolder?: string) => {
+    if (!clipboard) return;
+    const copy: SavedFile = { ...clipboard, id: `${clipboard.id}-copy-${Date.now()}`, name: `${clipboard.name} (Copy)`, folder: targetFolder ?? clipboard.folder };
+    const all = loadFiles();
+    saveFiles([...all, copy]);
+    setFiles(myFiles());
+    window.dispatchEvent(new Event("pueios-files-changed"));
+    blip("notify");
+  };
 
   useEffect(() => {
     const fn = () => setFiles(myFiles());
@@ -3848,6 +3806,7 @@ function FileExplorerApp({ openApp, icons, openFolder, currentUser, users, setWa
           <FileGrid files={textFiles} emptyHint="No saved documents. Open Notepad and click Save to create one."
             onOpen={(f) => openApp("notepad", f.id)}
             onDelete={(id) => { deleteFile(id); setFiles(myFiles()); }}
+            onCopy={copyFile} onPaste={() => pasteFile()} hasCopied={!!clipboard}
             onDragStart={(id) => setDragFileId(id)}
             onDragEnd={() => { setDragFileId(null); setDropTarget(null); }} />
         )}
@@ -3856,6 +3815,7 @@ function FileExplorerApp({ openApp, icons, openFolder, currentUser, users, setWa
             onOpen={(f) => openApp("puei-paint", f.id)}
             onDelete={(id) => { deleteFile(id); setFiles(myFiles()); }}
             onSetWallpaper={setWallpaper ? (f) => { setWallpaper(f.content); blip("notify"); } : undefined}
+            onCopy={copyFile} onPaste={() => pasteFile(SYS_FOLDER_PICTURES)} hasCopied={!!clipboard}
             onDragStart={(id) => setDragFileId(id)}
             onDragEnd={() => { setDragFileId(null); setDropTarget(null); }} />
         )}
@@ -3868,6 +3828,7 @@ function FileExplorerApp({ openApp, icons, openFolder, currentUser, users, setWa
             }}
             onDelete={(id) => { deleteFile(id); setFiles(myFiles()); }}
             onMoveToPictures={(f) => { moveFile(f.id, SYS_FOLDER_PICTURES); setFiles(myFiles()); blip("notify"); }}
+            onCopy={copyFile} onPaste={() => pasteFile(SYS_FOLDER_DOWNLOADS)} hasCopied={!!clipboard}
             onDragStart={(id) => setDragFileId(id)}
             onDragEnd={() => { setDragFileId(null); setDropTarget(null); }} />
         )}
@@ -3999,13 +3960,16 @@ function FolderFileGrid({ files, icons, onOpen, onDelete, onOpenIcon, onMoveToPi
   );
 }
 
-function FileGrid({ files, emptyHint, onOpen, onDelete, onSetWallpaper, onMoveToPictures, onDragStart, onDragEnd }: {
+function FileGrid({ files, emptyHint, onOpen, onDelete, onSetWallpaper, onMoveToPictures, onDragStart, onDragEnd, onCopy, onPaste, hasCopied }: {
   files: SavedFile[]; emptyHint: string;
   onOpen?: (f: SavedFile) => void;
   onDelete: (id: string) => void;
   onSetWallpaper?: (f: SavedFile) => void;
   onMoveToPictures?: (f: SavedFile) => void;
   onDragStart?: (id: string) => void; onDragEnd?: () => void;
+  onCopy?: (f: SavedFile) => void;
+  onPaste?: () => void;
+  hasCopied?: boolean;
 }) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number; file: SavedFile } | null>(null);
@@ -4017,10 +3981,12 @@ function FileGrid({ files, emptyHint, onOpen, onDelete, onSetWallpaper, onMoveTo
       {ctxMenu && (
         <ContextMenu x={ctxMenu.x} y={ctxMenu.y} onClose={() => setCtxMenu(null)} items={[
           { label: "📂 Open", action: () => { if (onOpen) onOpen(ctxMenu.file); } },
+          ...(onCopy ? [{ label: "📋 Copy", action: () => onCopy(ctxMenu.file) }] : []),
+          ...(onPaste && hasCopied ? [{ label: "📋 Paste Copy", action: () => onPaste() }] : []),
           ...(canMoveToPictures(ctxMenu.file) ? [{ label: "🖼️ Move to Pictures", action: () => { onMoveToPictures!(ctxMenu.file); setSelectedId(null); } }] : []),
           ...(onSetWallpaper && ctxMenu.file.type === "image" ? [{ label: "🖼️ Set as Wallpaper", action: () => onSetWallpaper(ctxMenu.file) }] : []),
           { sep: true },
-          { label: "🖦️ Delete", action: () => { onDelete(ctxMenu.file.id); setSelectedId(null); } },
+          { label: "🗑️ Delete", action: () => { onDelete(ctxMenu.file.id); setSelectedId(null); } },
         ]} />
       )}
       {/* Toolbar */}
@@ -4028,11 +3994,17 @@ function FileGrid({ files, emptyHint, onOpen, onDelete, onSetWallpaper, onMoveTo
         <button className="aero-button rounded px-3 py-1 text-xs"
           disabled={!selectedFile} style={{ opacity: selectedFile ? 1 : 0.4 }}
           onClick={() => { if (selectedFile && onOpen) onOpen(selectedFile); }}>📂 Open</button>
+        {onCopy && <button className="aero-button rounded px-3 py-1 text-xs"
+          disabled={!selectedFile} style={{ opacity: selectedFile ? 1 : 0.4 }}
+          onClick={() => { if (selectedFile && onCopy) onCopy(selectedFile); }}>📋 Copy</button>}
+        {onPaste && <button className="aero-button rounded px-3 py-1 text-xs"
+          disabled={!hasCopied} style={{ opacity: hasCopied ? 1 : 0.4 }}
+          onClick={() => onPaste?.()}>📋 Paste</button>}
         <button className="aero-button rounded px-3 py-1 text-xs text-red-400"
           disabled={!selectedId} style={{ opacity: selectedId ? 1 : 0.4 }}
           onClick={() => {
             if (selectedId) { onDelete(selectedId); setSelectedId(null); }
-          }}>🖦️ Delete</button>
+          }}>🗑️ Delete</button>
         {selectedFile && canMoveToPictures(selectedFile) && (
           <button className="aero-button rounded px-3 py-1 text-xs"
             onClick={() => { onMoveToPictures!(selectedFile); setSelectedId(null); }}>🖼️ Move to Pictures</button>
@@ -5586,6 +5558,9 @@ function PueiStudioApp({ currentUser, users, icons, setWallpaper }: { currentUse
   const [fillEnabled, setFillEnabled] = useState(false);
   const [fillColor, setFillColor] = useState("#ffffff");
   const [lineOpacity, setLineOpacity] = useState(100);
+  const [showGrid, setShowGrid] = useState(false);
+  const [canvasSize, setCanvasSize] = useState<{ w: number; h: number }>({ w: 800, h: 520 });
+  const [zoom, setZoom] = useState(100);
   const drawing = useRef(false);
   const lastPos = useRef<{ x: number; y: number } | null>(null);
   const fillRef = useRef<string>(color);
@@ -5788,6 +5763,42 @@ function PueiStudioApp({ currentUser, users, icons, setWallpaper }: { currentUse
     ctx.fillRect(0, 0, c.width, c.height);
   };
 
+  const flipCanvas = (dir: "h" | "v") => {
+    const c = canvasRef.current!;
+    const ctx = c.getContext("2d")!;
+    pushUndo();
+    const snap = ctx.getImageData(0, 0, c.width, c.height);
+    const tmp = document.createElement("canvas");
+    tmp.width = c.width; tmp.height = c.height;
+    const tc = tmp.getContext("2d")!;
+    tc.putImageData(snap, 0, 0);
+    ctx.save();
+    if (dir === "h") { ctx.translate(c.width, 0); ctx.scale(-1, 1); }
+    else { ctx.translate(0, c.height); ctx.scale(1, -1); }
+    ctx.clearRect(-c.width * 2, -c.height * 2, c.width * 4, c.height * 4);
+    ctx.drawImage(tmp, 0, 0);
+    ctx.restore();
+  };
+
+  const downloadPng = () => {
+    const c = canvasRef.current!;
+    const a = document.createElement("a");
+    a.href = c.toDataURL("image/png");
+    a.download = `${projectName.trim() || "creation"}.png`;
+    a.click();
+  };
+
+  const resizeCanvas = (w: number, h: number) => {
+    const c = canvasRef.current!;
+    const ctx = c.getContext("2d")!;
+    const snap = ctx.getImageData(0, 0, c.width, c.height);
+    c.width = w; c.height = h;
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, w, h);
+    ctx.putImageData(snap, 0, 0);
+    setCanvasSize({ w, h });
+  };
+
   const saveProject = () => {
     const c = canvasRef.current!;
     const data = c.toDataURL("image/png");
@@ -5923,24 +5934,59 @@ function PueiStudioApp({ currentUser, users, icons, setWallpaper }: { currentUse
             <div className="border-t my-1" style={{ borderColor: "var(--border)" }} />
             <button title="Undo (Ctrl+Z)" onClick={doUndo} className="text-[9px] rounded px-1 py-1" style={{ background: "transparent", color: "var(--foreground)" }}>↩ Undo</button>
             <button title="Redo (Ctrl+Y)" onClick={doRedo} className="text-[9px] rounded px-1 py-1" style={{ background: "transparent", color: "var(--foreground)" }}>↪ Redo</button>
+            <div className="border-t my-1" style={{ borderColor: "var(--border)" }} />
+            <button title="Flip Horizontal" onClick={() => flipCanvas("h")} className="text-[9px] rounded px-1 py-1" style={{ background: "transparent", color: "var(--foreground)" }}>⇔ Flip H</button>
+            <button title="Flip Vertical" onClick={() => flipCanvas("v")} className="text-[9px] rounded px-1 py-1" style={{ background: "transparent", color: "var(--foreground)" }}>⇕ Flip V</button>
+            <div className="border-t my-1" style={{ borderColor: "var(--border)" }} />
+            <button title="Toggle Grid" onClick={() => setShowGrid(g => !g)} className="text-[9px] rounded px-1 py-1" style={{ background: showGrid ? "var(--accent)" : "transparent", color: showGrid ? "#fff" : "var(--foreground)" }}>⊞ Grid</button>
           </div>
 
           {/* Canvas */}
           <div className="flex-1 flex flex-col overflow-hidden relative">
+            {/* Canvas top bar */}
+            <div className="flex items-center gap-2 px-2 py-1 border-b text-xs" style={{ borderColor: "var(--border)", background: "var(--glass)", flexShrink: 0 }}>
+              <span className="opacity-50">Size:</span>
+              {[["800×520","800","520"],["1280×720","1280","720"],["400×400","400","400"],["1024×768","1024","768"]].map(([label, w, h]) => (
+                <button key={label} onClick={() => resizeCanvas(+w, +h)}
+                  className="aero-button rounded px-2 py-0.5"
+                  style={{ background: canvasSize.w === +w && canvasSize.h === +h ? "var(--accent)" : undefined, color: canvasSize.w === +w && canvasSize.h === +h ? "#fff" : undefined }}>
+                  {label}
+                </button>
+              ))}
+              <div className="w-px h-4 bg-white/20 mx-1" />
+              <span className="opacity-50">Zoom:</span>
+              {[50, 75, 100, 150].map(z => (
+                <button key={z} onClick={() => setZoom(z)}
+                  className="aero-button rounded px-2 py-0.5"
+                  style={{ background: zoom === z ? "var(--accent)" : undefined, color: zoom === z ? "#fff" : undefined }}>
+                  {z}%
+                </button>
+              ))}
+              <div className="flex-1" />
+              <button onClick={downloadPng} className="aero-button rounded px-2 py-0.5">⬇️ Download PNG</button>
+            </div>
+            <div className="flex-1 overflow-auto" style={{ background: "#888" }}>
             <canvas
               ref={canvasRef}
-              width={800} height={520}
+              width={canvasSize.w} height={canvasSize.h}
               className="flex-1 block"
-              style={{ touchAction: "none", cursor: (() => {
+              style={{ touchAction: "none", display: "block", margin: "8px auto", boxShadow: "0 2px 16px rgba(0,0,0,0.4)", transform: `scale(${zoom/100})`, transformOrigin: "top center", cursor: (() => {
                 if (tool === "eyedropper") return "crosshair";
                 if (tool === "text") return "text";
-                const r = brushSize; const c = encodeURIComponent(color);
+                const r = brushSize;
                 const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='${r+10}' height='${r+10}' viewBox='0 0 ${r+10} ${r+10}'><circle cx='${(r+10)/2}' cy='${(r+10)/2}' r='${r/2}' fill='${color}' stroke='white' stroke-width='1.5'/><circle cx='${(r+10)/2}' cy='${(r+10)/2}' r='${r/2}' fill='none' stroke='black' stroke-width='0.5' opacity='0.5'/></svg>`;
                 return `url("data:image/svg+xml,${encodeURIComponent(svg)}") ${Math.round((r+10)/2)} ${Math.round((r+10)/2)}, crosshair`;
-              })(), width: "100%", height: "100%", objectFit: "contain", background: "#fff" }}
+              })(), background: "#fff", position: "relative" }}
               onMouseDown={onDown} onMouseMove={onMove} onMouseUp={onUp} onMouseLeave={onUp}
               onTouchStart={onDown} onTouchMove={onMove} onTouchEnd={onUp}
             />
+            {/* Grid overlay */}
+            {showGrid && (
+              <svg style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", pointerEvents: "none", opacity: 0.25 }}>
+                <defs><pattern id="stgrid" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M 20 0 L 0 0 0 20" fill="none" stroke="#0088ff" strokeWidth="0.5"/></pattern></defs>
+                <rect width="100%" height="100%" fill="url(#stgrid)" />
+              </svg>
+            )}
             {/* Text tool input overlay */}
             {tool === "text" && textPos && (
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -5967,6 +6013,7 @@ function PueiStudioApp({ currentUser, users, icons, setWallpaper }: { currentUse
                 </div>
               </div>
             )}
+            </div>{/* end overflow-auto */}
           </div>
 
           {/* Right panel */}

@@ -2416,6 +2416,7 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
           <div style={{ display: "flex", alignItems: "center", flex: 1, overflow: "hidden", gap: 2, padding: "0 4px" }}>
             {windows.map((w) => {
               const isActive2 = w.z === Math.max(...windows.map((x) => x.z)) && !w.minimized;
+              const p1DesktopIc = icons.find(i => (i.webUrl ?? i.appId) === (w.webUrl ?? w.appId));
               return (
                 <button key={w.id}
                   onClick={(e) => { e.stopPropagation(); if (w.minimized) focusWin(w.id); else minWin(w.id); }}
@@ -2428,7 +2429,7 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
                     ]});
                   }}
                   style={{ height: 26, padding: "0 8px", display: "flex", alignItems: "center", gap: 4, fontSize: 11, border: isActive2 ? "2px inset #888" : "2px outset #ddd", background: isActive2 ? "#b0b0b0" : "#d4d0c8", cursor: "pointer", maxWidth: 140, flexShrink: 0, overflow: "hidden" }}>
-                  {aicon(w.appId, 14)}
+                  {aicon(w.appId, 14, p1DesktopIc?.iconEmoji, p1DesktopIc?.iconUrl)}
                   <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 100 }}>{w.title}</span>
                 </button>
               );
@@ -2539,6 +2540,7 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
           {pinnedApps.map((p) => {
             const pKey2 = p.webUrl ?? p.appId;
             const label2 = p.label ?? APP_TITLES[p.appId] ?? p.appId;
+            const pDesktopIc = icons.find(i => (i.webUrl ?? i.appId) === pKey2);
             return (
               <button key={pKey2} onClick={(e) => { e.stopPropagation(); openPinned(p); }}
                 onMouseEnter={() => blip("hover")}
@@ -2549,12 +2551,14 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
                   { label: "🖇️ Unpin from taskbar", action: () => unpinFromTaskbar(pKey2) },
                 ]}); }}
                 className="taskbar-item w-9 h-9 rounded flex items-center justify-center text-lg">
-                {aicon(p.appId, 22)}
+                {aicon(p.appId, 22, pDesktopIc?.iconEmoji, pDesktopIc?.iconUrl)}
               </button>
             );
           })}
           <div className="w-px h-7 bg-white/20 mx-1" />
-          {windows.map((w) => (
+          {windows.map((w) => {
+            const wDesktopIc = icons.find(i => (i.webUrl ?? i.appId) === (w.webUrl ?? w.appId));
+            return (
             <button key={w.id}
               className={`taskbar-item h-9 px-3 rounded flex items-center gap-2 text-xs ${w.z === Math.max(...windows.map((x)=>x.z)) && !w.minimized ? "active" : ""}`}
               onClick={(e) => { e.stopPropagation(); if (w.minimized) focusWin(w.id); else minWin(w.id); }}
@@ -2570,10 +2574,11 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
                 { sep: true },
                 { label: "Close", action: () => closeWin(w.id) },
               ]});}}>
-              {aicon(w.appId, 18)}
+              {aicon(w.appId, 18, wDesktopIc?.iconEmoji, wDesktopIc?.iconUrl)}
               <span className="max-w-[120px] truncate">{w.title}</span>
             </button>
-          ))}
+            );
+          })}
           <div className="flex-1" />
           <div className="flex items-center gap-2 px-2 text-white text-xs">
             <span title="Network" className="cursor-pointer" onClick={(e) => { e.stopPropagation(); setShowNetwork(!showNetwork); setShowVolume(false); }}>📶</span>
