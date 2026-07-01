@@ -4777,7 +4777,15 @@ function PueiGameApp({ openApp, addNativeIcon, icons, installedKeys }: { openApp
 
 // ---------- App Store ----------
 function AppStoreApp({ installWebApp, openApp, openWebApp, systemVersion, addNativeIcon, uninstallApp, uninstallWebApp, icons, installedKeys }: { installWebApp: (label: string, url: string, iconUrl?: string) => void; openApp: (id: AppId) => void; openWebApp: (url: string, title: string) => void; systemVersion: SystemVersion; addNativeIcon: (appId: AppId, label: string, icon: string) => void; uninstallApp: (appId: AppId) => void; uninstallWebApp: (url: string) => void; icons: DesktopIcon[]; installedKeys: Set<string> }) {
-  const [tab, setTab] = useState<"official" | "community" | "installer">("official");
+  const [tab, setTab] = useState<"official" | "community" | "installer" | "exe-converter">("official");
+  const [exeFiles, setExeFiles] = useState<SavedFile[]>(() => loadFiles().filter(f => f.name.trim().toLowerCase().endsWith(".exe")));
+  const [convertingId, setConvertingId] = useState<string | null>(null);
+  const [convertProgress, setConvertProgress] = useState(0);
+  const [convertedIds, setConvertedIds] = useState<Set<string>>(new Set());
+  const convertTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [appName, setAppName] = useState("");
+  const [appIcon, setAppIconState] = useState("📦");
+  const [selectedExeId, setSelectedExeId] = useState<string | null>(null);
   const [installing, setInstalling] = useState<Record<string, number>>({});
   const installTimers = useRef<Record<string, number>>({});
   type StoreApp = { name: string; icon: string; desc: string; appId?: AppId; preInstalled?: boolean; webUrl?: string; desktopLabel?: string; developer?: string };
@@ -4849,7 +4857,7 @@ function AppStoreApp({ installWebApp, openApp, openWebApp, systemVersion, addNat
     <div className="flex h-full">
       <div className="w-44 p-2 border-r text-sm overflow-auto" style={{ background: "var(--glass)" }}>
         <div className="font-semibold opacity-70 text-xs mb-2 px-2">PUEI APP STORE</div>
-        {([["official","✿ Official apps"],["community","🌍 Community"],["installer","📑 Installer"]] as const).map(([k, l]) => (
+        {([["official","✿ Official apps"],["community","🌍 Community"],["installer","📑 Installer"],["exe-converter","⚙️ EXE Converter"]] as const).map(([k, l]) => (
           <div key={k} onClick={() => { setTab(k); blip("click"); }}
             className="px-3 py-2 rounded cursor-pointer text-sm mb-0.5"
             style={{ background: tab === k ? "var(--gradient-aero)" : "transparent", color: tab === k ? "white" : undefined }}>{l}</div>
@@ -4859,7 +4867,98 @@ function AppStoreApp({ installWebApp, openApp, openWebApp, systemVersion, addNat
         </div>
       </div>
       <div className="flex-1 p-5 overflow-auto">
-        {tab === "installer" ? <InstallerPane installWebApp={installWebApp} /> : tab === "community" ? (
+        {tab === "exe-converter" ? (
+          <div>
+            <h2 className="text-2xl font-bold mb-1">⚙️ EXE to App Converter</h2>
+            <p className="text-sm opacity-70 mb-4">Convert a <strong>.exe</strong> file from your Downloads into a desktop app shortcut.</p>
+            {/* Refresh exe list */}
+            <div className="flex items-center gap-2 mb-4">
+              <button className="aero-button rounded px-3 py-1 text-xs" onClick={() => setExeFiles(loadFiles().filter(f => f.name.trim().toLowerCase().endsWith(".exe")))}>🔄 Refresh</button>
+              <span className="text-xs opacity-50">{exeFiles.length} .exe file{exeFiles.length !== 1 ? "s" : ""} found in Files</span>
+            </div>
+            {exeFiles.length === 0 ? (
+              <div className="aero-glass-light rounded-xl p-6 text-center text-sm opacity-60">
+                No .exe files found. Download one from PueiWeb or PueiGAME first.
+              </div>
+            ) : (
+              <div className="space-y-2 mb-5">
+                {exeFiles.map(f => (
+                  <div key={f.id} onClick={() => { setSelectedExeId(f.id); setAppName(f.name.replace(/\.exe$/i, "")); }}
+                    className="aero-glass-light rounded-lg px-4 py-3 flex items-center gap-3 cursor-pointer"
+                    style={{ border: `1px solid ${selectedExeId === f.id ? "var(--accent)" : "transparent"}`, outline: selectedExeId === f.id ? "1px solid var(--accent)" : "none" }}>
+                    <span style={{ fontSize: 22 }}>📦</span>
+                    <div className="flex-1">
+                      <div className="text-sm font-semibold">{f.name}</div>
+                      <div className="text-xs opacity-50">{f.folder === "__downloads__" ? "Downloads" : "Files"}</div>
+                    </div>
+                    {convertedIds.has(f.id) && <span className="text-xs" style={{ color: "#5dfc5d" }}>✓ Converted</span>}
+                  </div>
+                ))}
+              </div>
+            )}
+            {selectedExeId && !convertedIds.has(selectedExeId) && (
+              <div className="aero-glass-light rounded-xl p-5 space-y-4 max-w-sm">
+                <div className="text-sm font-semibold">App details</div>
+                <div>
+                  <label className="text-xs opacity-60 block mb-1">App name</label>
+                  <input value={appName} onChange={e => setAppName(e.target.value)}
+                    className="w-full rounded px-3 py-2 text-sm"
+                    style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.2)", color: "inherit", outline: "none" }} />
+                </div>
+                <div>
+                  <label className="text-xs opacity-60 block mb-1">Icon emoji</label>
+                  <div className="flex gap-2 flex-wrap">
+                    {["📦","🎮","🖥️","🔧","🎵","📷","✏️","🌐","🔒","💡"].map(e => (
+                      <button key={e} onClick={() => setAppIconState(e)}
+                        style={{ fontSize: 22, background: appIcon === e ? "var(--accent)" : "rgba(255,255,255,0.1)", border: "none", borderRadius: 6, padding: "4px 6px", cursor: "pointer", outline: appIcon === e ? "2px solid var(--accent)" : "none" }}>{e}</button>
+                    ))}
+                  </div>
+                </div>
+                {convertingId === selectedExeId ? (
+                  <div className="space-y-2">
+                    <div style={{ background: "rgba(0,0,0,0.2)", borderRadius: 6, height: 8, overflow: "hidden" }}>
+                      <div style={{ height: "100%", width: `${convertProgress}%`, background: "var(--accent)", borderRadius: 6, transition: "width 0.1s linear" }} />
+                    </div>
+                    <div className="text-xs opacity-60">Converting… {Math.round(convertProgress)}%</div>
+                  </div>
+                ) : (
+                  <button className="aero-button rounded-lg px-5 py-2 text-sm font-semibold w-full"
+                    style={{ background: "var(--accent)", color: "white", border: "none" }}
+                    disabled={!appName.trim()}
+                    onClick={() => {
+                      if (!appName.trim() || !selectedExeId) return;
+                      setConvertingId(selectedExeId);
+                      setConvertProgress(0);
+                      const start = Date.now();
+                      const dur = 6000;
+                      if (convertTimerRef.current) clearInterval(convertTimerRef.current);
+                      convertTimerRef.current = setInterval(() => {
+                        const pct = Math.min(100, ((Date.now() - start) / dur) * 100);
+                        setConvertProgress(pct);
+                        if (pct >= 100) {
+                          clearInterval(convertTimerRef.current!);
+                          setConvertingId(null);
+                          setConvertedIds(prev => new Set([...prev, selectedExeId]));
+                          addNativeIcon("notepad" as AppId, appName.trim(), appIcon);
+                          blip("notify");
+                        }
+                      }, 100);
+                    }}>
+                    ⚙️ Convert &amp; Install
+                  </button>
+                )}
+              </div>
+            )}
+            {selectedExeId && convertedIds.has(selectedExeId) && (
+              <div className="aero-glass-light rounded-xl p-5 text-center space-y-2 max-w-sm">
+                <div style={{ fontSize: 32 }}>✅</div>
+                <div className="font-semibold">Installed!</div>
+                <div className="text-xs opacity-60">"{appName}" has been added to your desktop.</div>
+                <button className="aero-button rounded px-4 py-1.5 text-xs mt-2" onClick={() => { setSelectedExeId(null); setConvertedIds(new Set()); setAppName(""); setAppIconState("📦"); }}>Convert another</button>
+              </div>
+            )}
+          </div>
+        ) : tab === "installer" ? <InstallerPane installWebApp={installWebApp} /> : tab === "community" ? (
           <div>
             <h2 className="text-2xl font-bold mb-1">🌍 Community Apps</h2>
             <p className="text-sm opacity-70 mb-4">Apps made by the Pueio community. Not affiliated with the Puei Team.</p>
