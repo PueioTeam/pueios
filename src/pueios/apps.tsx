@@ -3787,6 +3787,14 @@ function FileExplorerApp({ openApp, icons, openFolder, currentUser, users, setWa
   const [clipboard, setClipboard] = useState<SavedFile | null>(null);
   // PueiOS 4 folder nav (hoisted to avoid conditional hook)
   const [p4Folder, setP4Folder] = useState<"home" | "documents" | "pictures" | "downloads" | "desktop">("home");
+  const [p4Selected, setP4Selected] = useState<Set<string>>(new Set());
+  const p4ToggleSelect = (id: string, multi: boolean) => {
+    setP4Selected(prev => {
+      if (multi) { const next = new Set(prev); next.has(id) ? next.delete(id) : next.add(id); return next; }
+      return prev.size === 1 && prev.has(id) ? new Set() : new Set([id]);
+    });
+  };
+  const p4DeleteSelected = () => { p4Selected.forEach(id => { deleteFile(id); }); setFiles(myFiles()); setP4Selected(new Set()); blip("click"); };
 
   const copyFile = (f: SavedFile) => setClipboard(f);
   const pasteFile = (targetFolder?: string) => {
@@ -3860,10 +3868,17 @@ function FileExplorerApp({ openApp, icons, openFolder, currentUser, users, setWa
       <div style={{ display: "flex", flexDirection: "column", height: "100%", background: "#202020", color: "white", fontFamily: "'Segoe UI', system-ui, sans-serif" }}>
         <LocalDialogModal dialog={feDialog} />
         {/* Ribbon bar */}
-        <div style={{ background: "#1a1a1a", borderBottom: "1px solid #333", padding: "0 12px", display: "flex", gap: 0 }}>
+        <div style={{ background: "#1a1a1a", borderBottom: "1px solid #333", padding: "0 12px", display: "flex", alignItems: "center", gap: 0 }}>
           {["Home", "Share", "View"].map(tab => (
             <div key={tab} style={{ padding: "6px 14px", fontSize: 12, color: tab === "Home" ? "white" : "rgba(255,255,255,0.5)", cursor: "pointer", borderBottom: tab === "Home" ? "2px solid #0078d4" : "2px solid transparent" }}>{tab}</div>
           ))}
+          <div style={{ flex: 1 }} />
+          {p4Selected.size > 0 && (
+            <button onClick={p4DeleteSelected}
+              style={{ padding: "3px 14px", fontSize: 12, background: "rgba(200,50,50,0.25)", border: "1px solid rgba(200,50,50,0.4)", color: "#f87171", borderRadius: 3, cursor: "pointer" }}>
+              🗑️ Delete{p4Selected.size > 1 ? ` (${p4Selected.size})` : ""}
+            </button>
+          )}
         </div>
         {/* Address bar */}
         <div style={{ background: "#2d2d2d", borderBottom: "1px solid #333", padding: "4px 12px", fontSize: 12, color: "rgba(255,255,255,0.6)", display: "flex", alignItems: "center", gap: 8 }}>
@@ -3895,25 +3910,32 @@ function FileExplorerApp({ openApp, icons, openFolder, currentUser, users, setWa
             ))}
           </div>
           {/* Main content area */}
-          <div style={{ flex: 1, overflowY: "auto", padding: "16px", display: "flex", flexWrap: "wrap", alignContent: "flex-start", gap: 16 }}>
+          <div style={{ flex: 1, overflowY: "auto", padding: "16px", display: "flex", flexWrap: "wrap", alignContent: "flex-start", gap: 16 }}
+            onClick={(e) => { if (e.target === e.currentTarget) setP4Selected(new Set()); }}>
             {p4Files.length === 0 && (
               <div style={{ width: "100%", textAlign: "center", color: "rgba(255,255,255,0.3)", marginTop: 40, fontSize: 13 }}>This folder is empty</div>
             )}
-            {p4Files.map(f => (
-              <div key={f.id}
-                onClick={() => { if (f.type === "text") openApp("notepad", f.id); else if (f.type === "image") openApp("puei-paint", f.id); }}
-                style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, width: 80, cursor: "pointer", padding: 6, borderRadius: 2 }}
-                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.08)"; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}>
-                <div style={{ fontSize: 36 }}>{f.type === "image" ? "🖼️" : f.type === "zip" ? "📦" : "📄"}</div>
-                <div style={{ fontSize: 11, color: "rgba(255,255,255,0.8)", textAlign: "center", wordBreak: "break-word", lineHeight: 1.3 }}>{f.name}</div>
-              </div>
-            ))}
+            {p4Files.map(f => {
+              const sel = p4Selected.has(f.id);
+              return (
+                <div key={f.id}
+                  onClick={(e) => { e.stopPropagation(); p4ToggleSelect(f.id, e.ctrlKey || e.metaKey); }}
+                  onDoubleClick={() => { if (f.type === "text") openApp("notepad", f.id); else if (f.type === "image") openApp("puei-paint", f.id); }}
+                  style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, width: 80, cursor: "pointer", padding: 6, borderRadius: 2,
+                    background: sel ? "rgba(0,120,212,0.35)" : "transparent",
+                    outline: sel ? "1px solid rgba(0,120,212,0.7)" : "none" }}
+                  onMouseEnter={e => { if (!sel) (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.08)"; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = sel ? "rgba(0,120,212,0.35)" : "transparent"; }}>
+                  <div style={{ fontSize: 36 }}>{f.type === "image" ? "🖼️" : f.type === "zip" ? "📦" : "📄"}</div>
+                  <div style={{ fontSize: 11, color: "rgba(255,255,255,0.8)", textAlign: "center", wordBreak: "break-word", lineHeight: 1.3 }}>{f.name}</div>
+                </div>
+              );
+            })}
           </div>
         </div>
         {/* Status bar */}
         <div style={{ background: "#1a1a1a", borderTop: "1px solid #333", padding: "3px 14px", fontSize: 11, color: "rgba(255,255,255,0.4)" }}>
-          {p4Files.length} item{p4Files.length !== 1 ? "s" : ""}
+          {p4Selected.size > 0 ? `${p4Selected.size} item${p4Selected.size !== 1 ? "s" : ""} selected` : `${p4Files.length} item${p4Files.length !== 1 ? "s" : ""}`}
         </div>
       </div>
     );
@@ -4153,22 +4175,37 @@ function FileGrid({ files, emptyHint, onOpen, onDelete, onSetWallpaper, onMoveTo
   onPaste?: () => void;
   hasCopied?: boolean;
 }) {
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number; file: SavedFile } | null>(null);
-  const selectedFile = files.find(f => f.id === selectedId) ?? null;
+
+  const toggleSelect = (id: string, multi: boolean) => {
+    setSelectedIds(prev => {
+      if (multi) {
+        const next = new Set(prev);
+        next.has(id) ? next.delete(id) : next.add(id);
+        return next;
+      }
+      return prev.size === 1 && prev.has(id) ? new Set() : new Set([id]);
+    });
+  };
+
+  const selectedId = selectedIds.size === 1 ? [...selectedIds][0] : null;
+  const selectedFile = selectedId ? (files.find(f => f.id === selectedId) ?? null) : null;
+  const deleteSelected = () => { selectedIds.forEach(id => onDelete(id)); setSelectedIds(new Set()); };
+
   if (files.length === 0) return <div className="text-sm opacity-70 p-6 text-center">{emptyHint}</div>;
   const canMoveToPictures = (f: SavedFile) => onMoveToPictures && f.type === "image" && f.folder !== SYS_FOLDER_PICTURES;
   return (
-    <div onClick={() => setCtxMenu(null)}>
+    <div onClick={(e) => { if (e.target === e.currentTarget) { setCtxMenu(null); setSelectedIds(new Set()); } }}>
       {ctxMenu && (
         <ContextMenu x={ctxMenu.x} y={ctxMenu.y} onClose={() => setCtxMenu(null)} items={[
-          { label: "📂 Open", action: () => { if (onOpen) onOpen(ctxMenu.file); } },
-          ...(onCopy ? [{ label: "📋 Copy", action: () => onCopy(ctxMenu.file) }] : []),
+          ...(selectedIds.size <= 1 ? [{ label: "📂 Open", action: () => { if (onOpen) onOpen(ctxMenu.file); } }] : []),
+          ...(onCopy && selectedIds.size <= 1 ? [{ label: "📋 Copy", action: () => onCopy(ctxMenu.file) }] : []),
           ...(onPaste && hasCopied ? [{ label: "📋 Paste Copy", action: () => onPaste() }] : []),
-          ...(canMoveToPictures(ctxMenu.file) ? [{ label: "🖼️ Move to Pictures", action: () => { onMoveToPictures!(ctxMenu.file); setSelectedId(null); } }] : []),
-          ...(onSetWallpaper && ctxMenu.file.type === "image" ? [{ label: "🖼️ Set as Wallpaper", action: () => onSetWallpaper(ctxMenu.file) }] : []),
+          ...(selectedIds.size <= 1 && canMoveToPictures(ctxMenu.file) ? [{ label: "🖼️ Move to Pictures", action: () => { onMoveToPictures!(ctxMenu.file); setSelectedIds(new Set()); } }] : []),
+          ...(onSetWallpaper && ctxMenu.file.type === "image" && selectedIds.size <= 1 ? [{ label: "🖼️ Set as Wallpaper", action: () => onSetWallpaper(ctxMenu.file) }] : []),
           { sep: true },
-          { label: "🗑️ Delete", action: () => { onDelete(ctxMenu.file.id); setSelectedId(null); } },
+          { label: `🗑️ Delete${selectedIds.size > 1 ? ` (${selectedIds.size})` : ""}`, action: deleteSelected },
         ]} />
       )}
       {/* Toolbar */}
@@ -4183,22 +4220,22 @@ function FileGrid({ files, emptyHint, onOpen, onDelete, onSetWallpaper, onMoveTo
           disabled={!hasCopied} style={{ opacity: hasCopied ? 1 : 0.4 }}
           onClick={() => onPaste?.()}>📋 Paste</button>}
         <button className="aero-button rounded px-3 py-1 text-xs text-red-400"
-          disabled={!selectedId} style={{ opacity: selectedId ? 1 : 0.4 }}
-          onClick={() => {
-            if (selectedId) { onDelete(selectedId); setSelectedId(null); }
-          }}>🗑️ Delete</button>
+          disabled={selectedIds.size === 0} style={{ opacity: selectedIds.size > 0 ? 1 : 0.4 }}
+          onClick={deleteSelected}>
+          🗑️ Delete{selectedIds.size > 1 ? ` (${selectedIds.size})` : ""}
+        </button>
         {selectedFile && canMoveToPictures(selectedFile) && (
           <button className="aero-button rounded px-3 py-1 text-xs"
-            onClick={() => { onMoveToPictures!(selectedFile); setSelectedId(null); }}>🖼️ Move to Pictures</button>
+            onClick={() => { onMoveToPictures!(selectedFile); setSelectedIds(new Set()); }}>🖼️ Move to Pictures</button>
         )}
         {onSetWallpaper && (
           <button className="aero-button rounded px-3 py-1 text-xs"
             disabled={!selectedFile || selectedFile.type !== "image"} style={{ opacity: (selectedFile && selectedFile.type === "image") ? 1 : 0.4 }}
             onClick={() => { if (selectedFile) { onSetWallpaper(selectedFile); } }}>🖼️ Set as Wallpaper</button>
         )}
-        {selectedFile
-          ? <span className="text-xs opacity-50 ml-1">Selected: {selectedFile.name}</span>
-          : <span className="text-xs opacity-40 ml-1">Click a file to select it</span>}
+        {selectedIds.size > 0
+          ? <span className="text-xs opacity-50 ml-1">{selectedIds.size === 1 ? `Selected: ${selectedFile?.name}` : `${selectedIds.size} items selected`}</span>
+          : <span className="text-xs opacity-40 ml-1">Click to select · Ctrl+click for multiple</span>}
       </div>
       <div className="grid grid-cols-5 gap-3">
         {files.map((f) => (
@@ -4206,13 +4243,13 @@ function FileGrid({ files, emptyHint, onOpen, onDelete, onSetWallpaper, onMoveTo
             draggable
             onDragStart={(e) => { e.dataTransfer.effectAllowed = "move"; onDragStart?.(f.id); }}
             onDragEnd={() => onDragEnd?.()}
-            onClick={() => setSelectedId(f.id === selectedId ? null : f.id)}
+            onClick={(e) => { e.stopPropagation(); toggleSelect(f.id, e.ctrlKey || e.metaKey); }}
             onDoubleClick={() => onOpen?.(f)}
-            onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); setSelectedId(f.id); setCtxMenu({ x: e.clientX, y: e.clientY, file: f }); }}
+            onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); if (!selectedIds.has(f.id)) setSelectedIds(new Set([f.id])); setCtxMenu({ x: e.clientX, y: e.clientY, file: f }); }}
             className="text-center p-2 rounded cursor-pointer select-none transition-all"
             style={{
-              background: f.id === selectedId ? "rgba(80,160,255,0.35)" : "transparent",
-              outline: f.id === selectedId ? "2px solid rgba(80,160,255,0.7)" : "none",
+              background: selectedIds.has(f.id) ? "rgba(80,160,255,0.35)" : "transparent",
+              outline: selectedIds.has(f.id) ? "2px solid rgba(80,160,255,0.7)" : "none",
             }}>
             {f.type === "image"
               ? <img src={f.content} alt={f.name} className="w-12 h-12 mx-auto object-cover rounded shadow" />
