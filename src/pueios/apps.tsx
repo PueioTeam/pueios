@@ -504,6 +504,14 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, curren
           <div>
             <h2 className="text-xl font-semibold mb-4">Wallpaper</h2>
             <div className="grid grid-cols-2 gap-3">
+              {systemVersion === "PueiOS 4" && (
+                <button onClick={() => setWallpaper("puei" as WallpaperId)}
+                  className="h-28 rounded-lg border-2 overflow-hidden"
+                  style={{ borderColor: wallpaper === "puei" ? "white" : "transparent", boxShadow: wallpaper === "puei" ? "0 0 0 3px var(--accent)" : undefined, padding: 0, position: "relative" }}>
+                  <img src="/puei.jpg" alt="Puei" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: "rgba(0,0,0,0.5)", color: "white", fontSize: 10, padding: "2px 6px" }}>Puei (Default)</div>
+                </button>
+              )}
               {([
                 ["fencesunset", "Grand Teton"],
                 ...(systemVersion === "PueiOS 3"
