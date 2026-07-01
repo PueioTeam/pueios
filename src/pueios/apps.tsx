@@ -1959,7 +1959,6 @@ function PueiNetHomePage({ navigate }: { navigate: (url: string) => void }) {
           ["puei://forum", "💼 PueiForum"],
           ["puei://math", "🧮 Puei Math"],
           ["puei://films", "🎬 Puei Videos"],
-          ["puei://games", "🎮 PueiGAME"],
         ].map(([u, l]) => (
           <button key={u} onClick={() => navigate(u)} className="aero-button rounded-lg p-4">{l}</button>
         ))}
@@ -2264,7 +2263,7 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
   };
 
   const pageTitles: Record<string, string> = {
-    "puei://home": "Home", "puei://search": "Puei Search", "puei://about": "About", "puei://games": "PueiGAME",
+    "puei://home": "Home", "puei://search": "Puei Search", "puei://about": "About",
     "puei://updates": "Updates", "puei://social": "PueiSocial", "puei://board": "PueiBoard",
     "puei://math": "Puei Math", "puei://chat": "Chat",
     "puei://films": "Puei Videos", "puei://mail": "PMail",
@@ -2437,7 +2436,6 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
     "puei://math": <PueiMathPage />,
     "puei://mail": <PMailApp currentUser={currentUser} users={users} />,
     "puei://about": <div className="p-6"><h2 className="text-2xl font-bold">About PueiNet</h2><p className="text-sm opacity-70 mt-2">A browser for an alternate 2020. Only https://&lt;app&gt;.base44.app external URLs are trusted.</p></div>,
-    "puei://games": <PueiGamesPortalPage currentUser={currentUser} />,
   };
 
   let content: React.ReactNode;
@@ -4810,7 +4808,7 @@ function AppStoreApp({ installWebApp, openApp, openWebApp, systemVersion, addNat
     { name: "Installer",      icon: "📑", desc: "Install trusted web apps as desktop shortcuts.",appId: "app-store",      preInstalled: true },
   ];
   const games: StoreApp[] = [
-    { name: "PueiGAME", icon: "🎮", desc: "Download the PueiGAME launcher to play exclusive Puei titles. Install via PueiGAME.exe from pueigame.puei — not available here.", appId: "puei-game", preInstalled: false },
+    { name: "PueiGAME", icon: "🎮", desc: "The official PueiOS gaming hub. Play exclusive Puei titles — Puei Mansion, Puei Space, and more.", appId: "puei-game", preInstalled: false },
   ];
   const community: StoreApp[] = [
     { name: "bezoSMP", icon: "/bezosmp-icon.png", desc: "By bazicioschi and catotherat.", webUrl: "https://bezosmp.lovable.app", desktopLabel: "bezoSMP", preInstalled: false },
