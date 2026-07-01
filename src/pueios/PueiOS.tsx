@@ -948,7 +948,8 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
     const pueiEmojis: Record<string, string> = { "puei://social": "📣", "puei://board": "📌", "puei://search": "🔍", "puei://chat": "💬" };
     const knownUrl = knownIcons[url];
     const emoji = !knownUrl ? pueiEmojis[url] : undefined;
-    addIcon({ id: `web-${Date.now().toString(36)}`, label, appId: "web-app", webUrl: url, iconEmoji: emoji, iconUrl: knownUrl ?? (emoji ? undefined : (iconUrl || googleFaviconFor(url, 64))) });
+    const isEmojiIcon = iconUrl && [...iconUrl].length <= 2 && /\p{Emoji}/u.test(iconUrl);
+    addIcon({ id: `web-${Date.now().toString(36)}`, label, appId: "web-app", webUrl: url, iconEmoji: emoji ?? (isEmojiIcon ? iconUrl : undefined), iconUrl: knownUrl ?? (emoji || isEmojiIcon ? undefined : (iconUrl || googleFaviconFor(url, 64))) });
   };
 
   const createFolder = (folderIdMaybeNull?: string | null) => {

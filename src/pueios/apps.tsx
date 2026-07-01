@@ -4939,7 +4939,7 @@ function AppStoreApp({ installWebApp, openApp, openWebApp, systemVersion, addNat
                           clearInterval(convertTimerRef.current!);
                           setConvertingId(null);
                           setConvertedIds(prev => new Set([...prev, selectedExeId]));
-                          addNativeIcon("notepad" as AppId, appName.trim(), appIcon);
+                          installWebApp(appName.trim(), `exe://converted-${Date.now()}`, appIcon);
                           blip("notify");
                         }
                       }, 100);
