@@ -524,10 +524,12 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, curren
                   : systemVersion === "PueiOS 1"
                   ? [["dutchvillage", "Dutch Village"]] as [WallpaperId, string][]
                   : []),
-              ] as [WallpaperId, string][]).map(([w]) => (
+              ] as [WallpaperId, string][]).map(([w, name]) => (
                 <button key={w} onClick={() => setWallpaper(w)}
-                  className={`wallpaper-${w} h-28 rounded-lg border-2`}
-                  style={{ borderColor: wallpaper === w ? "white" : "transparent", boxShadow: wallpaper === w ? "0 0 0 3px var(--accent)" : undefined, backgroundSize: "cover", backgroundPosition: "center" }} />
+                  className={`wallpaper-${w} h-28 rounded-lg border-2 overflow-hidden`}
+                  style={{ borderColor: wallpaper === w ? "white" : "transparent", boxShadow: wallpaper === w ? "0 0 0 3px var(--accent)" : undefined, backgroundSize: "cover", backgroundPosition: "center", padding: 0, position: "relative" }}>
+                  <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: "rgba(0,0,0,0.5)", color: "white", fontSize: 10, padding: "2px 6px", textAlign: "left" }}>{name}</div>
+                </button>
               ))}
             </div>
             <div className="text-xs opacity-70 mt-5 mb-2">From Pictures</div>
