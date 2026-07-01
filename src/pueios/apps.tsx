@@ -1957,7 +1957,6 @@ function PueiNetHomePage({ navigate }: { navigate: (url: string) => void }) {
           ["puei://forum", "💼 PueiForum"],
           ["puei://math", "🧮 Puei Math"],
           ["puei://films", "🎬 Puei Videos"],
-          ["puei://os3", "🚀 PueiOS 3"],
           ["puei://games", "🎮 PueiGAME"],
         ].map(([u, l]) => (
           <button key={u} onClick={() => navigate(u)} className="aero-button rounded-lg p-4">{l}</button>
@@ -2265,7 +2264,7 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
   const pageTitles: Record<string, string> = {
     "puei://home": "Home", "puei://search": "Puei Search", "puei://about": "About", "puei://games": "PueiGAME",
     "puei://updates": "Updates", "puei://social": "PueiSocial", "puei://board": "PueiBoard",
-    "puei://math": "Puei Math", "puei://chat": "Chat", "puei://os3": "PueiOS 3",
+    "puei://math": "Puei Math", "puei://chat": "Chat",
     "puei://films": "Puei Videos", "puei://mail": "PMail",
   };
   const navigate = (target: string) => {
@@ -2443,43 +2442,6 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
       </div>
     ),
     "puei://mail": null,
-    "puei://os3": (
-      <div className="p-6 space-y-6 max-w-2xl">
-        <div>
-          <h2 className="text-3xl font-bold">🚀 PueiOS 3</h2>
-          <p className="text-sm opacity-60 mt-1">Exclusive features available only on PueiOS 3.</p>
-        </div>
-
-        {([
-          { icon: "✨", title: "Puei AI Assistant", desc: "Desktop Integration", items: ["Talk to Puei Copilot from anywhere — click the mascot on your desktop.", "Search files, chats, mails, and apps with one query."] },
-          { icon: "🪟", title: "Virtual Desktops", desc: "Multi-workspace support", items: ["Work Desktop", "Gaming Desktop", "School Desktop"] },
-          { icon: "🧩", title: "Puei Widgets", desc: "Always-on desktop panels", items: ["Clock", "Weather", "Notes", "Pueio Numbers", "Recent Messages"] },
-          { icon: "🎨", title: "Puei Themes Store", desc: "Community-made themes", items: ["Download themes made by users", "Windows 7 style theme", "Vista style theme", "Retro PueiOS 2 theme"] },
-          { icon: "🛡️", title: "Puei Recovery", desc: "System restore & recovery", items: ["Restore previous system versions", "Recover deleted apps and files"] },
-          { icon: "🏆", title: "Puei Achievements", desc: "Hidden OS badges", items: ["Hidden badges for exploring the OS"] },
-          { icon: "🎬", title: "Puei Live Wallpapers", desc: "Animated backgrounds", items: ["Animated wallpapers with flying Puei"] },
-          { icon: "👤", title: "Puei Account Dashboard", desc: "Full account control", items: ["View all synced devices", "Manage storage", "Manage security settings"] },
-        ] as { icon: string; title: string; desc: string; items: string[] }[]).map(({ icon, title, desc, items }) => (
-          <div key={title} className="aero-glass-light rounded-xl p-4">
-            <div className="flex items-center gap-3 mb-2">
-              <span className="text-2xl">{icon}</span>
-              <div>
-                <div className="font-semibold">{title}</div>
-                <div className="text-xs opacity-50">{desc}</div>
-              </div>
-              <span className="ml-auto text-xs px-2 py-0.5 rounded" style={{ background: "rgba(80,180,255,0.18)", color: "#60a5fa" }}>PueiOS 3</span>
-            </div>
-            <ul className="space-y-1 pl-1">
-              {items.map((item) => (
-                <li key={item} className="text-sm opacity-75 flex items-start gap-2">
-                  <span className="opacity-40 mt-0.5">›</span>{item}
-                </li>
-              ))}
-            </ul>
-          </div>
-        ))}
-      </div>
-    ),
     "puei://math": <PueiMathPage />,
     "puei://mail": <PMailApp currentUser={currentUser} users={users} />,
     "puei://about": <div className="p-6"><h2 className="text-2xl font-bold">About PueiNet</h2><p className="text-sm opacity-70 mt-2">A browser for an alternate 2020. Only https://&lt;app&gt;.base44.app external URLs are trusted.</p></div>,
@@ -4231,7 +4193,7 @@ function FileExplorerApp({ openApp, icons, openFolder, currentUser, users, setWa
             <FolderFileGrid
               files={folderFiles}
               icons={folderIcons}
-              onOpen={(f) => { if (f.name.trim().toLowerCase().endsWith(".iso") || f.name.trim().toLowerCase().endsWith(".zip")) { openApp(f.name.trim().toLowerCase().endsWith(".zip") ? "zip-viewer" : "iso-viewer", f.id); return; } openApp(f.type === "image" ? "puei-paint" : "notepad", f.id); }}
+              onOpen={(f) => { const low = f.name.trim().toLowerCase(); if (low.endsWith(".iso")) { openApp("iso-viewer", f.id); return; } if (low.endsWith(".zip")) { openApp("zip-viewer", f.id); return; } if (low.endsWith(".exe") && low.includes("pueigame")) { openApp("puei-game"); return; } openApp(f.type === "image" ? "puei-paint" : "notepad", f.id); }}
               onDelete={(id) => { deleteFile(id); reloadFiles(); }}
               onOpenIcon={(ic) => { if (ic.appId !== "web-app") openApp(ic.appId, ic.fileId); }}
               onMoveToPictures={(f) => { moveFile(f.id, SYS_FOLDER_PICTURES); reloadFiles(); blip("notify"); }}

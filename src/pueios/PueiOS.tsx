@@ -1570,6 +1570,22 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
   }
 
 
+  const loginWallpaperStyle: React.CSSProperties = (() => {
+    if (typeof theme.wallpaper === "string" && theme.wallpaper.startsWith("data:")) {
+      return { backgroundImage: `url(${theme.wallpaper})`, backgroundSize: "cover", backgroundPosition: "center" };
+    }
+    if (typeof theme.wallpaper === "string" && theme.wallpaper.startsWith("custom:")) {
+      const id = theme.wallpaper.slice(7);
+      try {
+        const files = JSON.parse(localStorage.getItem("pueios2-files-v1") || "[]");
+        const f = files.find((x: any) => x.id === id);
+        if (f?.content) return { backgroundImage: `url(${f.content})`, backgroundSize: "cover", backgroundPosition: "center" };
+      } catch {}
+    }
+    if (theme.wallpaper === "puei") return { backgroundImage: "url(/puei.jpg)", backgroundSize: "cover", backgroundPosition: "center" };
+    return {};
+  })();
+
   if (phase === "login" || locked) {
     const enterDesktop = (name: string) => {
       blip("start");
@@ -1714,8 +1730,8 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
       };
       return (
         <div className="fixed inset-0 flex flex-col items-center justify-center select-none"
-          style={{ background: "#000", fontFamily: "'Segoe UI', system-ui, sans-serif" }}>
-          <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.6)", backdropFilter: "blur(8px)" }} />
+          style={{ background: "#000", fontFamily: "'Segoe UI', system-ui, sans-serif", ...loginWallpaperStyle }}>
+          <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.55)", backdropFilter: "blur(10px)" }} />
           <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 0 }}>
             {/* Avatar circle */}
             <div style={{ width: 100, height: 100, borderRadius: "50%", background: selectedU ? `linear-gradient(135deg, oklch(0.7 0.18 ${selectedU.color}), oklch(0.45 0.2 ${selectedU.color}))` : "#333", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 52, overflow: "hidden", marginBottom: 16, boxShadow: "0 0 0 2px rgba(255,255,255,0.15)" }}>
@@ -1762,9 +1778,9 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
       const noPass4 = selectedU4?.noPassword || (selectedU4?.password ?? "") === "";
       return (
         <div className="fixed inset-0 flex flex-col items-center justify-center select-none"
-          style={{ background: "#000", color: "white", fontFamily: "Segoe UI, system-ui, sans-serif" }}>
+          style={{ background: "#000", color: "white", fontFamily: "Segoe UI, system-ui, sans-serif", ...loginWallpaperStyle }}>
           {/* Blurred dark bg layer */}
-          <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at 40% 60%, #0d1117 0%, #000 100%)", zIndex: 0 }} />
+          <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.5)", backdropFilter: "blur(10px)", zIndex: 0 }} />
           <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 0 }}>
             {/* Avatar */}
             <div style={{ width: 120, height: 120, borderRadius: "50%", background: selectedU4 ? `linear-gradient(135deg, oklch(0.6 0.15 ${selectedU4.color}), oklch(0.35 0.18 ${selectedU4.color}))` : "#333", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 60, overflow: "hidden", marginBottom: 20, boxShadow: "0 0 0 2px rgba(255,255,255,0.12)" }}>
@@ -1972,7 +1988,7 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
       };
 
       return (
-        <div className={`fixed inset-0 flex flex-col ${typeof theme.wallpaper === "string" && (theme.wallpaper.startsWith("data:") || theme.wallpaper.startsWith("custom:")) ? "" : `wallpaper-${theme.wallpaper}`}`} style={{ fontFamily: "'Segoe UI', system-ui, sans-serif", ...(typeof theme.wallpaper === "string" && theme.wallpaper.startsWith("data:") ? { backgroundImage: `url(${theme.wallpaper})`, backgroundSize: "cover", backgroundPosition: "center" } : typeof theme.wallpaper === "string" && theme.wallpaper.startsWith("custom:") ? (() => { try { const f = JSON.parse(localStorage.getItem("pueios2-files-v1") || "[]").find((x: any) => x.id === theme.wallpaper.slice(7)); return f?.content ? { backgroundImage: `url(${f.content})`, backgroundSize: "cover", backgroundPosition: "center" } : {}; } catch { return {}; } })() : {}), overflow: "hidden" }}>
+        <div className={`fixed inset-0 flex flex-col ${typeof theme.wallpaper === "string" && (theme.wallpaper === "puei" || theme.wallpaper.startsWith("data:") || theme.wallpaper.startsWith("custom:")) ? "" : `wallpaper-${theme.wallpaper}`}`} style={{ fontFamily: "'Segoe UI', system-ui, sans-serif", ...loginWallpaperStyle, overflow: "hidden" }}>
           {/* Win8.1 clock — top center, large Segoe UI Light style */}
           <div style={{ position: "absolute", top: 32, left: 0, right: 0, display: "flex", flexDirection: "column", alignItems: "center", pointerEvents: "none", zIndex: 1 }}>
             <div style={{ color: "rgba(255,255,255,0.92)", fontSize: 64, fontWeight: 200, letterSpacing: -1, lineHeight: 1, fontFamily: "'Segoe UI Light', 'Segoe UI', system-ui, sans-serif", textShadow: "0 2px 16px rgba(0,0,0,0.4)" }}>
@@ -2546,6 +2562,7 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
       {taskViewOpen && isP4 && (
         <div className="fixed inset-0 z-[8500]"
           style={{ background: "rgba(0,0,0,0.75)", backdropFilter: "blur(12px)", display: "flex", flexDirection: "column", paddingBottom: 56 }}
+          onMouseDown={(e) => e.stopPropagation()}
           onClick={(e) => { if (e.target === e.currentTarget) setTaskViewOpen(false); }}>
           <div style={{ padding: "32px 40px 16px", color: "white", fontSize: 13, opacity: 0.5, letterSpacing: 1, textTransform: "uppercase" }} onClick={e => e.stopPropagation()}>Task View</div>
           {windows.length === 0 ? (
