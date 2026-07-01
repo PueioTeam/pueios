@@ -396,6 +396,42 @@ const APP_ICON_SVGS_P3: Partial<Record<AppId, (s: number) => React.ReactNode>> =
   "puei-game": (s) => <svg width={s} height={s} viewBox="0 0 48 48"><rect width="48" height="48" rx="11" fill="#2e7d32"/><rect x="5" y="13" width="38" height="22" rx="7" fill="#43a047"/><rect x="9" y="21" width="8" height="3" rx="1.5" fill="white"/><rect x="12.5" y="17.5" width="3" height="8" rx="1.5" fill="white"/><circle cx="35" cy="20" r="2.5" fill="white"/><circle cx="39" cy="24" r="2.5" fill="white"/><circle cx="31" cy="24" r="2.5" fill="white"/><circle cx="35" cy="28" r="2.5" fill="white"/><rect x="18" y="23" width="12" height="3" rx="1.5" fill="rgba(255,255,255,0.3)"/></svg>,
 };
 
+// PueiOS 4 — flat glass icons: rounded-square accent-tinted glass tile, minimal single-color glyph
+const p4Tile = (s: number, tint: string, glyph: React.ReactNode) => (
+  <svg width={s} height={s} viewBox="0 0 48 48">
+    <rect width="48" height="48" rx="13" fill={tint}/>
+    <rect width="48" height="48" rx="13" fill="rgba(255,255,255,0.10)"/>
+    <rect x="1" y="1" width="46" height="20" rx="12" fill="rgba(255,255,255,0.16)"/>
+    {glyph}
+  </svg>
+);
+const APP_ICON_SVGS_P4: Partial<Record<AppId, (s: number) => React.ReactNode>> = {
+  "settings": (s) => p4Tile(s, "#5b6472", <><circle cx="24" cy="24" r="8" fill="none" stroke="white" strokeWidth="3"/><circle cx="24" cy="24" r="2.5" fill="white"/>{[0,60,120,180,240,300].map(a=><rect key={a} x="22.7" y="11" width="2.6" height="5" rx="1.3" fill="white" transform={`rotate(${a} 24 24)`}/>)}</>),
+  "file-explorer": (s) => p4Tile(s, "#2f6fd1", <><rect x="10" y="14" width="28" height="20" rx="4" fill="white" opacity="0.95"/><rect x="10" y="14" width="12" height="6" rx="3" fill="white"/></>),
+  "notepad": (s) => p4Tile(s, "#3d7ce8", <><rect x="14" y="9" width="20" height="30" rx="2.5" fill="white"/><rect x="18" y="16" width="12" height="2.2" rx="1.1" fill="#3d7ce8" opacity="0.55"/><rect x="18" y="21" width="12" height="2.2" rx="1.1" fill="#3d7ce8" opacity="0.55"/><rect x="18" y="26" width="8" height="2.2" rx="1.1" fill="#3d7ce8" opacity="0.55"/></>),
+  "calculator": (s) => p4Tile(s, "#455568", <><rect x="13" y="9" width="22" height="30" rx="3" fill="white" opacity="0.94"/><rect x="16" y="12" width="16" height="7" rx="1.5" fill="#2a3442"/>{[0,1,2].map(r=>[0,1,2].map(c=><circle key={`${r}${c}`} cx={19+c*5} cy={25+r*5.5} r="1.6" fill="#455568"/>))}</>),
+  "puei-paint": (s) => p4Tile(s, "#d94f8e", <><circle cx="24" cy="24" r="11" fill="white"/>{[["#ee4444",18,19],["#33bb55",30,19],["#3366ee",30,29],["#eebb22",18,29]].map(([c,cx,cy])=><circle key={`${cx}`} cx={cx} cy={cy} r="3.4" fill={c}/>)}</>),
+  "puei-board": (s) => p4Tile(s, "#a3703a", <><rect x="11" y="11" width="11" height="9" rx="2" fill="white"/><rect x="26" y="11" width="11" height="14" rx="2" fill="white" opacity="0.75"/><rect x="11" y="24" width="11" height="13" rx="2" fill="white" opacity="0.75"/><rect x="26" y="29" width="11" height="8" rx="2" fill="white"/></>),
+  "pueinet": (s) => p4Tile(s, "#1566c8", <><circle cx="24" cy="24" r="12" fill="none" stroke="white" strokeWidth="2.6"/><path d="M12 24h24M24 12v24M15 16c4 3 14 3 18 0M15 32c4-3 14-3 18 0" fill="none" stroke="white" strokeWidth="1.6" opacity="0.85"/></>),
+  "puei-cloud-chat": (s) => p4Tile(s, "#189169", <><path d="M11 15a4 4 0 014-4h18a4 4 0 014 4v11a4 4 0 01-4 4h-9l-6 6v-6h-3a4 4 0 01-4-4z" fill="white"/><circle cx="18" cy="20.5" r="2" fill="#189169"/><circle cx="24" cy="20.5" r="2" fill="#189169"/><circle cx="30" cy="20.5" r="2" fill="#189169"/></>),
+  "puei-studio": (s) => p4Tile(s, "#7b34c4", <><circle cx="24" cy="19" r="7" fill="none" stroke="white" strokeWidth="2.6"/><circle cx="24" cy="19" r="2.6" fill="white"/><rect x="22" y="26" width="4" height="10" rx="2" fill="white"/><circle cx="17" cy="37" r="2.2" fill="white" opacity="0.8"/><circle cx="24" cy="39" r="2.2" fill="white" opacity="0.8"/><circle cx="31" cy="37" r="2.2" fill="white" opacity="0.8"/></>),
+  "app-store": (s) => p4Tile(s, "#1a7fe8", <path d="M24 11 L27.5 20.5 H38 L29.5 26.5 L32.5 36 L24 30 L15.5 36 L18.5 26.5 L10 20.5 H20.5 Z" fill="white"/>),
+  "puei-social": (s) => p4Tile(s, "#e0632a", <><circle cx="18" cy="20" r="5.5" fill="white"/><path d="M8 37c0-6 4.5-9.5 10-9.5s10 3.5 10 9.5z" fill="white"/><circle cx="32" cy="18" r="4.5" fill="white" opacity="0.7"/><path d="M23 36c0-5 4-8 9-8s9 3 9 8z" fill="white" opacity="0.7"/></>),
+  "folder": (s) => p4Tile(s, "#e0932c", <path d="M10 18a3 3 0 013-3h8l3 3h11a3 3 0 013 3v11a3 3 0 01-3 3H13a3 3 0 01-3-3z" fill="white"/>),
+  "recycle-bin": (s) => p4Tile(s, "#5c6b78", <><path d="M15 20h18l-2.2 16H17.2z" fill="white"/><rect x="12.5" y="16.5" width="23" height="2.6" rx="1.3" fill="white"/><path d="M20.5 16.5v-3h7v3" fill="none" stroke="white" strokeWidth="2"/><line x1="20" y1="24" x2="20" y2="32" stroke="#5c6b78" strokeWidth="1.6" strokeLinecap="round"/><line x1="24" y1="24" x2="24" y2="32" stroke="#5c6b78" strokeWidth="1.6" strokeLinecap="round"/><line x1="28" y1="24" x2="28" y2="32" stroke="#5c6b78" strokeWidth="1.6" strokeLinecap="round"/></>),
+  "chess": (s) => p4Tile(s, "#5a4636", <><path d="M22 33v-4l-2-4 1.5-2.5 2.5-1 2.5 1 1.5 2.5-2 4v4z" fill="white"/><rect x="19" y="33" width="10" height="3" rx="1.5" fill="white"/></>),
+  "puei-mansion": (s) => p4Tile(s, "#c22d4d", <><polygon points="24,10 36,20 33,20 33,37 15,37 15,20 12,20" fill="white"/><rect x="20" y="27" width="8" height="10" rx="1" fill="#c22d4d"/></>),
+  "about": (s) => p4Tile(s, "#3450b8", <><circle cx="24" cy="15" r="3.2" fill="white"/><rect x="21.2" y="21" width="5.6" height="13" rx="2.8" fill="white"/></>),
+  "iso-viewer": (s) => p4Tile(s, "#5e6b7a", <><circle cx="24" cy="24" r="11" fill="none" stroke="white" strokeWidth="2.4"/><circle cx="24" cy="24" r="4" fill="white"/></>),
+  "zip-viewer": (s) => p4Tile(s, "#1a6fc4", <><path d="M13 11a2.5 2.5 0 012.5-2.5h13l8 8v22a2.5 2.5 0 01-2.5 2.5h-18.5a2.5 2.5 0 01-2.5-2.5z" fill="white"/><rect x="21.5" y="17" width="7" height="3" fill="#1a6fc4"/><rect x="21.5" y="23" width="7" height="3" fill="#1a6fc4"/><rect x="21.5" y="29" width="7" height="3" fill="#1a6fc4"/></>),
+  "pmail": (s) => p4Tile(s, "#2670d8", <><rect x="9" y="14" width="30" height="21" rx="4" fill="white"/><path d="M9 17 L24 27 L39 17" fill="none" stroke="#2670d8" strokeWidth="2.4" strokeLinejoin="round"/></>),
+  "web-app": (s) => p4Tile(s, "#0b7fc0", <><rect x="8" y="13" width="32" height="23" rx="4" fill="white"/><rect x="8" y="13" width="32" height="7" rx="4" fill="#0b7fc0" opacity="0.25"/><circle cx="13" cy="16.5" r="1.6" fill="#0b7fc0"/><circle cx="18" cy="16.5" r="1.6" fill="#0b7fc0"/></>),
+  "pueyracing": (s) => p4Tile(s, "#c62828", <><path d="M24 11 C20.5 11 15 17 15 25 L18 27 L24 29.5 L30 27 L33 25 C33 17 27.5 11 24 11z" fill="white"/><ellipse cx="24" cy="20" rx="3.6" ry="4.4" fill="#c62828"/></>),
+  "computer": (s) => p4Tile(s, "#1a5fb4", <><rect x="9" y="10" width="30" height="20" rx="2.5" fill="white"/><rect x="9" y="10" width="30" height="4" rx="2.5" fill="white"/><rect x="18" y="32" width="12" height="4" rx="1.5" fill="white"/></>),
+  "task-manager": (s) => p4Tile(s, "#3a4652", <>{[[24,11],[16,20],[27,29]].map(([w,y],i)=><rect key={i} x="12" y={y as number} width={w as number} height="5" rx="2.5" fill="white" opacity={1-i*0.08}/>)}</>),
+  "puei-game": (s) => p4Tile(s, "#1f8a3d", <><rect x="9" y="17" width="30" height="16" rx="7" fill="white"/><rect x="13" y="23" width="6" height="2.4" rx="1.2" fill="#1f8a3d"/><rect x="15" y="21" width="2.4" height="6" rx="1.2" fill="#1f8a3d"/><circle cx="31" cy="22" r="1.8" fill="#1f8a3d"/><circle cx="34" cy="25.5" r="1.8" fill="#1f8a3d"/></>),
+};
+
 // Win7/Vista color pairs for boxed mode (PueiOS 3 legacy — kept for fallback)
 const WIN7_COLOR: Partial<Record<AppId, [string, string]>> = {
   "settings":        ["#c0c8e0", "#6878a0"],
@@ -422,7 +458,7 @@ const WIN7_COLOR: Partial<Record<AppId, [string, string]>> = {
   "task-manager":   ["#b0c8e0", "#304858"],
 };
 
-export function appIcon(appId: AppId, size = 32, override?: string, iconUrl?: string, boxed = false, p1 = false) {
+export function appIcon(appId: AppId, size = 32, override?: string, iconUrl?: string, boxed = false, p1 = false, p4 = false) {
   const s = size;
   const radius = Math.round(s * 0.22);
 
@@ -438,8 +474,10 @@ export function appIcon(appId: AppId, size = 32, override?: string, iconUrl?: st
   })();
   // PueiOS 1: flat minimal 2-color icon
   const p1Svg = p1 ? APP_ICON_SVGS_P1[appId]?.(s) : undefined;
+  // PueiOS 4: flat accent-glass tile icon
+  const p4Svg = p4 ? APP_ICON_SVGS_P4[appId]?.(s) : undefined;
   // PueiOS 2/3: aero glass SVG (P3 gets it wrapped in a glass box below)
-  const customSvg = p1Svg ? null : APP_ICON_SVGS[appId]?.(s);
+  const customSvg = (p1Svg || p4Svg) ? null : APP_ICON_SVGS[appId]?.(s);
   // p3Svg kept as null — P3 uses customSvg with box wrapper
   const p3Svg: React.ReactNode = undefined;
 
@@ -476,9 +514,11 @@ export function appIcon(appId: AppId, size = 32, override?: string, iconUrl?: st
                 }}
               />
               <div style={{ display: "none", alignItems: "center", justifyContent: "center" }}>
-                {p1Svg ?? customSvg}
+                {p1Svg ?? p4Svg ?? customSvg}
               </div>
             </>
+          : p4Svg
+            ? <div style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>{p4Svg}</div>
           : boxed && customSvg
             ? <div style={{ width: s, height: s, borderRadius: radius, overflow: "hidden", background: "linear-gradient(160deg, rgba(80,140,240,0.18) 0%, rgba(20,60,160,0.32) 100%)", border: "1px solid rgba(120,180,255,0.4)", boxShadow: `0 ${Math.round(s*0.06)}px ${Math.round(s*0.2)}px rgba(0,20,80,0.45), inset 0 1px 0 rgba(255,255,255,0.55)`, display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)" }}>{customSvg}</div>
             : (p1Svg ?? customSvg)

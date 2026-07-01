@@ -10,6 +10,7 @@ import {
   mailAddressFor, resolveMailRecipient, loadMailFolders, saveMailFolders,
   loadDownloads, recordDownload, isLikelySpam, aiMailSuggestions, loadState,
 } from "./state";
+import { appIcon as renderAppIcon } from "./Window";
 import { pullAndMergeFiles, pushFile as pushFileToServer, removeFileFromServer } from "./fileSync";
 import { changePasswordRemote, fetchPublicFilms } from "./accountSync";
 import { PueiMansionApp } from "./games";
@@ -5022,7 +5023,9 @@ function AppStoreApp({ installWebApp, openApp, openWebApp, systemVersion, addNat
                 return (
                   <div key={a.name} className="aero-glass-light rounded-lg p-3 flex flex-col">
                     <div className="flex items-center gap-2">
-                      {a.icon.startsWith("/") || a.icon.startsWith("http") || a.icon.startsWith("data:")
+                      {systemVersion === "PueiOS 4" && a.appId
+                        ? renderAppIcon(a.appId, 40, undefined, undefined, true, false, true)
+                        : a.icon.startsWith("/") || a.icon.startsWith("http") || a.icon.startsWith("data:")
                         ? <img src={a.icon} alt={a.name} style={{ width: 40, height: 40, objectFit: "contain", borderRadius: 8, flexShrink: 0 }} />
                         : <div className="text-3xl flex-shrink-0">{a.icon}</div>}
                       <div>
@@ -5122,7 +5125,9 @@ function AppStoreApp({ installWebApp, openApp, openWebApp, systemVersion, addNat
                   return (
                     <div key={a.name} className="aero-glass-light rounded-lg p-3 flex flex-col">
                       <div className="flex items-center gap-2">
-                        <div className="text-3xl">{a.icon}</div>
+                        {systemVersion === "PueiOS 4" && a.appId
+                          ? renderAppIcon(a.appId, 32, undefined, undefined, true, false, true)
+                          : <div className="text-3xl">{a.icon}</div>}
                         <div>
                           <div className="font-semibold">{a.name}</div>
                           <div className="text-[10px] opacity-60">🎮 Launcher required · Puei Team</div>
@@ -5789,7 +5794,8 @@ function PueiUpdaterApp({ currentUser, startUpgrade, systemVersion }: { currentU
   );
   const mountedIso = isoFiles.find((file) => file.id === mountedIsoId) || null;
   const mountedVersion: SystemVersion = mountedIso
-    ? mountedIso.name.trim().toLowerCase() === "pueios3.iso" ? "PueiOS 3"
+    ? mountedIso.name.trim().toLowerCase() === "pueios4.iso" ? "PueiOS 4"
+      : mountedIso.name.trim().toLowerCase() === "pueios3.iso" ? "PueiOS 3"
       : mountedIso.name.trim().toLowerCase() === "pueios1.iso" ? "PueiOS 1"
       : "PueiOS 2+"
     : "PueiOS 2+";
@@ -5818,7 +5824,7 @@ function PueiUpdaterApp({ currentUser, startUpgrade, systemVersion }: { currentU
       setEolMsg("Drag an ISO into the installer area first.");
       return;
     }
-    if (mountedVersion !== "PueiOS 3") {
+    if (mountedVersion !== "PueiOS 3" && mountedVersion !== "PueiOS 4") {
       blip("error");
       setReverseWarning({ version: mountedVersion, fromIso: true });
       return;
@@ -5845,6 +5851,7 @@ function PueiUpdaterApp({ currentUser, startUpgrade, systemVersion }: { currentU
     { v: "PueiOS 1",  desc: "The very first PueiOS release — classic minimalist shell.", eol: true },
     { v: "PueiOS 2+", desc: "Advanced edition with stronger sync and AI systems.", eol: true },
     { v: "PueiOS 3",  desc: "Major release: redesigned shell, new AI assistant, PueiNet 3.0." },
+    { v: "PueiOS 4",  desc: "Latest release: refreshed shell and updated system apps." },
   ];
 
   return (

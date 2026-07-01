@@ -2236,7 +2236,7 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
   const isP3 = systemVersion === "PueiOS 3";
   const isP4 = systemVersion === "PueiOS 4";
   const isP1 = systemVersion === "PueiOS 1";
-  const aicon = (id: AppId, size: number, over?: string, url?: string) => appIcon(id, size, over, url, isP3 || isP4, isP1);
+  const aicon = (id: AppId, size: number, over?: string, url?: string) => appIcon(id, size, over, url, isP3 || isP4, isP1, isP4);
 
   return (
     <div
@@ -3239,7 +3239,7 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
           if (isOnDesktop(s)) return;
           const isImgUrl = typeof s.icon === "string" && (s.icon.startsWith("/") || s.icon.startsWith("http") || s.icon.startsWith("data:"));
           if (s.kind === "native") {
-            addIcon({ id: `${s.id}-${Date.now().toString(36)}`, label: s.label, appId: s.appId, iconEmoji: isImgUrl ? undefined : s.icon, iconUrl: isImgUrl ? s.icon : undefined });
+            addIcon({ id: `${s.id}-${Date.now().toString(36)}`, label: s.label, appId: s.appId, iconEmoji: isP4 ? undefined : (isImgUrl ? undefined : s.icon), iconUrl: isP4 ? undefined : (isImgUrl ? s.icon : undefined) });
           } else {
             addIcon({ id: `web-${Date.now().toString(36)}`, label: s.label, appId: "web-app", webUrl: s.url, iconEmoji: isImgUrl ? undefined : s.icon, iconUrl: isImgUrl ? s.icon : undefined });
           }
@@ -3267,7 +3267,9 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
                       style={{ opacity: on ? 0.4 : 1, background: on ? "rgba(80,200,120,0.12)" : "rgba(255,255,255,0.08)" }}
                       onMouseEnter={e => { if (!on) e.currentTarget.style.background = "rgba(255,255,255,0.22)"; }}
                       onMouseLeave={e => { e.currentTarget.style.background = on ? "rgba(80,200,120,0.12)" : "rgba(255,255,255,0.08)"; }}>
-                      {(s.icon.startsWith("/") || s.icon.startsWith("http") || s.icon.startsWith("data:"))
+                      {isP4 && s.kind === "native"
+                        ? aicon(s.appId, 28)
+                        : (s.icon.startsWith("/") || s.icon.startsWith("http") || s.icon.startsWith("data:"))
                         ? <img src={s.icon} alt="" style={{ width: 28, height: 28, objectFit: "contain", borderRadius: 4 }} />
                         : <span className="text-2xl">{s.icon}</span>}
                       <span className="flex-1">{s.label}</span>
