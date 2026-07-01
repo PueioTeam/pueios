@@ -1906,11 +1906,12 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
     f.type === "text" &&
     (!f.owner || f.owner === currentUser) &&
     f.folder === SYS_FOLDER_DOWNLOADS &&
-    ["pueios1.iso", "pueios2-plus.iso", "pueios2plus.iso", "pueios3.iso"].includes(f.name.trim().toLowerCase())
+    ["pueios1.iso", "pueios2-plus.iso", "pueios2plus.iso", "pueios3.iso", "pueios4.iso"].includes(f.name.trim().toLowerCase())
   );
   const iso1File = allIsoFiles.find((f) => f.name.trim().toLowerCase() === "pueios1.iso");
   const isoFile = allIsoFiles.find((f) => ["pueios2-plus.iso", "pueios2plus.iso"].includes(f.name.trim().toLowerCase()));
   const iso3File = allIsoFiles.find((f) => f.name.trim().toLowerCase() === "pueios3.iso");
+  const iso4File = allIsoFiles.find((f) => f.name.trim().toLowerCase() === "pueios4.iso");
   const updaterInstalled = icons.some((i) => i.appId === "web-app" && i.webUrl === "puei://updates" && i.label.trim().toLowerCase() === "puei updater");
 
   const startDownload = (name: string, onComplete: () => void) => {
@@ -1970,8 +1971,21 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
     });
   };
 
+  const downloadOs4Iso = () => {
+    if (iso4File) { blip("click"); webAlert("PueiOS 4 ISO is already downloaded in Files."); return; }
+    startDownload("pueios4.iso", () => {
+      upsertFile({
+        id: `iso4-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`,
+        name: "pueios4.iso", type: "text",
+        content: "PueiOS 4 installation ISO image. Win10-style shell, new dark design, PueiGAME support. Keep this file in Files/Downloads, then open Puei Updater and drag the ISO into it.",
+        updatedAt: Date.now(), owner: currentUser, folder: SYS_FOLDER_DOWNLOADS,
+      });
+      setIsoRefresh((v) => v + 1);
+    });
+  };
+
   const deleteIsoAfterUpdate = () => {
-    const target = iso3File || isoFile;
+    const target = iso4File || iso3File || isoFile;
     if (!target) return;
     deleteFile(target.id);
     setIsoRefresh((v) => v + 1);
@@ -2304,15 +2318,27 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
           )}
         </div>
 
-        {/* PueiOS 4 — Coming Soon */}
+        {/* PueiOS 4 */}
         <div className="aero-glass-light rounded-xl p-4 space-y-2" style={{ border: "1px solid rgba(168,85,247,0.35)", background: "rgba(88,28,135,0.12)" }}>
           <div className="flex items-center gap-2">
             <span className="font-semibold">PueiOS 4</span>
-            <span className="text-xs px-2 py-0.5 rounded" style={{ background: "rgba(168,85,247,0.25)", color: "#c084fc" }}>Coming Soon</span>
-            <span className="text-xs px-2 py-0.5 rounded" style={{ background: "rgba(250,204,21,0.15)", color: "#fbbf24" }}>August 2026</span>
+            <span className="text-xs px-2 py-0.5 rounded" style={{ background: "rgba(168,85,247,0.25)", color: "#c084fc" }}>New</span>
           </div>
-          <p className="text-xs opacity-70">The next major release of PueiOS. More details coming soon.</p>
-          <p className="text-[10px] opacity-40">Stay tuned on PueiSocial for announcements.</p>
+          <p className="text-xs opacity-60">Major release: Win10-style shell, dark design, PueiGAME launcher, new sounds.</p>
+          <div className="flex gap-2">
+            {downloading === "pueios4.iso" ? (
+              <span className="text-xs opacity-70">Downloading… {dlSecondsLeft}s</span>
+            ) : (
+              <button className="aero-button rounded px-3 py-1.5 text-xs" onClick={downloadOs4Iso}>
+                ⬇ {iso4File ? "Re-download pueios4.iso" : "Download pueios4.iso"}
+              </button>
+            )}
+          </div>
+          {updaterInstalled && iso4File && (
+            <div className="text-xs rounded px-3 py-2 mt-1" style={{ background: "rgba(80,200,120,0.16)" }}>
+              Ready to install! Open Puei Updater from your desktop and drag pueios4.iso into the install zone.
+            </div>
+          )}
         </div>
 
         {/* Pueio Reverse */}
@@ -5419,11 +5445,11 @@ function PueiUpdaterApp({ currentUser, startUpgrade, systemVersion }: { currentU
         const allIso = loadFiles().filter((f) =>
           f.type === "text" && (!f.owner || f.owner === currentUserRef.current) &&
           f.folder === SYS_FOLDER_DOWNLOADS &&
-          ["pueios1.iso", "pueios2-plus.iso", "pueios2plus.iso", "pueios3.iso"].includes(f.name.trim().toLowerCase())
+          ["pueios1.iso", "pueios2-plus.iso", "pueios2plus.iso", "pueios3.iso", "pueios4.iso"].includes(f.name.trim().toLowerCase())
         );
         const iso = allIso.find((file) => file.id === mountedIsoIdRef.current);
         const isoName = iso?.name.trim().toLowerCase() ?? "";
-        const targetVersion: SystemVersion = isoName === "pueios3.iso" ? "PueiOS 3" : isoName === "pueios1.iso" ? "PueiOS 1" : "PueiOS 2+";
+        const targetVersion: SystemVersion = isoName === "pueios4.iso" ? "PueiOS 4" : isoName === "pueios3.iso" ? "PueiOS 3" : isoName === "pueios1.iso" ? "PueiOS 1" : "PueiOS 2+";
         restartTimer.current = window.setTimeout(() => {
           blip("start");
           startUpgradeRef.current(targetVersion);
@@ -5439,7 +5465,7 @@ function PueiUpdaterApp({ currentUser, startUpgrade, systemVersion }: { currentU
     f.type === "text" &&
     (!f.owner || f.owner === currentUser) &&
     f.folder === SYS_FOLDER_DOWNLOADS &&
-    ["pueios1.iso", "pueios2-plus.iso", "pueios2plus.iso", "pueios3.iso"].includes(f.name.trim().toLowerCase())
+    ["pueios1.iso", "pueios2-plus.iso", "pueios2plus.iso", "pueios3.iso", "pueios4.iso"].includes(f.name.trim().toLowerCase())
   );
   const mountedIso = isoFiles.find((file) => file.id === mountedIsoId) || null;
   const mountedVersion: SystemVersion = mountedIso
