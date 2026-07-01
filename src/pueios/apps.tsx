@@ -2412,23 +2412,13 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
         <div className="aero-glass-light rounded-xl p-4 space-y-2" style={{ border: "1px solid rgba(168,85,247,0.35)", background: "rgba(88,28,135,0.12)" }}>
           <div className="flex items-center gap-2">
             <span className="font-semibold">PueiOS 4</span>
-            <span className="text-xs px-2 py-0.5 rounded" style={{ background: "rgba(168,85,247,0.25)", color: "#c084fc" }}>New</span>
+            <span className="text-xs px-2 py-0.5 rounded" style={{ background: "rgba(168,85,247,0.25)", color: "#c084fc" }}>Coming Soon</span>
           </div>
           <p className="text-xs opacity-60">Major release: Win10-style shell, dark design, PueiGAME launcher, new sounds.</p>
-          <div className="flex gap-2">
-            {downloading === "pueios4.iso" ? (
-              <span className="text-xs opacity-70">Downloading… {dlSecondsLeft}s</span>
-            ) : (
-              <button className="aero-button rounded px-3 py-1.5 text-xs" onClick={downloadOs4Iso}>
-                ⬇ {iso4File ? "Re-download pueios4.iso" : "Download pueios4.iso"}
-              </button>
-            )}
+          <div className="flex items-center gap-2 mt-1">
+            <span style={{ fontSize: 15 }}>🗓️</span>
+            <span className="text-xs" style={{ color: "#c084fc", fontWeight: 600 }}>Available August 8th, 2026</span>
           </div>
-          {updaterInstalled && iso4File && (
-            <div className="text-xs rounded px-3 py-2 mt-1" style={{ background: "rgba(80,200,120,0.16)" }}>
-              Ready to install! Open Puei Updater from your desktop and drag pueios4.iso into the install zone.
-            </div>
-          )}
         </div>
 
         {/* Pueio Reverse */}
