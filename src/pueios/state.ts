@@ -1,6 +1,6 @@
 // PueiOS state types and helpers
-export type SystemVersion = "PueiOS 1" | "PueiOS 2" | "PueiOS 2+" | "PueiOS 3";
-export const SYSTEM_ORDER: SystemVersion[] = ["PueiOS 1", "PueiOS 2", "PueiOS 2+", "PueiOS 3"];
+export type SystemVersion = "PueiOS 1" | "PueiOS 2" | "PueiOS 2+" | "PueiOS 3" | "PueiOS 4";
+export const SYSTEM_ORDER: SystemVersion[] = ["PueiOS 1", "PueiOS 2", "PueiOS 2+", "PueiOS 3", "PueiOS 4"];
 export function compareVersion(a: SystemVersion, b: SystemVersion): number {
   return SYSTEM_ORDER.indexOf(a) - SYSTEM_ORDER.indexOf(b);
 }
@@ -693,6 +693,14 @@ const BLIP_SOUNDS: Record<SystemVersion, Record<BlipKind, BlipDef>> = {
     notify:   { freqs: [1046, 1318], type: "sine", spacing: 0.12, dur: 0.2, vol: 0.09 },
     error:    { freqs: [311, 277], type: "sine", spacing: 0.1, dur: 0.25, vol: 0.09 },
     shutdown: { freqs: [880, 659, 523], type: "sine", spacing: 0.18, dur: 0.28, vol: 0.08 },
+  },
+  "PueiOS 4": {
+    start:    { freqs: [880, 1109], type: "sine", spacing: 0.1, dur: 0.15, vol: 0.08 },
+    click:    { freqs: [1200], type: "sine", spacing: 0, dur: 0.06, vol: 0.05 },
+    hover:    { freqs: [1600], type: "sine", spacing: 0, dur: 0.02, vol: 0.02 },
+    notify:   { freqs: [1046, 1318], type: "sine", spacing: 0.1, dur: 0.15, vol: 0.08 },
+    error:    { freqs: [330, 294], type: "sine", spacing: 0.08, dur: 0.2, vol: 0.08 },
+    shutdown: { freqs: [880, 660, 440], type: "sine", spacing: 0.14, dur: 0.2, vol: 0.07 },
   },
 };
 

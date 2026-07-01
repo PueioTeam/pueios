@@ -80,7 +80,7 @@ export function AppRenderer(p: AppRendererProps) {
     case "pueinet": return <PueiWebApp currentUser={p.currentUser} users={p.users} icons={p.icons} />;
     case "puei-cloud-chat": return <PueiCloudChatApp user={p.currentUser} users={p.users} setUsers={p.setUsers} />;
     case "puei-studio": return <PueiStudioApp currentUser={p.currentUser} users={p.users} icons={p.icons} setWallpaper={p.setWallpaper} />;
-    case "file-explorer": return <FileExplorerApp openApp={p.openApp} icons={p.icons} openFolder={p.openFolder} currentUser={p.currentUser} users={p.users} setWallpaper={p.setWallpaper} />;
+    case "file-explorer": return <FileExplorerApp openApp={p.openApp} icons={p.icons} openFolder={p.openFolder} currentUser={p.currentUser} users={p.users} setWallpaper={p.setWallpaper} systemVersion={p.systemVersion} />;
     case "app-store": return <AppStoreApp installWebApp={p.installWebApp} openApp={p.openApp} openWebApp={p.openWebApp} systemVersion={p.systemVersion} addNativeIcon={p.addNativeIcon} uninstallApp={p.uninstallApp} uninstallWebApp={p.uninstallWebApp} icons={p.icons} installedKeys={p.installedKeys} />;
     case "puei-social": return <PueiSocialApp user={p.currentUser} users={p.users} />;
     case "folder": return <FolderApp folderIconId={p.folderIconId!} icons={p.icons} openApp={p.openApp} openWebApp={p.openWebApp} />;
@@ -3699,7 +3699,7 @@ function PueiCloudChatApp({ user, users, setUsers }: { user: string; users: User
   );
 }
 
-function FileExplorerApp({ openApp, icons, openFolder, currentUser, users, setWallpaper }: { openApp: (id: AppId, fileId?: string) => void; icons: DesktopIcon[]; openFolder: (id: string, title: string) => void; currentUser: string; users: User[]; setWallpaper?: (w: WallpaperId) => void }) {
+function FileExplorerApp({ openApp, icons, openFolder, currentUser, users, setWallpaper, systemVersion }: { openApp: (id: AppId, fileId?: string) => void; icons: DesktopIcon[]; openFolder: (id: string, title: string) => void; currentUser: string; users: User[]; setWallpaper?: (w: WallpaperId) => void; systemVersion?: SystemVersion }) {
   const [feDialog, , feConfirm] = useLocalDialog();
   const myFiles = () => loadFiles().filter((f) => !f.owner || f.owner === currentUser);
   const [files, setFiles] = useState<SavedFile[]>(() => myFiles());
@@ -3708,6 +3708,8 @@ function FileExplorerApp({ openApp, icons, openFolder, currentUser, users, setWa
   const [dragFileId, setDragFileId] = useState<string | null>(null);
   const [dropTarget, setDropTarget] = useState<string | null>(null);
   const [clipboard, setClipboard] = useState<SavedFile | null>(null);
+  // PueiOS 4 folder nav (hoisted to avoid conditional hook)
+  const [p4Folder, setP4Folder] = useState<"home" | "documents" | "pictures" | "downloads" | "desktop">("home");
 
   const copyFile = (f: SavedFile) => setClipboard(f);
   const pasteFile = (targetFolder?: string) => {
@@ -3761,6 +3763,84 @@ function FileExplorerApp({ openApp, icons, openFolder, currentUser, users, setWa
     setDragFileId(null); setDropTarget(null);
     blip("notify");
   };
+
+  // PueiOS 4: Win10-style dark layout
+  if (systemVersion === "PueiOS 4") {
+    const allFiles = files;
+    const p4Files = p4Folder === "documents" ? files.filter(f => f.type === "text" && (!f.folder || f.folder === "__documents__"))
+      : p4Folder === "pictures" ? files.filter(f => f.type === "image")
+      : p4Folder === "downloads" ? files.filter(f => f.folder === SYS_FOLDER_DOWNLOADS)
+      : p4Folder === "desktop" ? files.filter(f => !f.folder)
+      : allFiles;
+    const sidebarItems: [string, string, typeof p4Folder][] = [
+      ["⭐", "Quick Access", "home"],
+      ["📁", "Documents", "documents"],
+      ["⬇️", "Downloads", "downloads"],
+      ["🖼️", "Pictures", "pictures"],
+      ["🖥️", "Desktop", "desktop"],
+    ];
+    return (
+      <div style={{ display: "flex", flexDirection: "column", height: "100%", background: "#202020", color: "white", fontFamily: "'Segoe UI', system-ui, sans-serif" }}>
+        <LocalDialogModal dialog={feDialog} />
+        {/* Ribbon bar */}
+        <div style={{ background: "#1a1a1a", borderBottom: "1px solid #333", padding: "0 12px", display: "flex", gap: 0 }}>
+          {["Home", "Share", "View"].map(tab => (
+            <div key={tab} style={{ padding: "6px 14px", fontSize: 12, color: tab === "Home" ? "white" : "rgba(255,255,255,0.5)", cursor: "pointer", borderBottom: tab === "Home" ? "2px solid #0078d4" : "2px solid transparent" }}>{tab}</div>
+          ))}
+        </div>
+        {/* Address bar */}
+        <div style={{ background: "#2d2d2d", borderBottom: "1px solid #333", padding: "4px 12px", fontSize: 12, color: "rgba(255,255,255,0.6)", display: "flex", alignItems: "center", gap: 8 }}>
+          <span>&#8250;</span>
+          <span>This PC</span>
+          {p4Folder !== "home" && <><span>&#8250;</span><span style={{ color: "white" }}>{sidebarItems.find(s => s[2] === p4Folder)?.[1]}</span></>}
+        </div>
+        <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
+          {/* Left sidebar */}
+          <div style={{ width: 180, background: "#2d2d2d", borderRight: "1px solid #333", padding: "8px 0", overflowY: "auto", flexShrink: 0 }}>
+            <div style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", padding: "4px 12px 6px", textTransform: "uppercase", letterSpacing: 1 }}>Quick Access</div>
+            {sidebarItems.map(([icon, label, id]) => (
+              <div key={id} onClick={() => setP4Folder(id)}
+                style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 14px", cursor: "pointer", fontSize: 12, color: p4Folder === id ? "white" : "rgba(255,255,255,0.65)", background: p4Folder === id ? "rgba(0,120,212,0.3)" : "transparent" }}
+                onMouseEnter={e => { if (p4Folder !== id) (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.06)"; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = p4Folder === id ? "rgba(0,120,212,0.3)" : "transparent"; }}>
+                <span style={{ fontSize: 14 }}>{icon}</span>
+                <span>{label}</span>
+              </div>
+            ))}
+            <div style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", padding: "10px 12px 6px", textTransform: "uppercase", letterSpacing: 1 }}>This PC</div>
+            {[["📁","Documents","documents"],["⬇️","Downloads","downloads"],["🖼️","Pictures","pictures"],["🖥️","Desktop","desktop"]] .map(([icon,label,id]) => (
+              <div key={id} onClick={() => setP4Folder(id as any)}
+                style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 14px", cursor: "pointer", fontSize: 12, color: "rgba(255,255,255,0.55)", background: "transparent" }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.06)"; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}>
+                <span style={{ fontSize: 14 }}>{icon}</span><span>{label}</span>
+              </div>
+            ))}
+          </div>
+          {/* Main content area */}
+          <div style={{ flex: 1, overflowY: "auto", padding: "16px", display: "flex", flexWrap: "wrap", alignContent: "flex-start", gap: 16 }}>
+            {p4Files.length === 0 && (
+              <div style={{ width: "100%", textAlign: "center", color: "rgba(255,255,255,0.3)", marginTop: 40, fontSize: 13 }}>This folder is empty</div>
+            )}
+            {p4Files.map(f => (
+              <div key={f.id}
+                onClick={() => { if (f.type === "text") openApp("notepad", f.id); else if (f.type === "image") openApp("puei-paint", f.id); }}
+                style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, width: 80, cursor: "pointer", padding: 6, borderRadius: 2 }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.08)"; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}>
+                <div style={{ fontSize: 36 }}>{f.type === "image" ? "🖼️" : f.type === "zip" ? "📦" : "📄"}</div>
+                <div style={{ fontSize: 11, color: "rgba(255,255,255,0.8)", textAlign: "center", wordBreak: "break-word", lineHeight: 1.3 }}>{f.name}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+        {/* Status bar */}
+        <div style={{ background: "#1a1a1a", borderTop: "1px solid #333", padding: "3px 14px", fontSize: 11, color: "rgba(255,255,255,0.4)" }}>
+          {p4Files.length} item{p4Files.length !== 1 ? "s" : ""}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-full relative">
@@ -4328,7 +4408,11 @@ function PueiGameApp({ openApp, addNativeIcon, icons, installedKeys }: { openApp
   const isInstalled = (appId: AppId) => icons.some(i => i.appId === appId && !i.fileId && !i.webUrl) || installedKeys.has(`app:${appId}`);
   const [installing, setInstalling] = useState<Record<string, number>>({});
   const timers = useRef<Record<string, ReturnType<typeof setInterval>>>({});
-  useEffect(() => () => { Object.values(timers.current).forEach(clearInterval); }, []);
+  const [exeDownloading, setExeDownloading] = useState(false);
+  const [exeProgress, setExeProgress] = useState(0);
+  const [exeDownloaded, setExeDownloaded] = useState(false);
+  const exeTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  useEffect(() => () => { Object.values(timers.current).forEach(clearInterval); if (exeTimerRef.current) clearInterval(exeTimerRef.current); }, []);
 
   const install = (appId: AppId, name: string, icon: string) => {
     const key = appId;
@@ -4404,8 +4488,41 @@ function PueiGameApp({ openApp, addNativeIcon, icons, installedKeys }: { openApp
       </div>
 
       {/* Footer */}
-      <div style={{ padding: "10px 18px", borderTop: "1px solid rgba(80,200,80,0.1)", fontSize: 11, opacity: 0.45, textAlign: "center" }}>
-        PueiGAME · All games are property of PueiTeam
+      <div style={{ padding: "10px 18px", borderTop: "1px solid rgba(80,200,80,0.1)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div style={{ fontSize: 11, opacity: 0.45 }}>PueiGAME · All games are property of PueiTeam</div>
+        {exeDownloaded ? (
+          <div style={{ fontSize: 11, color: "#7fff7f" }}>✓ PueiGAME.exe saved to Downloads</div>
+        ) : exeDownloading ? (
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <div style={{ width: 120, height: 4, borderRadius: 2, background: "rgba(80,200,80,0.15)", overflow: "hidden" }}>
+              <div style={{ height: "100%", width: `${exeProgress}%`, background: "linear-gradient(90deg,#2da02d,#5dfc5d)", borderRadius: 2, transition: "width 0.2s" }} />
+            </div>
+            <div style={{ fontSize: 11, color: "rgba(255,255,255,0.5)" }}>{Math.round(exeProgress)}%</div>
+          </div>
+        ) : (
+          <button
+            onClick={() => {
+              if (exeDownloaded || exeDownloading) return;
+              setExeDownloading(true);
+              setExeProgress(0);
+              const started = Date.now();
+              const dur = 5000 + Math.random() * 4000;
+              exeTimerRef.current = setInterval(() => {
+                const pct = Math.min(100, ((Date.now() - started) / dur) * 100);
+                setExeProgress(pct);
+                if (pct >= 100) {
+                  if (exeTimerRef.current) clearInterval(exeTimerRef.current);
+                  setExeDownloading(false);
+                  setExeDownloaded(true);
+                  upsertFile({ id: `pueigame-exe-${Date.now()}`, name: "PueiGAME.exe", type: "text" as const, content: "PueiGAME Installer v1.0 — Run this file to install PueiGAME.", updatedAt: Date.now(), folder: SYS_FOLDER_DOWNLOADS });
+                  blip("notify");
+                }
+              }, 200);
+            }}
+            style={{ padding: "5px 14px", borderRadius: 6, border: "1px solid rgba(80,200,80,0.3)", background: "transparent", color: "#5dfc5d", fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
+            ⬇ Download PueiGAME.exe
+          </button>
+        )}
       </div>
     </div>
   );

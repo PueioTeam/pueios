@@ -122,7 +122,7 @@ export function PueiOS() {
       const raw = localStorage.getItem("pueios2-state-v3");
       if (raw) {
         const p = JSON.parse(raw);
-        if (p.systemVersion && (["PueiOS 1","PueiOS 2","PueiOS 2+","PueiOS 3"] as string[]).includes(p.systemVersion))
+        if (p.systemVersion && (["PueiOS 1","PueiOS 2","PueiOS 2+","PueiOS 3","PueiOS 4"] as string[]).includes(p.systemVersion))
           return p.systemVersion as SystemVersion;
       }
     } catch {}
@@ -1429,6 +1429,18 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
 
   // ============ BOOT
   if (phase === "boot") {
+    if (systemVersion === "PueiOS 4") {
+      return (
+        <div className="fixed inset-0 flex flex-col items-center justify-center" style={{ background: "#000" }}>
+          <PueiLogoSvg size={72} glow />
+          <div style={{ width: 40, height: 40, border: "3px solid rgba(255,255,255,0.15)", borderTopColor: "white", borderRadius: "50%", animation: "p4-spin 0.9s linear infinite", marginTop: 48 }} />
+          <style>{`
+            @keyframes p4-spin { to { transform: rotate(360deg); } }
+          `}</style>
+          <div className="fixed bottom-8 left-0 right-0 text-center text-[11px]" style={{ color: "rgba(255,255,255,0.3)" }}>PueiOS 4</div>
+        </div>
+      );
+    }
     if (systemVersion === "PueiOS 3") {
       return (
         <div className="fixed inset-0 flex flex-col items-center justify-center" style={{ background: "#000" }}>
@@ -1679,6 +1691,147 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
             )}
           </div>
           <div style={{ marginTop: 10, fontSize: 10, color: "#444" }}>PueiOS 1.0 · pueios-2020-puei</div>
+        </div>
+      );
+    }
+
+    if (systemVersion === "PueiOS 4") {
+      // PueiOS 4 — Windows 10 style: dark background, floating elements, avatar circle
+      const selectedU = users.find((u) => u.name === loginUser) ?? users[0];
+      const p4Input: React.CSSProperties = {
+        background: "transparent",
+        border: "none",
+        borderBottom: "1px solid rgba(255,255,255,0.4)",
+        padding: "8px 0",
+        fontSize: 15,
+        color: "white",
+        outline: "none",
+        width: "100%",
+        boxSizing: "border-box" as const,
+        textAlign: "center" as const,
+      };
+      return (
+        <div className="fixed inset-0 flex flex-col items-center justify-center select-none"
+          style={{ background: "#000", fontFamily: "'Segoe UI', system-ui, sans-serif" }}>
+          <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.6)", backdropFilter: "blur(8px)" }} />
+          <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 0 }}>
+            {/* Avatar circle */}
+            <div style={{ width: 100, height: 100, borderRadius: "50%", background: selectedU ? `linear-gradient(135deg, oklch(0.7 0.18 ${selectedU.color}), oklch(0.45 0.2 ${selectedU.color}))` : "#333", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 52, overflow: "hidden", marginBottom: 16, boxShadow: "0 0 0 2px rgba(255,255,255,0.15)" }}>
+              {selectedU?.avatar?.startsWith("data:") ? <img src={selectedU.avatar} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : selectedU?.avatar && !selectedU.avatar.startsWith("data:") && selectedU.avatar.trim().length <= 2 ? <span>{selectedU.avatar}</span> : <span style={{ color: "#fff", fontWeight: 700, fontSize: 38 }}>{(loginUser[0] || "?").toUpperCase()}</span>}
+            </div>
+            {/* Username */}
+            <div style={{ color: "white", fontSize: 18, fontWeight: 300, marginBottom: 24, letterSpacing: 0.5 }}>{loginUser || "Select account"}</div>
+            {/* Password row */}
+            <div style={{ display: "flex", alignItems: "center", gap: 8, width: 240 }}>
+              <input type="password" value={pwInput} onChange={(e) => setPwInput(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") trySignIn(); }}
+                placeholder={selectedU?.password ? "Password" : "PIN or password"}
+                autoFocus
+                style={p4Input} />
+              <button onClick={trySignIn}
+                style={{ width: 32, height: 32, borderRadius: "50%", border: "1px solid rgba(255,255,255,0.4)", background: "rgba(255,255,255,0.1)", color: "white", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flexShrink: 0 }}>
+                →
+              </button>
+            </div>
+            {pwError && <div style={{ color: "#f87171", fontSize: 12, marginTop: 8 }}>{pwError}</div>}
+            {/* Sign in label */}
+            <div style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, marginTop: 14 }}>Sign in</div>
+            {/* Account switcher */}
+            {users.length > 1 && !locked && (
+              <div style={{ display: "flex", gap: 8, marginTop: 20, flexWrap: "wrap", justifyContent: "center" }}>
+                {users.filter(u => typeof u.password !== "undefined").map(u => (
+                  <button key={u.name} onClick={() => { setLoginUser(u.name); setPwInput(""); setPwError(""); }}
+                    style={{ background: loginUser === u.name ? "rgba(255,255,255,0.15)" : "transparent", border: "none", color: "rgba(255,255,255,0.6)", cursor: "pointer", fontSize: 11, padding: "4px 8px", borderRadius: 2 }}>
+                    {u.name}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          {/* Power button bottom right */}
+          <button style={{ position: "absolute", bottom: 20, right: 20, background: "none", border: "none", color: "rgba(255,255,255,0.5)", cursor: "pointer", fontSize: 13 }} onClick={() => { blip("shutdown"); setPhase("shutdown"); }}>⏻</button>
+        </div>
+      );
+    }
+
+    if (systemVersion === "PueiOS 4") {
+      // PueiOS 4 — Win10-style login: dark full screen, centered user
+      const selectedU4 = users.find((u) => u.name === loginUser) ?? users[0];
+      const noPass4 = selectedU4?.noPassword || (selectedU4?.password ?? "") === "";
+      return (
+        <div className="fixed inset-0 flex flex-col items-center justify-center select-none"
+          style={{ background: "#000", color: "white", fontFamily: "Segoe UI, system-ui, sans-serif" }}>
+          {/* Blurred dark bg layer */}
+          <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at 40% 60%, #0d1117 0%, #000 100%)", zIndex: 0 }} />
+          <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 0 }}>
+            {/* Avatar */}
+            <div style={{ width: 120, height: 120, borderRadius: "50%", background: selectedU4 ? `linear-gradient(135deg, oklch(0.6 0.15 ${selectedU4.color}), oklch(0.35 0.18 ${selectedU4.color}))` : "#333", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 60, overflow: "hidden", marginBottom: 20, boxShadow: "0 0 0 2px rgba(255,255,255,0.12)" }}>
+              {selectedU4?.avatar?.startsWith("data:") ? <img src={selectedU4.avatar} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : (selectedU4?.avatar ?? "🧑")}
+            </div>
+            {/* Username */}
+            <div style={{ fontSize: 22, fontWeight: 300, letterSpacing: 0.5, marginBottom: 28 }}>{selectedU4?.name ?? "User"}</div>
+            {/* Password row */}
+            {!noPass4 && (
+              <div style={{ display: "flex", alignItems: "center", gap: 0, marginBottom: 10 }}>
+                <input
+                  type="password" value={pwInput}
+                  onChange={(e) => { setPwInput(e.target.value); setPwError(""); }}
+                  onKeyDown={(e) => { if (e.key === "Enter") trySignIn(); }}
+                  placeholder="Password"
+                  autoFocus
+                  style={{ background: "rgba(255,255,255,0.08)", border: "none", borderBottom: "1px solid rgba(255,255,255,0.35)", outline: "none", color: "white", fontSize: 15, padding: "10px 14px", width: 260, letterSpacing: 2 }}
+                />
+                <button onClick={trySignIn}
+                  style={{ width: 44, height: 44, background: "rgba(0,120,212,0.85)", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontSize: 18, flexShrink: 0 }}>
+                  →
+                </button>
+              </div>
+            )}
+            {noPass4 && (
+              <button onClick={trySignIn}
+                style={{ background: "rgba(0,120,212,0.85)", border: "none", color: "white", padding: "10px 36px", fontSize: 14, cursor: "pointer", marginBottom: 10, letterSpacing: 0.5 }}>
+                Sign in
+              </button>
+            )}
+            {pwError && <div style={{ color: "#f87171", fontSize: 12, marginTop: 4 }}>{pwError}</div>}
+            {/* Other users */}
+            {users.length > 1 && (
+              <div style={{ display: "flex", gap: 10, marginTop: 28, flexWrap: "wrap", justifyContent: "center" }}>
+                {users.filter(u => u.name !== loginUser).map((u) => (
+                  <button key={u.name} onClick={() => { setLoginUser(u.name); setPwInput(""); setPwError(""); }}
+                    style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 14px 6px 8px", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", cursor: "pointer", color: "white", fontSize: 13 }}>
+                    <div style={{ width: 26, height: 26, borderRadius: "50%", background: `linear-gradient(135deg, oklch(0.6 0.15 ${u.color}), oklch(0.35 0.18 ${u.color}))`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, overflow: "hidden" }}>
+                      {u.avatar.startsWith("data:") ? <img src={u.avatar} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : u.avatar}
+                    </div>
+                    {u.name}
+                  </button>
+                ))}
+              </div>
+            )}
+            {!creating && !locked && (
+              <button onClick={() => setCreating(true)}
+                style={{ marginTop: 18, background: "none", border: "none", color: "rgba(255,255,255,0.4)", fontSize: 12, cursor: "pointer", textDecoration: "underline" }}>
+                Create new account
+              </button>
+            )}
+            {creating && (
+              <div style={{ marginTop: 24, display: "flex", flexDirection: "column", gap: 10, width: 280 }}>
+                <input placeholder="Username" value={newAcc.name} onChange={(e) => setNewAcc({ ...newAcc, name: e.target.value })}
+                  style={{ background: "rgba(255,255,255,0.08)", border: "none", borderBottom: "1px solid rgba(255,255,255,0.3)", outline: "none", color: "white", fontSize: 14, padding: "8px 10px" }} />
+                <input type="password" placeholder="Password (optional)" value={newAcc.password} onChange={(e) => setNewAcc({ ...newAcc, password: e.target.value })}
+                  style={{ background: "rgba(255,255,255,0.08)", border: "none", borderBottom: "1px solid rgba(255,255,255,0.3)", outline: "none", color: "white", fontSize: 14, padding: "8px 10px" }} />
+                {pwError && <div style={{ color: "#f87171", fontSize: 12 }}>{pwError}</div>}
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button onClick={() => { setCreating(false); setPwError(""); }} style={{ flex: 1, padding: "8px", background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)", color: "white", cursor: "pointer" }}>Cancel</button>
+                  <button onClick={createAccount} style={{ flex: 1, padding: "8px", background: "#0078d4", border: "none", color: "white", cursor: "pointer" }}>Create</button>
+                </div>
+              </div>
+            )}
+          </div>
+          {/* Bottom-left: power */}
+          <button onClick={() => setPhase("shutdown")}
+            style={{ position: "fixed", bottom: 28, left: 28, background: "none", border: "none", color: "rgba(255,255,255,0.45)", fontSize: 22, cursor: "pointer", zIndex: 2 }}
+            title="Shut down">⏻</button>
         </div>
       );
     }
@@ -2055,8 +2208,9 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
   const avatarBg = `linear-gradient(135deg, oklch(0.72 0.18 ${currentColor}), oklch(0.48 0.2 ${currentColor}))`;
   const hasPueiOS3Upgrade = compareVersion("PueiOS 3", systemVersion) > 0;
   const isP3 = systemVersion === "PueiOS 3";
+  const isP4 = systemVersion === "PueiOS 4";
   const isP1 = systemVersion === "PueiOS 1";
-  const aicon = (id: AppId, size: number, over?: string, url?: string) => appIcon(id, size, over, url, isP3, isP1);
+  const aicon = (id: AppId, size: number, over?: string, url?: string) => appIcon(id, size, over, url, isP3 || isP4, isP1);
 
   return (
     <div
@@ -2365,6 +2519,78 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
         );
       })()}
 
+      {/* PueiOS 4 Start Menu — Win10 style dark panel with tiles */}
+      {startOpen && isP4 && (
+        <div className="fixed bottom-12 left-0 z-[9000] flex overflow-hidden"
+          style={{ width: 680, height: 520, background: "#1a1a1a", animation: "fade-scale 0.15s ease-out", boxShadow: "0 -4px 40px rgba(0,0,0,0.7)" }}
+          onMouseDown={(e) => e.stopPropagation()}>
+          {/* LEFT column */}
+          <div style={{ width: 220, display: "flex", flexDirection: "column", background: "#202020", borderRight: "1px solid #333" }}>
+            {/* User info */}
+            <div style={{ padding: "16px 16px 12px", display: "flex", alignItems: "center", gap: 10, borderBottom: "1px solid #333" }}>
+              <div style={{ width: 36, height: 36, borderRadius: "50%", background: avatarBg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, overflow: "hidden", flexShrink: 0 }}>
+                {currentAvatar?.startsWith("data:") ? <img src={currentAvatar} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : (currentAvatar || "👤")}
+              </div>
+              <div style={{ color: "white", fontSize: 13, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{currentUser}</div>
+            </div>
+            {/* Most used apps */}
+            <div style={{ padding: "8px 0", flex: 1, overflowY: "auto" }}>
+              <div style={{ fontSize: 10, color: "rgba(255,255,255,0.4)", padding: "4px 16px 6px", textTransform: "uppercase", letterSpacing: 1 }}>Most used</div>
+              {[...new Set([
+                ...icons.filter(i => !i.fileId && !i.webUrl && i.appId !== "folder" && i.appId !== "web-app" && i.appId !== "recycle-bin").map(i => i.appId),
+                "settings" as const,
+              ])].filter(id => id in APP_TITLES).slice(0, 6).map((id) => (
+                <button key={id} onClick={() => { openApp(id); setStartOpen(false); }}
+                  style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "7px 16px", background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.85)", fontSize: 13, textAlign: "left" }}
+                  onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.08)")}
+                  onMouseLeave={e => (e.currentTarget.style.background = "none")}>
+                  {aicon(id, 22)}
+                  <span style={{ fontWeight: 400 }}>{APP_TITLES[id]}</span>
+                </button>
+              ))}
+            </div>
+            {/* Bottom: Settings + Power */}
+            <div style={{ borderTop: "1px solid #333" }}>
+              <button onClick={() => { openApp("settings"); setStartOpen(false); }}
+                style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "10px 16px", background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.7)", fontSize: 13, textAlign: "left" }}
+                onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.08)")}
+                onMouseLeave={e => (e.currentTarget.style.background = "none")}>
+                {aicon("settings", 20)} Settings
+              </button>
+              <button onClick={() => { blip("shutdown"); setStartOpen(false); setPhase("shutdown"); setWindows([]); }}
+                style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "10px 16px", background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.7)", fontSize: 13, textAlign: "left" }}
+                onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.08)")}
+                onMouseLeave={e => (e.currentTarget.style.background = "none")}>
+                <span style={{ fontSize: 18, width: 22, textAlign: "center" }}>⏻</span> Power
+              </button>
+            </div>
+          </div>
+          {/* RIGHT tiles panel */}
+          <div style={{ flex: 1, padding: "16px 14px", overflowY: "auto" }}>
+            <div style={{ fontSize: 10, color: "rgba(255,255,255,0.4)", marginBottom: 12, textTransform: "uppercase", letterSpacing: 1 }}>Pinned</div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 4 }}>
+              {([
+                ["file-explorer", "File Explorer", "#1a1a2e"],
+                ["app-store", "App Store", "#16213e"],
+                ["pueinet", "PueiWeb", "#0f3460"],
+                ["puei-cloud-chat", "PueiCloudChat", "#1a2e1a"],
+                ["puei-social", "PueiSocial", "#2e1a1a"],
+                ["calculator", "Calculator", "#1a2e2e"],
+                ["notepad", "Notepad", "#2e2a1a"],
+              ] as [AppId, string, string][]).map(([id, label, bg]) => (
+                <button key={id} onClick={() => { openApp(id); setStartOpen(false); }}
+                  style={{ height: 90, display: "flex", flexDirection: "column", alignItems: "flex-start", justifyContent: "flex-end", padding: "8px 10px", background: bg, border: "none", cursor: "pointer", color: "white", fontSize: 11, fontWeight: 400, gap: 4 }}
+                  onMouseEnter={e => { e.currentTarget.style.filter = "brightness(1.3)"; }}
+                  onMouseLeave={e => { e.currentTarget.style.filter = ""; }}>
+                  <div style={{ marginBottom: 4 }}>{aicon(id, 28)}</div>
+                  <span style={{ lineHeight: 1.2, textAlign: "left" }}>{label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* PueiOS 3 launcher — Vista Aero glass panel, accent-aware */}
       {startOpen && systemVersion === "PueiOS 3" && (
         <div className="fixed bottom-10 left-2 z-[9000] flex flex-col rounded-xl overflow-hidden"
@@ -2433,7 +2659,123 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
       )}
 
       {/* Taskbar */}
-      {systemVersion === "PueiOS 1" ? (
+      {isP4 ? (
+        /* PueiOS 4 — flat dark Win10-style taskbar */
+        <div className="fixed bottom-0 left-0 right-0 flex items-stretch z-[8000]"
+          style={{ height: 48, background: "#1a1a1a", borderTop: "1px solid #333" }}
+          onMouseDown={(e) => e.stopPropagation()}
+          onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); setCtxMenu({ x: e.clientX, y: e.clientY, items: taskbarCtx() }); }}>
+          {/* Start button */}
+          <button
+            title="Start" onClick={(e) => { e.stopPropagation(); blip("click"); setStartOpen(!startOpen); setShowCalendar(false); }}
+            style={{ width: 48, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", background: startOpen ? "rgba(255,255,255,0.15)" : "transparent", cursor: "pointer", border: "none" }}>
+            <PueiLogoSvg size={24} />
+          </button>
+          {/* Search bar */}
+          <div style={{ position: "relative", flexShrink: 0, margin: "0 4px", display: "flex", alignItems: "center" }} onMouseDown={(e) => e.stopPropagation()}>
+            <div style={{ display: "flex", alignItems: "center", gap: 7, height: 32, width: 220, padding: "0 10px", borderRadius: 2, border: `1px solid ${searchOpen ? "rgba(255,255,255,0.35)" : "rgba(255,255,255,0.15)"}`, background: searchOpen ? "rgba(255,255,255,0.12)" : "rgba(255,255,255,0.07)" }}>
+              <svg width="13" height="13" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0, opacity: 0.6 }}>
+                <circle cx="6.5" cy="6.5" r="5" stroke="rgba(255,255,255,0.9)" strokeWidth="1.8"/>
+                <line x1="10.5" y1="10.5" x2="14.5" y2="14.5" stroke="rgba(255,255,255,0.9)" strokeWidth="1.8" strokeLinecap="round"/>
+              </svg>
+              <input
+                value={searchQuery}
+                onChange={(e) => { setSearchQuery(e.target.value); setSearchOpen(true); }}
+                onFocus={() => setSearchOpen(true)}
+                onKeyDown={(e) => {
+                  if (e.key === "Escape") { setSearchOpen(false); setSearchQuery(""); }
+                  if (e.key === "Enter") {
+                    const q = searchQuery.trim().toLowerCase();
+                    const match = desktopIcons.find(i => (APP_TITLES[i.appId] ?? i.label).toLowerCase().startsWith(q));
+                    if (match) { openApp(match.appId, { fileId: match.fileId }); setSearchOpen(false); setSearchQuery(""); }
+                  }
+                }}
+                placeholder="Search"
+                style={{ background: "none", border: "none", outline: "none", color: "rgba(255,255,255,0.75)", fontSize: 12, width: "100%", caretColor: "white" }}
+              />
+            </div>
+            {searchOpen && (
+              <div style={{ position: "absolute", bottom: 40, left: 0, width: 280, background: "rgba(15,15,15,0.98)", borderRadius: 4, border: "1px solid #333", boxShadow: "0 -8px 32px rgba(0,0,0,0.6)", overflow: "hidden", animation: "fade-scale 0.12s ease-out" }}>
+                {searchQuery.trim() === "" ? (
+                  <div style={{ padding: "12px 16px", fontSize: 11, color: "rgba(255,255,255,0.4)" }}>Start typing to search apps…</div>
+                ) : (() => {
+                  const q = searchQuery.trim().toLowerCase();
+                  const results = [...desktopIcons, ...icons.filter(i => i.folderId)].filter(i => (APP_TITLES[i.appId] ?? i.label).toLowerCase().includes(q)).slice(0, 6);
+                  return results.length === 0
+                    ? <div style={{ padding: "12px 16px", fontSize: 11, color: "rgba(255,255,255,0.4)" }}>No apps found for "{searchQuery}"</div>
+                    : results.map((i) => (
+                      <button key={i.id}
+                        onClick={() => { openApp(i.appId, { fileId: i.fileId, webUrl: i.webUrl }); setSearchOpen(false); setSearchQuery(""); blip("click"); }}
+                        style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "8px 14px", background: "none", border: "none", color: "white", cursor: "pointer", fontSize: 13, textAlign: "left" }}
+                        onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.08)")}
+                        onMouseLeave={e => (e.currentTarget.style.background = "none")}>
+                        {aicon(i.appId, 22, i.iconEmoji, i.iconUrl)}
+                        <span>{APP_TITLES[i.appId] ?? i.label}</span>
+                      </button>
+                    ));
+                })()}
+              </div>
+            )}
+          </div>
+          {/* Task View button */}
+          <button title="Task View"
+            onClick={(e) => { e.stopPropagation(); setWindows(ws => ws.map(w => ({ ...w, minimized: false }))); }}
+            style={{ width: 44, height: 48, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.7)", fontSize: 16 }}>
+            ⊞
+          </button>
+          {/* Open windows — flat icon-only buttons */}
+          <div style={{ display: "flex", alignItems: "center", flex: 1, overflow: "hidden", gap: 0, padding: "0 2px" }}>
+            {pinnedApps.map((p) => {
+              const pKey4 = p.webUrl ?? p.appId;
+              const hasWin4 = windows.some((w) => p.appId === "web-app" ? w.appId === "web-app" && w.webUrl === p.webUrl : w.appId === p.appId);
+              const activeWin4 = windows.find((w) => (p.appId === "web-app" ? w.appId === "web-app" && w.webUrl === p.webUrl : w.appId === p.appId) && !w.minimized);
+              const desktopIc4 = icons.find((i) => i.appId === p.appId && (p.appId !== "web-app" || i.webUrl === p.webUrl));
+              const isActive4 = !!activeWin4;
+              return (
+                <div key={pKey4} style={{ position: "relative", flexShrink: 0 }}>
+                  <button onClick={(e) => { e.stopPropagation(); openPinned(p); }}
+                    title={p.label ?? APP_TITLES[p.appId] ?? p.appId}
+                    style={{ width: 44, height: 48, display: "flex", alignItems: "center", justifyContent: "center", background: isActive4 ? "rgba(255,255,255,0.12)" : hasWin4 ? "rgba(255,255,255,0.06)" : "transparent", cursor: "pointer", border: "none" }}>
+                    {aicon(p.appId, 24, desktopIc4?.iconEmoji, desktopIc4?.iconUrl)}
+                  </button>
+                  {hasWin4 && <div style={{ position: "absolute", bottom: 0, left: "50%", transform: "translateX(-50%)", width: isActive4 ? 20 : 4, height: 2, background: isActive4 ? "#0078d4" : "rgba(0,120,212,0.5)", transition: "width 0.2s" }} />}
+                </div>
+              );
+            })}
+            {pinnedApps.length > 0 && windows.filter(w => !pinnedApps.some(p => p.appId === "web-app" ? w.appId === "web-app" && w.webUrl === p.webUrl : w.appId === p.appId)).length > 0 && (
+              <div style={{ width: 1, height: 28, background: "rgba(255,255,255,0.1)", margin: "0 3px", flexShrink: 0 }} />
+            )}
+            {windows.filter(w => !pinnedApps.some(p => p.appId === "web-app" ? w.appId === "web-app" && w.webUrl === p.webUrl : w.appId === p.appId)).map((w) => {
+              const isActive4b = w.z === Math.max(...windows.map((x) => x.z)) && !w.minimized;
+              return (
+                <div key={w.id} style={{ position: "relative", flexShrink: 0 }}>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); if (w.minimized) focusWin(w.id); else minWin(w.id); }}
+                    style={{ width: 44, height: 48, display: "flex", alignItems: "center", justifyContent: "center", background: isActive4b ? "rgba(255,255,255,0.12)" : "rgba(255,255,255,0.04)", cursor: "pointer", border: "none" }}>
+                    {aicon(w.appId, 24)}
+                  </button>
+                  {<div style={{ position: "absolute", bottom: 0, left: "50%", transform: "translateX(-50%)", width: isActive4b ? 20 : 4, height: 2, background: isActive4b ? "#0078d4" : "rgba(0,120,212,0.5)", transition: "width 0.2s" }} />}
+                </div>
+              );
+            })}
+          </div>
+          {/* Right tray */}
+          <div style={{ display: "flex", alignItems: "center", padding: "0 8px", gap: 4, flexShrink: 0, borderLeft: "1px solid #333" }}>
+            <span title="Network" style={{ cursor: "pointer", fontSize: 14, color: "rgba(255,255,255,0.7)", padding: "0 3px" }}
+              onClick={(e) => { e.stopPropagation(); setShowNetwork(!showNetwork); setShowVolume(false); }}>📶</span>
+            <span title="Sound" style={{ cursor: "pointer", fontSize: 14, color: "rgba(255,255,255,0.7)", padding: "0 3px" }}
+              onClick={(e) => { e.stopPropagation(); setShowVolume(!showVolume); setShowNetwork(false); blip("notify"); }}>🔊</span>
+            <button onClick={(e) => { e.stopPropagation(); setShowCalendar(!showCalendar); setStartOpen(false); }}
+              style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: "none", border: "none", color: "rgba(255,255,255,0.8)", fontSize: 10, lineHeight: 1.5, cursor: "pointer", padding: "0 6px", textAlign: "center" }}>
+              <span style={{ fontWeight: 400 }}>{now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
+              <span style={{ opacity: 0.6 }}>{now.toLocaleDateString()}</span>
+            </button>
+          </div>
+          {/* Show desktop strip */}
+          <div title="Show Desktop" style={{ width: 8, flexShrink: 0, background: "rgba(255,255,255,0.04)", borderLeft: "1px solid #333", cursor: "pointer" }}
+            onClick={(e) => { e.stopPropagation(); windows.forEach((w) => minWin(w.id)); }} />
+        </div>
+      ) : systemVersion === "PueiOS 1" ? (
         /* PueiOS 1 — flat minimalistic taskbar */
         <div className="fixed bottom-0 left-0 right-0 flex items-center z-[8000]"
           style={{ height: 36, background: theme.taskbarColor ?? "#c0c0c0", borderTop: "2px solid #fff", borderBottom: "1px solid #888", fontFamily: "Arial, sans-serif" }}
