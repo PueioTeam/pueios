@@ -89,7 +89,7 @@ export function AppRenderer(p: AppRendererProps) {
     case "chess": return <ChessApp />;
     case "puei-mansion": return <PueiMansionApp />;
     case "puei-game": return <PueiGameApp openApp={p.openApp} addNativeIcon={p.addNativeIcon} icons={p.icons} installedKeys={p.installedKeys} />;
-    case "iso-viewer": return <IsoViewerApp fileId={p.fileId} />;
+    case "iso-viewer": return <IsoViewerApp fileId={p.fileId} startUpgrade={p.startUpgrade} systemVersion={p.systemVersion} />;
     case "zip-viewer": return <ZipViewerApp fileId={p.fileId} />;
     case "pmail": return <PMailApp currentUser={p.currentUser} users={p.users} />;
     case "pueyracing": return <PueiRacingApp currentUser={p.currentUser} />;
@@ -4029,35 +4029,44 @@ function FileExplorerApp({ openApp, icons, openFolder, currentUser, users, setWa
               const iconPx = p4IconSize === "small" ? 24 : p4IconSize === "large" ? 52 : 36;
               const icKey = ic.id;
               const icLabel = ic.label;
+              const handleOpen = () => {
+                if (ic.appId === "folder") { openFolder(ic.id, ic.label); return; }
+                if (ic.appId === "web-app" && ic.webUrl) { openApp("pueinet"); return; }
+                openApp(ic.appId, ic.fileId);
+              };
+              const icImg = ic.iconUrl
+                ? <img src={ic.iconUrl} alt="" style={{ width: iconPx, height: iconPx, objectFit: "contain", borderRadius: 4 }} />
+                : <span style={{ fontSize: iconPx, lineHeight: 1 }}>{ic.iconEmoji ?? "🖥️"}</span>;
+              const icSmall = ic.iconUrl
+                ? <img src={ic.iconUrl} alt="" style={{ width: 16, height: 16, objectFit: "contain", borderRadius: 2 }} />
+                : <span style={{ fontSize: 15 }}>{ic.iconEmoji ?? "🖥️"}</span>;
               if (p4ViewMode === "list") return (
-                <div key={icKey}
-                  onDoubleClick={() => { if (ic.appId !== "web-app") openApp(ic.appId); }}
+                <div key={icKey} onDoubleClick={handleOpen}
                   style={{ display: "flex", alignItems: "center", gap: 8, padding: "3px 12px", cursor: "pointer", borderRadius: 2, fontSize: 12 }}
                   onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.07)"; }}
                   onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}>
-                  <span style={{ fontSize: 16 }}>{ic.iconEmoji ?? "🖥️"}</span>
+                  {icSmall}
                   <span style={{ color: "rgba(255,255,255,0.85)" }}>{icLabel}</span>
+                  <span style={{ color: "rgba(255,255,255,0.35)", fontSize: 10, marginLeft: "auto" }}>Shortcut</span>
                 </div>
               );
               if (p4ViewMode === "details") return (
-                <div key={icKey}
-                  onDoubleClick={() => { if (ic.appId !== "web-app") openApp(ic.appId); }}
+                <div key={icKey} onDoubleClick={handleOpen}
                   style={{ display: "grid", gridTemplateColumns: "1fr 120px 80px 120px", gap: 0, alignItems: "center", padding: "3px 12px", cursor: "pointer", fontSize: 12, borderBottom: "1px solid rgba(255,255,255,0.04)" }}
                   onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.07)"; }}
                   onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}>
-                  <span style={{ display: "flex", alignItems: "center", gap: 7, color: "rgba(255,255,255,0.85)" }}><span style={{ fontSize: 15 }}>{ic.iconEmoji ?? "🖥️"}</span>{icLabel}</span>
+                  <span style={{ display: "flex", alignItems: "center", gap: 7, color: "rgba(255,255,255,0.85)" }}>{icSmall}{icLabel}</span>
                   <span style={{ color: "rgba(255,255,255,0.4)", fontSize: 11 }}>—</span>
                   <span style={{ color: "rgba(255,255,255,0.4)", fontSize: 11 }}>Shortcut</span>
                   <span style={{ color: "rgba(255,255,255,0.4)", fontSize: 11 }}>—</span>
                 </div>
               );
               return (
-                <div key={icKey}
-                  onDoubleClick={() => { if (ic.appId !== "web-app") openApp(ic.appId); }}
+                <div key={icKey} onDoubleClick={handleOpen}
                   style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 5, width: p4IconSize === "large" ? 90 : p4IconSize === "small" ? 60 : 76, cursor: "pointer", padding: 6, borderRadius: 2 }}
                   onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.08)"; }}
                   onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}>
-                  <div style={{ fontSize: iconPx }}>{ic.iconEmoji ?? "🖥️"}</div>
+                  {icImg}
                   <div style={{ fontSize: 11, color: "rgba(255,255,255,0.8)", textAlign: "center", wordBreak: "break-word", lineHeight: 1.3 }}>{icLabel}</div>
                 </div>
               );
@@ -7057,37 +7066,97 @@ function ZipViewerApp({ fileId }: { fileId?: string }) {
 }
 
 // ---------- ISO Viewer ----------
-function IsoViewerApp({ fileId }: { fileId?: string }) {
+function IsoViewerApp({ fileId, startUpgrade, systemVersion }: { fileId?: string; startUpgrade?: (target: SystemVersion) => void; systemVersion?: SystemVersion }) {
   const file = fileId ? loadFiles().find(f => f.id === fileId) : null;
   const name = file?.name?.trim().toLowerCase() ?? "";
   const isLegacy = name === "pueios2-plus.iso" || name === "pueios2plus.iso";
   const isPueiOS3 = name === "pueios3.iso";
+  const isPueiOS4 = name === "pueios4.iso";
+  const targetVersion: SystemVersion | null = isPueiOS3 ? "PueiOS 3" : isPueiOS4 ? "PueiOS 4" : null;
+  const [phase, setPhase] = useState<"idle" | "confirm" | "installing" | "done">("idle");
+  const [progress, setProgress] = useState(0);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  useEffect(() => () => { if (timerRef.current) clearInterval(timerRef.current); }, []);
+
+  const beginInstall = () => {
+    if (!targetVersion || !startUpgrade) return;
+    setPhase("installing");
+    setProgress(0);
+    const start = Date.now();
+    const dur = 12000;
+    timerRef.current = setInterval(() => {
+      const pct = Math.min(100, ((Date.now() - start) / dur) * 100);
+      setProgress(pct);
+      if (pct >= 100) {
+        clearInterval(timerRef.current!);
+        setPhase("done");
+        setTimeout(() => startUpgrade(targetVersion), 800);
+      }
+    }, 100);
+  };
+
   return (
-    <div className="flex flex-col items-center justify-center h-full p-8 text-center gap-4">
-      <div className="text-5xl">💿</div>
-      <div className="font-bold text-lg">{file?.name ?? "ISO Image"}</div>
+    <div className="flex flex-col items-center justify-center h-full p-8 text-center gap-5">
+      <div style={{ fontSize: 56 }}>💿</div>
+      <div style={{ fontWeight: 700, fontSize: 18 }}>{file?.name ?? "ISO Image"}</div>
+
       {isLegacy && (
         <div className="aero-glass-light rounded-xl p-5 max-w-sm space-y-3">
-          <div className="text-2xl">⛔</div>
-          <div className="font-semibold text-base">End of Support</div>
-          <div className="text-sm opacity-70">
-            This version of PueiOS has reached end of support and can no longer be installed.
-            Please download <strong>pueios3.iso</strong> from the Puei Updater app to upgrade.
+          <div style={{ fontSize: 28 }}>⛔</div>
+          <div style={{ fontWeight: 600 }}>End of Support</div>
+          <div className="text-sm opacity-70">This version of PueiOS is no longer supported and cannot be installed.</div>
+        </div>
+      )}
+
+      {targetVersion && phase === "idle" && (
+        <div className="aero-glass-light rounded-xl p-6 max-w-sm space-y-4">
+          <div style={{ fontSize: 28 }}>📦</div>
+          <div style={{ fontWeight: 600, fontSize: 15 }}>{targetVersion} Installation Image</div>
+          <div className="text-sm opacity-70">Ready to install. This will upgrade your system to <strong>{targetVersion}</strong>.</div>
+          <button onClick={() => setPhase("confirm")}
+            className="aero-button rounded-lg px-8 py-2 font-semibold text-sm"
+            style={{ background: "var(--accent)", color: "white", border: "none" }}>
+            Install {targetVersion}
+          </button>
+        </div>
+      )}
+
+      {targetVersion && phase === "confirm" && (
+        <div className="aero-glass-light rounded-xl p-6 max-w-sm space-y-4">
+          <div style={{ fontSize: 28 }}>⚠️</div>
+          <div style={{ fontWeight: 600 }}>Are you sure?</div>
+          <div className="text-sm opacity-70">Your files and settings will be kept. The system will restart after installation.</div>
+          <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
+            <button onClick={() => setPhase("idle")} className="aero-button rounded px-5 py-2 text-sm">Cancel</button>
+            <button onClick={beginInstall} className="aero-button rounded px-5 py-2 text-sm font-semibold"
+              style={{ background: "var(--accent)", color: "white", border: "none" }}>
+              Confirm &amp; Install
+            </button>
           </div>
         </div>
       )}
-      {isPueiOS3 && (
-        <div className="aero-glass-light rounded-xl p-5 max-w-sm space-y-2">
-          <div className="text-2xl">✅</div>
-          <div className="font-semibold text-base">PueiOS 3 Installation Image</div>
-          <div className="text-sm opacity-70">
-            Open <strong>Puei Updater</strong> from your desktop and drag this ISO into the install zone to upgrade.
+
+      {targetVersion && phase === "installing" && (
+        <div className="aero-glass-light rounded-xl p-6 max-w-sm space-y-4 w-full" style={{ maxWidth: 340 }}>
+          <div style={{ fontWeight: 600 }}>Installing {targetVersion}…</div>
+          <div style={{ background: "rgba(0,0,0,0.2)", borderRadius: 6, height: 10, overflow: "hidden" }}>
+            <div style={{ height: "100%", width: `${progress}%`, background: "var(--accent)", borderRadius: 6, transition: "width 0.1s linear" }} />
           </div>
+          <div className="text-sm opacity-60">{Math.round(progress)}% — Do not close this window</div>
         </div>
       )}
-      {!isLegacy && !isPueiOS3 && (
+
+      {targetVersion && phase === "done" && (
+        <div className="aero-glass-light rounded-xl p-6 max-w-sm space-y-3">
+          <div style={{ fontSize: 32 }}>✅</div>
+          <div style={{ fontWeight: 600 }}>Installation complete!</div>
+          <div className="text-sm opacity-70">Restarting into {targetVersion}…</div>
+        </div>
+      )}
+
+      {!isLegacy && !targetVersion && (
         <div className="aero-glass-light rounded-xl p-5 max-w-sm">
-          <div className="text-sm opacity-70">This ISO cannot be mounted in PueiOS.</div>
+          <div className="text-sm opacity-70">This ISO cannot be installed on this system.</div>
         </div>
       )}
     </div>
