@@ -187,7 +187,8 @@ export function AppWindow({
             >✕</button>
           </div>
         </div>
-      ) : (
+      ) : systemVersion === "PueiOS 4" ? (
+        /* PueiOS 4 — flat modern titlebar */
         <div
           className="aero-titlebar flex items-center justify-between select-none"
           onPointerDown={onTitleDown}
@@ -211,38 +212,70 @@ export function AppWindow({
           }}
         >
           <div className="flex items-center gap-2 text-sm font-semibold truncate"
-            style={{
-              color: fullWindowTransparency ? (focused ? "var(--titlebar-text)" : "rgba(150,170,210,0.9)") : "white",
-              textShadow: fullWindowTransparency ? "none" : "0 1px 3px rgba(0,0,0,0.45)",
-              letterSpacing: 0.2,
-            }}>
+            style={{ color: fullWindowTransparency ? (focused ? "var(--titlebar-text)" : "rgba(150,170,210,0.9)") : "white", textShadow: fullWindowTransparency ? "none" : "0 1px 3px rgba(0,0,0,0.45)", letterSpacing: 0.2 }}>
             <span>{win.title}</span>
           </div>
           <div className="flex items-center" style={{ alignSelf: "stretch", gap: 0, marginLeft: 8 }}>
             <button title="Minimize" onClick={(e) => { e.stopPropagation(); onMinimize(); }}
               style={{ width: 44, alignSelf: "stretch", background: "transparent", border: "none", borderLeft: "1px solid rgba(255,255,255,0.08)", color: fullWindowTransparency ? "rgba(120,140,180,0.9)" : "rgba(255,255,255,0.85)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "background 0.1s" }}
               onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.15)")}
-              onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
-            >
+              onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
               <svg width="10" height="2" viewBox="0 0 10 2"><rect width="10" height="2" rx="1" fill="currentColor"/></svg>
             </button>
             <button title={win.maximized ? "Restore" : "Maximize"} onClick={(e) => { e.stopPropagation(); onMaximize(); }}
               style={{ width: 44, alignSelf: "stretch", background: "transparent", border: "none", borderLeft: "1px solid rgba(255,255,255,0.08)", color: fullWindowTransparency ? "rgba(120,140,180,0.9)" : "rgba(255,255,255,0.85)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "background 0.1s" }}
               onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.15)")}
-              onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
-            >
+              onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
               {win.maximized
                 ? <svg width="11" height="11" viewBox="0 0 11 11"><rect x="2" y="0" width="9" height="9" rx="1.5" fill="none" stroke="currentColor" strokeWidth="1.5"/><rect x="0" y="2" width="9" height="9" rx="1.5" fill="none" stroke="currentColor" strokeWidth="1.5"/></svg>
-                : <svg width="11" height="11" viewBox="0 0 11 11"><rect x="0.75" y="0.75" width="9.5" height="9.5" rx="1.5" fill="none" stroke="currentColor" strokeWidth="1.5"/></svg>
-              }
+                : <svg width="11" height="11" viewBox="0 0 11 11"><rect x="0.75" y="0.75" width="9.5" height="9.5" rx="1.5" fill="none" stroke="currentColor" strokeWidth="1.5"/></svg>}
             </button>
             <button title="Close" onClick={(e) => { e.stopPropagation(); onClose(); }}
               style={{ width: 48, alignSelf: "stretch", background: "transparent", border: "none", borderLeft: "1px solid rgba(255,255,255,0.08)", color: fullWindowTransparency ? "rgba(120,140,180,0.9)" : "rgba(255,255,255,0.85)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "background 0.15s, color 0.1s", borderRadius: "0 8px 0 0" }}
               onMouseEnter={e => { e.currentTarget.style.background = "#e81123"; e.currentTarget.style.color = "white"; }}
-              onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = fullWindowTransparency ? "rgba(120,140,180,0.9)" : "rgba(255,255,255,0.85)"; }}
-            >
+              onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = fullWindowTransparency ? "rgba(120,140,180,0.9)" : "rgba(255,255,255,0.85)"; }}>
               <svg width="10" height="10" viewBox="0 0 10 10"><line x1="1" y1="1" x2="9" y2="9" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/><line x1="9" y1="1" x2="1" y2="9" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>
             </button>
+          </div>
+        </div>
+      ) : (
+        /* PueiOS 2 / 2+ / 3 — classic Win7 aero glass titlebar */
+        <div
+          className="aero-titlebar flex items-center justify-between select-none"
+          onPointerDown={onTitleDown}
+          onPointerMove={onTitleMove}
+          onPointerUp={onTitleUp}
+          onDoubleClick={onMaximize}
+          style={{
+            cursor: win.maximized ? "default" : "move",
+            touchAction: "none",
+            minHeight: 32,
+            padding: "0 4px 0 10px",
+            background: fullWindowTransparency
+              ? focused
+                ? "linear-gradient(180deg, rgba(255,255,255,0.62) 0%, var(--glass-strong) 28%, var(--glass) 60%, transparent 100%), var(--titlebar)"
+                : "linear-gradient(180deg, rgba(255,255,255,0.3) 0%, var(--glass) 50%, transparent 100%), var(--titlebar)"
+              : focused
+                ? "linear-gradient(180deg, var(--accent-2) 0%, var(--accent) 100%)"
+                : "linear-gradient(180deg, oklch(0.55 0.08 var(--accent-h,220)) 0%, oklch(0.42 0.10 var(--accent-h,220)) 100%)",
+            borderBottom: "1px solid var(--border)",
+            boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9), inset 0 2px 6px rgba(255,255,255,0.3)",
+          }}
+        >
+          <div className="flex items-center gap-2 text-sm font-semibold truncate"
+            style={{ color: fullWindowTransparency ? (focused ? "var(--titlebar-text)" : "rgba(80,80,110,0.8)") : "white", textShadow: fullWindowTransparency ? "0 1px 2px rgba(255,255,255,0.7)" : "0 1px 2px rgba(0,0,0,0.4)" }}>
+            <span>{win.title}</span>
+          </div>
+          <div className="flex items-center" style={{ gap: 2, paddingLeft: 4 }}>
+            <button title="Minimize" onClick={(e) => { e.stopPropagation(); onMinimize(); }}
+              style={{ width: 26, height: 20, fontSize: 12, fontWeight: "bold", background: "linear-gradient(180deg, rgba(255,255,255,0.85) 0%, rgba(205,225,255,0.75) 45%, rgba(170,210,255,0.65) 50%, rgba(200,225,255,0.72) 100%)", border: "1px solid rgba(100,150,220,0.45)", borderRadius: 4, boxShadow: "inset 0 1px 0 rgba(255,255,255,0.95), 0 1px 2px rgba(0,0,0,0.1)", color: "#444", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1 }}
+            >─</button>
+            <button title={win.maximized ? "Restore" : "Maximize"} onClick={(e) => { e.stopPropagation(); onMaximize(); }}
+              style={{ width: 26, height: 20, fontSize: 10, fontWeight: "bold", background: "linear-gradient(180deg, rgba(255,255,255,0.85) 0%, rgba(205,225,255,0.75) 45%, rgba(170,210,255,0.65) 50%, rgba(200,225,255,0.72) 100%)", border: "1px solid rgba(100,150,220,0.45)", borderRadius: 4, boxShadow: "inset 0 1px 0 rgba(255,255,255,0.95), 0 1px 2px rgba(0,0,0,0.1)", color: "#444", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+            >{win.maximized ? "❐" : "☐"}</button>
+            <button title="Close" onClick={(e) => { e.stopPropagation(); onClose(); }}
+              style={{ width: 28, height: 20, fontSize: 11, fontWeight: "bold", background: "linear-gradient(180deg, #f77 0%, #e44 45%, #c22 50%, #d44 100%)", border: "1px solid rgba(160,30,30,0.6)", borderRadius: 4, boxShadow: "inset 0 1px 0 rgba(255,200,200,0.8), 0 1px 3px rgba(0,0,0,0.2)", color: "white", textShadow: "0 1px 1px rgba(0,0,0,0.4)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+            >✕</button>
           </div>
         </div>
       )}
