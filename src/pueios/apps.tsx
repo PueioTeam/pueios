@@ -3834,6 +3834,7 @@ function FileExplorerApp({ openApp, icons, openFolder, currentUser, users, setWa
       : p4Folder === "downloads" ? files.filter(f => f.folder === SYS_FOLDER_DOWNLOADS)
       : p4Folder === "desktop" ? files.filter(f => !f.folder)
       : allFiles;
+    const p4DesktopIcons = p4Folder === "desktop" ? icons : [];
     const sidebarItems: [string, string, typeof p4Folder][] = [
       ["⭐", "Quick Access", "home"],
       ["📁", "Documents", "documents"],
@@ -3929,18 +3930,6 @@ function FileExplorerApp({ openApp, icons, openFolder, currentUser, users, setWa
                   ))}
                 </div>
               </div>
-              <div style={{ width: 1, height: 36, background: "#444", margin: "0 6px" }} />
-              <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-                <div style={{ fontSize: 10, color: "rgba(255,255,255,0.4)", marginBottom: 2 }}>Sort by</div>
-                <div style={{ display: "flex", gap: 3 }}>
-                  {["Name", "Date", "Type"].map(s => (
-                    <button key={s}
-                      style={{ padding: "3px 10px", fontSize: 11, borderRadius: 2, cursor: "pointer", border: "1px solid #444", background: "rgba(255,255,255,0.06)", color: "white" }}>
-                      {s}
-                    </button>
-                  ))}
-                </div>
-              </div>
             </>)}
           </div>
         </div>
@@ -3979,7 +3968,7 @@ function FileExplorerApp({ openApp, icons, openFolder, currentUser, users, setWa
             flexWrap: p4ViewMode === "icons" ? "wrap" : undefined,
             alignContent: "flex-start", gap: p4ViewMode === "icons" ? 16 : undefined }}
             onClick={(e) => { if (e.target === e.currentTarget) setP4Selected(new Set()); }}>
-            {p4Files.length === 0 && (
+            {p4Files.length === 0 && p4DesktopIcons.length === 0 && (
               <div style={{ width: "100%", textAlign: "center", color: "rgba(255,255,255,0.3)", marginTop: 40, fontSize: 13 }}>This folder is empty</div>
             )}
             {/* Details header */}
@@ -3995,7 +3984,7 @@ function FileExplorerApp({ openApp, icons, openFolder, currentUser, users, setWa
               if (p4ViewMode === "list") return (
                 <div key={f.id}
                   onClick={(e) => { e.stopPropagation(); p4ToggleSelect(f.id, e.ctrlKey || e.metaKey); }}
-                  onDoubleClick={() => { if (f.type === "text") openApp("notepad", f.id); else if (f.type === "image") openApp("puei-paint", f.id); }}
+                  onDoubleClick={() => { const low = f.name.trim().toLowerCase(); if (low.endsWith(".exe") && low.includes("pueigame")) { openApp("puei-game"); return; } if (f.type === "text") openApp("notepad", f.id); else if (f.type === "image") openApp("puei-paint", f.id); }}
                   style={{ display: "flex", alignItems: "center", gap: 8, padding: "3px 12px", cursor: "pointer", borderRadius: 2, fontSize: 12,
                     background: sel ? "rgba(0,120,212,0.35)" : "transparent",
                     outline: sel ? "1px solid rgba(0,120,212,0.5)" : "none" }}
@@ -4008,7 +3997,7 @@ function FileExplorerApp({ openApp, icons, openFolder, currentUser, users, setWa
               if (p4ViewMode === "details") return (
                 <div key={f.id}
                   onClick={(e) => { e.stopPropagation(); p4ToggleSelect(f.id, e.ctrlKey || e.metaKey); }}
-                  onDoubleClick={() => { if (f.type === "text") openApp("notepad", f.id); else if (f.type === "image") openApp("puei-paint", f.id); }}
+                  onDoubleClick={() => { const low = f.name.trim().toLowerCase(); if (low.endsWith(".exe") && low.includes("pueigame")) { openApp("puei-game"); return; } if (f.type === "text") openApp("notepad", f.id); else if (f.type === "image") openApp("puei-paint", f.id); }}
                   style={{ display: "grid", gridTemplateColumns: "1fr 120px 80px 120px", gap: 0, alignItems: "center", padding: "3px 12px", cursor: "pointer", fontSize: 12, borderBottom: "1px solid rgba(255,255,255,0.04)",
                     background: sel ? "rgba(0,120,212,0.35)" : "transparent" }}
                   onMouseEnter={e => { if (!sel) (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.07)"; }}
@@ -4023,7 +4012,7 @@ function FileExplorerApp({ openApp, icons, openFolder, currentUser, users, setWa
               return (
                 <div key={f.id}
                   onClick={(e) => { e.stopPropagation(); p4ToggleSelect(f.id, e.ctrlKey || e.metaKey); }}
-                  onDoubleClick={() => { if (f.type === "text") openApp("notepad", f.id); else if (f.type === "image") openApp("puei-paint", f.id); }}
+                  onDoubleClick={() => { const low = f.name.trim().toLowerCase(); if (low.endsWith(".exe") && low.includes("pueigame")) { openApp("puei-game"); return; } if (f.type === "text") openApp("notepad", f.id); else if (f.type === "image") openApp("puei-paint", f.id); }}
                   style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 5, width: p4IconSize === "large" ? 90 : p4IconSize === "small" ? 60 : 76, cursor: "pointer", padding: 6, borderRadius: 2,
                     background: sel ? "rgba(0,120,212,0.35)" : "transparent",
                     outline: sel ? "1px solid rgba(0,120,212,0.7)" : "none" }}
@@ -4036,11 +4025,48 @@ function FileExplorerApp({ openApp, icons, openFolder, currentUser, users, setWa
                 </div>
               );
             })}
+            {p4DesktopIcons.map(ic => {
+              const iconPx = p4IconSize === "small" ? 24 : p4IconSize === "large" ? 52 : 36;
+              const icKey = ic.id;
+              const icLabel = ic.label;
+              if (p4ViewMode === "list") return (
+                <div key={icKey}
+                  onDoubleClick={() => { if (ic.appId !== "web-app") openApp(ic.appId); }}
+                  style={{ display: "flex", alignItems: "center", gap: 8, padding: "3px 12px", cursor: "pointer", borderRadius: 2, fontSize: 12 }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.07)"; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}>
+                  <span style={{ fontSize: 16 }}>{ic.iconEmoji ?? "🖥️"}</span>
+                  <span style={{ color: "rgba(255,255,255,0.85)" }}>{icLabel}</span>
+                </div>
+              );
+              if (p4ViewMode === "details") return (
+                <div key={icKey}
+                  onDoubleClick={() => { if (ic.appId !== "web-app") openApp(ic.appId); }}
+                  style={{ display: "grid", gridTemplateColumns: "1fr 120px 80px 120px", gap: 0, alignItems: "center", padding: "3px 12px", cursor: "pointer", fontSize: 12, borderBottom: "1px solid rgba(255,255,255,0.04)" }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.07)"; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}>
+                  <span style={{ display: "flex", alignItems: "center", gap: 7, color: "rgba(255,255,255,0.85)" }}><span style={{ fontSize: 15 }}>{ic.iconEmoji ?? "🖥️"}</span>{icLabel}</span>
+                  <span style={{ color: "rgba(255,255,255,0.4)", fontSize: 11 }}>—</span>
+                  <span style={{ color: "rgba(255,255,255,0.4)", fontSize: 11 }}>Shortcut</span>
+                  <span style={{ color: "rgba(255,255,255,0.4)", fontSize: 11 }}>—</span>
+                </div>
+              );
+              return (
+                <div key={icKey}
+                  onDoubleClick={() => { if (ic.appId !== "web-app") openApp(ic.appId); }}
+                  style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 5, width: p4IconSize === "large" ? 90 : p4IconSize === "small" ? 60 : 76, cursor: "pointer", padding: 6, borderRadius: 2 }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.08)"; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}>
+                  <div style={{ fontSize: iconPx }}>{ic.iconEmoji ?? "🖥️"}</div>
+                  <div style={{ fontSize: 11, color: "rgba(255,255,255,0.8)", textAlign: "center", wordBreak: "break-word", lineHeight: 1.3 }}>{icLabel}</div>
+                </div>
+              );
+            })}
           </div>
         </div>
         {/* Status bar */}
         <div style={{ background: "#1a1a1a", borderTop: "1px solid #333", padding: "3px 14px", fontSize: 11, color: "rgba(255,255,255,0.4)" }}>
-          {p4Selected.size > 0 ? `${p4Selected.size} item${p4Selected.size !== 1 ? "s" : ""} selected` : `${p4Files.length} item${p4Files.length !== 1 ? "s" : ""}`}
+          {p4Selected.size > 0 ? `${p4Selected.size} item${p4Selected.size !== 1 ? "s" : ""} selected` : `${p4Files.length + p4DesktopIcons.length} item${p4Files.length + p4DesktopIcons.length !== 1 ? "s" : ""}`}
         </div>
       </div>
     );
