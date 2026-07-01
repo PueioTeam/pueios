@@ -2217,7 +2217,7 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
 
   return (
     <div
-      className={`fixed inset-0 ${isP3 ? "win7-aero" : ""} ${typeof theme.wallpaper === "string" && (theme.wallpaper.startsWith("custom:") || theme.wallpaper.startsWith("data:")) ? "" : `wallpaper-${theme.wallpaper}`}`}
+      className={`fixed inset-0 ${isP3 ? "win7-aero" : ""} ${isP4 || typeof theme.wallpaper === "string" && (theme.wallpaper.startsWith("custom:") || theme.wallpaper.startsWith("data:")) ? "" : `wallpaper-${theme.wallpaper}`}`}
       style={{ overflow: "hidden", ...wallpaperStyle }}
       onMouseDown={() => { setCtxMenu(null); setStartOpen(false); setShowCalendar(false); setSelectedIcon(null); setShowVolume(false); setShowNetwork(false); setSearchOpen(false); setSearchQuery(""); }}
       onContextMenu={(e) => { e.preventDefault(); setCtxMenu({ x: e.clientX, y: e.clientY, items: desktopCtx() }); }}
