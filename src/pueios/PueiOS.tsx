@@ -2200,7 +2200,7 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
       } catch {}
     }
     if (systemVersion === "PueiOS 4" && !theme.wallpaper.startsWith("data:") && !theme.wallpaper.startsWith("custom:")) {
-      return { backgroundImage: "url(/puei.png)", backgroundSize: "cover", backgroundPosition: "center" };
+      return { backgroundImage: "url(/puei.jpg)", backgroundSize: "cover", backgroundPosition: "center" };
     }
     return {};
   })();
@@ -2522,71 +2522,80 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
         );
       })()}
 
-      {/* PueiOS 4 Start Menu — Win10 style dark panel with tiles */}
+      {/* PueiOS 4 Start Menu — Win10 style */}
       {startOpen && isP4 && (
         <div className="fixed bottom-12 left-0 z-[9000] flex overflow-hidden"
-          style={{ width: 680, height: 520, background: "#1a1a1a", animation: "fade-scale 0.15s ease-out", boxShadow: "0 -4px 40px rgba(0,0,0,0.7)" }}
+          style={{ width: 660, height: 540, background: "#1e1e1e", animation: "fade-scale 0.15s ease-out", boxShadow: "4px -4px 32px rgba(0,0,0,0.8)" }}
           onMouseDown={(e) => e.stopPropagation()}>
-          {/* LEFT column */}
-          <div style={{ width: 220, display: "flex", flexDirection: "column", background: "#202020", borderRight: "1px solid #333" }}>
-            {/* User info */}
-            <div style={{ padding: "16px 16px 12px", display: "flex", alignItems: "center", gap: 10, borderBottom: "1px solid #333" }}>
-              <div style={{ width: 36, height: 36, borderRadius: "50%", background: avatarBg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, overflow: "hidden", flexShrink: 0 }}>
+
+          {/* Far-left narrow rail — icon-only like Win10 */}
+          <div style={{ width: 48, display: "flex", flexDirection: "column", alignItems: "center", background: "#171717", borderRight: "1px solid #2a2a2a", paddingTop: 8, gap: 2 }}>
+            {/* Hamburger */}
+            <div style={{ width: 48, height: 44, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, cursor: "pointer", color: "rgba(255,255,255,0.7)" }}>
+              <div style={{ width: 16, height: 2, background: "currentColor", borderRadius: 1 }} />
+              <div style={{ width: 16, height: 2, background: "currentColor", borderRadius: 1 }} />
+              <div style={{ width: 16, height: 2, background: "currentColor", borderRadius: 1 }} />
+            </div>
+            <div style={{ flex: 1 }} />
+            {/* Settings icon */}
+            <button onClick={() => { openApp("settings"); setStartOpen(false); }} title="Settings"
+              style={{ width: 48, height: 44, display: "flex", alignItems: "center", justifyContent: "center", background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.6)", fontSize: 16 }}
+              onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.08)")}
+              onMouseLeave={e => (e.currentTarget.style.background = "none")}>⚙</button>
+            {/* Power icon */}
+            <button onClick={() => { blip("shutdown"); setStartOpen(false); setPhase("shutdown"); setWindows([]); }} title="Power"
+              style={{ width: 48, height: 44, display: "flex", alignItems: "center", justifyContent: "center", background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.6)", fontSize: 16, marginBottom: 4 }}
+              onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.08)")}
+              onMouseLeave={e => (e.currentTarget.style.background = "none")}>⏻</button>
+          </div>
+
+          {/* Middle — app list */}
+          <div style={{ width: 220, display: "flex", flexDirection: "column", borderRight: "1px solid #2a2a2a" }}>
+            {/* User strip */}
+            <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "14px 14px 10px", borderBottom: "1px solid #2a2a2a" }}>
+              <div style={{ width: 32, height: 32, borderRadius: "50%", background: avatarBg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, overflow: "hidden", flexShrink: 0 }}>
                 {currentAvatar?.startsWith("data:") ? <img src={currentAvatar} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : (currentAvatar || "👤")}
               </div>
-              <div style={{ color: "white", fontSize: 13, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{currentUser}</div>
+              <span style={{ color: "white", fontSize: 13, fontWeight: 400, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{currentUser}</span>
             </div>
-            {/* Most used apps */}
-            <div style={{ padding: "8px 0", flex: 1, overflowY: "auto" }}>
-              <div style={{ fontSize: 10, color: "rgba(255,255,255,0.4)", padding: "4px 16px 6px", textTransform: "uppercase", letterSpacing: 1 }}>Most used</div>
+            {/* Apps list */}
+            <div style={{ flex: 1, overflowY: "auto", padding: "6px 0" }}>
+              <div style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", padding: "6px 14px 4px", textTransform: "uppercase", letterSpacing: 1 }}>Most used</div>
               {[...new Set([
                 ...icons.filter(i => !i.fileId && !i.webUrl && i.appId !== "folder" && i.appId !== "web-app" && i.appId !== "recycle-bin").map(i => i.appId),
                 "settings" as const,
-              ])].filter(id => id in APP_TITLES).slice(0, 6).map((id) => (
+              ])].filter(id => id in APP_TITLES).slice(0, 8).map((id) => (
                 <button key={id} onClick={() => { openApp(id); setStartOpen(false); }}
-                  style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "7px 16px", background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.85)", fontSize: 13, textAlign: "left" }}
-                  onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.08)")}
+                  style={{ width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "6px 14px", background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.82)", fontSize: 13, textAlign: "left" }}
+                  onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.07)")}
                   onMouseLeave={e => (e.currentTarget.style.background = "none")}>
-                  {aicon(id, 22)}
-                  <span style={{ fontWeight: 400 }}>{APP_TITLES[id]}</span>
+                  {aicon(id, 20)}
+                  <span>{APP_TITLES[id]}</span>
                 </button>
               ))}
             </div>
-            {/* Bottom: Settings + Power */}
-            <div style={{ borderTop: "1px solid #333" }}>
-              <button onClick={() => { openApp("settings"); setStartOpen(false); }}
-                style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "10px 16px", background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.7)", fontSize: 13, textAlign: "left" }}
-                onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.08)")}
-                onMouseLeave={e => (e.currentTarget.style.background = "none")}>
-                {aicon("settings", 20)} Settings
-              </button>
-              <button onClick={() => { blip("shutdown"); setStartOpen(false); setPhase("shutdown"); setWindows([]); }}
-                style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "10px 16px", background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.7)", fontSize: 13, textAlign: "left" }}
-                onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.08)")}
-                onMouseLeave={e => (e.currentTarget.style.background = "none")}>
-                <span style={{ fontSize: 18, width: 22, textAlign: "center" }}>⏻</span> Power
-              </button>
-            </div>
           </div>
-          {/* RIGHT tiles panel */}
-          <div style={{ flex: 1, padding: "16px 14px", overflowY: "auto" }}>
-            <div style={{ fontSize: 10, color: "rgba(255,255,255,0.4)", marginBottom: 12, textTransform: "uppercase", letterSpacing: 1 }}>Pinned</div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 4 }}>
+
+          {/* Right — tiles */}
+          <div style={{ flex: 1, padding: "14px 12px", overflowY: "auto" }}>
+            <div style={{ fontSize: 10, color: "rgba(255,255,255,0.4)", marginBottom: 10, textTransform: "uppercase", letterSpacing: 1 }}>Pinned</div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
               {([
-                ["file-explorer", "File Explorer", "#1a1a2e"],
-                ["app-store", "App Store", "#16213e"],
-                ["pueinet", "PueiWeb", "#0f3460"],
-                ["puei-cloud-chat", "PueiCloudChat", "#1a2e1a"],
-                ["puei-social", "PueiSocial", "#2e1a1a"],
-                ["calculator", "Calculator", "#1a2e2e"],
-                ["notepad", "Notepad", "#2e2a1a"],
-              ] as [AppId, string, string][]).map(([id, label, bg]) => (
+                ["file-explorer", "File Explorer", "#003e6e", "#005a9e"],
+                ["pueinet",       "PueiWeb",        "#0f2d5e", "#0e4bbf"],
+                ["app-store",     "App Store",      "#1a3a2a", "#1f6b3a"],
+                ["puei-social",   "PueiSocial",     "#3a1a2a", "#7b2551"],
+                ["puei-cloud-chat","PueiCloudChat", "#1a2a3a", "#1e5a8a"],
+                ["calculator",    "Calculator",     "#1a2e2e", "#0e6b5e"],
+                ["notepad",       "Notepad",        "#2e2a14", "#7a6020"],
+                ["puei-game",     "PueiGAME",       "#0a2e0a", "#1a6a1a"],
+              ] as [AppId, string, string, string][]).map(([id, label, bg, accent]) => (
                 <button key={id} onClick={() => { openApp(id); setStartOpen(false); }}
-                  style={{ height: 90, display: "flex", flexDirection: "column", alignItems: "flex-start", justifyContent: "flex-end", padding: "8px 10px", background: bg, border: "none", cursor: "pointer", color: "white", fontSize: 11, fontWeight: 400, gap: 4 }}
-                  onMouseEnter={e => { e.currentTarget.style.filter = "brightness(1.3)"; }}
+                  style={{ height: 80, display: "flex", flexDirection: "column", alignItems: "flex-start", justifyContent: "space-between", padding: "8px 10px 7px", background: `linear-gradient(135deg, ${bg}, ${accent})`, border: "none", cursor: "pointer", color: "white", fontSize: 11, fontWeight: 400, position: "relative", overflow: "hidden" }}
+                  onMouseEnter={e => { e.currentTarget.style.filter = "brightness(1.25)"; }}
                   onMouseLeave={e => { e.currentTarget.style.filter = ""; }}>
-                  <div style={{ marginBottom: 4 }}>{aicon(id, 28)}</div>
-                  <span style={{ lineHeight: 1.2, textAlign: "left" }}>{label}</span>
+                  <div>{aicon(id, 26)}</div>
+                  <span style={{ lineHeight: 1.2 }}>{label}</span>
                 </button>
               ))}
             </div>

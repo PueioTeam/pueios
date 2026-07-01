@@ -1865,6 +1865,7 @@ function PueiGamesPortalPage({ currentUser }: { currentUser: string }) {
           content: "PueiGAME Installer v1.0 — Run this file to install PueiGAME.",
           updatedAt: Date.now(), owner: currentUser, folder: SYS_FOLDER_DOWNLOADS,
         });
+        window.dispatchEvent(new Event("pueios-files-changed"));
         blip("notify");
       }
     }, 200);
