@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useRef, useState } from "react";
+﻿import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { AppId, Theme, User, WallpaperId, SavedFile, ChatMessage, DesktopIcon, SocialPost, SocialComment, SystemVersion, RecycleEntry, MailMessage, MailAttachment, MailFolderId, DownloadEntry, DeletedShortcut } from "./state";
 import {
   blip, loadFiles, upsertFile, deleteFile, getFile, appendChat, loadChat, deleteChatBetween,
@@ -483,6 +483,9 @@ function SettingsApp({ theme, setTheme, wallpaper, setWallpaper, openApp, curren
               </label>
               <label className="flex items-center gap-2 text-sm">
                 <input type="checkbox" checked={theme.animations} onChange={(e) => setTheme({ ...theme, animations: e.target.checked })} /> Animations & motion
+              </label>
+              <label className="flex items-center gap-2 text-sm">
+                <input type="checkbox" checked={!!theme.fullWindowTransparency} onChange={(e) => setTheme({ ...theme, fullWindowTransparency: e.target.checked })} /> Full window transparency <span className="text-xs opacity-60">(glass effect on entire window)</span>
               </label>
             </div>
             <div className="mt-6">
@@ -3787,8 +3790,9 @@ function PueiCloudChatApp({ user, users, setUsers }: { user: string; users: User
 
 function FileExplorerApp({ openApp, icons, openFolder, currentUser, users, setWallpaper, systemVersion }: { openApp: (id: AppId, fileId?: string) => void; icons: DesktopIcon[]; openFolder: (id: string, title: string) => void; currentUser: string; users: User[]; setWallpaper?: (w: WallpaperId) => void; systemVersion?: SystemVersion }) {
   const [feDialog, , feConfirm] = useLocalDialog();
-  const myFiles = () => loadFiles().filter((f) => !f.owner || f.owner === currentUser);
-  const [files, setFiles] = useState<SavedFile[]>(() => myFiles());
+  const refreshFiles = useCallback(() => loadFiles().filter((f) => !f.owner || f.owner === currentUser), [currentUser]);
+  const [files, setFiles] = useState<SavedFile[]>(refreshFiles);
+  const reloadFiles = useCallback(() => setFiles(refreshFiles()), [refreshFiles]);
   const [folder, setFolder] = useState<"home" | "documents" | "pictures" | "downloads" | "apps" | "folders" | "puei-drive" | "recycle-bin">("home");
   const [openFolderId, setOpenFolderId] = useState<string | null>(null);
   const [dragFileId, setDragFileId] = useState<string | null>(null);
@@ -3806,7 +3810,7 @@ function FileExplorerApp({ openApp, icons, openFolder, currentUser, users, setWa
       return prev.size === 1 && prev.has(id) ? new Set() : new Set([id]);
     });
   };
-  const p4DeleteSelected = () => { p4Selected.forEach(id => { deleteFile(id); }); setFiles(myFiles()); setP4Selected(new Set()); blip("click"); };
+  const p4DeleteSelected = () => { p4Selected.forEach(id => { deleteFile(id); }); reloadFiles(); setP4Selected(new Set()); blip("click"); };
 
   const copyFile = (f: SavedFile) => setClipboard(f);
   const pasteFile = (targetFolder?: string) => {
@@ -3814,20 +3818,19 @@ function FileExplorerApp({ openApp, icons, openFolder, currentUser, users, setWa
     const copy: SavedFile = { ...clipboard, id: `${clipboard.id}-copy-${Date.now()}`, name: `${clipboard.name} (Copy)`, folder: targetFolder ?? clipboard.folder };
     const all = loadFiles();
     saveFiles([...all, copy]);
-    setFiles(myFiles());
+    reloadFiles();
     window.dispatchEvent(new Event("pueios-files-changed"));
     blip("notify");
   };
 
   useEffect(() => {
-    const fn = () => setFiles(myFiles());
-    window.addEventListener("pueios-files-changed", fn);
-    window.addEventListener("storage", fn);
+    window.addEventListener("pueios-files-changed", reloadFiles);
+    window.addEventListener("storage", reloadFiles);
     return () => {
-      window.removeEventListener("pueios-files-changed", fn);
-      window.removeEventListener("storage", fn);
+      window.removeEventListener("pueios-files-changed", reloadFiles);
+      window.removeEventListener("storage", reloadFiles);
     };
-  }, [currentUser]);
+  }, [reloadFiles]);
 
   const folders = [
     { id: "documents" as const, name: "Documents", icon: "📁" },
@@ -3856,7 +3859,7 @@ function FileExplorerApp({ openApp, icons, openFolder, currentUser, users, setWa
   const handleDrop = (folderId: string) => {
     if (!dragFileId) return;
     moveFile(dragFileId, folderId);
-    setFiles(myFiles());
+    reloadFiles();
     setDragFileId(null); setDropTarget(null);
     blip("notify");
   };
@@ -3910,12 +3913,12 @@ function FileExplorerApp({ openApp, icons, openFolder, currentUser, users, setWa
                       const newName = window.prompt("Rename to:", selFile.name);
                       if (newName && newName.trim() && newName.trim() !== selFile.name) {
                         upsertFile({ ...selFile, name: newName.trim() });
-                        setFiles(myFiles());
+                        reloadFiles();
                         window.dispatchEvent(new Event("pueios-files-changed"));
                       }
                     }}>✏️ Rename</button>
                   <button style={btnStyle(!selFile)} disabled={!selFile}
-                    onClick={() => { if (selFile) { const copy = { ...selFile, id: `${selFile.id}-copy-${Date.now()}`, name: `${selFile.name} (Copy)` }; upsertFile(copy); setFiles(myFiles()); window.dispatchEvent(new Event("pueios-files-changed")); blip("notify"); } }}>📋 Copy</button>
+                    onClick={() => { if (selFile) { const copy = { ...selFile, id: `${selFile.id}-copy-${Date.now()}`, name: `${selFile.name} (Copy)` }; upsertFile(copy); reloadFiles(); window.dispatchEvent(new Event("pueios-files-changed")); blip("notify"); } }}>📋 Copy</button>
                 </div>
                 <div style={{ width: 1, height: 36, background: "#444", margin: "0 6px" }} />
                 <button style={btnStyle(true)} disabled>✂️ Cut</button>
@@ -4149,7 +4152,7 @@ function FileExplorerApp({ openApp, icons, openFolder, currentUser, users, setWa
         {folder === "documents" && (
           <FileGrid files={textFiles} emptyHint="No saved documents. Open Notepad and click Save to create one."
             onOpen={(f) => openApp("notepad", f.id)}
-            onDelete={(id) => { deleteFile(id); setFiles(myFiles()); }}
+            onDelete={(id) => { deleteFile(id); reloadFiles(); }}
             onCopy={copyFile} onPaste={() => pasteFile()} hasCopied={!!clipboard}
             onDragStart={(id) => setDragFileId(id)}
             onDragEnd={() => { setDragFileId(null); setDropTarget(null); }} />
@@ -4157,7 +4160,7 @@ function FileExplorerApp({ openApp, icons, openFolder, currentUser, users, setWa
         {folder === "pictures" && (
           <FileGrid files={imgFiles} emptyHint="No saved pictures. Open Puei Paint 2 and click Save to create one."
             onOpen={(f) => openApp("puei-paint", f.id)}
-            onDelete={(id) => { deleteFile(id); setFiles(myFiles()); }}
+            onDelete={(id) => { deleteFile(id); reloadFiles(); }}
             onSetWallpaper={setWallpaper ? (f) => { setWallpaper(f.content); blip("notify"); } : undefined}
             onCopy={copyFile} onPaste={() => pasteFile(SYS_FOLDER_PICTURES)} hasCopied={!!clipboard}
             onDragStart={(id) => setDragFileId(id)}
@@ -4166,12 +4169,15 @@ function FileExplorerApp({ openApp, icons, openFolder, currentUser, users, setWa
         {folder === "downloads" && (
           <FileGrid files={downloadFiles} emptyHint="No downloads yet. Download from Puei Wallpapers or mail attachments."
             onOpen={(f) => {
-              if (f.name.trim().toLowerCase().endsWith(".iso") || f.name.trim().toLowerCase().endsWith(".zip")) { openApp(f.name.trim().toLowerCase().endsWith(".zip") ? "zip-viewer" : "iso-viewer", f.id); return; }
+              const low = f.name.trim().toLowerCase();
+              if (low.endsWith(".iso")) { openApp("iso-viewer", f.id); return; }
+              if (low.endsWith(".zip")) { openApp("zip-viewer", f.id); return; }
+              if (low.endsWith(".exe") && low.includes("pueigame")) { openApp("puei-game"); return; }
               if (f.type === "image") { openApp("puei-paint", f.id); return; }
               openApp("notepad", f.id);
             }}
-            onDelete={(id) => { deleteFile(id); setFiles(myFiles()); }}
-            onMoveToPictures={(f) => { moveFile(f.id, SYS_FOLDER_PICTURES); setFiles(myFiles()); blip("notify"); }}
+            onDelete={(id) => { deleteFile(id); reloadFiles(); }}
+            onMoveToPictures={(f) => { moveFile(f.id, SYS_FOLDER_PICTURES); reloadFiles(); blip("notify"); }}
             onCopy={copyFile} onPaste={() => pasteFile(SYS_FOLDER_DOWNLOADS)} hasCopied={!!clipboard}
             onDragStart={(id) => setDragFileId(id)}
             onDragEnd={() => { setDragFileId(null); setDropTarget(null); }} />
@@ -4188,7 +4194,7 @@ function FileExplorerApp({ openApp, icons, openFolder, currentUser, users, setWa
           </div>
         )}
         {folder === "puei-drive" && (
-          <PueiDrivePane files={files} icons={icons} currentUser={currentUser} users={users} openApp={openApp} onDelete={(id) => { deleteFile(id); setFiles(myFiles()); }} />
+          <PueiDrivePane files={files} icons={icons} currentUser={currentUser} users={users} openApp={openApp} onDelete={(id) => { deleteFile(id); reloadFiles(); }} />
         )}
         {folder === "recycle-bin" && <RecycleBinApp />}
         {folder === "folders" && !openFolderId && (
@@ -4226,9 +4232,9 @@ function FileExplorerApp({ openApp, icons, openFolder, currentUser, users, setWa
               files={folderFiles}
               icons={folderIcons}
               onOpen={(f) => { if (f.name.trim().toLowerCase().endsWith(".iso") || f.name.trim().toLowerCase().endsWith(".zip")) { openApp(f.name.trim().toLowerCase().endsWith(".zip") ? "zip-viewer" : "iso-viewer", f.id); return; } openApp(f.type === "image" ? "puei-paint" : "notepad", f.id); }}
-              onDelete={(id) => { deleteFile(id); setFiles(myFiles()); }}
+              onDelete={(id) => { deleteFile(id); reloadFiles(); }}
               onOpenIcon={(ic) => { if (ic.appId !== "web-app") openApp(ic.appId, ic.fileId); }}
-              onMoveToPictures={(f) => { moveFile(f.id, SYS_FOLDER_PICTURES); setFiles(myFiles()); blip("notify"); }}
+              onMoveToPictures={(f) => { moveFile(f.id, SYS_FOLDER_PICTURES); reloadFiles(); blip("notify"); }}
             />
           );
         })()}

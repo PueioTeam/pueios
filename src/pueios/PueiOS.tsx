@@ -2546,32 +2546,30 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
       {taskViewOpen && isP4 && (
         <div className="fixed inset-0 z-[8500]"
           style={{ background: "rgba(0,0,0,0.75)", backdropFilter: "blur(12px)", display: "flex", flexDirection: "column", paddingBottom: 56 }}
-          onMouseDown={(e) => { if (e.target === e.currentTarget) setTaskViewOpen(false); }}>
-          <div style={{ padding: "32px 40px 16px", color: "white", fontSize: 13, opacity: 0.5, letterSpacing: 1, textTransform: "uppercase" }}>Task View</div>
+          onClick={(e) => { if (e.target === e.currentTarget) setTaskViewOpen(false); }}>
+          <div style={{ padding: "32px 40px 16px", color: "white", fontSize: 13, opacity: 0.5, letterSpacing: 1, textTransform: "uppercase" }} onClick={e => e.stopPropagation()}>Task View</div>
           {windows.length === 0 ? (
             <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: "rgba(255,255,255,0.3)", fontSize: 15 }}>No open windows</div>
           ) : (
-            <div style={{ flex: 1, display: "flex", flexWrap: "wrap", alignContent: "flex-start", gap: 16, padding: "0 40px", overflowY: "auto" }}>
+            <div style={{ flex: 1, display: "flex", flexWrap: "wrap", alignContent: "flex-start", gap: 16, padding: "0 40px", overflowY: "auto" }} onClick={e => e.stopPropagation()}>
               {windows.map((w) => {
                 const title = APP_TITLES[w.appId] ?? w.appId;
                 const isActive = !w.minimized && w.z === Math.max(...windows.map(x => x.z));
                 return (
                   <div key={w.id}
-                    onClick={() => { focusWin(w.id); if (w.minimized) setWindows(ws => ws.map(x => x.id === w.id ? { ...x, minimized: false } : x)); setTaskViewOpen(false); blip("click"); }}
-                    style={{ width: 200, height: 130, background: "#1e1e1e", borderRadius: 6, overflow: "hidden", cursor: "pointer", position: "relative", border: `2px solid ${isActive ? "#0078d4" : "rgba(255,255,255,0.12)"}`, flexShrink: 0, transition: "transform 0.1s, border-color 0.1s" }}
-                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = "scale(1.04)"; (e.currentTarget as HTMLElement).style.borderColor = "#0078d4"; }}
-                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = ""; (e.currentTarget as HTMLElement).style.borderColor = isActive ? "#0078d4" : "rgba(255,255,255,0.12)"; }}>
-                    {/* Window preview — blurred icon */}
-                    <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", background: "linear-gradient(135deg,#1a1a2e,#16213e)", opacity: w.minimized ? 0.5 : 1 }}>
-                      {aicon(w.appId, 48)}
+                    onClick={(e) => { e.stopPropagation(); focusWin(w.id); setWindows(ws => ws.map(x => x.id === w.id ? { ...x, minimized: false } : x)); setTaskViewOpen(false); blip("click"); }}
+                    style={{ width: 200, height: 130, background: "#1e1e1e", borderRadius: 8, overflow: "hidden", cursor: "pointer", position: "relative", border: `2px solid ${isActive ? "#0078d4" : "rgba(255,255,255,0.12)"}`, flexShrink: 0, transition: "transform 0.12s, border-color 0.12s, box-shadow 0.12s" }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = "scale(1.05)"; (e.currentTarget as HTMLElement).style.borderColor = "#0078d4"; (e.currentTarget as HTMLElement).style.boxShadow = "0 8px 32px rgba(0,120,212,0.4)"; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = ""; (e.currentTarget as HTMLElement).style.borderColor = isActive ? "#0078d4" : "rgba(255,255,255,0.12)"; (e.currentTarget as HTMLElement).style.boxShadow = ""; }}>
+                    <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", background: "linear-gradient(135deg,#1a1a2e,#16213e)", opacity: w.minimized ? 0.45 : 1 }}>
+                      {aicon(w.appId, 52)}
                     </div>
-                    {/* Title bar */}
-                    <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: "rgba(0,0,0,0.7)", padding: "5px 10px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: "rgba(0,0,0,0.75)", padding: "5px 10px 6px", display: "flex", alignItems: "center", justifyContent: "space-between", backdropFilter: "blur(4px)" }}>
                       <span style={{ color: "white", fontSize: 11, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                         {w.minimized ? "⬛ " : ""}{title}
                       </span>
                       <button
-                        onClick={(e) => { e.stopPropagation(); closeWin(w.id); blip("click"); if (windows.length <= 1) setTaskViewOpen(false); }}
+                        onClick={(e) => { e.stopPropagation(); closeWin(w.id); blip("click"); setWindows(ws => { const remaining = ws.filter(x => x.id !== w.id); if (remaining.length === 0) setTaskViewOpen(false); return remaining; }); }}
                         style={{ background: "none", border: "none", color: "rgba(255,255,255,0.5)", cursor: "pointer", fontSize: 14, lineHeight: 1, padding: "0 2px", flexShrink: 0 }}
                         onMouseEnter={e => (e.currentTarget.style.color = "#f87171")}
                         onMouseLeave={e => (e.currentTarget.style.color = "rgba(255,255,255,0.5)")}>
