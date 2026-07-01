@@ -2745,12 +2745,7 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
           <button
             title="Start" onClick={(e) => { e.stopPropagation(); blip("click"); setStartOpen(!startOpen); setShowCalendar(false); }}
             style={{ width: 48, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", background: startOpen ? "rgba(255,255,255,0.15)" : "transparent", cursor: "pointer", border: "none" }}>
-            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-              <rect x="0" y="0" width="8" height="8" rx="1" fill="#00adef"/>
-              <rect x="10" y="0" width="8" height="8" rx="1" fill="#00adef" opacity="0.75"/>
-              <rect x="0" y="10" width="8" height="8" rx="1" fill="#00adef" opacity="0.75"/>
-              <rect x="10" y="10" width="8" height="8" rx="1" fill="#00adef" opacity="0.55"/>
-            </svg>
+            <PueiLogoSvg size={28} withWings={false} />
           </button>
           {/* Search bar */}
           <div style={{ position: "relative", flexShrink: 0, margin: "0 4px", display: "flex", alignItems: "center" }} onMouseDown={(e) => e.stopPropagation()}>
