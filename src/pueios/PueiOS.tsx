@@ -154,6 +154,7 @@ export function PueiOS() {
   const [zCounter, setZCounter] = useState(1);
   const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number; items: any[] } | null>(null);
   const [startOpen, setStartOpen] = useState(false);
+  const [taskViewOpen, setTaskViewOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [showAddShortcut, setShowAddShortcut] = useState(false);
@@ -2219,7 +2220,7 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
     <div
       className={`fixed inset-0 ${isP3 ? "win7-aero" : ""} ${isP4 || theme.wallpaper === "puei" || (typeof theme.wallpaper === "string" && (theme.wallpaper.startsWith("custom:") || theme.wallpaper.startsWith("data:"))) ? "" : `wallpaper-${theme.wallpaper}`}`}
       style={{ overflow: "hidden", ...wallpaperStyle }}
-      onMouseDown={() => { setCtxMenu(null); setStartOpen(false); setShowCalendar(false); setSelectedIcon(null); setShowVolume(false); setShowNetwork(false); setSearchOpen(false); setSearchQuery(""); }}
+      onMouseDown={() => { setCtxMenu(null); setStartOpen(false); setShowCalendar(false); setSelectedIcon(null); setShowVolume(false); setShowNetwork(false); setSearchOpen(false); setSearchQuery(""); setTaskViewOpen(false); }}
       onContextMenu={(e) => { e.preventDefault(); setCtxMenu({ x: e.clientX, y: e.clientY, items: desktopCtx() }); }}
       onTouchStart={(e) => onTouchStart(e, desktopCtx())}
       onTouchMove={onTouchMove}
@@ -2522,6 +2523,50 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
         );
       })()}
 
+      {/* PueiOS 4 Task View overlay */}
+      {taskViewOpen && isP4 && (
+        <div className="fixed inset-0 z-[8500]"
+          style={{ background: "rgba(0,0,0,0.75)", backdropFilter: "blur(12px)", display: "flex", flexDirection: "column", paddingBottom: 56 }}
+          onMouseDown={(e) => { if (e.target === e.currentTarget) setTaskViewOpen(false); }}>
+          <div style={{ padding: "32px 40px 16px", color: "white", fontSize: 13, opacity: 0.5, letterSpacing: 1, textTransform: "uppercase" }}>Task View</div>
+          {windows.length === 0 ? (
+            <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: "rgba(255,255,255,0.3)", fontSize: 15 }}>No open windows</div>
+          ) : (
+            <div style={{ flex: 1, display: "flex", flexWrap: "wrap", alignContent: "flex-start", gap: 16, padding: "0 40px", overflowY: "auto" }}>
+              {windows.map((w) => {
+                const title = APP_TITLES[w.appId] ?? w.appId;
+                const isActive = !w.minimized && w.z === Math.max(...windows.map(x => x.z));
+                return (
+                  <div key={w.id}
+                    onClick={() => { focusWin(w.id); if (w.minimized) setWindows(ws => ws.map(x => x.id === w.id ? { ...x, minimized: false } : x)); setTaskViewOpen(false); blip("click"); }}
+                    style={{ width: 200, height: 130, background: "#1e1e1e", borderRadius: 6, overflow: "hidden", cursor: "pointer", position: "relative", border: `2px solid ${isActive ? "#0078d4" : "rgba(255,255,255,0.12)"}`, flexShrink: 0, transition: "transform 0.1s, border-color 0.1s" }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = "scale(1.04)"; (e.currentTarget as HTMLElement).style.borderColor = "#0078d4"; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = ""; (e.currentTarget as HTMLElement).style.borderColor = isActive ? "#0078d4" : "rgba(255,255,255,0.12)"; }}>
+                    {/* Window preview — blurred icon */}
+                    <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", background: "linear-gradient(135deg,#1a1a2e,#16213e)", opacity: w.minimized ? 0.5 : 1 }}>
+                      {aicon(w.appId, 48)}
+                    </div>
+                    {/* Title bar */}
+                    <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: "rgba(0,0,0,0.7)", padding: "5px 10px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                      <span style={{ color: "white", fontSize: 11, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {w.minimized ? "⬛ " : ""}{title}
+                      </span>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); closeWin(w.id); blip("click"); if (windows.length <= 1) setTaskViewOpen(false); }}
+                        style={{ background: "none", border: "none", color: "rgba(255,255,255,0.5)", cursor: "pointer", fontSize: 14, lineHeight: 1, padding: "0 2px", flexShrink: 0 }}
+                        onMouseEnter={e => (e.currentTarget.style.color = "#f87171")}
+                        onMouseLeave={e => (e.currentTarget.style.color = "rgba(255,255,255,0.5)")}>
+                        ✕
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* PueiOS 4 Start Menu — Win10 style */}
       {startOpen && isP4 && (
         <div className="fixed bottom-12 left-0 z-[9000] flex overflow-hidden"
@@ -2731,8 +2776,8 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
           </div>
           {/* Task View button */}
           <button title="Task View"
-            onClick={(e) => { e.stopPropagation(); setWindows(ws => ws.map(w => ({ ...w, minimized: false }))); }}
-            style={{ width: 44, height: 48, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.7)", fontSize: 16 }}>
+            onClick={(e) => { e.stopPropagation(); setTaskViewOpen(o => !o); setStartOpen(false); }}
+            style={{ width: 44, height: 48, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", background: taskViewOpen ? "rgba(255,255,255,0.15)" : "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.7)", fontSize: 16 }}>
             ⊞
           </button>
           {/* Open windows — flat icon-only buttons */}
