@@ -2199,7 +2199,7 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
         if (f?.content) return { backgroundImage: `url(${f.content})`, backgroundSize: "cover", backgroundPosition: "center" };
       } catch {}
     }
-    if (systemVersion === "PueiOS 4" && (!theme.wallpaper || theme.wallpaper === "default")) {
+    if (systemVersion === "PueiOS 4" && !theme.wallpaper.startsWith("data:") && !theme.wallpaper.startsWith("custom:")) {
       return { backgroundImage: "url(/puei.png)", backgroundSize: "cover", backgroundPosition: "center" };
     }
     return {};
