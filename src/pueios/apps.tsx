@@ -1836,6 +1836,85 @@ function PueiNetIframe({ url, hostname }: { url: string; hostname: string }) {
   );
 }
 
+// ---------- PueiGAME Portal (accessible from all PueiOS versions via puei://games) ----------
+function PueiGamesPortalPage({ currentUser }: { currentUser: string }) {
+  const [downloading, setDownloading] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [done, setDone] = useState(() =>
+    loadFiles().some((f) => f.name.trim().toLowerCase() === "pueigame.exe" && (!f.owner || f.owner === currentUser) && f.folder === SYS_FOLDER_DOWNLOADS)
+  );
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  useEffect(() => () => { if (timerRef.current) clearInterval(timerRef.current); }, []);
+
+  const startDownload = () => {
+    if (done || downloading) return;
+    setDownloading(true);
+    setProgress(0);
+    const started = Date.now();
+    const dur = 5000 + Math.random() * 4000;
+    timerRef.current = setInterval(() => {
+      const pct = Math.min(100, ((Date.now() - started) / dur) * 100);
+      setProgress(pct);
+      if (pct >= 100) {
+        if (timerRef.current) clearInterval(timerRef.current);
+        setDownloading(false);
+        setDone(true);
+        upsertFile({
+          id: `pueigame-exe-${Date.now()}`,
+          name: "PueiGAME.exe", type: "text",
+          content: "PueiGAME Installer v1.0 — Run this file to install PueiGAME.",
+          updatedAt: Date.now(), owner: currentUser, folder: SYS_FOLDER_DOWNLOADS,
+        });
+        blip("notify");
+      }
+    }, 200);
+  };
+
+  return (
+    <div className="p-6 space-y-5 max-w-xl">
+      <div className="flex items-center gap-3">
+        <span className="text-5xl">🎮</span>
+        <div>
+          <h2 className="text-2xl font-bold">PueiGAME</h2>
+          <p className="text-xs opacity-50 mt-0.5">Official gaming portal by the Puei Team</p>
+        </div>
+      </div>
+      <p className="text-sm opacity-70">PueiGAME is the exclusive home for Puei titles. Download the launcher below to play all games.</p>
+
+      {/* Download button */}
+      <div className="aero-glass-light rounded-xl p-4 space-y-3">
+        <div className="font-semibold text-sm">⬇ PueiGAME Launcher</div>
+        {done ? (
+          <div className="text-xs" style={{ color: "#5dfc5d" }}>✓ PueiGAME.exe saved to Downloads — open it from Files to install!</div>
+        ) : downloading ? (
+          <div className="space-y-1">
+            <div className="text-xs opacity-60">Downloading PueiGAME.exe… {Math.round(progress)}%</div>
+            <div style={{ height: 5, borderRadius: 3, background: "rgba(80,200,80,0.15)", overflow: "hidden" }}>
+              <div style={{ height: "100%", width: `${progress}%`, background: "linear-gradient(90deg,#2da02d,#5dfc5d)", borderRadius: 3, transition: "width 0.2s" }} />
+            </div>
+          </div>
+        ) : (
+          <button onClick={startDownload}
+            className="aero-button rounded-lg px-4 py-2 text-sm font-semibold"
+            style={{ background: "linear-gradient(135deg,#2a8a2a,#1d6b1d)", color: "white", border: "none", cursor: "pointer" }}>
+            ⬇ Download PueiGAME.exe
+          </button>
+        )}
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        {[["👻 Puei Mansion","Adventure · Horror"],["🚀 Puei Space","Shooter · Arcade"]].map(([name, genre]) => (
+          <div key={name} className="aero-glass-light rounded-xl p-4 space-y-1">
+            <div className="font-semibold text-sm">{name}</div>
+            <div className="text-[10px] opacity-50">{genre}</div>
+            <div className="text-[10px] opacity-40 mt-1">Available on PueiGAME launcher</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ---------- PueiWeb ----------
 function PueiNetHomePage({ navigate }: { navigate: (url: string) => void }) {
   const [homeQ, setHomeQ] = useState("");
@@ -2392,35 +2471,7 @@ function PueiWebApp({ currentUser, users, icons }: { currentUser: string; users:
     "puei://math": <PueiMathPage />,
     "puei://mail": <PMailApp currentUser={currentUser} users={users} />,
     "puei://about": <div className="p-6"><h2 className="text-2xl font-bold">About PueiNet</h2><p className="text-sm opacity-70 mt-2">A browser for an alternate 2020. Only https://&lt;app&gt;.base44.app external URLs are trusted.</p></div>,
-    "puei://games": (
-      <div className="p-6 space-y-5 max-w-xl">
-        <div className="flex items-center gap-3">
-          <span className="text-5xl">🎮</span>
-          <div>
-            <h2 className="text-2xl font-bold">PueiGAME</h2>
-            <p className="text-xs opacity-50 mt-0.5">Official gaming portal by the Puei Team</p>
-          </div>
-        </div>
-        <p className="text-sm opacity-70">PueiGAME is the exclusive home for Puei titles. Install the launcher to play all games — not available through the App Store.</p>
-        <div className="aero-glass-light rounded-xl p-4 space-y-2">
-          <div className="font-semibold text-sm">🎯 How to get PueiGAME</div>
-          <ol className="text-xs opacity-70 space-y-1 list-decimal list-inside">
-            <li>Download <strong>PueiGAME.exe</strong> from the official site</li>
-            <li>Run the installer — it will appear on your desktop</li>
-            <li>Open PueiGAME and browse all available titles</li>
-          </ol>
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          {[["👻 Puei Mansion","Adventure · Horror"],["🚀 Puei Space","Shooter · Arcade"]].map(([name, genre]) => (
-            <div key={name} className="aero-glass-light rounded-xl p-4 space-y-1">
-              <div className="font-semibold text-sm">{name}</div>
-              <div className="text-[10px] opacity-50">{genre}</div>
-              <div className="text-[10px] opacity-40 mt-1">Available on PueiGAME launcher</div>
-            </div>
-          ))}
-        </div>
-      </div>
-    ),
+    "puei://games": <PueiGamesPortalPage currentUser={currentUser} />,
   };
 
   let content: React.ReactNode;
