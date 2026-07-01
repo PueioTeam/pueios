@@ -3789,6 +3789,9 @@ function FileExplorerApp({ openApp, icons, openFolder, currentUser, users, setWa
   // PueiOS 4 folder nav (hoisted to avoid conditional hook)
   const [p4Folder, setP4Folder] = useState<"home" | "documents" | "pictures" | "downloads" | "desktop">("home");
   const [p4Selected, setP4Selected] = useState<Set<string>>(new Set());
+  const [p4RibbonTab, setP4RibbonTab] = useState<"Home" | "Share" | "View">("Home");
+  const [p4ViewMode, setP4ViewMode] = useState<"icons" | "list" | "details">("icons");
+  const [p4IconSize, setP4IconSize] = useState<"small" | "medium" | "large">("medium");
   const p4ToggleSelect = (id: string, multi: boolean) => {
     setP4Selected(prev => {
       if (multi) { const next = new Set(prev); next.has(id) ? next.delete(id) : next.add(id); return next; }
@@ -3868,18 +3871,105 @@ function FileExplorerApp({ openApp, icons, openFolder, currentUser, users, setWa
     return (
       <div style={{ display: "flex", flexDirection: "column", height: "100%", background: "#202020", color: "white", fontFamily: "'Segoe UI', system-ui, sans-serif" }}>
         <LocalDialogModal dialog={feDialog} />
-        {/* Ribbon bar */}
-        <div style={{ background: "#1a1a1a", borderBottom: "1px solid #333", padding: "0 12px", display: "flex", alignItems: "center", gap: 0 }}>
-          {["Home", "Share", "View"].map(tab => (
-            <div key={tab} style={{ padding: "6px 14px", fontSize: 12, color: tab === "Home" ? "white" : "rgba(255,255,255,0.5)", cursor: "pointer", borderBottom: tab === "Home" ? "2px solid #0078d4" : "2px solid transparent" }}>{tab}</div>
-          ))}
-          <div style={{ flex: 1 }} />
-          {p4Selected.size > 0 && (
-            <button onClick={p4DeleteSelected}
-              style={{ padding: "3px 14px", fontSize: 12, background: "rgba(200,50,50,0.25)", border: "1px solid rgba(200,50,50,0.4)", color: "#f87171", borderRadius: 3, cursor: "pointer" }}>
-              🗑️ Delete{p4Selected.size > 1 ? ` (${p4Selected.size})` : ""}
-            </button>
-          )}
+        {/* Ribbon tabs */}
+        <div style={{ background: "#1a1a1a", borderBottom: "1px solid #333", display: "flex", flexDirection: "column" }}>
+          <div style={{ display: "flex", padding: "0 8px" }}>
+            {(["Home", "Share", "View"] as const).map(tab => (
+              <div key={tab} onClick={() => setP4RibbonTab(tab)}
+                style={{ padding: "6px 16px", fontSize: 12, cursor: "pointer", color: p4RibbonTab === tab ? "white" : "rgba(255,255,255,0.45)", borderBottom: p4RibbonTab === tab ? "2px solid #0078d4" : "2px solid transparent", userSelect: "none" }}>{tab}</div>
+            ))}
+          </div>
+          {/* Ribbon content */}
+          <div style={{ padding: "6px 12px", display: "flex", alignItems: "center", gap: 4, minHeight: 44, borderTop: "1px solid #2a2a2a" }}>
+            {p4RibbonTab === "Home" && (() => {
+              const selFile = p4Selected.size === 1 ? p4Files.find(f => p4Selected.has(f.id)) : null;
+              const btnStyle = (disabled: boolean): React.CSSProperties => ({
+                padding: "4px 12px", fontSize: 11, background: disabled ? "transparent" : "rgba(255,255,255,0.07)", border: "1px solid " + (disabled ? "transparent" : "#444"),
+                color: disabled ? "rgba(255,255,255,0.25)" : "rgba(255,255,255,0.85)", borderRadius: 2, cursor: disabled ? "default" : "pointer", display: "flex", alignItems: "center", gap: 5,
+              });
+              return (<>
+                <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                  <button style={btnStyle(!selFile)} disabled={!selFile}
+                    onClick={() => { if (selFile) { if (selFile.type === "text") openApp("notepad", selFile.id); else openApp("puei-paint", selFile.id); } }}>📂 Open</button>
+                  <button style={btnStyle(p4Selected.size === 0)} disabled={p4Selected.size === 0}
+                    onClick={p4DeleteSelected}>🗑️ Delete{p4Selected.size > 1 ? ` (${p4Selected.size})` : ""}</button>
+                </div>
+                <div style={{ width: 1, height: 36, background: "#444", margin: "0 6px" }} />
+                <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                  <button style={btnStyle(!selFile)} disabled={!selFile}
+                    onClick={async () => {
+                      if (!selFile) return;
+                      const newName = window.prompt("Rename to:", selFile.name);
+                      if (newName && newName.trim() && newName.trim() !== selFile.name) {
+                        upsertFile({ ...selFile, name: newName.trim() });
+                        setFiles(myFiles());
+                        window.dispatchEvent(new Event("pueios-files-changed"));
+                      }
+                    }}>✏️ Rename</button>
+                  <button style={btnStyle(!selFile)} disabled={!selFile}
+                    onClick={() => { if (selFile) { const copy = { ...selFile, id: `${selFile.id}-copy-${Date.now()}`, name: `${selFile.name} (Copy)` }; upsertFile(copy); setFiles(myFiles()); window.dispatchEvent(new Event("pueios-files-changed")); blip("notify"); } }}>📋 Copy</button>
+                </div>
+                <div style={{ width: 1, height: 36, background: "#444", margin: "0 6px" }} />
+                <button style={btnStyle(true)} disabled>✂️ Cut</button>
+                <button style={btnStyle(true)} disabled>📌 Pin to Quick Access</button>
+              </>);
+            })()}
+            {p4RibbonTab === "Share" && (() => {
+              const selFile = p4Selected.size === 1 ? p4Files.find(f => p4Selected.has(f.id)) : null;
+              const btnStyle = (disabled: boolean): React.CSSProperties => ({
+                padding: "4px 12px", fontSize: 11, background: disabled ? "transparent" : "rgba(255,255,255,0.07)", border: "1px solid " + (disabled ? "transparent" : "#444"),
+                color: disabled ? "rgba(255,255,255,0.25)" : "rgba(255,255,255,0.85)", borderRadius: 2, cursor: disabled ? "default" : "pointer", display: "flex", alignItems: "center", gap: 5,
+              });
+              return (<>
+                <button style={btnStyle(!selFile)} disabled={!selFile}
+                  onClick={() => { if (selFile) { navigator.clipboard?.writeText(selFile.name).catch(() => {}); blip("notify"); } }}>📋 Copy Name</button>
+                <button style={btnStyle(!selFile)} disabled={!selFile}
+                  onClick={() => { if (selFile) { const info = `Name: ${selFile.name}\nType: ${selFile.type}\nSize: ${selFile.content?.length ?? 0} chars\nModified: ${new Date(selFile.updatedAt).toLocaleString()}`; window.alert(info); } }}>ℹ️ Properties</button>
+                <div style={{ width: 1, height: 36, background: "#444", margin: "0 6px" }} />
+                <button style={btnStyle(!selFile || selFile.type !== "image")} disabled={!selFile || selFile.type !== "image"}
+                  onClick={() => { if (selFile?.type === "image" && setWallpaper) { setWallpaper(`data:${selFile.content}` as any); blip("notify"); } }}>🖼️ Set as Wallpaper</button>
+                <button style={btnStyle(!selFile)} disabled={!selFile}
+                  onClick={() => { if (selFile) { const blob = new Blob([selFile.content ?? ""], { type: "text/plain" }); const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = selFile.name; a.click(); blip("notify"); } }}>⬇️ Export to PC</button>
+              </>);
+            })()}
+            {p4RibbonTab === "View" && (<>
+              <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                <div style={{ fontSize: 10, color: "rgba(255,255,255,0.4)", marginBottom: 2 }}>Layout</div>
+                <div style={{ display: "flex", gap: 3 }}>
+                  {(["icons", "list", "details"] as const).map(m => (
+                    <button key={m} onClick={() => setP4ViewMode(m)}
+                      style={{ padding: "3px 10px", fontSize: 11, borderRadius: 2, cursor: "pointer", border: "1px solid " + (p4ViewMode === m ? "#0078d4" : "#444"), background: p4ViewMode === m ? "rgba(0,120,212,0.3)" : "rgba(255,255,255,0.06)", color: "white" }}>
+                      {m === "icons" ? "⊞ Icons" : m === "list" ? "☰ List" : "≡ Details"}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div style={{ width: 1, height: 36, background: "#444", margin: "0 6px" }} />
+              <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                <div style={{ fontSize: 10, color: "rgba(255,255,255,0.4)", marginBottom: 2 }}>Icon size</div>
+                <div style={{ display: "flex", gap: 3 }}>
+                  {(["small", "medium", "large"] as const).map(s => (
+                    <button key={s} onClick={() => setP4IconSize(s)}
+                      style={{ padding: "3px 10px", fontSize: 11, borderRadius: 2, cursor: "pointer", border: "1px solid " + (p4IconSize === s ? "#0078d4" : "#444"), background: p4IconSize === s ? "rgba(0,120,212,0.3)" : "rgba(255,255,255,0.06)", color: "white" }}>
+                      {s === "small" ? "S" : s === "medium" ? "M" : "L"}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div style={{ width: 1, height: 36, background: "#444", margin: "0 6px" }} />
+              <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                <div style={{ fontSize: 10, color: "rgba(255,255,255,0.4)", marginBottom: 2 }}>Sort by</div>
+                <div style={{ display: "flex", gap: 3 }}>
+                  {["Name", "Date", "Type"].map(s => (
+                    <button key={s}
+                      style={{ padding: "3px 10px", fontSize: 11, borderRadius: 2, cursor: "pointer", border: "1px solid #444", background: "rgba(255,255,255,0.06)", color: "white" }}>
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </>)}
+          </div>
         </div>
         {/* Address bar */}
         <div style={{ background: "#2d2d2d", borderBottom: "1px solid #333", padding: "4px 12px", fontSize: 12, color: "rgba(255,255,255,0.6)", display: "flex", alignItems: "center", gap: 8 }}>
@@ -3911,23 +4001,64 @@ function FileExplorerApp({ openApp, icons, openFolder, currentUser, users, setWa
             ))}
           </div>
           {/* Main content area */}
-          <div style={{ flex: 1, overflowY: "auto", padding: "16px", display: "flex", flexWrap: "wrap", alignContent: "flex-start", gap: 16 }}
+          <div style={{ flex: 1, overflowY: "auto", padding: p4ViewMode === "icons" ? "16px" : "8px",
+            display: p4ViewMode === "icons" ? "flex" : "block",
+            flexWrap: p4ViewMode === "icons" ? "wrap" : undefined,
+            alignContent: "flex-start", gap: p4ViewMode === "icons" ? 16 : undefined }}
             onClick={(e) => { if (e.target === e.currentTarget) setP4Selected(new Set()); }}>
             {p4Files.length === 0 && (
               <div style={{ width: "100%", textAlign: "center", color: "rgba(255,255,255,0.3)", marginTop: 40, fontSize: 13 }}>This folder is empty</div>
             )}
+            {/* Details header */}
+            {p4ViewMode === "details" && (
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 120px 80px 120px", gap: 0, padding: "3px 12px", borderBottom: "1px solid #333", fontSize: 11, color: "rgba(255,255,255,0.4)", userSelect: "none" }}>
+                <span>Name</span><span>Date modified</span><span>Type</span><span>Size</span>
+              </div>
+            )}
             {p4Files.map(f => {
               const sel = p4Selected.has(f.id);
+              const iconPx = p4IconSize === "small" ? 24 : p4IconSize === "large" ? 52 : 36;
+              const fileIcon = f.type === "image" ? "🖼️" : f.type === "zip" ? "📦" : "📄";
+              if (p4ViewMode === "list") return (
+                <div key={f.id}
+                  onClick={(e) => { e.stopPropagation(); p4ToggleSelect(f.id, e.ctrlKey || e.metaKey); }}
+                  onDoubleClick={() => { if (f.type === "text") openApp("notepad", f.id); else if (f.type === "image") openApp("puei-paint", f.id); }}
+                  style={{ display: "flex", alignItems: "center", gap: 8, padding: "3px 12px", cursor: "pointer", borderRadius: 2, fontSize: 12,
+                    background: sel ? "rgba(0,120,212,0.35)" : "transparent",
+                    outline: sel ? "1px solid rgba(0,120,212,0.5)" : "none" }}
+                  onMouseEnter={e => { if (!sel) (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.07)"; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = sel ? "rgba(0,120,212,0.35)" : "transparent"; }}>
+                  <span style={{ fontSize: 16 }}>{fileIcon}</span>
+                  <span style={{ color: "rgba(255,255,255,0.85)" }}>{f.name}</span>
+                </div>
+              );
+              if (p4ViewMode === "details") return (
+                <div key={f.id}
+                  onClick={(e) => { e.stopPropagation(); p4ToggleSelect(f.id, e.ctrlKey || e.metaKey); }}
+                  onDoubleClick={() => { if (f.type === "text") openApp("notepad", f.id); else if (f.type === "image") openApp("puei-paint", f.id); }}
+                  style={{ display: "grid", gridTemplateColumns: "1fr 120px 80px 120px", gap: 0, alignItems: "center", padding: "3px 12px", cursor: "pointer", fontSize: 12, borderBottom: "1px solid rgba(255,255,255,0.04)",
+                    background: sel ? "rgba(0,120,212,0.35)" : "transparent" }}
+                  onMouseEnter={e => { if (!sel) (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.07)"; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = sel ? "rgba(0,120,212,0.35)" : "transparent"; }}>
+                  <span style={{ display: "flex", alignItems: "center", gap: 7, color: "rgba(255,255,255,0.85)" }}><span style={{ fontSize: 15 }}>{fileIcon}</span>{f.name}</span>
+                  <span style={{ color: "rgba(255,255,255,0.4)", fontSize: 11 }}>{new Date(f.updatedAt).toLocaleDateString()}</span>
+                  <span style={{ color: "rgba(255,255,255,0.4)", fontSize: 11 }}>{f.type}</span>
+                  <span style={{ color: "rgba(255,255,255,0.4)", fontSize: 11 }}>{f.content ? `${(f.content.length / 1024).toFixed(1)} KB` : "—"}</span>
+                </div>
+              );
+              // Icons view
               return (
                 <div key={f.id}
                   onClick={(e) => { e.stopPropagation(); p4ToggleSelect(f.id, e.ctrlKey || e.metaKey); }}
                   onDoubleClick={() => { if (f.type === "text") openApp("notepad", f.id); else if (f.type === "image") openApp("puei-paint", f.id); }}
-                  style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, width: 80, cursor: "pointer", padding: 6, borderRadius: 2,
+                  style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 5, width: p4IconSize === "large" ? 90 : p4IconSize === "small" ? 60 : 76, cursor: "pointer", padding: 6, borderRadius: 2,
                     background: sel ? "rgba(0,120,212,0.35)" : "transparent",
                     outline: sel ? "1px solid rgba(0,120,212,0.7)" : "none" }}
                   onMouseEnter={e => { if (!sel) (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.08)"; }}
                   onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = sel ? "rgba(0,120,212,0.35)" : "transparent"; }}>
-                  <div style={{ fontSize: 36 }}>{f.type === "image" ? "🖼️" : f.type === "zip" ? "📦" : "📄"}</div>
+                  {f.type === "image"
+                    ? <img src={f.content} alt={f.name} style={{ width: iconPx, height: iconPx, objectFit: "cover", borderRadius: 2 }} />
+                    : <div style={{ fontSize: iconPx }}>{fileIcon}</div>}
                   <div style={{ fontSize: 11, color: "rgba(255,255,255,0.8)", textAlign: "center", wordBreak: "break-word", lineHeight: 1.3 }}>{f.name}</div>
                 </div>
               );
