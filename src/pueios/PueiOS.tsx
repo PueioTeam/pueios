@@ -2200,7 +2200,11 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
         if (f?.content) return { backgroundImage: `url(${f.content})`, backgroundSize: "cover", backgroundPosition: "center" };
       } catch {}
     }
-    if (theme.wallpaper === "puei" || (systemVersion === "PueiOS 4" && !theme.wallpaper.startsWith("data:") && !theme.wallpaper.startsWith("custom:"))) {
+    const namedWallpapers = ["bliss","pueisky","fencesunset","dutchvillage","greekcoast","milkyway","aero-blue","aero-pink","aero-neon","aero-dusk","aero-forest","aero-ember","aero-arctic","default"];
+    if (theme.wallpaper === "puei") {
+      return { backgroundImage: "url(/puei.jpg)", backgroundSize: "cover", backgroundPosition: "center" };
+    }
+    if (systemVersion === "PueiOS 4" && !namedWallpapers.includes(theme.wallpaper) && !theme.wallpaper.startsWith("data:") && !theme.wallpaper.startsWith("custom:")) {
       return { backgroundImage: "url(/puei.jpg)", backgroundSize: "cover", backgroundPosition: "center" };
     }
     return {};
@@ -2218,7 +2222,7 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
 
   return (
     <div
-      className={`fixed inset-0 ${isP3 ? "win7-aero" : ""} ${isP4 || theme.wallpaper === "puei" || (typeof theme.wallpaper === "string" && (theme.wallpaper.startsWith("custom:") || theme.wallpaper.startsWith("data:"))) ? "" : `wallpaper-${theme.wallpaper}`}`}
+      className={`fixed inset-0 ${isP3 ? "win7-aero" : ""} ${theme.wallpaper === "puei" || theme.wallpaper.startsWith("custom:") || theme.wallpaper.startsWith("data:") ? "" : `wallpaper-${theme.wallpaper}`}`}
       style={{ overflow: "hidden", ...wallpaperStyle }}
       onMouseDown={() => { setCtxMenu(null); setStartOpen(false); setShowCalendar(false); setSelectedIcon(null); setShowVolume(false); setShowNetwork(false); setSearchOpen(false); setSearchQuery(""); setTaskViewOpen(false); }}
       onContextMenu={(e) => { e.preventDefault(); setCtxMenu({ x: e.clientX, y: e.clientY, items: desktopCtx() }); }}
