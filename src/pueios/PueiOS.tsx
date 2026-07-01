@@ -155,6 +155,7 @@ export function PueiOS() {
   const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number; items: any[] } | null>(null);
   const [startOpen, setStartOpen] = useState(false);
   const [taskViewOpen, setTaskViewOpen] = useState(false);
+  const [widgetsHidden, setWidgetsHidden] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [showAddShortcut, setShowAddShortcut] = useState(false);
@@ -2285,16 +2286,30 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
       </div>
 
       {/* Widgets */}
-      <div className={`absolute top-4 right-4 rounded-xl p-3 w-56 text-sm ${isP1 ? "" : "aero-glass"}`} style={{ color: "var(--foreground)", ...(isP1 ? { background: "rgba(210,208,200,0.95)", border: "1px solid #999", boxShadow: "2px 2px 6px rgba(0,0,0,0.3)", fontFamily: "Arial, sans-serif" } : {}) }}>
-        <div className="font-semibold mb-1">📅 {now.toLocaleDateString(undefined, { weekday: "long" })}</div>
-        <div className="text-3xl font-light">{now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</div>
-        <div className="text-xs opacity-70">{now.toLocaleDateString()}</div>
-      </div>
-      <div className={`absolute top-44 right-4 rounded-xl p-3 w-56 text-sm ${isP1 ? "" : "aero-glass"}`} style={isP1 ? { background: "rgba(210,208,200,0.95)", border: "1px solid #999", boxShadow: "2px 2px 6px rgba(0,0,0,0.3)", fontFamily: "Arial, sans-serif" } : {}}>
-        <div className="font-semibold mb-1">🌤️ Pueiville</div>
-        <div className="text-2xl font-light">21°C</div>
-        <div className="text-xs opacity-70">Glassy with light bloom</div>
-      </div>
+      {widgetsHidden ? (
+        <button onClick={() => setWidgetsHidden(false)}
+          className={`absolute top-4 right-4 rounded-xl text-xs px-3 py-1.5 ${isP1 ? "" : "aero-glass"}`}
+          style={{ color: "var(--foreground)", opacity: 0.6, border: "1px solid rgba(255,255,255,0.2)", background: "rgba(255,255,255,0.1)", cursor: "pointer" }}>
+          Show widgets
+        </button>
+      ) : (<>
+        <div className={`absolute top-4 right-4 rounded-xl p-3 w-56 text-sm ${isP1 ? "" : "aero-glass"}`} style={{ color: "var(--foreground)", ...(isP1 ? { background: "rgba(210,208,200,0.95)", border: "1px solid #999", boxShadow: "2px 2px 6px rgba(0,0,0,0.3)", fontFamily: "Arial, sans-serif" } : {}) }}>
+          <div className="flex items-center justify-between mb-1">
+            <div className="font-semibold">📅 {now.toLocaleDateString(undefined, { weekday: "long" })}</div>
+            <button onClick={() => setWidgetsHidden(true)} title="Hide widgets"
+              style={{ background: "none", border: "none", cursor: "pointer", opacity: 0.45, fontSize: 13, lineHeight: 1, color: "var(--foreground)", padding: "0 2px" }}
+              onMouseEnter={e => (e.currentTarget.style.opacity = "1")}
+              onMouseLeave={e => (e.currentTarget.style.opacity = "0.45")}>✕</button>
+          </div>
+          <div className="text-3xl font-light">{now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</div>
+          <div className="text-xs opacity-70">{now.toLocaleDateString()}</div>
+        </div>
+        <div className={`absolute top-44 right-4 rounded-xl p-3 w-56 text-sm ${isP1 ? "" : "aero-glass"}`} style={isP1 ? { background: "rgba(210,208,200,0.95)", border: "1px solid #999", boxShadow: "2px 2px 6px rgba(0,0,0,0.3)", fontFamily: "Arial, sans-serif" } : {}}>
+          <div className="font-semibold mb-1">🌤️ Pueiville</div>
+          <div className="text-2xl font-light">21°C</div>
+          <div className="text-xs opacity-70">Glassy with light bloom</div>
+        </div>
+      </>)}
 
       {/* Windows */}
       {windows.map((w) => {
