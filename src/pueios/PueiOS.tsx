@@ -2350,7 +2350,7 @@ button, a, [role="button"], select { cursor: ${hand(c)} 6 0, pointer !important;
               startUpgrade={(target) => startSystemUpgrade(target)}
               uninstallApp={(appId) => { markUninstalled(`app:${appId}`); setIcons((cur) => cur.filter((i) => !(i.appId === appId && !i.fileId && !i.webUrl))); }}
               uninstallWebApp={(url) => { markUninstalled(`web:${url}`); setIcons((cur) => cur.filter((i) => !(i.appId === "web-app" && i.webUrl === url))); }}
-              addNativeIcon={(appId, label, icon) => { markInstalled(`app:${appId}`); setIcons((cur) => cur.some((i) => i.appId === appId && !i.fileId && !i.webUrl) ? cur : [...cur, { id: `native-${appId}`, label, appId, iconEmoji: icon }]); }}
+              addNativeIcon={(appId, label, icon) => { markInstalled(`app:${appId}`); setIcons((cur) => { const uid = `native-${appId}-${Date.now().toString(36)}`; return cur.some((i) => i.appId === appId && i.label === label && !i.fileId && !i.webUrl) ? cur : [...cur, { id: uid, label, appId, iconEmoji: icon }]; }); }}
               installWebApp={installWebAppFn}
               installedKeys={installedKeys}
               openWebApp={(url, title) => openApp("web-app", { webUrl: url, title })}
